@@ -61,11 +61,11 @@ class HomeSpread extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      children: [
+      children: const [
         SizedBox(
             height: 200,
             child: HomeCard(title: "Total Balance", content: "\$1,000")),
-        const SizedBox(height: 16),
+        SizedBox(height: 16),
         SizedBox(
           height: 160,
           child: Row(
@@ -75,8 +75,8 @@ class HomeSpread extends StatelessWidget {
               Expanded(
                   flex: 16,
                   child: HomeCard(title: "Net Gain Today", content: "\$1,000")),
-              const Spacer(),
-              const Expanded(
+              Spacer(),
+              Expanded(
                   flex: 8,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -92,8 +92,8 @@ class HomeSpread extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        const SizedBox(
+        SizedBox(height: 16),
+        SizedBox(
             height: 70,
             child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -103,7 +103,7 @@ class HomeSpread extends StatelessWidget {
                     flex: 10,
                     child: CardButton(content: "Go to Totals Overview"),
                   ),
-                  const Spacer(),
+                  Spacer(),
                   Expanded(
                     flex: 10,
                     child: CardButton(content: "Go to Budget Overview"),
