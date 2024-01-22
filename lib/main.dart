@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
 import 'home_card.dart';
+import 'transactions.dart';
 
 void main() {
   runApp(const MyApp());
+}
+
+enum Page {
+  home(0),
+  transactions(1);
+
+  const Page(this.value);
+  final int value;
 }
 
 class MyApp extends StatelessWidget {
@@ -18,55 +27,68 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  int selectedIndex = 0;
+
+  void indexCallback(Page page) {
+    setState(() {
+      selectedIndex = page.value;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      bottomNavigationBar: BottomAppBar(
-          color: Color(0xFFB3F2DD),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              IconButton(
-                icon: Icon(Icons.home),
-                onPressed: null,
-              ),
-              IconButton(
-                icon: Icon(Icons.book),
-                onPressed: null,
-              ),
-              IconButton(
-                icon: Icon(Icons.person),
-                onPressed: null,
-              ),
-            ],
-          )),
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.all(16),
-          child: HomeSpread(),
+    return Scaffold(
+        bottomNavigationBar: NavigationBar(
+          backgroundColor: const Color(0xFFB3F2DD),
+          selectedIndex: selectedIndex,
+          onDestinationSelected: (value) {
+            setState(() {
+              selectedIndex = value;
+            });
+          },
+          destinations: const [
+            NavigationDestination(icon: Icon(Icons.home), label: "Home"),
+            NavigationDestination(icon: Icon(Icons.money), label: "Spending")
+          ],
         ),
-      ),
-    );
+        body: [
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: HomeSpread(swapCallback: indexCallback),
+            ),
+          ),
+          const SafeArea(
+              child: Padding(
+            padding: EdgeInsets.all(16),
+            child: TransactionsPage(),
+          ))
+        ][selectedIndex]);
   }
 }
 
 class HomeSpread extends StatelessWidget {
-  const HomeSpread({
-    super.key,
-  });
+  const HomeSpread({super.key, required this.swapCallback});
+
+  final Function swapCallback;
 
   @override
   Widget build(BuildContext context) {
     return ListView(
-      children: const [
-        SizedBox(
+      children: [
+        const SizedBox(
             height: 200,
             child: HomeCard(title: "Total Balance", content: "\$1,000")),
-        SizedBox(height: 16),
-        SizedBox(
+        const SizedBox(height: 16),
+        const SizedBox(
           height: 160,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -92,7 +114,7 @@ class HomeSpread extends StatelessWidget {
             ],
           ),
         ),
-        SizedBox(height: 16),
+        const SizedBox(height: 16),
         SizedBox(
             height: 70,
             child: Row(
@@ -101,12 +123,16 @@ class HomeSpread extends StatelessWidget {
                 children: [
                   Expanded(
                     flex: 10,
-                    child: CardButton(content: "Go to Totals Overview"),
+                    child: CardButton(
+                        content: "Go to Totals Overview",
+                        callback: () => swapCallback(Page.transactions)),
                   ),
-                  Spacer(),
+                  const Spacer(),
                   Expanded(
                     flex: 10,
-                    child: CardButton(content: "Go to Budget Overview"),
+                    child: CardButton(
+                        content: "Go to Budget Overview",
+                        callback: () => swapCallback(Page.transactions)),
                   )
                 ]))
       ],

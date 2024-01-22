@@ -64,34 +64,39 @@ class HomeCard extends StatelessWidget {
 }
 
 class CardButton extends StatefulWidget {
-  const CardButton({super.key, required this.content, this.textSize = 16});
+  const CardButton(
+      {super.key, required this.content, this.textSize = 16, this.callback});
 
   final String content;
   final double textSize;
+  final VoidCallback? callback;
 
   @override
   State<CardButton> createState() => _CardButtonState();
 }
 
 class _CardButtonState extends State<CardButton> {
-  Color? randomColor;
-  Color? randomTextColor;
+  late Color randomColor;
+  late Color randomTextColor;
+
+  @override
+  void initState() {
+    super.initState();
+
+    List<Color> randomColors = getRandomColor();
+    randomColor = randomColors[0];
+    randomColor = randomColor.withOpacity(0.8);
+    randomTextColor = randomColors[1];
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (randomColor == null) {
-      List<Color> randomColors = getRandomColor();
-      randomColor = randomColors[0];
-      randomTextColor = randomColors[1];
-    }
-
-    randomColor = randomColor!.withOpacity(0.8);
 
     return TextButton(
-      onPressed: () {},
+      onPressed: widget.callback,
       onFocusChange: (value) {
         setState(() {
-          randomColor = randomColor!.withOpacity(value ? 1 : 0.5);
+          randomColor = randomColor.withOpacity(value ? 1 : 0.5);
         });
       },
       style: TextButton.styleFrom(
@@ -102,7 +107,7 @@ class _CardButtonState extends State<CardButton> {
         ),
       ),
       // I'm not sure if changing this to a FittedBox really did anything,
-      // but it's supposed to make the text not overflow if the card itself is 
+      // but it's supposed to make the text not overflow if the card itself is
       // too small.
       child: FittedBox(
         fit: BoxFit.contain,
