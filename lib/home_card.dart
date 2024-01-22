@@ -101,9 +101,15 @@ class _CardButtonState extends State<CardButton> {
           borderRadius: BorderRadius.circular(16),
         ),
       ),
-      child: Text(widget.content,
-          style: TextStyle(fontSize: widget.textSize, color: randomTextColor),
-          textAlign: TextAlign.center),
+      // I'm not sure if changing this to a FittedBox really did anything,
+      // but it's supposed to make the text not overflow if the card itself is 
+      // too small.
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: Text(widget.content,
+            style: TextStyle(fontSize: widget.textSize, color: randomTextColor),
+            textAlign: TextAlign.center),
+      ),
     );
   }
 }

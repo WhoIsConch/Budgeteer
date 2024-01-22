@@ -83,7 +83,7 @@ class HomeSpread extends StatelessWidget {
                     children: [
                       Expanded(
                           flex: 8,
-                          child: CardButton(content: "Add an expense")),
+                          child: CardButton(content: "Add an\nexpense")),
                       Spacer(),
                       Expanded(
                           flex: 8, child: CardButton(content: "Add income")),
