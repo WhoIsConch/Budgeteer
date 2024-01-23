@@ -1,18 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:dynamic_color/dynamic_color.dart';
-import 'home_card.dart';
+import 'overview.dart';
 import 'transactions.dart';
+import 'tools.dart' as tools;
 
 void main() {
   runApp(const MyApp());
-}
-
-enum Page {
-  home(0),
-  transactions(1);
-
-  const Page(this.value);
-  final int value;
 }
 
 class MyApp extends StatelessWidget {
@@ -44,7 +37,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int selectedIndex = 0;
 
-  void indexCallback(Page page) {
+  void indexCallback(tools.Page page) {
     setState(() {
       selectedIndex = page.value;
     });
@@ -85,7 +78,7 @@ class _HomePageState extends State<HomePage> {
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: HomeSpread(swapCallback: indexCallback),
+              child: Overview(swapCallback: indexCallback),
             ),
           ),
           const SafeArea(
@@ -99,70 +92,5 @@ class _HomePageState extends State<HomePage> {
             child: Text("Account"),
           ))
         ][selectedIndex]);
-  }
-}
-
-class HomeSpread extends StatelessWidget {
-  const HomeSpread({super.key, required this.swapCallback});
-
-  final Function swapCallback;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      children: [
-        const SizedBox(
-            height: 200,
-            child: HomeCard(title: "Total Balance", content: "\$1,000")),
-        const SizedBox(height: 16),
-        const SizedBox(
-          height: 160,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                  flex: 16,
-                  child: HomeCard(title: "Net Gain Today", content: "\$1,000")),
-              Spacer(),
-              Expanded(
-                  flex: 8,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                          flex: 8,
-                          child: CardButton(content: "Add an\nexpense")),
-                      Spacer(),
-                      Expanded(
-                          flex: 8, child: CardButton(content: "Add income")),
-                    ],
-                  ))
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-            height: 70,
-            child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    flex: 10,
-                    child: CardButton(
-                        content: "Go to Totals\nOverview",
-                        callback: () => swapCallback(Page.transactions)),
-                  ),
-                  const Spacer(),
-                  Expanded(
-                    flex: 10,
-                    child: CardButton(
-                        content: "Go to Budget\nOverview",
-                        callback: () => swapCallback(Page.transactions)),
-                  )
-                ]))
-      ],
-    );
   }
 }
