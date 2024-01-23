@@ -1,19 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
-
-final Map<Color, Color> colorMap = {
-  const Color(0xFFE08D79): Colors.black,
-  const Color(0xFFA882DD): Colors.black,
-  const Color(0xFF49416D): Colors.white,
-};
-
-List<Color> getRandomColor() {
-  int randomIndex = Random().nextInt(colorMap.length);
-  Color randomColor = colorMap.keys.elementAt(randomIndex);
-  Color randomTextColor = colorMap.values.elementAt(randomIndex);
-
-  return [randomColor, randomTextColor];
-}
 
 class HomeCard extends StatelessWidget {
   // Include a title string and a content Widget
@@ -24,12 +9,10 @@ class HomeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<Color> randomColors = getRandomColor();
-    Color randomColor = randomColors[0];
-    Color randomTextColor = randomColors[1];
+    ThemeData theme = Theme.of(context);
 
     return Card(
-      color: randomColor,
+      color: theme.colorScheme.primaryContainer,
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -41,7 +24,7 @@ class HomeCard extends StatelessWidget {
                 title,
                 style: TextStyle(
                   fontSize: 24,
-                  color: randomTextColor,
+                  color: theme.colorScheme.onPrimaryContainer,
                 ),
               ),
             ),
@@ -52,7 +35,7 @@ class HomeCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 48,
                   fontWeight: FontWeight.bold,
-                  color: randomTextColor,
+                  color: theme.colorScheme.onPrimaryContainer,
                 ),
               ),
             ),
@@ -76,32 +59,15 @@ class CardButton extends StatefulWidget {
 }
 
 class _CardButtonState extends State<CardButton> {
-  late Color randomColor;
-  late Color randomTextColor;
-
-  @override
-  void initState() {
-    super.initState();
-
-    List<Color> randomColors = getRandomColor();
-    randomColor = randomColors[0];
-    randomColor = randomColor.withOpacity(0.8);
-    randomTextColor = randomColors[1];
-  }
-
   @override
   Widget build(BuildContext context) {
+    ThemeData theme = Theme.of(context);
 
     return TextButton(
       onPressed: widget.callback,
-      onFocusChange: (value) {
-        setState(() {
-          randomColor = randomColor.withOpacity(value ? 1 : 0.5);
-        });
-      },
       style: TextButton.styleFrom(
-        backgroundColor: randomColor,
-        foregroundColor: randomTextColor,
+        backgroundColor: theme.buttonTheme.colorScheme?.primary,
+        foregroundColor: theme.buttonTheme.colorScheme?.onPrimary,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -112,7 +78,9 @@ class _CardButtonState extends State<CardButton> {
       child: FittedBox(
         fit: BoxFit.contain,
         child: Text(widget.content,
-            style: TextStyle(fontSize: widget.textSize, color: randomTextColor),
+            style: TextStyle(
+                fontSize: widget.textSize,
+                color: theme.buttonTheme.colorScheme?.onPrimary),
             textAlign: TextAlign.center),
       ),
     );

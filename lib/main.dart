@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 import 'home_card.dart';
 import 'transactions.dart';
 
@@ -18,12 +19,18 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-        title: 'Flutter Demo',
-        home: const HomePage(),
-        theme: ThemeData(
-            scaffoldBackgroundColor: const Color(0xFFE0EFDE),
-            useMaterial3: true));
+    return DynamicColorBuilder(builder: (lightDynamic, darkDynamic) {
+      return MaterialApp(
+          title: 'Flutter Demo',
+          home: const HomePage(),
+          theme: ThemeData(
+            colorScheme: lightDynamic ?? ThemeData.light().colorScheme,
+          ),
+          darkTheme: ThemeData(
+            colorScheme: darkDynamic ?? ThemeData.dark().colorScheme,
+          ),
+          themeMode: ThemeMode.system);
+    });
   }
 }
 
@@ -45,9 +52,11 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    ThemeData theme = Theme.of(context);
+
     return Scaffold(
         bottomNavigationBar: NavigationBar(
-          backgroundColor: const Color(0xFFB3F2DD),
+          backgroundColor: theme.appBarTheme.backgroundColor,
           selectedIndex: selectedIndex,
           onDestinationSelected: (value) {
             setState(() {
