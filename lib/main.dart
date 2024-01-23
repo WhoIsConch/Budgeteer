@@ -55,8 +55,21 @@ class _HomePageState extends State<HomePage> {
             });
           },
           destinations: const [
-            NavigationDestination(icon: Icon(Icons.home), label: "Home"),
-            NavigationDestination(icon: Icon(Icons.money), label: "Spending")
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              label: "Home",
+              selectedIcon: Icon(Icons.home),
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.paid_outlined),
+              selectedIcon: Icon(Icons.paid),
+              label: "Spending",
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.person_outlined),
+              selectedIcon: Icon(Icons.person),
+              label: "Account",
+            )
           ],
         ),
         body: [
@@ -70,6 +83,11 @@ class _HomePageState extends State<HomePage> {
               child: Padding(
             padding: EdgeInsets.all(16),
             child: TransactionsPage(),
+          )),
+          const SafeArea(
+              child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Text("Account"),
           ))
         ][selectedIndex]);
   }
@@ -124,14 +142,14 @@ class HomeSpread extends StatelessWidget {
                   Expanded(
                     flex: 10,
                     child: CardButton(
-                        content: "Go to Totals Overview",
+                        content: "Go to Totals\nOverview",
                         callback: () => swapCallback(Page.transactions)),
                   ),
                   const Spacer(),
                   Expanded(
                     flex: 10,
                     child: CardButton(
-                        content: "Go to Budget Overview",
+                        content: "Go to Budget\nOverview",
                         callback: () => swapCallback(Page.transactions)),
                   )
                 ]))
