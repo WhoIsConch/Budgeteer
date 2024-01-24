@@ -6,11 +6,10 @@ class TransactionsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        HomeCard(title: "Amount Spent Today", content: "\$200"),
-        TransactionList(),
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      HomeCard(title: "Amount Spent Today", content: "\$200"),
+      Text("Transactions", style: Theme.of(context).textTheme.titleLarge),
+      Expanded(child: TransactionList()),
     ]);
   }
 }
@@ -20,24 +19,25 @@ class TransactionList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(32.0),
-      child: Column(
-        children: [
-          Text("Transactions", style: Theme.of(context).textTheme.titleLarge),
-          ListView.builder(
-            itemCount: 10,
-            itemBuilder: (context, index) {
-              return ListTile(
-                leading: const Icon(Icons.monetization_on),
-                title: Text("Transaction $index"),
-                subtitle: Text("Transaction $index"),
-                trailing: const Icon(Icons.more_vert),
-              );
-            },
+    ThemeData theme = Theme.of(context);
+    return ListView.builder(
+      itemCount: 10,
+      itemBuilder: (context, index) {
+        return Padding(
+          padding: const EdgeInsets.all(4.0),
+          child: ListTile(
+            leading: const Icon(Icons.monetization_on),
+            title: Text("Transaction $index"),
+            subtitle: Text("Transaction $index"),
+            trailing: const Icon(Icons.more_vert),
+            tileColor: theme.colorScheme.secondaryContainer,
+            textColor: theme.colorScheme.onSecondaryContainer,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
