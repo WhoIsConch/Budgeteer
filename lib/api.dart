@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'package:sqflite/sqflite.dart';
 
 class Transaction {
   final int id;
@@ -28,6 +29,15 @@ class Transaction {
   String formatAmount() {
     return "\$${amount.toStringAsFixed(2)}";
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'amount': amount,
+      'date': date.toIso8601String(),
+    };
+  }
 }
 
 List<Transaction> getMockTransactions() {
@@ -49,4 +59,41 @@ List<Transaction> getMockTransactions() {
   }
 
   return transactions;
+}
+
+Future<List<Transaction>> getTransactions(Database db) async {
+  List<Map<String, dynamic>> maps = await db.query('transactions');
+  return List.generate(maps.length, (i) {
+    return Transaction(
+      maps[i]['id'],
+      maps[i]['title'],
+      maps[i]['amount'],
+      DateTime.parse(maps[i]['date']),
+    );
+  });
+}
+
+Future<void> insertTransaction(Database db, Transaction transaction) async {
+  await db.insert(
+    'transactions',
+    transaction.toMap(),
+    conflictAlgorithm: ConflictAlgorithm.replace,
+  );
+}
+
+Future<void> updateTransaction(Database db, Transaction transaction) async {
+  await db.update(
+    'transactions',
+    transaction.toMap(),
+    where: 'id = ?',
+    whereArgs: [transaction.id],
+  );
+}
+
+Future<void> deleteTransaction(Database db, int id) async {
+  await db.delete(
+    'transactions',
+    where: 'id = ?',
+    whereArgs: [id],
+  );
 }

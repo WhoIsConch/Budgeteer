@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'overview.dart';
-import 'transactions.dart';
+import 'spending_overview.dart';
 import 'tools.dart' as tools;
 
 void main() {
@@ -84,7 +84,7 @@ class _HomePageState extends State<HomePage> {
           const SafeArea(
               child: Padding(
             padding: EdgeInsets.all(16),
-            child: TransactionsPage(),
+            child: TransactionsOverview(),
           )),
           const SafeArea(
               child: Padding(
