@@ -2,15 +2,24 @@ import 'package:flutter/material.dart';
 import 'transactions_list.dart';
 
 class TransactionsPage extends StatefulWidget {
-  const TransactionsPage({super.key});
+  const TransactionsPage({super.key, this.startingDateRange});
+
+  final DateTimeRange? startingDateRange;
 
   @override
   State<TransactionsPage> createState() => _TransactionsPageState();
 }
 
 class _TransactionsPageState extends State<TransactionsPage> {
-  DateTimeRange dateRange =
-      DateTimeRange(start: DateTime.now(), end: DateTime.now());
+  late DateTimeRange dateRange;
+
+  @override
+  void initState() {
+    super.initState();
+    dateRange = widget.startingDateRange ??
+        DateTimeRange(start: DateTime.now(), end: DateTime.now());
+    ;
+  }
 
   Widget datePickerButton() {
     return TextButton(
