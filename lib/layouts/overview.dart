@@ -1,5 +1,5 @@
-import 'package:budget/home_card.dart';
-import 'tools.dart' as tools;
+import 'package:budget/components/home_card.dart';
+import 'package:budget/tools/enums.dart' as tools;
 import 'package:flutter/material.dart';
 
 class Overview extends StatelessWidget {

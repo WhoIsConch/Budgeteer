@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:dynamic_color/dynamic_color.dart';
-import 'overview.dart';
-import 'spending_overview.dart';
-import 'tools.dart' as tools;
+import 'package:budget/layouts/overview.dart';
+import 'package:budget/layouts/spending_overview.dart';
+import 'package:budget/tools/enums.dart' as tools;
 
 void main() {
   runApp(const MyApp());

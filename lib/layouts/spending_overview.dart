@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'transactions_list.dart';
-import 'transactions.dart';
+import 'package:budget/components/transactions_list.dart';
+import 'package:budget/layouts/transactions.dart';
 
 class TransactionsOverview extends StatelessWidget {
   const TransactionsOverview({super.key});

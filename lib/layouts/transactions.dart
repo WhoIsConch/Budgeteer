@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'transactions_list.dart';
+import 'package:budget/components/transactions_list.dart';
 
 class TransactionsPage extends StatefulWidget {
   const TransactionsPage({super.key, this.startingDateRange});
