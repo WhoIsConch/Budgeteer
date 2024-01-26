@@ -14,7 +14,7 @@ class _TransactionsListState extends State<TransactionsList> {
   @override
   void initState() {
     super.initState();
-    transactions = getMockTransactions();
+    transactions = emulatedTransactionCache;
   }
 
   ListTile tileFromTransaction(Transaction transaction, ThemeData theme) {

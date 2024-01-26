@@ -1,6 +1,8 @@
 import 'package:intl/intl.dart';
 import 'package:sqflite/sqflite.dart';
 
+List<Transaction> emulatedTransactionCache = [];
+
 class Transaction {
   final int id;
   final String title;
@@ -10,12 +12,15 @@ class Transaction {
   String? location;
   String? notes;
 
-  Transaction(
-    this.id,
-    this.title,
-    this.amount,
-    this.date,
-  );
+  Transaction({
+    required this.id,
+    required this.title,
+    required this.amount,
+    required this.date,
+    this.category,
+    this.location,
+    this.notes,
+  });
 
   @override
   String toString() {
@@ -38,7 +43,12 @@ class Transaction {
       'date': date.toIso8601String(),
     };
   }
+
+  void mockSave() {
+    emulatedTransactionCache.add(this);
+  }
 }
+
 
 List<Transaction> getMockTransactions() {
   List<Transaction> transactions = [];
@@ -50,10 +60,10 @@ List<Transaction> getMockTransactions() {
     DateTime date = DateTime.now().subtract(Duration(days: i));
     transactions.add(
       Transaction(
-        i,
-        "Transaction $i",
-        i * 10.0,
-        date,
+        id: i,
+        title: "Transaction $i",
+        amount: i * 10.0,
+        date: date,
       ),
     );
   }
@@ -65,10 +75,10 @@ Future<List<Transaction>> getTransactions(Database db) async {
   List<Map<String, dynamic>> maps = await db.query('transactions');
   return List.generate(maps.length, (i) {
     return Transaction(
-      maps[i]['id'],
-      maps[i]['title'],
-      maps[i]['amount'],
-      DateTime.parse(maps[i]['date']),
+      id: maps[i]['id'],
+      title: maps[i]['title'],
+      amount: maps[i]['amount'],
+      date: DateTime.parse(maps[i]['date']),
     );
   });
 }
