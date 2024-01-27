@@ -1,6 +1,7 @@
 import 'package:budget/tools/api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:budget/components/transaction_form.dart';
 
 class TransactionsList extends StatefulWidget {
   const TransactionsList({super.key});
@@ -18,43 +19,56 @@ class _TransactionsListState extends State<TransactionsList> {
     transactions = emulatedTransactionCache;
   }
 
+  void showOptionsDialog(
+      Transaction transaction, TransactionProvider transactionProvider) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text("Edit"),
+              onTap: () {
+                Navigator.pop(context);
+                showDialog(
+                    context: context,
+                    builder: (context) => TransactionManageDialog(
+                        mode: TransactionManageMode.edit,
+                        transaction: transaction));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete),
+              title: const Text("Delete"),
+              onTap: () {
+                setState(() {
+                  transactionProvider.removeTransaction(transaction);
+                });
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   ListTile tileFromTransaction(Transaction transaction, ThemeData theme,
       TransactionProvider transactionProvider) {
     return ListTile(
       leading: const Icon(Icons.monetization_on),
       title: Text("${transaction.formatAmount()} at ${transaction.title}"),
       subtitle: Text(transaction.formatDate()),
+      onTap: () => showDialog(
+          context: context,
+          builder: (context) => TransactionManageDialog(
+              mode: TransactionManageMode.edit, transaction: transaction)),
+      onLongPress: () => showOptionsDialog(transaction, transactionProvider),
       trailing: IconButton(
         icon: const Icon(Icons.more_vert),
-        onPressed: () {
-          showModalBottomSheet(
-            context: context,
-            builder: (context) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.edit),
-                    title: const Text("Edit"),
-                    onTap: () {
-                      Navigator.pop(context); // TODO: Navigate to edit page
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.delete),
-                    title: const Text("Delete"),
-                    onTap: () {
-                      setState(() {
-                        transactionProvider.removeTransaction(transaction);
-                      });
-                      Navigator.pop(context);
-                    },
-                  ),
-                ],
-              );
-            },
-          );
-        },
+        onPressed: () => showOptionsDialog(transaction, transactionProvider),
       ),
       tileColor: theme.colorScheme.secondaryContainer,
       textColor: theme.colorScheme.onSecondaryContainer,

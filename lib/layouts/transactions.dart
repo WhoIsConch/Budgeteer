@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:budget/components/transactions_list.dart';
-import 'package:budget/tools/api.dart';
-import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
+import 'package:budget/components/transaction_form.dart';
 
 class TransactionsPage extends StatefulWidget {
   const TransactionsPage({super.key, this.startingDateRange});
@@ -58,7 +56,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 await showDialog(
                     context: context,
                     builder: (context) {
-                      return const AddTransactionDialogue();
+                      return const TransactionManageDialog();
                     });
               }),
         )
@@ -72,151 +70,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class AddTransactionDialogue extends StatefulWidget {
-  const AddTransactionDialogue({super.key});
-
-  @override
-  State<AddTransactionDialogue> createState() => _AddTransactionDialogueState();
-}
-
-class _AddTransactionDialogueState extends State<AddTransactionDialogue> {
-  TextEditingController titleController = TextEditingController();
-  TextEditingController amountController = TextEditingController();
-  TextEditingController notesController = TextEditingController();
-  TextEditingController dateController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
-  DateTime selectedDate = DateTime.now();
-
-  Transaction getTransaction() {
-    Transaction transaction = Transaction(
-      id: 0,
-      title: titleController.text,
-      amount: double.parse(amountController.text),
-      date: selectedDate,
-      notes: notesController.text,
-    );
-
-    return transaction;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    dateController.text = DateFormat('MM/dd/yyyy').format(selectedDate);
-  }
-
-  @override
-  void dispose() {
-    titleController.dispose();
-    amountController.dispose();
-    notesController.dispose();
-
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text("Add Transaction"),
-      content: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                  controller: titleController,
-                  decoration: const InputDecoration(
-                    labelText: "Title",
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Please enter a title";
-                    } else if (value.length > 50) {
-                      return "Title must be less than 50 characters";
-                    }
-                    return null;
-                  }),
-              TextFormField(
-                controller: amountController,
-                decoration: const InputDecoration(
-                  labelText: "Amount",
-                ),
-                keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true, signed: true),
-                validator: ((value) {
-                  if (value == null || value.isEmpty) {
-                    return "Please enter an amount";
-                  } else if (double.tryParse(value) == null && value != "-") {
-                    return "Please enter a valid amount";
-                  }
-                  double intValue = double.parse(amountController.text);
-                  if (intValue > 100000000) {
-                    return "No way you spent that much money";
-                  }
-                  return null;
-                }),
-              ),
-              TextFormField(
-                readOnly: true,
-                controller: dateController,
-                decoration: InputDecoration(
-                  labelText: "Date",
-                  suffixIcon: IconButton(
-                      icon: const Icon(Icons.calendar_today),
-                      onPressed: () {
-                        showDatePicker(
-                          context: context,
-                          initialDate: selectedDate,
-                          firstDate: DateTime.now()
-                              .subtract(const Duration(days: 365 * 10)),
-                          lastDate: DateTime.now()
-                              .add(const Duration(days: 365 * 10)),
-                        ).then((value) {
-                          if (value != null) {
-                            setState(() {
-                              selectedDate = value;
-                              dateController.text =
-                                  DateFormat('MM/dd/yyyy').format(selectedDate);
-                            });
-                          }
-                        });
-                      }),
-                ),
-              ),
-              TextFormField(
-                controller: notesController,
-                decoration: const InputDecoration(
-                  labelText: "Notes",
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          child: const Text("Cancel"),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-        ),
-        Consumer<TransactionProvider>(
-          builder: (context, transactionProvider, child) => TextButton(
-            child: const Text("Save"),
-            onPressed: () {
-              if (_formKey.currentState!.validate()) {
-                transactionProvider.addTransaction(getTransaction());
-                Navigator.of(context).pop();
-              }
-            },
-          ),
-        ),
-      ],
     );
   }
 }
