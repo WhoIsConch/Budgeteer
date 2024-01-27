@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:budget/layouts/overview.dart';
 import 'package:budget/layouts/spending_overview.dart';
+import 'package:provider/provider.dart';
 import 'package:budget/tools/enums.dart' as tools;
+import 'package:budget/tools/api.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(ChangeNotifierProvider(
+      create: (context) => TransactionProvider(), child: const MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -81,7 +84,7 @@ class _HomePageState extends State<HomePage> {
               child: Overview(swapCallback: indexCallback),
             ),
           ),
-          const SafeArea(
+          SafeArea(
               child: Padding(
             padding: EdgeInsets.all(16),
             child: TransactionsOverview(),

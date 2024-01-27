@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -49,16 +50,33 @@ class Transaction {
   }
 }
 
-
-List<Transaction> getMockTransactions() {
+class TransactionProvider extends ChangeNotifier {
   List<Transaction> transactions = [];
 
+  void addTransaction(Transaction transaction) {
+    transactions.add(transaction);
+    notifyListeners();
+  }
+
+  void removeTransaction(Transaction transaction) {
+    transactions.remove(transaction);
+    notifyListeners();
+  }
+
+  void updateTransaction(Transaction transaction) {
+    transactions[transactions
+        .indexWhere((element) => element.id == transaction.id)] = transaction;
+    notifyListeners();
+  }
+}
+
+void createMockTransactions() {
   // When actually getting data from the API, remember to truncate names that
   // are too long to fit on the screen. Maybe like limit it to 20 characters
   // or something.
   for (int i = 0; i < 10; i++) {
     DateTime date = DateTime.now().subtract(Duration(days: i));
-    transactions.add(
+    emulatedTransactionCache.add(
       Transaction(
         id: i,
         title: "Transaction $i",
@@ -67,8 +85,6 @@ List<Transaction> getMockTransactions() {
       ),
     );
   }
-
-  return transactions;
 }
 
 Future<List<Transaction>> getTransactions(Database db) async {

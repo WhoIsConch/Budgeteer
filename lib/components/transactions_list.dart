@@ -1,5 +1,6 @@
 import 'package:budget/tools/api.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class TransactionsList extends StatefulWidget {
   const TransactionsList({super.key});
@@ -17,7 +18,8 @@ class _TransactionsListState extends State<TransactionsList> {
     transactions = emulatedTransactionCache;
   }
 
-  ListTile tileFromTransaction(Transaction transaction, ThemeData theme) {
+  ListTile tileFromTransaction(Transaction transaction, ThemeData theme,
+      TransactionProvider transactionProvider) {
     return ListTile(
       leading: const Icon(Icons.monetization_on),
       title: Text("${transaction.formatAmount()} at ${transaction.title}"),
@@ -43,7 +45,7 @@ class _TransactionsListState extends State<TransactionsList> {
                     title: const Text("Delete"),
                     onTap: () {
                       setState(() {
-                        transactions.remove(transaction);
+                        transactionProvider.removeTransaction(transaction);
                       });
                       Navigator.pop(context);
                     },
@@ -62,21 +64,26 @@ class _TransactionsListState extends State<TransactionsList> {
     );
   }
 
-  ListView getList() {
-    return ListView.builder(
-      itemCount: 10,
-      itemBuilder: (context, index) {
-        try {
-          Transaction transaction = transactions[index];
-          return Padding(
-            padding: const EdgeInsets.all(4.0),
-            child: Card(
-              child: tileFromTransaction(transaction, Theme.of(context)),
-            ),
-          );
-        } catch (e) {
-          return const SizedBox.shrink();
-        }
+  Widget getList() {
+    return Consumer<TransactionProvider>(
+      builder: (context, transactionProvider, child) {
+        return ListView.builder(
+          itemCount: transactionProvider.transactions.length,
+          itemBuilder: (context, index) {
+            try {
+              Transaction transaction = transactionProvider.transactions[index];
+              return Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Card(
+                  child: tileFromTransaction(
+                      transaction, Theme.of(context), transactionProvider),
+                ),
+              );
+            } catch (e) {
+              return const SizedBox.shrink();
+            }
+          },
+        );
       },
     );
   }

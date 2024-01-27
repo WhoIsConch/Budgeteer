@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:budget/components/transactions_list.dart';
 import 'package:budget/tools/api.dart';
-import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 class TransactionsPage extends StatefulWidget {
@@ -90,10 +90,9 @@ class _AddTransactionDialogueState extends State<AddTransactionDialogue> {
   TextEditingController notesController = TextEditingController();
   TextEditingController dateController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  // TODO: Update state of things when a new transaction is added
   DateTime selectedDate = DateTime.now();
 
-  void saveTransaction() {
+  Transaction getTransaction() {
     Transaction transaction = Transaction(
       id: 0,
       title: titleController.text,
@@ -102,7 +101,7 @@ class _AddTransactionDialogueState extends State<AddTransactionDialogue> {
       notes: notesController.text,
     );
 
-    transaction.mockSave();
+    return transaction;
   }
 
   @override
@@ -126,73 +125,74 @@ class _AddTransactionDialogueState extends State<AddTransactionDialogue> {
       title: const Text("Add Transaction"),
       content: Form(
         key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: titleController,
-              decoration: const InputDecoration(
-                labelText: "Title",
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return "Please enter a title";
-                } else if (value.length > 50) {
-                  return "Title must be less than 50 characters";
-                }
-                return null;
-              }
-            ),
-            TextFormField(
-              controller: amountController,
-              decoration: InputDecoration(
-                labelText: "Amount",
-              ),
-              keyboardType: 
-                TextInputType.numberWithOptions(decimal: true, signed: true),
-              validator: ((value) {
-                if (value == null || value.isEmpty) {
-                  return "Please enter an amount";
-                } else if (double.tryParse(value) == null && value != "-") {
-                  return "Please enter a valid amount";
-                }
-                return null;
-              }),
-            ),
-            TextFormField(
-              readOnly: true,
-              controller: dateController,
-              decoration: InputDecoration(
-                labelText: "Date",
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.calendar_today),
-                  onPressed: () {
-                    showDatePicker(
-                      context: context,
-                      initialDate: selectedDate,
-                      firstDate:
-                          DateTime.now().subtract(const Duration(days: 365 * 10)),
-                      lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
-                    ).then((value) {
-                      if (value != null) {
-                        setState(() {
-                          selectedDate = value;
-                          dateController.text =
-                              DateFormat('MM/dd/yyyy').format(selectedDate);
-                        });
-                      }
-                    });
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    labelText: "Title",
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Please enter a title";
+                    } else if (value.length > 50) {
+                      return "Title must be less than 50 characters";
+                    }
+                    return null;
+                  }),
+              TextFormField(
+                controller: amountController,
+                decoration: InputDecoration(
+                  labelText: "Amount",
+                ),
+                keyboardType: TextInputType.numberWithOptions(
+                    decimal: true, signed: true),
+                validator: ((value) {
+                  if (value == null || value.isEmpty) {
+                    return "Please enter an amount";
+                  } else if (double.tryParse(value) == null && value != "-") {
+                    return "Please enter a valid amount";
                   }
+                  return null;
+                }),
+              ),
+              TextFormField(
+                readOnly: true,
+                controller: dateController,
+                decoration: InputDecoration(
+                  labelText: "Date",
+                  suffixIcon: IconButton(
+                      icon: const Icon(Icons.calendar_today),
+                      onPressed: () {
+                        showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime.now()
+                              .subtract(const Duration(days: 365 * 10)),
+                          lastDate: DateTime.now()
+                              .add(const Duration(days: 365 * 10)),
+                        ).then((value) {
+                          if (value != null) {
+                            setState(() {
+                              selectedDate = value;
+                              dateController.text =
+                                  DateFormat('MM/dd/yyyy').format(selectedDate);
+                            });
+                          }
+                        });
+                      }),
                 ),
               ),
-            ),
-            TextFormField(
-              controller: notesController,
-              decoration: const InputDecoration(
-                labelText: "Notes",
+              TextFormField(
+                controller: notesController,
+                decoration: const InputDecoration(
+                  labelText: "Notes",
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       actions: [
@@ -202,17 +202,18 @@ class _AddTransactionDialogueState extends State<AddTransactionDialogue> {
             Navigator.of(context).pop();
           },
         ),
-        TextButton(
-          child: const Text("Save"),
-          onPressed: () {
-            if (_formKey.currentState!.validate()) {
-              saveTransaction();
-              Navigator.of(context).pop();
-            }
-          },
+        Consumer<TransactionProvider>(
+          builder: (context, transactionProvider, child) => TextButton(
+            child: const Text("Save"),
+            onPressed: () {
+              if (_formKey.currentState!.validate()) {
+                transactionProvider.addTransaction(getTransaction());
+                Navigator.of(context).pop();
+              }
+            },
+          ),
         ),
       ],
     );
   }
 }
-
