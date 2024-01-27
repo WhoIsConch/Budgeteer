@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:budget/components/transactions_list.dart';
+import 'package:budget/components/transaction_form.dart';
 
 class TransactionsPage extends StatefulWidget {
   const TransactionsPage({super.key, this.startingDateRange});
@@ -18,7 +19,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
     super.initState();
     dateRange = widget.startingDateRange ??
         DateTimeRange(start: DateTime.now(), end: DateTime.now());
-    ;
   }
 
   Widget datePickerButton() {
@@ -50,7 +50,15 @@ class _TransactionsPageState extends State<TransactionsPage> {
       appBar: AppBar(title: const Text("Transactions"), actions: [
         Padding(
           padding: const EdgeInsets.fromLTRB(0, 0, 4, 0),
-          child: IconButton(icon: const Icon(Icons.add), onPressed: () {}),
+          child: IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () async {
+                await showDialog(
+                    context: context,
+                    builder: (context) {
+                      return const TransactionManageDialog();
+                    });
+              }),
         )
       ]),
       body: Center(
