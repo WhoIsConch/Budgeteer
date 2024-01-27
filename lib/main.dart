@@ -84,7 +84,7 @@ class _HomePageState extends State<HomePage> {
               child: Overview(swapCallback: indexCallback),
             ),
           ),
-          SafeArea(
+          const SafeArea(
               child: Padding(
             padding: EdgeInsets.all(16),
             child: TransactionsOverview(),

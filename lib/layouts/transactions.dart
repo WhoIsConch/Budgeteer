@@ -21,7 +21,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
     super.initState();
     dateRange = widget.startingDateRange ??
         DateTimeRange(start: DateTime.now(), end: DateTime.now());
-    ;
   }
 
   Widget datePickerButton() {
@@ -59,7 +58,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 await showDialog(
                     context: context,
                     builder: (context) {
-                      return AddTransactionDialogue();
+                      return const AddTransactionDialogue();
                     });
               }),
         )
@@ -144,10 +143,10 @@ class _AddTransactionDialogueState extends State<AddTransactionDialogue> {
                   }),
               TextFormField(
                 controller: amountController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: "Amount",
                 ),
-                keyboardType: TextInputType.numberWithOptions(
+                keyboardType: const TextInputType.numberWithOptions(
                     decimal: true, signed: true),
                 validator: ((value) {
                   if (value == null || value.isEmpty) {
