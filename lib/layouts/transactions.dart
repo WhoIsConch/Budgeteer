@@ -12,34 +12,37 @@ class TransactionsPage extends StatefulWidget {
 }
 
 class _TransactionsPageState extends State<TransactionsPage> {
-  late DateTimeRange dateRange;
+  DateTimeRange? dateRange;
 
   @override
   void initState() {
     super.initState();
-    dateRange = widget.startingDateRange ??
-        DateTimeRange(start: DateTime.now(), end: DateTime.now());
   }
 
   Widget datePickerButton() {
+    String buttonText = "All Transactions";
+
+    if (dateRange != null) {
+      buttonText =
+          "${dateRange!.start.month}/${dateRange!.start.day}/${dateRange!.start.year} - ${dateRange!.end.month}/${dateRange!.end.day}/${dateRange!.end.year}";
+    }
+
     return TextButton(
-        child: Text(
-            "${dateRange.start.month}/${dateRange.start.day}/${dateRange.start.year} - ${dateRange.end.month}/${dateRange.end.day}/${dateRange.end.year}",
+        child: Text(buttonText,
             style: TextStyle(
               fontSize: Theme.of(context).textTheme.headlineSmall!.fontSize,
             )),
         onPressed: () {
           showDateRangePicker(
                   context: context,
+                  initialDateRange: dateRange,
                   firstDate:
                       DateTime.now().subtract(const Duration(days: 365 * 10)),
                   lastDate: DateTime.now())
               .then((value) {
-            if (value != null) {
-              setState(() {
-                dateRange = value;
-              });
-            }
+            setState(() {
+              dateRange = value;
+            });
           });
         });
   }
