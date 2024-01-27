@@ -155,6 +155,10 @@ class _AddTransactionDialogueState extends State<AddTransactionDialogue> {
                   } else if (double.tryParse(value) == null && value != "-") {
                     return "Please enter a valid amount";
                   }
+                  double intValue = double.parse(amountController.text);
+                  if (intValue > 100000000) {
+                    return "No way you spent that much money";
+                  }
                   return null;
                 }),
               ),
