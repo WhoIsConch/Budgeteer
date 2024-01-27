@@ -5,9 +5,10 @@ import 'package:budget/components/transaction_form.dart';
 import 'package:budget/tools/enums.dart';
 
 class TransactionsList extends StatefulWidget {
-  const TransactionsList({super.key, this.dateRange});
+  const TransactionsList({super.key, this.dateRange, this.type});
 
   final DateTimeRange? dateRange;
+  final TransactionType? type;
 
   @override
   State<TransactionsList> createState() => _TransactionsListState();
@@ -77,6 +78,16 @@ class _TransactionsListState extends State<TransactionsList> {
     return Consumer<TransactionProvider>(
       builder: (context, transactionProvider, child) {
         List<Transaction> transactions = transactionProvider.transactions;
+
+        if (widget.type == TransactionType.expense) {
+          transactions = transactions.where((transaction) {
+            return transaction.type == TransactionType.expense;
+          }).toList();
+        } else if (widget.type == TransactionType.income) {
+          transactions = transactions.where((transaction) {
+            return transaction.type == TransactionType.income;
+          }).toList();
+        }
 
         if (widget.dateRange != null) {
           transactions = transactions.where((transaction) {

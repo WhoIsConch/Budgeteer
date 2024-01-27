@@ -3,6 +3,7 @@ import 'package:budget/components/transactions_list.dart';
 import 'package:budget/layouts/transactions.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/tools/api.dart';
+import 'package:budget/tools/enums.dart';
 
 class TransactionsOverview extends StatefulWidget {
   const TransactionsOverview({super.key});
@@ -97,7 +98,13 @@ class _OverviewHeaderState extends State<OverviewHeader> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const TransactionsPage(),
+              builder: (context) => TransactionsPage(
+                startingDateRange: DateTimeRange(
+                  start: DateTime.now(),
+                  end: DateTime.now(),
+                ),
+                type: TransactionType.expense,
+              ),
             ),
           );
         },
@@ -110,7 +117,13 @@ class _OverviewHeaderState extends State<OverviewHeader> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const TransactionsPage(),
+              builder: (context) => TransactionsPage(
+                startingDateRange: DateTimeRange(
+                  start: DateTime.now(),
+                  end: DateTime.now(),
+                ),
+                type: TransactionType.income,
+              ),
             ),
           );
         },
@@ -131,6 +144,7 @@ class _OverviewHeaderState extends State<OverviewHeader> {
                   start: startOfMonth,
                   end: now,
                 ),
+                type: TransactionType.expense,
               );
             }),
           );
@@ -152,6 +166,7 @@ class _OverviewHeaderState extends State<OverviewHeader> {
                   start: startOfMonth,
                   end: now,
                 ),
+                type: TransactionType.income,
               );
             }),
           );
@@ -178,9 +193,32 @@ class _OverviewHeaderState extends State<OverviewHeader> {
                     start: startOfWeek,
                     end: now,
                   ),
+                  type: TransactionType.expense,
                 );
               }),
             );
+          }),
+      OverviewCard(
+          title: "Earned this week",
+          content:
+              "\$${transactionProvider.getAmountEarned(DateTimeRange(start: DateTime.now().subtract(
+                    Duration(days: DateTime.now().weekday - 1),
+                  ), end: DateTime.now())).toStringAsFixed(2)}",
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) {
+              DateTime now = DateTime.now();
+              DateTime startOfWeek = now.subtract(
+                Duration(days: now.weekday - 1),
+              );
+
+              return TransactionsPage(
+                startingDateRange: DateTimeRange(
+                  start: startOfWeek,
+                  end: now,
+                ),
+                type: TransactionType.income,
+              );
+            }));
           }),
       OverviewCard(
         title: "Spent This Year",
@@ -198,6 +236,29 @@ class _OverviewHeaderState extends State<OverviewHeader> {
                   start: startOfYear,
                   end: now,
                 ),
+                type: TransactionType.expense,
+              );
+            }),
+          );
+        },
+      ),
+      OverviewCard(
+        title: "Earned this year",
+        content:
+            "\$${transactionProvider.getAmountEarned(DateTimeRange(start: DateTime(DateTime.now().year), end: DateTime.now())).toStringAsFixed(2)}",
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) {
+              DateTime now = DateTime.now();
+              DateTime startOfYear = DateTime(now.year);
+
+              return TransactionsPage(
+                startingDateRange: DateTimeRange(
+                  start: startOfYear,
+                  end: now,
+                ),
+                type: TransactionType.income,
               );
             }),
           );

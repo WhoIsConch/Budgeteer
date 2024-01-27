@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:budget/components/transactions_list.dart';
 import 'package:budget/components/transaction_form.dart';
+import 'package:budget/tools/enums.dart';
 
 class TransactionsPage extends StatefulWidget {
-  const TransactionsPage({super.key, this.startingDateRange});
+  const TransactionsPage({super.key, this.startingDateRange, this.type});
 
   final DateTimeRange? startingDateRange;
+  final TransactionType? type;
 
   @override
   State<TransactionsPage> createState() => _TransactionsPageState();
@@ -14,17 +16,15 @@ class TransactionsPage extends StatefulWidget {
 class _TransactionsPageState extends State<TransactionsPage> {
   DateTimeRange? dateRange;
 
-  @override
-  void initState() {
-    super.initState();
-  }
-
   Widget datePickerButton() {
     String buttonText = "All Transactions";
 
     if (dateRange != null) {
       buttonText =
           "${dateRange!.start.month}/${dateRange!.start.day}/${dateRange!.start.year} - ${dateRange!.end.month}/${dateRange!.end.day}/${dateRange!.end.year}";
+    } else if (widget.startingDateRange != null) {
+      buttonText =
+          "${widget.startingDateRange!.start.month}/${widget.startingDateRange!.start.day}/${widget.startingDateRange!.start.year} - ${widget.startingDateRange!.end.month}/${widget.startingDateRange!.end.day}/${widget.startingDateRange!.end.year}";
     }
 
     return TextButton(
@@ -69,7 +69,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             datePickerButton(),
-            Expanded(child: TransactionsList(dateRange: dateRange)),
+            Expanded(
+                child: TransactionsList(
+                    dateRange: dateRange ?? widget.startingDateRange,
+                    type: widget.type)),
           ],
         ),
       ),
