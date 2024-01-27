@@ -76,8 +76,9 @@ class TransactionProvider extends ChangeNotifier {
       if (transaction.date
               .isAfter(dateRange.start.subtract(const Duration(days: 1))) &&
           transaction.date
-              .isBefore(dateRange.end.add(const Duration(days: 1)))) {
-        amountSpent += transaction.amount;
+              .isBefore(dateRange.end.add(const Duration(days: 1))) &&
+          transaction.amount < 0) {
+        amountSpent -= transaction.amount;
       }
     }
 
