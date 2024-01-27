@@ -8,4 +8,10 @@ enum PageType {
 
 enum TransactionManageMode { add, edit }
 
-enum TransactionType { expense, income }
+enum TransactionType {
+  expense(0),
+  income(1);
+
+  const TransactionType(this.value);
+  final int value;
+}

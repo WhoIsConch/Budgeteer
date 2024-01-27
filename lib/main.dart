@@ -7,8 +7,12 @@ import 'package:budget/tools/enums.dart' as tools;
 import 'package:budget/tools/api.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  final provider = TransactionProvider();
+  provider.loadTransactions();
+
   runApp(ChangeNotifierProvider(
-      create: (context) => TransactionProvider(), child: const MyApp()));
+      create: (context) => provider, child: const MyApp()));
 }
 
 class MyApp extends StatelessWidget {

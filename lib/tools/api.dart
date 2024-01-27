@@ -1,22 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:budget/tools/enums.dart';
-
-List<Transaction> emulatedTransactionCache = [];
-int emulatedTransactionId = 0;
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
 
 class Transaction {
-  final int id;
   final String title;
   final double amount;
   final DateTime date;
   final TransactionType type;
+  int? id;
   String? category;
   String? location;
   String? notes;
 
   Transaction({
-    required this.id,
+    this.id,
     required this.title,
     required this.amount,
     required this.date,
@@ -45,31 +44,55 @@ class Transaction {
       'title': title,
       'amount': amount,
       'date': date.toIso8601String(),
+      'type': type.value,
+      'category': category,
+      'location': location,
+      'notes': notes,
     };
   }
 
-  void mockSave() {
-    emulatedTransactionCache.add(this);
+  static Transaction fromMap(Map<String, dynamic> map) {
+    return Transaction(
+      id: map['id'],
+      title: map['title'],
+      amount: map['amount'],
+      date: DateTime.parse(map['date']),
+      type: TransactionType.values[map['type']],
+      category: map['category'],
+      location: map['location'],
+      notes: map['notes'],
+    );
   }
 }
 
 class TransactionProvider extends ChangeNotifier {
   List<Transaction> transactions = [];
 
-  void addTransaction(Transaction transaction) {
-    transactions.add(transaction);
+  void loadTransactions() async {
+    transactions = await APIDatabase.transactions();
     notifyListeners();
+  }
+
+  void addTransaction(Transaction transaction) {
+    APIDatabase.insertTransaction(transaction).then((value) {
+      transactions.add(transaction);
+      notifyListeners();
+    });
   }
 
   void removeTransaction(Transaction transaction) {
-    transactions.remove(transaction);
-    notifyListeners();
+    APIDatabase.deleteTransaction(transaction).then((value) {
+      transactions.remove(transaction);
+      notifyListeners();
+    });
   }
 
   void updateTransaction(Transaction transaction) {
-    transactions[transactions
-        .indexWhere((element) => element.id == transaction.id)] = transaction;
-    notifyListeners();
+    APIDatabase.updateTransaction(transaction).then((value) {
+      transactions[transactions
+          .indexWhere((element) => element.id == transaction.id)] = transaction;
+      notifyListeners();
+    });
   }
 
   double getAmountSpent(DateTimeRange dateRange) {
@@ -105,20 +128,57 @@ class TransactionProvider extends ChangeNotifier {
   }
 }
 
-void createMockTransactions() {
-  // When actually getting data from the API, remember to truncate names that
-  // are too long to fit on the screen. Maybe like limit it to 20 characters
-  // or something.
-  for (int i = 0; i < 10; i++) {
-    DateTime date = DateTime.now().subtract(Duration(days: i));
-    emulatedTransactionCache.add(
-      Transaction(
-        id: i,
-        title: "Transaction $i",
-        amount: i * 10.0,
-        date: date,
-        type: TransactionType.expense,
-      ),
+class APIDatabase {
+  static Future<Database> database() async {
+    return openDatabase(
+      join(await getDatabasesPath(), 'budget.db'),
+      onCreate: (db, version) {
+        return db.execute(
+          'CREATE TABLE transactions(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, amount REAL, date TEXT, type INTEGER, category TEXT, location TEXT, notes TEXT)',
+        );
+      },
+      version: 1,
+    );
+  }
+
+  static Future<void> insertTransaction(Transaction transaction) async {
+    final Database db = await database();
+
+    await db.insert(
+      'transactions',
+      transaction.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  static Future<List<Transaction>> transactions() async {
+    final Database db = await database();
+
+    final List<Map<String, dynamic>> maps = await db.query('transactions');
+
+    return List.generate(maps.length, (i) {
+      return Transaction.fromMap(maps[i]);
+    });
+  }
+
+  static Future<void> updateTransaction(Transaction transaction) async {
+    final db = await database();
+
+    await db.update(
+      'transactions',
+      transaction.toMap(),
+      where: 'id = ?',
+      whereArgs: [transaction.id],
+    );
+  }
+
+  static Future<void> deleteTransaction(Transaction transaction) async {
+    final db = await database();
+
+    await db.delete(
+      'transactions',
+      where: 'id = ?',
+      whereArgs: [transaction.id],
     );
   }
 }

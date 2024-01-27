@@ -28,7 +28,7 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
 
   Transaction getTransaction() {
     Transaction transaction = Transaction(
-      id: widget.transaction?.id ?? emulatedTransactionId++,
+      id: widget.transaction?.id,
       title: titleController.text,
       amount: double.parse(amountController.text),
       date: selectedDate,
