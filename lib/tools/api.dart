@@ -68,6 +68,21 @@ class TransactionProvider extends ChangeNotifier {
         .indexWhere((element) => element.id == transaction.id)] = transaction;
     notifyListeners();
   }
+
+  double getAmountSpent(DateTimeRange dateRange) {
+    double amountSpent = 0.0;
+
+    for (Transaction transaction in transactions) {
+      if (transaction.date
+              .isAfter(dateRange.start.subtract(const Duration(days: 1))) &&
+          transaction.date
+              .isBefore(dateRange.end.add(const Duration(days: 1)))) {
+        amountSpent += transaction.amount;
+      }
+    }
+
+    return amountSpent;
+  }
 }
 
 void createMockTransactions() {

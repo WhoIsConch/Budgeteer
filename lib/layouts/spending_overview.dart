@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:budget/components/transactions_list.dart';
 import 'package:budget/layouts/transactions.dart';
+import 'package:provider/provider.dart';
+import 'package:budget/tools/api.dart';
 
 class TransactionsOverview extends StatelessWidget {
   const TransactionsOverview({super.key});
@@ -43,7 +45,7 @@ class TransactionsOverview extends StatelessWidget {
   }
 }
 
-class OverviewHeader extends StatelessWidget {
+class OverviewHeader extends StatefulWidget {
   /* 
   OverviewHeader is a section at the top of the page with a 2x2 grid of 
   cards that hold information about the user's spending. These cards are:
@@ -55,107 +57,122 @@ class OverviewHeader extends StatelessWidget {
   const OverviewHeader({super.key});
 
   @override
+  State<OverviewHeader> createState() => _OverviewHeaderState();
+}
+
+class _OverviewHeaderState extends State<OverviewHeader> {
+  @override
   Widget build(BuildContext context) {
     // When making this stateful, make sure the numbers update when the user
     // adds a new transaction. Also make sure the numbers do not overflow,
     // possibly replace some if they get too big (eg. $1000.00 > $1.0k)
-    return Card(
-        child: Column(children: [
-      Expanded(
-        child: Row(
-          children: [
-            Expanded(
-              child: OverviewCard(
-                title: "Spent Today",
-                content: "\$0.00",
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const TransactionsPage(),
-                    ),
-                  );
-                },
-              ),
-            ),
-            Expanded(
-              child: OverviewCard(
-                  title: "Spent This Week",
-                  content: "\$0.00",
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) {
-                        // TODO: Setting that changes the start of the week
-                        DateTime now = DateTime.now();
-                        DateTime startOfWeek = now.subtract(
-                          Duration(days: now.weekday - 1),
-                        );
+    return Consumer<TransactionProvider>(
+      builder: (context, transactionProvider, child) {
+        return Card(
+            child: Column(children: [
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(
+                  child: OverviewCard(
+                    title: "Spent Today",
+                    content:
+                        "\$${transactionProvider.getAmountSpent(DateTimeRange(start: DateTime.now(), end: DateTime.now())).toStringAsFixed(2)}",
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const TransactionsPage(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: OverviewCard(
+                      title: "Spent This Week",
+                      content:
+                          "\$${transactionProvider.getAmountSpent(DateTimeRange(start: DateTime.now().subtract(
+                                Duration(days: DateTime.now().weekday - 1),
+                              ), end: DateTime.now())).toStringAsFixed(2)}",
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) {
+                            // TODO: Setting that changes the start of the week
+                            DateTime now = DateTime.now();
+                            DateTime startOfWeek = now.subtract(
+                              Duration(days: now.weekday - 1),
+                            );
 
-                        return TransactionsPage(
-                          startingDateRange: DateTimeRange(
-                            start: startOfWeek,
-                            end: now,
-                          ),
+                            return TransactionsPage(
+                              startingDateRange: DateTimeRange(
+                                start: startOfWeek,
+                                end: now,
+                              ),
+                            );
+                          }),
                         );
                       }),
-                    );
-                  }),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-      Expanded(
-        child: Row(
-          children: [
-            Expanded(
-              child: OverviewCard(
-                title: "Spent This Month",
-                content: "\$0.00",
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) {
-                      DateTime now = DateTime.now();
-                      DateTime startOfMonth = DateTime(now.year, now.month);
+          ),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(
+                  child: OverviewCard(
+                    title: "Spent This Month",
+                    content:
+                        "\$${transactionProvider.getAmountSpent(DateTimeRange(start: DateTime(DateTime.now().year, DateTime.now().month), end: DateTime.now())).toStringAsFixed(2)}",
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) {
+                          DateTime now = DateTime.now();
+                          DateTime startOfMonth = DateTime(now.year, now.month);
 
-                      return TransactionsPage(
-                        startingDateRange: DateTimeRange(
-                          start: startOfMonth,
-                          end: now,
-                        ),
+                          return TransactionsPage(
+                            startingDateRange: DateTimeRange(
+                              start: startOfMonth,
+                              end: now,
+                            ),
+                          );
+                        }),
                       );
-                    }),
-                  );
-                },
-              ),
-            ),
-            Expanded(
-              child: OverviewCard(
-                title: "Spent This Year",
-                content: "\$0.00",
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) {
-                      DateTime now = DateTime.now();
-                      DateTime startOfYear = DateTime(now.year);
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: OverviewCard(
+                    title: "Spent This Year",
+                    content:
+                        "\$${transactionProvider.getAmountSpent(DateTimeRange(start: DateTime(DateTime.now().year), end: DateTime.now())).toStringAsFixed(2)}",
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) {
+                          DateTime now = DateTime.now();
+                          DateTime startOfYear = DateTime(now.year);
 
-                      return TransactionsPage(
-                        startingDateRange: DateTimeRange(
-                          start: startOfYear,
-                          end: now,
-                        ),
+                          return TransactionsPage(
+                            startingDateRange: DateTimeRange(
+                              start: startOfYear,
+                              end: now,
+                            ),
+                          );
+                        }),
                       );
-                    }),
-                  );
-                },
-              ),
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      )
-    ]));
+          )
+        ]));
+      },
+    );
   }
 }
 
