@@ -66,7 +66,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             datePickerButton(),
-            const Expanded(child: TransactionsList()),
+            Expanded(child: TransactionsList(dateRange: dateRange)),
           ],
         ),
       ),

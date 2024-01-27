@@ -4,21 +4,15 @@ import 'package:provider/provider.dart';
 import 'package:budget/components/transaction_form.dart';
 
 class TransactionsList extends StatefulWidget {
-  const TransactionsList({super.key});
+  const TransactionsList({super.key, this.dateRange});
+
+  final DateTimeRange? dateRange;
 
   @override
   State<TransactionsList> createState() => _TransactionsListState();
 }
 
 class _TransactionsListState extends State<TransactionsList> {
-  late List<Transaction> transactions;
-
-  @override
-  void initState() {
-    super.initState();
-    transactions = emulatedTransactionCache;
-  }
-
   void showOptionsDialog(
       Transaction transaction, TransactionProvider transactionProvider) {
     showModalBottomSheet(
@@ -81,11 +75,22 @@ class _TransactionsListState extends State<TransactionsList> {
   Widget getList() {
     return Consumer<TransactionProvider>(
       builder: (context, transactionProvider, child) {
+        List<Transaction> transactions = transactionProvider.transactions;
+
+        if (widget.dateRange != null) {
+          transactions = transactions.where((transaction) {
+            return transaction.date.isAfter(widget.dateRange!.start
+                    .subtract(const Duration(days: 1))) &&
+                transaction.date.isBefore(
+                    widget.dateRange!.end.add(const Duration(days: 1)));
+          }).toList();
+        }
+
         return ListView.builder(
-          itemCount: transactionProvider.transactions.length,
+          itemCount: transactions.length,
           itemBuilder: (context, index) {
             try {
-              Transaction transaction = transactionProvider.transactions[index];
+              Transaction transaction = transactions[index];
               return Padding(
                 padding: const EdgeInsets.all(4.0),
                 child: Card(
