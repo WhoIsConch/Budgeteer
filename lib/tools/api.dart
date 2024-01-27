@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:budget/tools/enums.dart';
 
 List<Transaction> emulatedTransactionCache = [];
+int emulatedTransactionId = 0;
 
 class Transaction {
   final int id;
   final String title;
   final double amount;
   final DateTime date;
+  final TransactionType type;
   String? category;
   String? location;
   String? notes;
@@ -18,6 +20,7 @@ class Transaction {
     required this.title,
     required this.amount,
     required this.date,
+    required this.type,
     this.category,
     this.location,
     this.notes,
@@ -77,8 +80,8 @@ class TransactionProvider extends ChangeNotifier {
               .isAfter(dateRange.start.subtract(const Duration(days: 1))) &&
           transaction.date
               .isBefore(dateRange.end.add(const Duration(days: 1))) &&
-          transaction.amount < 0) {
-        amountSpent -= transaction.amount;
+          transaction.type == TransactionType.expense) {
+        amountSpent += transaction.amount;
       }
     }
 
@@ -93,7 +96,7 @@ class TransactionProvider extends ChangeNotifier {
               .isAfter(dateRange.start.subtract(const Duration(days: 1))) &&
           transaction.date
               .isBefore(dateRange.end.add(const Duration(days: 1))) &&
-          transaction.amount > 0) {
+          transaction.type == TransactionType.income) {
         amountEarned += transaction.amount;
       }
     }
@@ -114,44 +117,8 @@ void createMockTransactions() {
         title: "Transaction $i",
         amount: i * 10.0,
         date: date,
+        type: TransactionType.expense,
       ),
     );
   }
-}
-
-Future<List<Transaction>> getTransactions(Database db) async {
-  List<Map<String, dynamic>> maps = await db.query('transactions');
-  return List.generate(maps.length, (i) {
-    return Transaction(
-      id: maps[i]['id'],
-      title: maps[i]['title'],
-      amount: maps[i]['amount'],
-      date: DateTime.parse(maps[i]['date']),
-    );
-  });
-}
-
-Future<void> insertTransaction(Database db, Transaction transaction) async {
-  await db.insert(
-    'transactions',
-    transaction.toMap(),
-    conflictAlgorithm: ConflictAlgorithm.replace,
-  );
-}
-
-Future<void> updateTransaction(Database db, Transaction transaction) async {
-  await db.update(
-    'transactions',
-    transaction.toMap(),
-    where: 'id = ?',
-    whereArgs: [transaction.id],
-  );
-}
-
-Future<void> deleteTransaction(Database db, int id) async {
-  await db.delete(
-    'transactions',
-    where: 'id = ?',
-    whereArgs: [id],
-  );
 }

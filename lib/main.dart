@@ -40,7 +40,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int selectedIndex = 0;
 
-  void indexCallback(tools.Page page) {
+  void indexCallback(tools.PageType page) {
     setState(() {
       selectedIndex = page.value;
     });

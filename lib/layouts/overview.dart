@@ -52,14 +52,16 @@ class Overview extends StatelessWidget {
                     flex: 10,
                     child: CardButton(
                         content: "Go to Totals\nOverview",
-                        callback: () => swapCallback(tools.Page.transactions)),
+                        callback: () =>
+                            swapCallback(tools.PageType.transactions)),
                   ),
                   const Spacer(),
                   Expanded(
                     flex: 10,
                     child: CardButton(
                         content: "Go to Budget\nOverview",
-                        callback: () => swapCallback(tools.Page.transactions)),
+                        callback: () =>
+                            swapCallback(tools.PageType.transactions)),
                   )
                 ]))
       ],

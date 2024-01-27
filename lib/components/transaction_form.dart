@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/tools/api.dart';
+import 'package:budget/tools/enums.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:intl/intl.dart';
-
-enum TransactionManageMode { add, edit }
 
 class TransactionManageDialog extends StatefulWidget {
   const TransactionManageDialog(
@@ -25,14 +24,16 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
   TextEditingController dateController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   DateTime selectedDate = DateTime.now();
+  TransactionType selectedType = TransactionType.expense;
 
   Transaction getTransaction() {
     Transaction transaction = Transaction(
-      id: widget.transaction?.id ?? 0,
+      id: widget.transaction?.id ?? emulatedTransactionId++,
       title: titleController.text,
       amount: double.parse(amountController.text),
       date: selectedDate,
       notes: notesController.text,
+      type: selectedType,
     );
 
     return transaction;
@@ -49,6 +50,7 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
       notesController.text = widget.transaction!.notes ?? "";
       selectedDate = widget.transaction!.date;
       dateController.text = DateFormat('MM/dd/yyyy').format(selectedDate);
+      selectedType = widget.transaction!.type;
     }
   }
 
@@ -111,6 +113,28 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
           labelText: "Notes",
         ),
       ),
+      Row(children: [
+        Radio<TransactionType>(
+          value: TransactionType.expense,
+          groupValue: selectedType,
+          onChanged: (TransactionType? value) {
+            setState(() {
+              selectedType = value!;
+            });
+          },
+        ),
+        const Text("Expense"),
+        Radio<TransactionType>(
+          value: TransactionType.income,
+          groupValue: selectedType,
+          onChanged: (TransactionType? value) {
+            setState(() {
+              selectedType = value!;
+            });
+          },
+        ),
+        const Text("Income"),
+      ]),
     ];
     Widget title = const Text("Add Transaction");
 

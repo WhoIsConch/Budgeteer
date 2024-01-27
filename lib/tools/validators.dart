@@ -1,12 +1,15 @@
 String? validateAmount(value) {
   if (value == null || value.isEmpty) {
     return "Please enter an amount";
-  } else if (double.tryParse(value) == null && value != "-") {
+  } else if (double.tryParse(value) == null) {
     return "Please enter a valid amount";
   }
   double intValue = double.parse(value);
   if (intValue > 100000000) {
-    return "No way you spent that much money";
+    return "No way you have that much money";
+  }
+  if (intValue < 0) {
+    return "Please enter a positive amount";
   }
   return null;
 }

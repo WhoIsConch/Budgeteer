@@ -2,6 +2,7 @@ import 'package:budget/tools/api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/components/transaction_form.dart';
+import 'package:budget/tools/enums.dart';
 
 class TransactionsList extends StatefulWidget {
   const TransactionsList({super.key, this.dateRange});
