@@ -84,6 +84,22 @@ class TransactionProvider extends ChangeNotifier {
 
     return amountSpent;
   }
+
+  double getAmountEarned(DateTimeRange dateRange) {
+    double amountEarned = 0.0;
+
+    for (Transaction transaction in transactions) {
+      if (transaction.date
+              .isAfter(dateRange.start.subtract(const Duration(days: 1))) &&
+          transaction.date
+              .isBefore(dateRange.end.add(const Duration(days: 1))) &&
+          transaction.amount > 0) {
+        amountEarned += transaction.amount;
+      }
+    }
+
+    return amountEarned;
+  }
 }
 
 void createMockTransactions() {
