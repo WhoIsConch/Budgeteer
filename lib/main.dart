@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:budget/layouts/overview.dart';
 import 'package:budget/layouts/spending_overview.dart';
@@ -11,8 +12,11 @@ void main() {
   final provider = TransactionProvider();
   provider.loadTransactions();
 
-  runApp(ChangeNotifierProvider(
-      create: (context) => provider, child: const MyApp()));
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
+      .then(((value) {
+    runApp(ChangeNotifierProvider(
+        create: (context) => provider, child: const MyApp()));
+  }));
 }
 
 class MyApp extends StatelessWidget {
