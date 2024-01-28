@@ -27,6 +27,7 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
   TransactionType selectedType = TransactionType.expense;
 
   Transaction getTransaction() {
+    // Create a transaction based on the data in the form
     Transaction transaction = Transaction(
       id: widget.transaction?.id,
       title: titleController.text,
@@ -44,6 +45,7 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
     super.initState();
     dateController.text = DateFormat('MM/dd/yyyy').format(selectedDate);
 
+    // There's probably a better way to do this
     if (widget.mode == TransactionManageMode.edit) {
       titleController.text = widget.transaction!.title;
       amountController.text = widget.transaction!.amount.toString();
@@ -59,6 +61,7 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
     titleController.dispose();
     amountController.dispose();
     notesController.dispose();
+    dateController.dispose();
 
     super.dispose();
   }

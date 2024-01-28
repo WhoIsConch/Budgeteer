@@ -53,6 +53,7 @@ class _TransactionsListState extends State<TransactionsList> {
 
   ListTile tileFromTransaction(Transaction transaction, ThemeData theme,
       TransactionProvider transactionProvider) {
+    // Dart formats all of this code horribly, but I can't really change it.
     return ListTile(
       leading: const Icon(Icons.monetization_on),
       title: Text("${transaction.formatAmount()} at ${transaction.title}"),
@@ -79,6 +80,7 @@ class _TransactionsListState extends State<TransactionsList> {
       builder: (context, transactionProvider, child) {
         List<Transaction> transactions = transactionProvider.transactions;
 
+        // If a transaction type is specified, filter the transactions by that
         if (widget.type == TransactionType.expense) {
           transactions = transactions.where((transaction) {
             return transaction.type == TransactionType.expense;
@@ -89,8 +91,12 @@ class _TransactionsListState extends State<TransactionsList> {
           }).toList();
         }
 
+        // If there is a specified date range, filter the transactions by that
         if (widget.dateRange != null) {
           transactions = transactions.where((transaction) {
+            // Adding and subtracting a day to the start and end of the date
+            // because "After" and "Before" are not inclusive of the start and
+            // end dates
             return transaction.date.isAfter(widget.dateRange!.start
                     .subtract(const Duration(days: 1))) &&
                 transaction.date.isBefore(
@@ -114,6 +120,8 @@ class _TransactionsListState extends State<TransactionsList> {
                 ),
               );
             } catch (e) {
+              // If there are no transactions, return an empty SizedBox
+              // I don't think this will actually ever be called, but it's here
               return const SizedBox.shrink();
             }
           },

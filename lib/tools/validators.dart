@@ -1,3 +1,9 @@
+/*
+  I have all of these in a separate file because I thought I was going to 
+  end up using them in multiple places. It turns out, I wasn't. At least
+  not for now. At least it's good organization, right?
+*/
+
 String? validateAmount(value) {
   if (value == null || value.isEmpty) {
     return "Please enter an amount";
