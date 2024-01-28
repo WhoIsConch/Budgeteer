@@ -98,6 +98,9 @@ class _TransactionsListState extends State<TransactionsList> {
           }).toList();
         }
 
+        // Sort transactions by date, most recent first
+        transactions.sort((a, b) => b.date.compareTo(a.date));
+
         return ListView.builder(
           itemCount: transactions.length,
           itemBuilder: (context, index) {
