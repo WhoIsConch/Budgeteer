@@ -6,15 +6,27 @@ class Account extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      icon: const Icon(Icons.settings),
-      onPressed: () {
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const SettingsPage(),
-            ));
-      },
+    return Column(
+      children: [
+        Row(
+          children: [
+            const Text("Not Signed In", style: TextStyle(fontSize: 24.0)),
+            const Spacer(),
+            IconButton(
+              iconSize: 24.0,
+              icon: const Icon(Icons.settings),
+              onPressed: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SettingsPage(),
+                    ));
+              },
+            ),
+          ],
+        ),
+        const Divider(),
+      ],
     );
   }
 }
