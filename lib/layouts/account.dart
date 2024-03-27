@@ -7,12 +7,12 @@ class Account extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: Icon(Icons.settings),
+      icon: const Icon(Icons.settings),
       onPressed: () {
         Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => SettingsPage(),
+              builder: (context) => const SettingsPage(),
             ));
       },
     );

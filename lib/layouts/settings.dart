@@ -10,7 +10,7 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   List<Setting> settings = [];
-  final TextStyle settingTextStyle = TextStyle(
+  final TextStyle settingTextStyle = const TextStyle(
     fontSize: 18.0,
   );
 
@@ -32,7 +32,7 @@ class _SettingsPageState extends State<SettingsPage> {
     print("In MakeBool");
     return Row(children: [
       Text(setting.name, style: settingTextStyle),
-      Spacer(),
+      const Spacer(),
       Checkbox(value: setting.value, onChanged: (bool? newVal) {})
     ]);
   }
@@ -41,7 +41,7 @@ class _SettingsPageState extends State<SettingsPage> {
     print("In MakeString");
     return Row(children: [
       Text(setting.name, style: settingTextStyle),
-      Spacer(),
+      const Spacer(),
       DropdownMenu(
         initialSelection: setting.value,
         dropdownMenuEntries: setting.options
@@ -57,7 +57,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget makeButton(Setting setting) {
     return Row(children: [
       Text(setting.name, style: settingTextStyle),
-      Spacer(),
+      const Spacer(),
       TextButton(child: Text(setting.options.first, style: settingTextStyle), onPressed: () {})
     ]);
   }
@@ -87,13 +87,13 @@ class _SettingsPageState extends State<SettingsPage> {
       }
 
       children.add(Padding(
-        padding: EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(8.0),
         child: widget,
       ));
     }
 
     return Scaffold(
-        appBar: AppBar(title: Text("Settings")),
+        appBar: AppBar(title: const Text("Settings")),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(

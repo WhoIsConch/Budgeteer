@@ -1,4 +1,3 @@
-import 'dart:js_interop';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
