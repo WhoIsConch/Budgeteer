@@ -107,10 +107,44 @@ class _TransactionsListState extends State<TransactionsList> {
         // Sort transactions by date, most recent first
         transactions.sort((a, b) => b.date.compareTo(a.date));
 
-        return ListView.builder(
-          itemCount: transactions.length,
-          itemBuilder: (context, index) {
-            try {
+        if (transactions.isEmpty) {
+          // If there are no transactions, return a message saying so.
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("No transactions.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 20.0,
+                      )),
+                  ElevatedButton(
+                    child: const Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: Text("Add a transaction",
+                          style: TextStyle(
+                            fontSize: 24.0,
+                          )),
+                    ),
+                    onPressed: () {
+                      showDialog(
+                          context: context,
+                          builder: (context) => const TransactionManageDialog(
+                              mode: TransactionManageMode.add));
+                    },
+                  )
+                ]),
+          );
+        }
+
+        // Return a stack with a listview in it so we can put that floating
+        // action button at the bottom right
+        return Stack(children: [
+          ListView.builder(
+            itemCount: transactions.length,
+            itemBuilder: (context, index) {
               Transaction transaction = transactions[index];
               return Padding(
                 padding: const EdgeInsets.all(4.0),
@@ -119,13 +153,26 @@ class _TransactionsListState extends State<TransactionsList> {
                       transaction, Theme.of(context), transactionProvider),
                 ),
               );
-            } catch (e) {
-              // If there are no transactions, return an empty SizedBox
-              // I don't think this will actually ever be called, but it's here
-              return const SizedBox.shrink();
-            }
-          },
-        );
+            },
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Align(
+              alignment: Alignment.bottomRight,
+              child: FloatingActionButton(
+                child: const Icon(Icons.add),
+                onPressed: () {
+                  // TODO: There's no reason to have this method repeated 
+                  // multiple times everywhere
+                  showDialog(
+                      context: context,
+                      builder: (context) => const TransactionManageDialog(
+                          mode: TransactionManageMode.add));
+                },
+              ),
+            ),
+          )
+        ]);
       },
     );
   }
