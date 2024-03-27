@@ -9,7 +9,10 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  late Map settings;
+  List<Setting> settings = [];
+  final TextStyle settingTextStyle = TextStyle(
+    fontSize: 18.0,
+  );
 
   @override
   void initState() {
@@ -19,17 +22,83 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void getSettings() async {
-    settings = await loadSettings();
+    List<Setting> loadedSettings = await loadSettings();
+    setState(() {
+      settings = loadedSettings;
+    });
+  }
+
+  Widget makeBool(Setting setting) {
+    print("In MakeBool");
+    return Row(children: [
+      Text(setting.name, style: settingTextStyle),
+      Spacer(),
+      Checkbox(value: setting.value, onChanged: (bool? newVal) {})
+    ]);
+  }
+
+  Widget makeMulti(Setting setting) {
+    print("In MakeString");
+    return Row(children: [
+      Text(setting.name, style: settingTextStyle),
+      Spacer(),
+      DropdownMenu(
+        initialSelection: setting.value,
+        dropdownMenuEntries: setting.options
+            .map((e) => DropdownMenuEntry(
+                  value: e,
+                  label: e,
+                ))
+            .toList(),
+      )
+    ]);
+  }
+
+  Widget makeButton(Setting setting) {
+    return Row(children: [
+      Text(setting.name, style: settingTextStyle),
+      Spacer(),
+      TextButton(child: Text(setting.options.first, style: settingTextStyle), onPressed: () {})
+    ]);
   }
 
   @override
   Widget build(BuildContext context) {
     List<Widget> children = [];
 
+    for (var setting in settings) {
+      Widget widget;
+
+      switch (setting.type) {
+        case SettingType.boolean:
+          {
+            widget = makeBool(setting);
+          }
+
+        case SettingType.button:
+          {
+            widget = makeButton(setting);
+          }
+
+        default:
+          {
+            widget = makeMulti(setting);
+          }
+      }
+
+      children.add(Padding(
+        padding: EdgeInsets.all(8.0),
+        child: widget,
+      ));
+    }
+
     return Scaffold(
         appBar: AppBar(title: Text("Settings")),
-        body: Column(
-          children: children,
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: children,
+          ),
         ));
   }
 }
