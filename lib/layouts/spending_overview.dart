@@ -316,17 +316,17 @@ class _OverviewHeaderState extends State<OverviewHeader> {
 
         return GestureDetector(
           onPanUpdate: (details) {
-            if (details.delta.dy < 0) {
-              setState(() {
-                isMinimized = true;
-              });
-              widget.changeParentState(true);
-            } else if (details.delta.dy > 0) {
-              setState(() {
-                isMinimized = false;
-              });
-              widget.changeParentState(false);
+            if (details.delta.dy + 10 < 0) {
+              isMinimized = true;
+            } else if (details.delta.dy - 10 > 0) {
+              isMinimized = false;
             }
+          },
+          onPanEnd: (details) => {
+            setState(() {
+              isMinimized = isMinimized;
+              widget.changeParentState(isMinimized);
+            })
           },
           child: Card(child: child),
         );
