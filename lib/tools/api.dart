@@ -95,8 +95,17 @@ class TransactionProvider extends ChangeNotifier {
     });
   }
 
-  double getAmountSpent(DateTimeRange dateRange) {
+  double getAmountSpent(DateTimeRange? dateRange) {
     double amountSpent = 0.0;
+
+    if (dateRange == null) {
+      for (Transaction transaction in transactions) {
+        if (transaction.type == TransactionType.expense) {
+          amountSpent += transaction.amount;
+        }
+      }
+      return amountSpent;
+    }
 
     for (Transaction transaction in transactions) {
       if (transaction.date
@@ -111,8 +120,17 @@ class TransactionProvider extends ChangeNotifier {
     return amountSpent;
   }
 
-  double getAmountEarned(DateTimeRange dateRange) {
+  double getAmountEarned(DateTimeRange? dateRange) {
     double amountEarned = 0.0;
+
+    if (dateRange == null) {
+      for (Transaction transaction in transactions) {
+        if (transaction.type == TransactionType.income) {
+          amountEarned += transaction.amount;
+        }
+      }
+      return amountEarned;
+    }
 
     for (Transaction transaction in transactions) {
       if (transaction.date
@@ -125,6 +143,10 @@ class TransactionProvider extends ChangeNotifier {
     }
 
     return amountEarned;
+  }
+
+  double getTotal(DateTimeRange? dateRange) {
+    return getAmountEarned(dateRange) - getAmountSpent(dateRange);
   }
 }
 
