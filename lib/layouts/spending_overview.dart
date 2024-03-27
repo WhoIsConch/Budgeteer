@@ -316,9 +316,9 @@ class _OverviewHeaderState extends State<OverviewHeader> {
 
         return GestureDetector(
           onPanUpdate: (details) {
-            if (details.delta.dy + 10 < 0) {
+            if (details.delta.dy + 5 < 0) {
               isMinimized = true;
-            } else if (details.delta.dy - 10 > 0) {
+            } else if (details.delta.dy - 5 > 0) {
               isMinimized = false;
             }
           },
