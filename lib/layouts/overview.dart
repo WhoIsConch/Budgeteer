@@ -37,8 +37,8 @@ class Overview extends StatelessWidget {
                         title: "Net Gain Today",
                         content: "\$${total.toStringAsFixed(2)}",
                       )),
-                  Spacer(),
-                  Expanded(
+                  const Spacer(),
+                  const Expanded(
                       flex: 8,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
