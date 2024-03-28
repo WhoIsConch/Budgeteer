@@ -75,14 +75,11 @@ class _CardButtonState extends State<CardButton> {
       // I'm not sure if changing this to a FittedBox really did anything,
       // but it's supposed to make the text not overflow if the card itself is
       // too small.
-      child: FittedBox(
-        fit: BoxFit.contain,
-        child: Text(widget.content,
-            style: TextStyle(
-                fontSize: widget.textSize,
-                color: theme.buttonTheme.colorScheme?.onPrimary),
-            textAlign: TextAlign.center),
-      ),
+      child: Text(widget.content,
+          style: TextStyle(
+              fontSize: widget.textSize,
+              color: theme.buttonTheme.colorScheme?.onPrimary),
+          textAlign: TextAlign.center),
     );
   }
 }

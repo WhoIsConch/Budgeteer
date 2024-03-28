@@ -38,18 +38,22 @@ class Overview extends StatelessWidget {
                         content: "\$${total.toStringAsFixed(2)}",
                       )),
                   const Spacer(),
-                  const Expanded(
+                  Expanded(
                       flex: 8,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Expanded(
                               flex: 8,
-                              child: CardButton(content: "Add an\nexpense")),
-                          Spacer(),
-                          Expanded(
-                              flex: 8,
-                              child: CardButton(content: "Add income")),
+                              child: CardButton(
+                                content: "Add a Transaction",
+                                textSize: 15,
+                                callback: () {},
+                              )),
+                          // Spacer(),
+                          // Expanded(
+                          //     flex: 8,
+                          //     child: CardButton(content: "Add income")),
                         ],
                       ))
                 ],
