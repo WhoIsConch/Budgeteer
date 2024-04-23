@@ -69,7 +69,7 @@ class Overview extends StatelessWidget {
                       Expanded(
                         flex: 10,
                         child: CardButton(
-                            content: "Go to Totals\nOverview",
+                            content: "Go to Totals Overview",
                             callback: () =>
                                 swapCallback(tools.PageType.transactions)),
                       ),
@@ -77,7 +77,7 @@ class Overview extends StatelessWidget {
                       Expanded(
                         flex: 10,
                         child: CardButton(
-                            content: "Go to Budget\nOverview",
+                            content: "Go to Budget Overview",
                             callback: () =>
                                 swapCallback(tools.PageType.transactions)),
                       )
