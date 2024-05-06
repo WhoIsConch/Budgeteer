@@ -1,5 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+// I realize these settings need a major rewrite
+
 enum SettingType {
   boolean,
   multi,

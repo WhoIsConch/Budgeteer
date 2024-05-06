@@ -58,9 +58,13 @@ class _SettingsPageState extends State<SettingsPage> {
     return Row(children: [
       Text(setting.name, style: settingTextStyle),
       const Spacer(),
-      TextButton(child: Text(setting.options.first, style: settingTextStyle), onPressed: () {})
+      TextButton(
+          child: Text(setting.options.first, style: settingTextStyle),
+          onPressed: () {})
     ]);
   }
+
+  Future<void> saveSettings() async {}
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +97,15 @@ class _SettingsPageState extends State<SettingsPage> {
     }
 
     return Scaffold(
-        appBar: AppBar(title: const Text("Settings")),
+        appBar: AppBar(title: const Text("Settings"), actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: TextButton(
+              child: Text("Save", style: TextStyle(fontSize: 20.0)),
+              onPressed: () {},
+            ),
+          )
+        ]),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
