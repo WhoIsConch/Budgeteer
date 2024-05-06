@@ -7,14 +7,33 @@ import 'package:budget/layouts/account.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/tools/enums.dart' as tools;
 import 'package:budget/tools/api.dart';
+import 'package:budget/tools/settings.dart';
+
+ThemeMode? theme;
+
+Future<void> setup() async {
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
+  var settings = await loadSettings();
+
+  switch (settings.where((element) => element.name == "Theme").first.value) {
+    case "System":
+      theme = ThemeMode.system;
+    case "Dark":
+      theme = ThemeMode.dark;
+    case "Light":
+      theme = ThemeMode.light;
+    default:
+      theme = ThemeMode.system;
+  }
+}
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   final provider = TransactionProvider();
   provider.loadTransactions();
 
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
-      .then(((value) {
+  setup().then(((value) {
     runApp(ChangeNotifierProvider(
         create: (context) => provider, child: const MyApp()));
   }));
@@ -34,7 +53,7 @@ class MyApp extends StatelessWidget {
           darkTheme: ThemeData(
             colorScheme: darkDynamic ?? ThemeData.dark().colorScheme,
           ),
-          themeMode: ThemeMode.system);
+          themeMode: theme);
     });
   }
 }

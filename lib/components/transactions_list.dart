@@ -56,8 +56,8 @@ class _TransactionsListState extends State<TransactionsList> {
     // Dart formats all of this code horribly, but I can't really change it.
     return ListTile(
       leading: (transaction.type == TransactionType.expense)
-          ? const Icon(Icons.add_circle)
-          : const Icon(Icons.remove_circle),
+          ? const Icon(Icons.remove_circle)
+          : const Icon(Icons.add_circle),
       title: Text("${transaction.formatAmount()} at ${transaction.title}"),
       subtitle: Text(transaction.formatDate()),
       onTap: () => showDialog(
@@ -164,8 +164,6 @@ class _TransactionsListState extends State<TransactionsList> {
               child: FloatingActionButton(
                 child: const Icon(Icons.add),
                 onPressed: () {
-                  // TODO: There's no reason to have this method repeated
-                  // multiple times everywhere
                   showDialog(
                       context: context,
                       builder: (context) => const TransactionManageDialog(
