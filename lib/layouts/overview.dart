@@ -1,4 +1,5 @@
 import 'package:budget/components/home_card.dart';
+import 'package:budget/components/transaction_form.dart';
 import 'package:budget/tools/enums.dart' as tools;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -46,14 +47,16 @@ class Overview extends StatelessWidget {
                           Expanded(
                               flex: 8,
                               child: CardButton(
-                                content: "Add a Transaction",
-                                textSize: 15,
-                                callback: () {},
+                                content: "Add a transaction",
+                                callback: () {
+                                  showDialog(
+                                      context: context,
+                                      builder: (context) =>
+                                          const TransactionManageDialog(
+                                              mode: tools
+                                                  .TransactionManageMode.add));
+                                },
                               )),
-                          // Spacer(),
-                          // Expanded(
-                          //     flex: 8,
-                          //     child: CardButton(content: "Add income")),
                         ],
                       ))
                 ],

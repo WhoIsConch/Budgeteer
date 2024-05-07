@@ -1,3 +1,4 @@
+import 'package:budget/layouts/budgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dynamic_color/dynamic_color.dart';
@@ -99,10 +100,15 @@ class _HomePageState extends State<HomePage> {
               label: "Spending",
             ),
             NavigationDestination(
+              icon: Icon(Icons.account_balance_wallet_outlined),
+              selectedIcon: Icon(Icons.account_balance_wallet),
+              label: "Budget",
+            ),
+            NavigationDestination(
               icon: Icon(Icons.person_outlined),
               selectedIcon: Icon(Icons.person),
               label: "Account",
-            )
+            ),
           ],
         ),
         body: [
@@ -119,9 +125,12 @@ class _HomePageState extends State<HomePage> {
           )),
           const SafeArea(
               child: Padding(
+                  padding: const EdgeInsets.all(16), child: BudgetPage())),
+          const SafeArea(
+              child: Padding(
             padding: EdgeInsets.all(16),
             child: Account(),
-          ))
+          )),
         ][selectedIndex]);
   }
 }

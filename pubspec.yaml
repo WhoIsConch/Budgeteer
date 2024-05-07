@@ -42,6 +42,7 @@ dependencies:
   shortid: ^0.1.2
   path: ^1.8.3
   shared_preferences: ^2.2.2
+  fl_chart: ^0.67.0
 
 dev_dependencies:
   flutter_test:
