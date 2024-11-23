@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 
 class HomeCard extends StatelessWidget {
   // Include a title string and a content Widget
@@ -13,34 +14,32 @@ class HomeCard extends StatelessWidget {
 
     return Card(
       color: theme.colorScheme.primaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            FittedBox(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 24,
-                  color: theme.colorScheme.onPrimaryContainer,
-                ),
+      margin: EdgeInsets.zero, // So the card takes up all the space it's given
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          FittedBox(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 24,
+                color: theme.colorScheme.onPrimaryContainer,
               ),
             ),
-            const SizedBox(height: 8),
-            FittedBox(
-              child: Text(
-                content,
-                style: TextStyle(
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onPrimaryContainer,
-                ),
+          ),
+          const SizedBox(height: 8),
+          FittedBox(
+            child: Text(
+              content,
+              style: TextStyle(
+                fontSize: 48,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onPrimaryContainer,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -72,14 +71,15 @@ class _CardButtonState extends State<CardButton> {
           borderRadius: BorderRadius.circular(16),
         ),
       ),
-      // I'm not sure if changing this to a FittedBox really did anything,
-      // but it's supposed to make the text not overflow if the card itself is
-      // too small.
-      child: Text(widget.content,
-          style: TextStyle(
-              fontSize: widget.textSize,
-              color: theme.buttonTheme.colorScheme?.onPrimary),
-          textAlign: TextAlign.center),
+      child: AutoSizeText(
+        widget.content,
+        style: TextStyle(
+            fontSize: widget.textSize,
+            color: theme.buttonTheme.colorScheme?.onPrimary),
+        textAlign: TextAlign.center,
+        minFontSize: 12,
+        maxLines: 2,
+      ),
     );
   }
 }

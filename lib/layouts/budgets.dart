@@ -13,7 +13,7 @@ class BudgetPage extends StatelessWidget {
           radius: 100.0,
           value: 40,
           color: Colors.red,
-          titleStyle: TextStyle(fontSize: 32)),
+          titleStyle: const TextStyle(fontSize: 32)),
       PieChartSectionData(
         radius: 75.0,
         value: 40,

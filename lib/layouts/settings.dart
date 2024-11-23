@@ -101,7 +101,7 @@ class _SettingsPageState extends State<SettingsPage> {
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: TextButton(
-              child: Text("Save", style: TextStyle(fontSize: 20.0)),
+              child: const Text("Save", style: TextStyle(fontSize: 20.0)),
               onPressed: () {},
             ),
           )

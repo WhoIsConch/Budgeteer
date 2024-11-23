@@ -46,7 +46,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return DynamicColorBuilder(builder: (lightDynamic, darkDynamic) {
       return MaterialApp(
-          title: 'Flutter Demo',
+          title: 'Budget App',
           home: const HomePage(),
           theme: ThemeData(
             colorScheme: lightDynamic ?? ThemeData.light().colorScheme,
@@ -124,8 +124,7 @@ class _HomePageState extends State<HomePage> {
             child: TransactionsOverview(),
           )),
           const SafeArea(
-              child: Padding(
-                  padding: const EdgeInsets.all(16), child: BudgetPage())),
+              child: Padding(padding: EdgeInsets.all(16), child: BudgetPage())),
           const SafeArea(
               child: Padding(
             padding: EdgeInsets.all(16),
