@@ -36,12 +36,39 @@ void main() {
 
   setup().then(((value) {
     runApp(ChangeNotifierProvider(
-        create: (context) => provider, child: const MyApp()));
+        create: (context) => provider, child: const BudgetApp()));
   }));
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class BudgetApp extends StatefulWidget {
+  const BudgetApp({super.key});
+
+  @override
+  State<BudgetApp> createState() => _BudgetAppState();
+}
+
+class _BudgetAppState extends State<BudgetApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+
+    DatabaseHelper().close();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      DatabaseHelper().close();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return DynamicColorBuilder(builder: (lightDynamic, darkDynamic) {

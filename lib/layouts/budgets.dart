@@ -37,15 +37,14 @@ class BudgetPage extends StatelessWidget {
       List<String> yTitles = [];
 
       for (Transaction transaction in transactions) {
-        scatterSpots.add(ScatterSpot(
-            transaction.date.millisecondsSinceEpoch.toDouble(),
-            transaction.amount,
-            dotPainter: FlDotCirclePainter(
-              color: transaction.type == TransactionType.income
-                  ? Colors.blue
-                  : Colors.red,
-              radius: 10,
-            )));
+        scatterSpots.add(
+            ScatterSpot(transaction.date.day.toDouble(), transaction.amount,
+                dotPainter: FlDotCirclePainter(
+                  color: transaction.type == TransactionType.income
+                      ? Colors.blue
+                      : Colors.red,
+                  radius: 10,
+                )));
 
         xTitles.add(transaction.formatDate());
         yTitles.add(transaction.formatAmount());
@@ -57,6 +56,6 @@ class BudgetPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return getScatterChart();
+    return getPieChart();
   }
 }

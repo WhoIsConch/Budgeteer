@@ -66,29 +66,30 @@ class Transaction {
 }
 
 class TransactionProvider extends ChangeNotifier {
+  final DatabaseHelper _dbHelper = DatabaseHelper();
   List<Transaction> transactions = [];
 
-  void loadTransactions() async {
-    transactions = await APIDatabase.transactions();
+  Future<void> loadTransactions() async {
+    transactions = await _dbHelper.transactions();
     notifyListeners();
   }
 
   void addTransaction(Transaction transaction) {
-    APIDatabase.insertTransaction(transaction).then((value) {
+    _dbHelper.insertTransaction(transaction).then((value) {
       transactions.add(transaction);
       notifyListeners();
     });
   }
 
   void removeTransaction(Transaction transaction) {
-    APIDatabase.deleteTransaction(transaction).then((value) {
+    _dbHelper.deleteTransaction(transaction).then((value) {
       transactions.remove(transaction);
       notifyListeners();
     });
   }
 
   void updateTransaction(Transaction transaction) {
-    APIDatabase.updateTransaction(transaction).then((value) {
+    _dbHelper.updateTransaction(transaction).then((value) {
       transactions[transactions
           .indexWhere((element) => element.id == transaction.id)] = transaction;
       notifyListeners();
@@ -150,21 +151,30 @@ class TransactionProvider extends ChangeNotifier {
   }
 }
 
-class APIDatabase {
-  static Future<Database> database() async {
-    return openDatabase(
-      join(await getDatabasesPath(), 'budget.db'),
-      onCreate: (db, version) {
-        return db.execute(
-          'CREATE TABLE transactions(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, amount REAL, date TEXT, type INTEGER, category TEXT, location TEXT, notes TEXT)',
-        );
-      },
-      version: 1,
-    );
+class DatabaseHelper {
+  static final DatabaseHelper _instance = DatabaseHelper._internal();
+  factory DatabaseHelper() => _instance;
+  DatabaseHelper._internal();
+
+  static Database? _db;
+
+  Future<Database> get database async {
+    if (_db != null) return _db!;
+    _db = await _initDatabase();
+    return _db!;
   }
 
-  static Future<void> insertTransaction(Transaction transaction) async {
-    final Database db = await database();
+  Future<Database> _initDatabase() async {
+    return await openDatabase(join(await getDatabasesPath(), 'budget.db'),
+        version: 1, onCreate: (Database db, int version) async {
+      return db.execute(
+        'CREATE TABLE transactions(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, amount REAL, date TEXT, type INTEGER, category TEXT, location TEXT, notes TEXT)',
+      );
+    }, onUpgrade: (Database db, int oldVersion, int newVersion) async {});
+  }
+
+  Future<void> insertTransaction(Transaction transaction) async {
+    final Database db = await database;
 
     await db.insert(
       'transactions',
@@ -173,8 +183,8 @@ class APIDatabase {
     );
   }
 
-  static Future<List<Transaction>> transactions() async {
-    final Database db = await database();
+  Future<List<Transaction>> transactions() async {
+    final Database db = await database;
 
     final List<Map<String, dynamic>> maps = await db.query('transactions');
 
@@ -183,8 +193,8 @@ class APIDatabase {
     });
   }
 
-  static Future<void> updateTransaction(Transaction transaction) async {
-    final db = await database();
+  Future<void> updateTransaction(Transaction transaction) async {
+    final db = await database;
 
     await db.update(
       'transactions',
@@ -194,13 +204,32 @@ class APIDatabase {
     );
   }
 
-  static Future<void> deleteTransaction(Transaction transaction) async {
-    final db = await database();
+  Future<void> deleteTransaction(Transaction transaction) async {
+    final db = await database;
 
     await db.delete(
       'transactions',
       where: 'id = ?',
       whereArgs: [transaction.id],
     );
+  }
+
+  Future<List<String>> getUniqueCategories() async {
+    final db = await database;
+    final result = await db.query('transactions',
+        distinct: true,
+        columns: ['category'],
+        where: 'category IS NOT NULL',
+        orderBy: 'category ASC');
+
+    return result.map((row) => row['category'] as String).toList();
+  }
+
+  Future<void> close() async {
+    final db = await database;
+
+    await db.close();
+
+    _db = null;
   }
 }
