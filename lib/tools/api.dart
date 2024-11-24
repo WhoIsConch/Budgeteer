@@ -63,6 +63,28 @@ class Transaction {
       notes: map['notes'],
     );
   }
+
+  Transaction copyWith({
+    int? id,
+    String? title,
+    double? amount,
+    DateTime? date,
+    TransactionType? type,
+    String? category,
+    String? location,
+    String? notes,
+  }) {
+    return Transaction(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      amount: amount ?? this.amount,
+      date: date ?? this.date,
+      type: type ?? this.type,
+      category: category ?? this.category,
+      location: location ?? this.location,
+      notes: notes ?? this.notes,
+    );
+  }
 }
 
 class TransactionProvider extends ChangeNotifier {
@@ -90,9 +112,11 @@ class TransactionProvider extends ChangeNotifier {
 
   void updateTransaction(Transaction transaction) {
     _dbHelper.updateTransaction(transaction).then((value) {
-      transactions[transactions
-          .indexWhere((element) => element.id == transaction.id)] = transaction;
-      notifyListeners();
+      final index = transactions.indexWhere((t) => t.id == transaction.id);
+      if (index != -1) {
+        transactions[index] = transaction.copyWith();
+        notifyListeners();
+      }
     });
   }
 
@@ -170,7 +194,7 @@ class DatabaseHelper {
       return db.execute(
         'CREATE TABLE transactions(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, amount REAL, date TEXT, type INTEGER, category TEXT, location TEXT, notes TEXT)',
       );
-    }, onUpgrade: (Database db, int oldVersion, int newVersion) async {});
+    });
   }
 
   Future<void> insertTransaction(Transaction transaction) async {
