@@ -173,6 +173,10 @@ class TransactionProvider extends ChangeNotifier {
   double getTotal(DateTimeRange? dateRange) {
     return getAmountEarned(dateRange) - getAmountSpent(dateRange);
   }
+
+  Future<List<String>> getCategories() async {
+    return await _dbHelper.getUniqueCategories();
+  }
 }
 
 class DatabaseHelper {
@@ -239,14 +243,28 @@ class DatabaseHelper {
   }
 
   Future<List<String>> getUniqueCategories() async {
-    final db = await database;
-    final result = await db.query('transactions',
-        distinct: true,
-        columns: ['category'],
-        where: 'category IS NOT NULL',
-        orderBy: 'category ASC');
+    try {
+      final db = await database;
+      print("Obtained DB");
 
-    return result.map((row) => row['category'] as String).toList();
+      final result = await db.query('transactions',
+          distinct: true,
+          columns: ['category'],
+          where: 'category IS NOT NULL',
+          orderBy: 'category ASC');
+
+      print("Query results: $result");
+
+      final categories =
+          result.map((row) => row['category'] as String).toList();
+
+      print("Mapped cats: $categories");
+
+      return categories;
+    } catch (e) {
+      print('error in getUniqueCats: $e');
+      return [];
+    }
   }
 
   Future<void> close() async {

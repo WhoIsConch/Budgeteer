@@ -18,10 +18,19 @@ class TransactionManageDialog extends StatefulWidget {
 }
 
 class _TransactionManageDialogState extends State<TransactionManageDialog> {
-  TextEditingController titleController = TextEditingController();
-  TextEditingController amountController = TextEditingController();
-  TextEditingController notesController = TextEditingController();
-  TextEditingController dateController = TextEditingController();
+  final TextEditingController titleController = TextEditingController();
+  final TextEditingController amountController = TextEditingController();
+  final TextEditingController notesController = TextEditingController();
+  final TextEditingController dateController = TextEditingController();
+
+  final TextEditingController categoryController = TextEditingController();
+  String? selectedCategory;
+
+  List<String> categories = [];
+  bool catsLoading = true;
+
+  final dbHelper = DatabaseHelper();
+
   final _formKey = GlobalKey<FormState>();
   DateTime selectedDate = DateTime.now();
   TransactionType selectedType = TransactionType.expense;
@@ -54,6 +63,61 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
       dateController.text = DateFormat('MM/dd/yyyy').format(selectedDate);
       selectedType = widget.transaction!.type;
     }
+
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final loadedCategories = await dbHelper.getUniqueCategories();
+
+      setState(() {
+        categories = loadedCategories;
+        catsLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        catsLoading = false;
+      });
+    }
+  }
+
+  DropdownMenu getCategoryDropdown() {
+    if (catsLoading) {
+      return const DropdownMenu(
+        enabled: false,
+        dropdownMenuEntries: [
+          DropdownMenuEntry(value: null, label: 'Loading...'),
+        ],
+      );
+    }
+
+    if (categories.isEmpty) {
+      return const DropdownMenu(
+        enabled: false,
+        dropdownMenuEntries: [
+          DropdownMenuEntry(value: null, label: 'No Items Available')
+        ],
+      );
+    }
+
+    return DropdownMenu<String>(
+      initialSelection: "No Category",
+      controller: categoryController,
+      requestFocusOnTap: true,
+      label: const Text('Category'),
+      onSelected: (String? category) {
+        setState(() {
+          selectedCategory = category;
+        });
+      },
+      dropdownMenuEntries: categories
+          .map<DropdownMenuEntry<String>>((String cat) => DropdownMenuEntry(
+                value: cat,
+                label: cat,
+              ))
+          .toList(),
+    );
   }
 
   @override
@@ -62,6 +126,7 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
     amountController.dispose();
     notesController.dispose();
     dateController.dispose();
+    categoryController.dispose();
 
     super.dispose();
   }
@@ -110,6 +175,7 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
               }),
         ),
       ),
+      getCategoryDropdown(),
       TextFormField(
         controller: notesController,
         decoration: const InputDecoration(
