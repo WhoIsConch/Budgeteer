@@ -243,6 +243,7 @@ class DatabaseHelper {
   }
 
   Future<List<String>> getUniqueCategories() async {
+    return [];
     try {
       final db = await database;
       print("Obtained DB");

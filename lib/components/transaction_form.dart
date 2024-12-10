@@ -75,10 +75,12 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
         categories = loadedCategories;
         catsLoading = false;
       });
+      print("Set state with categories: $categories");
     } catch (e) {
       setState(() {
         catsLoading = false;
       });
+      print("Failed to load categories: $e");
     }
   }
 
@@ -215,12 +217,15 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
       key: _formKey,
       child: AlertDialog(
         title: title,
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: formFields,
-          ),
-        ),
+        content: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+          return SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: formFields,
+            ),
+          );
+        }),
         actions: [
           TextButton(
             child: const Text("Cancel"),
