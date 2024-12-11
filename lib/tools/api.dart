@@ -243,7 +243,6 @@ class DatabaseHelper {
   }
 
   Future<List<String>> getUniqueCategories() async {
-    return [];
     try {
       final db = await database;
       print("Obtained DB");
@@ -253,6 +252,13 @@ class DatabaseHelper {
           columns: ['category'],
           where: 'category IS NOT NULL',
           orderBy: 'category ASC');
+
+      final allShit = await db.query(
+        'transactions',
+        columns: ['category'],
+      );
+
+      print("All shit: $allShit");
 
       print("Query results: $result");
 
