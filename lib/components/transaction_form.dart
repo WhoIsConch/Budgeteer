@@ -225,14 +225,22 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
           Consumer<TransactionProvider>(
             builder: (context, transactionProvider, child) => TextButton(
               child: const Text("Save"),
-              onPressed: () {
+              onPressed: () async {
                 if (_formKey.currentState!.validate()) {
-                  if (widget.mode == TransactionManageMode.edit) {
-                    transactionProvider.updateTransaction(getTransaction());
-                  } else {
-                    transactionProvider.addTransaction(getTransaction());
+                  try {
+                    if (widget.mode == TransactionManageMode.edit) {
+                      await transactionProvider
+                          .updateTransaction(getTransaction());
+                    } else {
+                      await transactionProvider
+                          .addTransaction(getTransaction());
+                    }
+                    Navigator.of(context).pop();
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to save transaction: $e')),
+                    );
                   }
-                  Navigator.of(context).pop();
                 }
               },
             ),

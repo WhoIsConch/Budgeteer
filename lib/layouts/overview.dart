@@ -1,4 +1,4 @@
-import 'package:budget/components/home_card.dart';
+import 'package:budget/components/cards.dart';
 import 'package:budget/components/transaction_form.dart';
 import 'package:budget/tools/enums.dart' as tools;
 import 'package:flutter/material.dart';
@@ -14,17 +14,15 @@ class Overview extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<TransactionProvider>(
       builder: (context, transactionProvider, child) {
-        var total = transactionProvider.getTotal(
-            DateTimeRange(start: DateTime.now(), end: DateTime.now()));
+        final DateTime now = DateTime.now();
 
         return ListView(
           children: [
             SizedBox(
                 height: 200,
-                child: HomeCard(
+                child: AsyncOverviewCard(
                     title: "Total Balance",
-                    content:
-                        "\$${transactionProvider.getTotal(null).toStringAsFixed(2)}")),
+                    amountCalculator: (provider) => provider.getTotal(null))),
             const SizedBox(height: 16),
             SizedBox(
               height: 160,
@@ -33,11 +31,14 @@ class Overview extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Expanded(
-                      flex: 16,
-                      child: HomeCard(
+                    flex: 16,
+                    child: AsyncOverviewCard(
                         title: "Net Gain Today",
-                        content: "\$${total.toStringAsFixed(2)}",
-                      )),
+                        amountCalculator: (provider) => provider.getTotal(
+                            DateTimeRange(
+                                start: DateTime(now.year, now.month, now.day),
+                                end: now))),
+                  ),
                   const Spacer(),
                   Expanded(
                       flex: 8,

@@ -4,6 +4,7 @@ import 'package:budget/layouts/transactions.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/tools/api.dart';
 import 'package:budget/tools/enums.dart';
+import 'package:budget/components/cards.dart';
 
 class TransactionsOverview extends StatefulWidget {
   const TransactionsOverview({super.key});
@@ -87,21 +88,23 @@ class OverviewHeader extends StatefulWidget {
 class _OverviewHeaderState extends State<OverviewHeader> {
   bool isMinimized = true;
 
-  List<OverviewCard> getAvailableCards(
+  List<AsyncOverviewCard> getAvailableCards(
       TransactionProvider transactionProvider) {
+    DateTime now = DateTime.now();
+
     return [
-      OverviewCard(
+      AsyncOverviewCard(
         title: "Spent Today",
-        content:
-            "\$${transactionProvider.getAmountSpent(DateTimeRange(start: DateTime.now(), end: DateTime.now())).toStringAsFixed(2)}",
+        amountCalculator: (provider) => provider.getAmountSpent(DateTimeRange(
+            start: DateTime(now.year, now.month, now.day), end: now)),
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => TransactionsPage(
                 startingDateRange: DateTimeRange(
-                  start: DateTime.now(),
-                  end: DateTime.now(),
+                  start: now,
+                  end: now,
                 ),
                 type: TransactionType.expense,
               ),
@@ -109,18 +112,18 @@ class _OverviewHeaderState extends State<OverviewHeader> {
           );
         },
       ),
-      OverviewCard(
+      AsyncOverviewCard(
         title: "Earned Today",
-        content:
-            "\$${transactionProvider.getAmountEarned(DateTimeRange(start: DateTime.now(), end: DateTime.now())).toStringAsFixed(2)}",
+        amountCalculator: (provider) => provider.getAmountEarned(DateTimeRange(
+            start: DateTime(now.year, now.month, now.day), end: now)),
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => TransactionsPage(
                 startingDateRange: DateTimeRange(
-                  start: DateTime.now(),
-                  end: DateTime.now(),
+                  start: now,
+                  end: now,
                 ),
                 type: TransactionType.income,
               ),
@@ -128,15 +131,14 @@ class _OverviewHeaderState extends State<OverviewHeader> {
           );
         },
       ),
-      OverviewCard(
+      AsyncOverviewCard(
         title: "Spent This Month",
-        content:
-            "\$${transactionProvider.getAmountSpent(DateTimeRange(start: DateTime(DateTime.now().year, DateTime.now().month), end: DateTime.now())).toStringAsFixed(2)}",
+        amountCalculator: (provider) => provider.getAmountSpent(
+            DateTimeRange(start: DateTime(now.year, now.month), end: now)),
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) {
-              DateTime now = DateTime.now();
               DateTime startOfMonth = DateTime(now.year, now.month);
 
               return TransactionsPage(
@@ -150,15 +152,14 @@ class _OverviewHeaderState extends State<OverviewHeader> {
           );
         },
       ),
-      OverviewCard(
+      AsyncOverviewCard(
         title: "Earned This Month",
-        content:
-            "\$${transactionProvider.getAmountEarned(DateTimeRange(start: DateTime(DateTime.now().year, DateTime.now().month), end: DateTime.now())).toStringAsFixed(2)}",
+        amountCalculator: (provider) => provider.getAmountEarned(
+            DateTimeRange(start: DateTime(now.year, now.month), end: now)),
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) {
-              DateTime now = DateTime.now();
               DateTime startOfMonth = DateTime(now.year, now.month);
 
               return TransactionsPage(
@@ -172,18 +173,15 @@ class _OverviewHeaderState extends State<OverviewHeader> {
           );
         },
       ),
-      OverviewCard(
+      AsyncOverviewCard(
           title: "Spent This Week",
-          content:
-              "\$${transactionProvider.getAmountSpent(DateTimeRange(start: DateTime.now().subtract(
-                    Duration(days: DateTime.now().weekday - 1),
-                  ), end: DateTime.now())).toStringAsFixed(2)}",
+          amountCalculator: (provider) => provider.getAmountSpent(DateTimeRange(
+              start: now.subtract(Duration(days: now.weekday - 1)), end: now)),
           onPressed: () {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) {
                 // TODO: Setting that changes the start of the week
-                DateTime now = DateTime.now();
                 DateTime startOfWeek = now.subtract(
                   Duration(days: now.weekday - 1),
                 );
@@ -198,15 +196,14 @@ class _OverviewHeaderState extends State<OverviewHeader> {
               }),
             );
           }),
-      OverviewCard(
+      AsyncOverviewCard(
           title: "Earned this week",
-          content:
-              "\$${transactionProvider.getAmountEarned(DateTimeRange(start: DateTime.now().subtract(
-                    Duration(days: DateTime.now().weekday - 1),
-                  ), end: DateTime.now())).toStringAsFixed(2)}",
+          amountCalculator: (provider) => provider.getAmountEarned(
+              DateTimeRange(
+                  start: now.subtract(Duration(days: now.weekday - 1)),
+                  end: now)),
           onPressed: () {
             Navigator.push(context, MaterialPageRoute(builder: (context) {
-              DateTime now = DateTime.now();
               DateTime startOfWeek = now.subtract(
                 Duration(days: now.weekday - 1),
               );
@@ -220,15 +217,14 @@ class _OverviewHeaderState extends State<OverviewHeader> {
               );
             }));
           }),
-      OverviewCard(
+      AsyncOverviewCard(
         title: "Spent This Year",
-        content:
-            "\$${transactionProvider.getAmountSpent(DateTimeRange(start: DateTime(DateTime.now().year), end: DateTime.now())).toStringAsFixed(2)}",
+        amountCalculator: (provider) => provider
+            .getAmountSpent(DateTimeRange(start: DateTime(now.year), end: now)),
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) {
-              DateTime now = DateTime.now();
               DateTime startOfYear = DateTime(now.year);
 
               return TransactionsPage(
@@ -242,15 +238,14 @@ class _OverviewHeaderState extends State<OverviewHeader> {
           );
         },
       ),
-      OverviewCard(
+      AsyncOverviewCard(
         title: "Earned this year",
-        content:
-            "\$${transactionProvider.getAmountEarned(DateTimeRange(start: DateTime(DateTime.now().year), end: DateTime.now())).toStringAsFixed(2)}",
+        amountCalculator: (provider) => provider.getAmountEarned(
+            DateTimeRange(start: DateTime(now.year), end: now)),
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) {
-              DateTime now = DateTime.now();
               DateTime startOfYear = DateTime(now.year);
 
               return TransactionsPage(
@@ -268,7 +263,7 @@ class _OverviewHeaderState extends State<OverviewHeader> {
   }
 
   Widget getMinimized(TransactionProvider transactionProvider) {
-    List<OverviewCard> availableCards =
+    List<AsyncOverviewCard> availableCards =
         getAvailableCards(transactionProvider).sublist(0, 4);
     return Column(children: [
       Expanded(
@@ -291,7 +286,8 @@ class _OverviewHeaderState extends State<OverviewHeader> {
   }
 
   Widget getMaximized(TransactionProvider transactionProvider) {
-    List<OverviewCard> availableCards = getAvailableCards(transactionProvider);
+    List<AsyncOverviewCard> availableCards =
+        getAvailableCards(transactionProvider);
 
     return GridView.count(
       crossAxisCount: 2,
@@ -332,57 +328,5 @@ class _OverviewHeaderState extends State<OverviewHeader> {
         );
       },
     );
-  }
-}
-
-class OverviewCard extends StatelessWidget {
-  final String title;
-  final String content;
-  final Function? onPressed;
-
-  const OverviewCard(
-      {super.key, required this.title, required this.content, this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    ThemeData theme = Theme.of(context);
-
-    Widget cardContent = Padding(
-      padding: const EdgeInsets.all(8),
-      child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-                textAlign: TextAlign.center,
-                title,
-                style: theme.textTheme.titleSmall),
-            Text(
-                textAlign: TextAlign.center,
-                content,
-                style: theme.textTheme.headlineLarge),
-          ]),
-    );
-
-    if (onPressed != null) {
-      return Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.0),
-        ),
-        color: theme.colorScheme.primaryContainer,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(10),
-          onTap: onPressed as void Function()?,
-          child: cardContent,
-        ),
-      );
-    } else {
-      return Card(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10.0),
-          ),
-          color: theme.colorScheme.primaryContainer,
-          child: cardContent);
-    }
   }
 }

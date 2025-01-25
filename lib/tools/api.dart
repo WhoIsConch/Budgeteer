@@ -51,7 +51,7 @@ class Transaction {
     };
   }
 
-  static Transaction fromMap(Map<String, dynamic> map) {
+  factory Transaction.fromMap(Map<String, dynamic> map) {
     return Transaction(
       id: map['id'],
       title: map['title'],
@@ -89,89 +89,62 @@ class Transaction {
 
 class TransactionProvider extends ChangeNotifier {
   final DatabaseHelper _dbHelper = DatabaseHelper();
-  List<Transaction> transactions = [];
+  List<Transaction> _transactions = [];
 
-  Future<void> loadTransactions() async {
-    transactions = await _dbHelper.transactions();
+  List<Transaction> get transactions => _transactions;
+
+  Future<void> loadTransactions({
+    DateTimeRange? dateRange,
+    TransactionType? type,
+  }) async {
+    _transactions = await _dbHelper.getTransactions(
+      dateRange: dateRange,
+      type: type,
+    );
     notifyListeners();
   }
 
-  void addTransaction(Transaction transaction) {
-    _dbHelper.insertTransaction(transaction).then((value) {
-      transactions.add(transaction);
+  Future<void> addTransaction(Transaction transaction) async {
+    final newTransaction = await _dbHelper.insertTransaction(transaction);
+
+    _transactions.add(newTransaction);
+    notifyListeners();
+  }
+
+  Future<void> removeTransaction(Transaction transaction) async {
+    await _dbHelper.deleteTransaction(transaction);
+
+    _transactions.removeWhere((t) => t.id == transaction.id);
+    notifyListeners();
+  }
+
+  Future<void> updateTransaction(Transaction transaction) async {
+    await _dbHelper.updateTransaction(transaction);
+    final index = _transactions.indexWhere((t) => t.id == transaction.id);
+
+    if (index != -1) {
+      _transactions[index] = transaction;
       notifyListeners();
-    });
-  }
-
-  void removeTransaction(Transaction transaction) {
-    _dbHelper.deleteTransaction(transaction).then((value) {
-      transactions.remove(transaction);
-      notifyListeners();
-    });
-  }
-
-  void updateTransaction(Transaction transaction) {
-    _dbHelper.updateTransaction(transaction).then((value) {
-      final index = transactions.indexWhere((t) => t.id == transaction.id);
-      if (index != -1) {
-        transactions[index] = transaction.copyWith();
-        notifyListeners();
-      }
-    });
-  }
-
-  double getAmountSpent(DateTimeRange? dateRange) {
-    double amountSpent = 0.0;
-
-    if (dateRange == null) {
-      for (Transaction transaction in transactions) {
-        if (transaction.type == TransactionType.expense) {
-          amountSpent += transaction.amount;
-        }
-      }
-      return amountSpent;
     }
-
-    for (Transaction transaction in transactions) {
-      if (transaction.date
-              .isAfter(dateRange.start.subtract(const Duration(days: 1))) &&
-          transaction.date
-              .isBefore(dateRange.end.add(const Duration(days: 1))) &&
-          transaction.type == TransactionType.expense) {
-        amountSpent += transaction.amount;
-      }
-    }
-
-    return amountSpent;
   }
 
-  double getAmountEarned(DateTimeRange? dateRange) {
-    double amountEarned = 0.0;
-
-    if (dateRange == null) {
-      for (Transaction transaction in transactions) {
-        if (transaction.type == TransactionType.income) {
-          amountEarned += transaction.amount;
-        }
-      }
-      return amountEarned;
-    }
-
-    for (Transaction transaction in transactions) {
-      if (transaction.date
-              .isAfter(dateRange.start.subtract(const Duration(days: 1))) &&
-          transaction.date
-              .isBefore(dateRange.end.add(const Duration(days: 1))) &&
-          transaction.type == TransactionType.income) {
-        amountEarned += transaction.amount;
-      }
-    }
-
-    return amountEarned;
+  Future<double> getAmountSpent(DateTimeRange? dateRange) async {
+    return await _dbHelper.getTotalAmount(
+        dateRange: dateRange, type: TransactionType.expense);
   }
 
-  double getTotal(DateTimeRange? dateRange) {
-    return getAmountEarned(dateRange) - getAmountSpent(dateRange);
+  Future<double> getAmountEarned(DateTimeRange? dateRange) async {
+    return await _dbHelper.getTotalAmount(
+      dateRange: dateRange,
+      type: TransactionType.income,
+    );
+  }
+
+  Future<double> getTotal(DateTimeRange? dateRange) async {
+    final earned = await getAmountEarned(dateRange);
+    final spent = await getAmountSpent(dateRange);
+
+    return earned - spent;
   }
 
   Future<List<String>> getCategories() async {
@@ -194,31 +167,99 @@ class DatabaseHelper {
 
   Future<Database> _initDatabase() async {
     return await openDatabase(join(await getDatabasesPath(), 'budget.db'),
-        version: 1, onCreate: (Database db, int version) async {
-      return db.execute(
-        'CREATE TABLE transactions(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, amount REAL, date TEXT, type INTEGER, category TEXT, location TEXT, notes TEXT)',
-      );
-    });
+        version: 1, onCreate: _onCreate, onUpgrade: _onUpgrade);
   }
 
-  Future<void> insertTransaction(Transaction transaction) async {
-    final Database db = await database;
-
-    await db.insert(
-      'transactions',
-      transaction.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
+  Future<void> _onCreate(Database db, int version) async {
+    await db.execute(
+      'CREATE TABLE transactions(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, amount REAL, date TEXT, type INTEGER, category TEXT, location TEXT, notes TEXT)',
     );
   }
 
-  Future<List<Transaction>> transactions() async {
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {}
+
+  Future<Transaction> insertTransaction(Transaction transaction) async {
     final Database db = await database;
 
-    final List<Map<String, dynamic>> maps = await db.query('transactions');
+    return transaction.copyWith(
+      id: await db.insert(
+        'transactions',
+        transaction.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      ),
+    );
+  }
 
-    return List.generate(maps.length, (i) {
-      return Transaction.fromMap(maps[i]);
-    });
+  Future<List<Transaction>> getTransactions({
+    DateTimeRange? dateRange,
+    TransactionType? type,
+  }) async {
+    final Database db = await database;
+
+    List<String> whereConditions = [];
+    List<dynamic> whereArgs = [];
+
+    if (dateRange != null) {
+      whereConditions.add('date BETWEEN ? AND ?');
+      whereArgs.addAll(
+          [dateRange.start.toIso8601String(), dateRange.end.toIso8601String()]);
+    }
+
+    if (type != null) {
+      whereConditions.add('type = ?');
+      whereArgs.add(type.value);
+    }
+
+    final List<Map<String, dynamic>> maps = await db.query('transactions',
+        where:
+            whereConditions.isNotEmpty ? whereConditions.join(' AND ') : null,
+        whereArgs: whereArgs.isNotEmpty ? whereArgs : null);
+
+    return maps.map((map) => Transaction.fromMap(map)).toList();
+  }
+
+  Future<double> getTotalAmount({
+    DateTimeRange? dateRange,
+    required TransactionType type,
+  }) async {
+    final Database db = await database;
+
+    List<String> whereConditions = ['type = ?'];
+    List<dynamic> whereArgs = [type.value];
+
+    if (dateRange != null) {
+      whereConditions.add('date BETWEEN ? AND ?');
+      whereArgs.addAll(
+          [dateRange.start.toIso8601String(), dateRange.end.toIso8601String()]);
+    }
+
+    final result = await db.query(
+      'transactions',
+      columns: ['SUM(amount) as total'],
+      where: whereConditions.join(' AND '),
+      whereArgs: whereArgs,
+    );
+
+    return (result.first['total'] as num?)?.toDouble() ?? 0.0;
+  }
+
+  Future<List<String>> getUniqueCategories() async {
+    try {
+      final db = await database;
+
+      final results = await db.query(
+        'transactions',
+        distinct: true,
+        columns: ['category'],
+        where: 'category IS NOT NULL AND category != ""',
+        orderBy: 'category ASC',
+      );
+
+      return results.map((row) => row['category'] as String).toList();
+    } catch (e) {
+      print('error in getUniqueCats: $e');
+      return [];
+    }
   }
 
   Future<void> updateTransaction(Transaction transaction) async {
@@ -240,38 +281,6 @@ class DatabaseHelper {
       where: 'id = ?',
       whereArgs: [transaction.id],
     );
-  }
-
-  Future<List<String>> getUniqueCategories() async {
-    try {
-      final db = await database;
-      print("Obtained DB");
-
-      final result = await db.query('transactions',
-          distinct: true,
-          columns: ['category'],
-          where: 'category IS NOT NULL',
-          orderBy: 'category ASC');
-
-      final allShit = await db.query(
-        'transactions',
-        columns: ['category'],
-      );
-
-      print("All shit: $allShit");
-
-      print("Query results: $result");
-
-      final categories =
-          result.map((row) => row['category'] as String).toList();
-
-      print("Mapped cats: $categories");
-
-      return categories;
-    } catch (e) {
-      print('error in getUniqueCats: $e');
-      return [];
-    }
   }
 
   Future<void> close() async {
