@@ -3,18 +3,41 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:budget/tools/api.dart';
 import 'package:provider/provider.dart';
 
+enum CardTextStyle { major, cluster }
+
 // TODO: Add overview card styles (major, cluster, etc.)
 class OverviewCard extends StatelessWidget {
   final String title;
   final String content;
+  final CardTextStyle textStyle;
   final Function? onPressed;
 
   const OverviewCard(
-      {super.key, required this.title, required this.content, this.onPressed});
+      {super.key,
+      required this.title,
+      required this.content,
+      required this.textStyle,
+      this.onPressed});
 
   @override
   Widget build(BuildContext context) {
     ThemeData theme = Theme.of(context);
+
+    TextStyle? titleStyle = theme.textTheme.titleSmall;
+    TextStyle? contentStyle = theme.textTheme.headlineLarge;
+
+    if (textStyle == CardTextStyle.major) {
+      titleStyle = TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: theme.colorScheme.onPrimaryContainer,
+      );
+
+      contentStyle = TextStyle(
+        fontSize: 28,
+        color: theme.colorScheme.onPrimaryContainer,
+      );
+    }
 
     Widget cardContent = Padding(
       padding: const EdgeInsets.all(8),
@@ -22,14 +45,8 @@ class OverviewCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-                textAlign: TextAlign.center,
-                title,
-                style: theme.textTheme.titleSmall),
-            Text(
-                textAlign: TextAlign.center,
-                content,
-                style: theme.textTheme.headlineLarge),
+            Text(textAlign: TextAlign.center, title, style: titleStyle),
+            Text(textAlign: TextAlign.center, content, style: contentStyle),
           ]),
     );
 
@@ -60,11 +77,13 @@ class AsyncOverviewCard extends StatelessWidget {
   final String title;
   final Future<double> Function(TransactionProvider) amountCalculator;
   final VoidCallback? onPressed;
+  final CardTextStyle textStyle;
 
   const AsyncOverviewCard({
     Key? key,
     required this.title,
     required this.amountCalculator,
+    this.textStyle = CardTextStyle.cluster,
     this.onPressed,
   }) : super(key: key);
 
@@ -89,6 +108,7 @@ class AsyncOverviewCard extends StatelessWidget {
               title: title,
               content: displayAmount,
               onPressed: onPressed,
+              textStyle: textStyle,
             );
           });
     });

@@ -21,8 +21,10 @@ class Overview extends StatelessWidget {
             SizedBox(
                 height: 200,
                 child: AsyncOverviewCard(
-                    title: "Total Balance",
-                    amountCalculator: (provider) => provider.getTotal(null))),
+                  title: "Total Balance",
+                  amountCalculator: (provider) => provider.getTotal(null),
+                  textStyle: CardTextStyle.major,
+                )),
             const SizedBox(height: 16),
             SizedBox(
               height: 160,
@@ -33,11 +35,13 @@ class Overview extends StatelessWidget {
                   Expanded(
                     flex: 16,
                     child: AsyncOverviewCard(
-                        title: "Net Gain Today",
-                        amountCalculator: (provider) => provider.getTotal(
-                            DateTimeRange(
-                                start: DateTime(now.year, now.month, now.day),
-                                end: now))),
+                      title: "Net Gain Today",
+                      amountCalculator: (provider) => provider.getTotal(
+                          DateTimeRange(
+                              start: DateTime(now.year, now.month, now.day),
+                              end: now)),
+                      textStyle: CardTextStyle.major,
+                    ),
                   ),
                   const Spacer(),
                   Expanded(
