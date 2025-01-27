@@ -6,6 +6,18 @@ import 'package:budget/tools/api.dart';
 import 'package:budget/tools/enums.dart';
 import 'package:budget/components/cards.dart';
 
+class CardConfig {
+  final String title;
+  final TransactionType type;
+  final DateTimeRange Function() dateRange;
+
+  CardConfig({
+    required this.title,
+    required this.type,
+    required this.dateRange,
+  });
+}
+
 class TransactionsOverview extends StatefulWidget {
   const TransactionsOverview({super.key});
 
@@ -87,179 +99,82 @@ class OverviewHeader extends StatefulWidget {
 
 class _OverviewHeaderState extends State<OverviewHeader> {
   bool isMinimized = true;
+  List<String> _previousContents = List.filled(8, '\$0.00');
 
-  List<AsyncOverviewCard> getAvailableCards(
-      TransactionProvider transactionProvider) {
+  void _updatePreviousContent(int index, String newContent) {
+    _previousContents[index] = newContent;
+  }
+
+  List<CardConfig> get cardConfigs {
     DateTime now = DateTime.now();
 
     return [
-      AsyncOverviewCard(
-        title: "Spent Today",
-        amountCalculator: (provider) => provider.getAmountSpent(DateTimeRange(
-            start: DateTime(now.year, now.month, now.day), end: now)),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TransactionsPage(
-                startingDateRange: DateTimeRange(
-                  start: now,
-                  end: now,
-                ),
-                type: TransactionType.expense,
-              ),
-            ),
-          );
-        },
-      ),
-      AsyncOverviewCard(
-        title: "Earned Today",
-        amountCalculator: (provider) => provider.getAmountEarned(DateTimeRange(
-            start: DateTime(now.year, now.month, now.day), end: now)),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TransactionsPage(
-                startingDateRange: DateTimeRange(
-                  start: now,
-                  end: now,
-                ),
-                type: TransactionType.income,
-              ),
-            ),
-          );
-        },
-      ),
-      AsyncOverviewCard(
+      CardConfig(
+          title: "Spent Today",
+          type: TransactionType.expense,
+          dateRange: () => DateTimeRange(
+              start: DateTime(now.year, now.month, now.day), end: now)),
+      CardConfig(
+          title: "Earned Today",
+          type: TransactionType.income,
+          dateRange: () => DateTimeRange(
+              start: DateTime(now.year, now.month, now.day), end: now)),
+      CardConfig(
         title: "Spent This Month",
-        amountCalculator: (provider) => provider.getAmountSpent(
-            DateTimeRange(start: DateTime(now.year, now.month), end: now)),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) {
-              DateTime startOfMonth = DateTime(now.year, now.month);
-
-              return TransactionsPage(
-                startingDateRange: DateTimeRange(
-                  start: startOfMonth,
-                  end: now,
-                ),
-                type: TransactionType.expense,
-              );
-            }),
-          );
-        },
+        type: TransactionType.expense,
+        dateRange: () =>
+            DateTimeRange(start: DateTime(now.year, now.month), end: now),
       ),
-      AsyncOverviewCard(
-        title: "Earned This Month",
-        amountCalculator: (provider) => provider.getAmountEarned(
-            DateTimeRange(start: DateTime(now.year, now.month), end: now)),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) {
-              DateTime startOfMonth = DateTime(now.year, now.month);
-
-              return TransactionsPage(
-                startingDateRange: DateTimeRange(
-                  start: startOfMonth,
-                  end: now,
-                ),
-                type: TransactionType.income,
-              );
-            }),
-          );
-        },
-      ),
-      AsyncOverviewCard(
-          title: "Spent This Week",
-          amountCalculator: (provider) => provider.getAmountSpent(DateTimeRange(
+      CardConfig(
+          title: "Earned This Month",
+          type: TransactionType.income,
+          dateRange: () =>
+              DateTimeRange(start: DateTime(now.year, now.month), end: now)),
+      CardConfig(
+          title: 'Spent This Week',
+          type: TransactionType.expense,
+          dateRange: () => DateTimeRange(
               start: now.subtract(Duration(days: now.weekday - 1)), end: now)),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) {
-                // TODO: Setting that changes the start of the week
-                DateTime startOfWeek = now.subtract(
-                  Duration(days: now.weekday - 1),
-                );
-
-                return TransactionsPage(
-                  startingDateRange: DateTimeRange(
-                    start: startOfWeek,
-                    end: now,
-                  ),
-                  type: TransactionType.expense,
-                );
-              }),
-            );
-          }),
-      AsyncOverviewCard(
-          title: "Earned this week",
-          amountCalculator: (provider) => provider.getAmountEarned(
-              DateTimeRange(
-                  start: now.subtract(Duration(days: now.weekday - 1)),
-                  end: now)),
-          onPressed: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) {
-              DateTime startOfWeek = now.subtract(
-                Duration(days: now.weekday - 1),
-              );
-
-              return TransactionsPage(
-                startingDateRange: DateTimeRange(
-                  start: startOfWeek,
-                  end: now,
-                ),
-                type: TransactionType.income,
-              );
-            }));
-          }),
-      AsyncOverviewCard(
-        title: "Spent This Year",
-        amountCalculator: (provider) => provider
-            .getAmountSpent(DateTimeRange(start: DateTime(now.year), end: now)),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) {
-              DateTime startOfYear = DateTime(now.year);
-
-              return TransactionsPage(
-                startingDateRange: DateTimeRange(
-                  start: startOfYear,
-                  end: now,
-                ),
-                type: TransactionType.expense,
-              );
-            }),
-          );
-        },
-      ),
-      AsyncOverviewCard(
-        title: "Earned this year",
-        amountCalculator: (provider) => provider.getAmountEarned(
-            DateTimeRange(start: DateTime(now.year), end: now)),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) {
-              DateTime startOfYear = DateTime(now.year);
-
-              return TransactionsPage(
-                startingDateRange: DateTimeRange(
-                  start: startOfYear,
-                  end: now,
-                ),
-                type: TransactionType.income,
-              );
-            }),
-          );
-        },
-      ),
+      CardConfig(
+          title: 'Earned This Week',
+          type: TransactionType.income,
+          dateRange: () => DateTimeRange(
+              start: now.subtract(Duration(days: now.weekday - 1)), end: now)),
+      CardConfig(
+          title: "Spent This Year",
+          type: TransactionType.expense,
+          dateRange: () => DateTimeRange(start: DateTime(now.year), end: now)),
+      CardConfig(
+          title: "Earned This Year",
+          type: TransactionType.income,
+          dateRange: () => DateTimeRange(start: DateTime(now.year), end: now))
     ];
+  }
+
+  List<AsyncOverviewCard> getAvailableCards(
+      TransactionProvider transactionProvider) {
+    return List.generate(cardConfigs.length, (index) {
+      final config = cardConfigs[index];
+
+      return AsyncOverviewCard(
+        title: config.title,
+        previousContent: _previousContents[index],
+        amountCalculator: (provider) => config.type == TransactionType.expense
+            ? provider.getAmountSpent(config.dateRange())
+            : provider.getAmountEarned(config.dateRange()),
+        onPressed: () {
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => TransactionsPage(
+                        startingDateRange: config.dateRange(),
+                        type: config.type,
+                      )));
+        },
+        onContentUpdated: (newContent) =>
+            _updatePreviousContent(index, newContent),
+      );
+    });
   }
 
   Widget getMinimized(TransactionProvider transactionProvider) {

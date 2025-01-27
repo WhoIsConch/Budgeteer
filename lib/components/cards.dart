@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 
 enum CardTextStyle { major, cluster }
 
-// TODO: Add overview card styles (major, cluster, etc.)
 class OverviewCard extends StatelessWidget {
   final String title;
   final String content;
@@ -27,16 +26,8 @@ class OverviewCard extends StatelessWidget {
     TextStyle? contentStyle = theme.textTheme.headlineLarge;
 
     if (textStyle == CardTextStyle.major) {
-      titleStyle = TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-        color: theme.colorScheme.onPrimaryContainer,
-      );
-
-      contentStyle = TextStyle(
-        fontSize: 28,
-        color: theme.colorScheme.onPrimaryContainer,
-      );
+      titleStyle = const TextStyle(fontSize: 24, fontWeight: FontWeight.bold);
+      contentStyle = const TextStyle(fontSize: 48);
     }
 
     Widget cardContent = Padding(
@@ -77,14 +68,18 @@ class AsyncOverviewCard extends StatelessWidget {
   final String title;
   final Future<double> Function(TransactionProvider) amountCalculator;
   final VoidCallback? onPressed;
+  final String previousContent;
   final CardTextStyle textStyle;
+  final Function(String)? onContentUpdated;
 
   const AsyncOverviewCard({
     Key? key,
     required this.title,
     required this.amountCalculator,
     this.textStyle = CardTextStyle.cluster,
+    this.previousContent = "\$0.00",
     this.onPressed,
+    this.onContentUpdated,
   }) : super(key: key);
 
   @override
@@ -94,13 +89,14 @@ class AsyncOverviewCard extends StatelessWidget {
       return FutureBuilder<double>(
           future: amountCalculator(transactionProvider),
           builder: (context, snapshot) {
-            String displayAmount = '\$0.00';
+            String displayAmount = previousContent;
 
             if (snapshot.connectionState == ConnectionState.done) {
               if (snapshot.hasError) {
                 displayAmount = "Error";
               } else if (snapshot.hasData) {
                 displayAmount = '\$${snapshot.data!.toStringAsFixed(2)}';
+                onContentUpdated?.call(displayAmount);
               }
             }
 
