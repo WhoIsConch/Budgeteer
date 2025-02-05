@@ -22,12 +22,9 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
   final TextEditingController amountController = TextEditingController();
   final TextEditingController notesController = TextEditingController();
   final TextEditingController dateController = TextEditingController();
-
-  // final TextEditingController categoryController = TextEditingController();
-  // String? selectedCategory;
-
-  // List<String> categories = [];
-  // bool catsLoading = true;
+  final TextEditingController categoryController = TextEditingController();
+  String? selectedCategory;
+  List<String> categories = [];
 
   final dbHelper = DatabaseHelper();
 
@@ -44,7 +41,7 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
       date: selectedDate,
       notes: notesController.text,
       type: selectedType,
-      // category: categoryController.text,
+      category: categoryController.text,
     );
 
     return transaction;
@@ -63,50 +60,46 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
       selectedDate = widget.transaction!.date;
       dateController.text = DateFormat('MM/dd/yyyy').format(selectedDate);
       selectedType = widget.transaction!.type;
-      // selectedCategory = widget.transaction!.category;
+      selectedCategory = widget.transaction!.category;
     }
 
-    // _loadCategories();
+    _loadCategories();
   }
 
-  // Future<void> _loadCategories() async {
-  //   try {
-  //     final loadedCategories = await dbHelper.getUniqueCategories();
+  Future<void> _loadCategories() async {
+    try {
+      final loadedCategories = await dbHelper.getUniqueCategories();
 
-  //     setState(() {
-  //       categories = loadedCategories;
-  //       catsLoading = false;
-  //     });
-  //     print("Set state with categories: $categories");
-  //   } catch (e) {
-  //     setState(() {
-  //       catsLoading = false;
-  //     });
-  //     print("Failed to load categories: $e");
-  //   }
-  // }
+      setState(() {
+        categories = loadedCategories;
+      });
+      print("Set state with categories: $categories");
+    } catch (e) {
+      print("Failed to load categories: $e");
+    }
+  }
 
-  // DropdownMenu getCategoryDropdown() {
-  //   print("getCat: $selectedCategory");
-  //   return DropdownMenu<String>(
-  //     initialSelection: selectedCategory,
-  //     controller: categoryController,
-  //     requestFocusOnTap: true,
-  //     width: 230,
-  //     label: const Text('Category'),
-  //     onSelected: (String? category) {
-  //       setState(() {
-  //         selectedCategory = category;
-  //       });
-  //     },
-  //     dropdownMenuEntries: categories
-  //         .map<DropdownMenuEntry<String>>((String cat) => DropdownMenuEntry(
-  //               value: cat,
-  //               label: cat,
-  //             ))
-  //         .toList(),
-  //   );
-  // }
+  DropdownMenu getCategoryDropdown() {
+    print("getCat: $selectedCategory");
+    return DropdownMenu<String>(
+      initialSelection: selectedCategory,
+      controller: categoryController,
+      requestFocusOnTap: true,
+      width: 230,
+      label: const Text('Category'),
+      onSelected: (String? category) {
+        setState(() {
+          selectedCategory = category;
+        });
+      },
+      dropdownMenuEntries: categories
+          .map<DropdownMenuEntry<String>>((String cat) => DropdownMenuEntry(
+                value: cat,
+                label: cat,
+              ))
+          .toList(),
+    );
+  }
 
   @override
   void dispose() {
@@ -114,7 +107,7 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
     amountController.dispose();
     notesController.dispose();
     dateController.dispose();
-    // categoryController.dispose();
+    categoryController.dispose();
 
     super.dispose();
   }
@@ -163,10 +156,10 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
               }),
         ),
       ),
-      // Padding(
-      //   padding: const EdgeInsets.only(top: 20, bottom: 10),
-      //   child: getCategoryDropdown(),
-      // ),
+      Padding(
+        padding: const EdgeInsets.only(top: 20, bottom: 10),
+        child: getCategoryDropdown(),
+      ),
       TextFormField(
         controller: notesController,
         decoration: const InputDecoration(
