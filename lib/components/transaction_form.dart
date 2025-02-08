@@ -61,6 +61,7 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
       dateController.text = DateFormat('MM/dd/yyyy').format(selectedDate);
       selectedType = widget.transaction!.type;
       selectedCategory = widget.transaction!.category;
+      categoryController.text = selectedCategory ?? "";
     }
 
     _loadCategories();

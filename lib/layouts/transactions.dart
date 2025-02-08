@@ -68,7 +68,17 @@ class _TransactionsPageState extends State<TransactionsPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            datePickerButton(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                children: [
+                  Expanded(child: datePickerButton()),
+                  IconButton.outlined(
+                      onPressed: () {},
+                      icon: const Icon(Icons.search)), // TODO: Implement Search
+                ],
+              ),
+            ),
             Expanded(
                 child: TransactionsList(
                     dateRange: dateRange ?? widget.startingDateRange,
