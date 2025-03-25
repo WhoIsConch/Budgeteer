@@ -64,7 +64,7 @@ class _TransactionsOverviewState extends State<TransactionsOverview> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const TransactionsPage(),
+                        builder: (context) => TransactionsPage(),
                       ),
                     );
                   },
@@ -168,7 +168,7 @@ class _OverviewHeaderState extends State<OverviewHeader> {
               MaterialPageRoute(
                   builder: (context) => TransactionsPage(
                         startingDateRange: config.dateRange(),
-                        type: config.type,
+                        startingTransactionType: config.type,
                       )));
         },
         onContentUpdated: (newContent) =>
