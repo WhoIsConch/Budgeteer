@@ -64,7 +64,7 @@ class _TransactionsOverviewState extends State<TransactionsOverview> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => TransactionsPage(),
+                        builder: (context) => const TransactionsPage(),
                       ),
                     );
                   },
@@ -99,7 +99,7 @@ class OverviewHeader extends StatefulWidget {
 
 class _OverviewHeaderState extends State<OverviewHeader> {
   bool isMinimized = true;
-  List<String> _previousContents = List.filled(8, '\$0.00');
+  final List<String> _previousContents = List.filled(8, '\$0.00');
 
   void _updatePreviousContent(int index, String newContent) {
     _previousContents[index] = newContent;

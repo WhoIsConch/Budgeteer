@@ -1,10 +1,10 @@
+import 'package:budget/tools/api.dart';
 import 'package:flutter/material.dart';
 import 'package:budget/components/transactions_list.dart';
-import 'package:budget/components/transaction_form.dart';
 import 'package:budget/tools/enums.dart';
 
 class TransactionsPage extends StatefulWidget {
-  TransactionsPage(
+  const TransactionsPage(
       {super.key, this.startingDateRange, this.startingTransactionType});
 
   final DateTimeRange? startingDateRange;
@@ -15,6 +15,8 @@ class TransactionsPage extends StatefulWidget {
 }
 
 class _TransactionsPageState extends State<TransactionsPage> {
+  final _dbHelper = DatabaseHelper();
+
   DateTimeRange? dateRange;
   TransactionType? transactionType;
   List types = [null, ...TransactionType.values];
@@ -25,7 +27,17 @@ class _TransactionsPageState extends State<TransactionsPage> {
   ];
   int typeIndex = 0;
 
-  String? searchString;
+  String searchString = "";
+  List<String> allCategories = <String>[];
+  List<String> selectedCategories = [];
+
+  bool resultsAreFiltered() {
+    return searchString.isNotEmpty ||
+        dateRange != null ||
+        allCategories.isNotEmpty ||
+        typeIndex % 3 != 0 ||
+        selectedCategories.isNotEmpty;
+  }
 
   Widget datePickerButton() {
     String buttonText = "All Time";
@@ -33,9 +45,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
     if (dateRange != null) {
       buttonText =
           "${dateRange!.start.month}/${dateRange!.start.day}/${dateRange!.start.year} - ${dateRange!.end.month}/${dateRange!.end.day}/${dateRange!.end.year}";
-    } else if (widget.startingDateRange != null) {
-      buttonText =
-          "${widget.startingDateRange!.start.month}/${widget.startingDateRange!.start.day}/${widget.startingDateRange!.start.year} - ${widget.startingDateRange!.end.month}/${widget.startingDateRange!.end.day}/${widget.startingDateRange!.end.year}";
     }
 
     return _getButton(
@@ -57,7 +66,68 @@ class _TransactionsPageState extends State<TransactionsPage> {
         });
   }
 
-  Future<String?> _showInputDialog(String title) async {
+  Future<List<String>?> _showCategoryInputDialog() async {
+    // Shows a dropdown of all available categories.
+    // Returns a list of selected categories.
+    // This shows an AlertDialog with nothing in it other than a dropdown
+    // which a user can select multiple categories from.
+
+    List<String> categories = await _dbHelper.getUniqueCategories();
+
+    return showDialog<List<String>>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: const Text("Select Categories"),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: categories.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    final category = categories[index];
+                    return CheckboxListTile(
+                      title: Text(category),
+                      value: selectedCategories.contains(category),
+                      onChanged: (bool? value) {
+                        setState(() {
+                          if (value != null) {
+                            if (value) {
+                              selectedCategories.add(category);
+                            } else {
+                              selectedCategories.remove(category);
+                            }
+                          }
+                        });
+                      },
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(null);
+                  },
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(selectedCategories);
+                  },
+                  child: const Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<String?> _showTextInputDialog(String title) async {
     TextEditingController controller = TextEditingController();
 
     return showDialog<String>(
@@ -107,7 +177,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           ?.onSecondaryContainer)),
             ),
             Container(
-                padding: EdgeInsets.all(8),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Theme.of(context).buttonTheme.colorScheme?.primary),
@@ -130,22 +200,35 @@ class _TransactionsPageState extends State<TransactionsPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    dateRange = widget.startingDateRange;
+    transactionType = widget.startingTransactionType;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Transactions"), actions: [
+    List<Widget> actions = [];
+
+    if (resultsAreFiltered()) {
+      actions = [
         Padding(
           padding: const EdgeInsets.fromLTRB(0, 0, 4, 0),
           child: IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: () async {
-                await showDialog(
-                    context: context,
-                    builder: (context) {
-                      return const TransactionManageDialog();
-                    });
+              icon: const Icon(Icons.delete_sweep),
+              onPressed: () {
+                setState(() {
+                  searchString = "";
+                  dateRange = null;
+                  typeIndex = 0;
+                  selectedCategories = [];
+                });
               }),
         )
-      ]),
+      ];
+    }
+    return Scaffold(
+      appBar: AppBar(title: const Text("Transactions"), actions: actions),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -163,15 +246,26 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     datePickerButton(),
                     _getButton(
                       icon: Icons.search,
-                      text: searchString ?? "Error",
-                      condition:
-                          !(searchString == null || searchString!.isEmpty),
+                      text: searchString.isNotEmpty ? searchString : "Error",
+                      condition: searchString.isNotEmpty,
                       onTap: () async {
-                        String? result = await _showInputDialog("Search");
+                        String? result = await _showTextInputDialog("Search");
 
-                        setState(() => searchString = result);
+                        setState(() => searchString = result ?? "");
                       },
                     ), // Make search search
+                    _getButton(
+                      icon: Icons.category,
+                      text: selectedCategories.isNotEmpty
+                          ? selectedCategories.join(", ")
+                          : "Error",
+                      condition: selectedCategories.isNotEmpty,
+                      onTap: () async {
+                        List<String>? result = await _showCategoryInputDialog();
+
+                        setState(() => selectedCategories = result ?? []);
+                      },
+                    ),
                     IconButton.outlined(
                         onPressed: () {
                           setState(() {
@@ -207,8 +301,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
             ),
             Expanded(
                 child: TransactionsList(
-                    dateRange: dateRange ?? widget.startingDateRange,
-                    type: transactionType ?? widget.startingTransactionType)),
+                    dateRange: dateRange, type: transactionType)),
           ],
         ),
       ),
