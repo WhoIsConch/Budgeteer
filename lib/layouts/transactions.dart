@@ -1,9 +1,112 @@
 import 'package:budget/tools/api.dart';
+import 'package:budget/tools/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:budget/components/transactions_list.dart';
 import 'package:budget/tools/enums.dart';
+import 'package:flutter/services.dart';
 
 enum AmountFilterType { greaterThan, lessThan, exactly }
+
+enum HybridButtonType { toggle, input }
+
+String toTitleCase(String s) => s
+    .replaceAllMapped(RegExp(r'([a-z])([A-Z])'), (m) => '${m[1]} ${m[2]}')
+    .replaceFirstMapped(RegExp(r'^\w'), (m) => m[0]!.toUpperCase());
+
+class HybridButton extends StatelessWidget {
+  const HybridButton({
+    super.key,
+    required this.buttonType,
+    required this.onTap,
+    required this.icon,
+    this.dynamicIconSelector,
+    this.text,
+    this.iconSet,
+    this.dataSet,
+    this.isEnabled = false,
+    this.preference = 1,
+  });
+
+  final HybridButtonType buttonType;
+  final bool isEnabled;
+  final VoidCallback onTap;
+  final Icon icon;
+  final Icon Function()? dynamicIconSelector;
+  final String? text;
+  final List<IconData>? iconSet;
+  final List<dynamic>? dataSet;
+  final int preference;
+
+  Widget _buildToggleButton(BuildContext context) {
+    return IconButton.outlined(
+        onPressed: onTap,
+        icon: icon,
+        color: isEnabled
+            ? Theme.of(context).buttonTheme.colorScheme?.onPrimary
+            : null,
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.resolveWith<Color?>(
+            (states) {
+              if (isEnabled) {
+                return Theme.of(context).buttonTheme.colorScheme?.primary;
+              }
+
+              return null;
+            },
+          ),
+        ));
+  }
+
+  Widget _buildInputButton(BuildContext context) {
+    if (isEnabled) {
+      return GestureDetector(
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color:
+                Theme.of(context).buttonTheme.colorScheme?.secondaryContainer,
+            borderRadius: BorderRadius.circular(50),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(text!,
+                  style: TextStyle(
+                      fontSize: 16,
+                      color: Theme.of(context)
+                          .buttonTheme
+                          .colorScheme
+                          ?.onSecondaryContainer)),
+            ),
+            Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Theme.of(context).buttonTheme.colorScheme?.primary),
+                child: dynamicIconSelector?.call() ?? icon),
+          ]),
+        ),
+      );
+    }
+
+    return IconButton.outlined(
+        onPressed: () => onTap(),
+        style: TextButton.styleFrom(
+            shape: const CircleBorder(),
+            side: BorderSide(color: Theme.of(context).dividerColor)),
+        icon: icon);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (buttonType == HybridButtonType.input) {
+      return _buildInputButton(context);
+    } else if (buttonType == HybridButtonType.toggle) {
+      return _buildToggleButton(context);
+    }
+    return const Placeholder();
+  }
+}
 
 class AmountFilter {
   final AmountFilterType? type;
@@ -48,33 +151,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
         typeIndex % 3 != 0 ||
         selectedCategories.isNotEmpty ||
         amountFilter != null;
-  }
-
-  Widget datePickerButton() {
-    String buttonText = "All Time";
-
-    if (dateRange != null) {
-      buttonText =
-          "${dateRange!.start.month}/${dateRange!.start.day}/${dateRange!.start.year} - ${dateRange!.end.month}/${dateRange!.end.day}/${dateRange!.end.year}";
-    }
-
-    return _getButton(
-        icon: Icons.date_range,
-        text: buttonText,
-        condition: dateRange != null,
-        onTap: () {
-          showDateRangePicker(
-                  context: context,
-                  initialDateRange: dateRange,
-                  firstDate:
-                      DateTime.now().subtract(const Duration(days: 365 * 10)),
-                  lastDate: DateTime.now())
-              .then((value) {
-            setState(() {
-              dateRange = value;
-            });
-          });
-        });
   }
 
   Future<List<String>?> _showCategoryInputDialog() async {
@@ -143,58 +219,69 @@ class _TransactionsPageState extends State<TransactionsPage> {
     // then the amount as an input.
     TextEditingController controller = TextEditingController();
     controller.text = amountFilter?.value.toString() ?? "";
-    amountFilter = amountFilter ?? AmountFilter(type: AmountFilterType.exactly);
 
     return showDialog<AmountFilter>(
         context: context,
         builder: (context) {
-          return AlertDialog(
-              title: const Text("Filter by Amount"),
-              content: Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Row(
+          return StatefulBuilder(
+              builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+                title: const Text("Filter by Amount"),
+                content: Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    DropdownMenu(
-                      width: 150,
-                      initialSelection:
-                          amountFilter?.type ?? AmountFilterType.exactly,
-                      label: const Text("Type"),
-                      dropdownMenuEntries: AmountFilterType.values
-                          .map((value) => DropdownMenuEntry(
-                              value: value, label: value.name))
-                          .toList(),
-                      onSelected: (AmountFilterType? value) => setState(() {
-                        amountFilter = AmountFilter(type: value);
+                    SegmentedButton(
+                      onSelectionChanged: (type) => setState(() {
+                        amountFilter = AmountFilter(type: type.first);
                       }),
+                      showSelectedIcon: false,
+                      selected: {
+                        amountFilter?.type ?? AmountFilterType.exactly
+                      },
+                      segments: AmountFilterType.values
+                          .map((value) => ButtonSegment(
+                              value: value,
+                              label: Text(
+                                toTitleCase(value.name),
+                                maxLines: 2,
+                              )))
+                          .toList(),
                     ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 8),
-                        child: TextField(
-                            controller: controller,
-                            decoration: const InputDecoration(
-                                hintText: "Amount", prefixText: "\$ ")),
-                      ),
+                    const SizedBox(height: 24),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: TextField(
+                          inputFormatters: [DecimalTextInputFormatter()],
+                          keyboardType: TextInputType.number,
+                          controller: controller,
+                          decoration: const InputDecoration(
+                              hintText: "Amount",
+                              prefixText: "\$ ",
+                              isDense: true)),
                     ),
                   ],
                 ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, null),
-                  child: const Text("Cancel"),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(
-                      context,
-                      AmountFilter(
-                          type: amountFilter?.type,
-                          value: double.parse(controller.text))),
-                  child: const Text("OK"),
-                )
-              ]);
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, null),
+                    child: const Text("Cancel"),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      if (double.tryParse(controller.text) == null) {
+                        return Navigator.pop(context, null);
+                      }
+
+                      return Navigator.pop(
+                          context,
+                          AmountFilter(
+                              type: amountFilter?.type,
+                              value: double.parse(controller.text)));
+                    },
+                    child: const Text("OK"),
+                  )
+                ]);
+          });
         });
   }
 
@@ -300,6 +387,93 @@ class _TransactionsPageState extends State<TransactionsPage> {
         )
       ];
     }
+
+    List<HybridButton> topRow = [
+      HybridButton(
+          buttonType: HybridButtonType.input,
+          preference: 5,
+          icon: const Icon(Icons.date_range),
+          text: dateRange != null
+              ? "${dateRange!.start.month}/${dateRange!.start.day}/${dateRange!.start.year} - ${dateRange!.end.month}/${dateRange!.end.day}/${dateRange!.end.year}"
+              : "All Time",
+          isEnabled: dateRange != null,
+          onTap: () {
+            showDateRangePicker(
+                    context: context,
+                    initialDateRange: dateRange,
+                    firstDate:
+                        DateTime.now().subtract(const Duration(days: 365 * 10)),
+                    lastDate: DateTime.now())
+                .then((value) {
+              setState(() {
+                dateRange = value;
+              });
+            });
+          }),
+      HybridButton(
+        preference: 4,
+        buttonType: HybridButtonType.input,
+        isEnabled: amountFilter != null,
+        onTap: () async {
+          AmountFilter? result = await _showAmountFilterDialog();
+
+          setState(() => amountFilter = result);
+        },
+        icon: const Icon(Icons.attach_money),
+        text:
+            amountFilter == null ? '0' : "\$${amountFilter!.value.toString()}",
+        dynamicIconSelector: () => amountFilter == null
+            ? const Icon(Icons.attach_money)
+            : amountFilter!.type == AmountFilterType.exactly
+                ? const Icon(Icons.balance)
+                : amountFilter!.type == AmountFilterType.lessThan
+                    ? const Icon(Icons.chevron_left)
+                    : const Icon(Icons.chevron_right),
+      ),
+      HybridButton(
+        preference: 3,
+        buttonType: HybridButtonType.input,
+        onTap: () async {
+          String? result = await _showTextInputDialog("Search");
+
+          setState(() => searchString = result ?? "");
+        },
+        icon: const Icon(Icons.search),
+        isEnabled: searchString.isNotEmpty,
+        text: searchString.isNotEmpty ? searchString : "Error",
+      ),
+      HybridButton(
+          preference: 2,
+          buttonType: HybridButtonType.input,
+          icon: const Icon(Icons.category),
+          text: selectedCategories.isNotEmpty
+              ? selectedCategories.join(", ")
+              : "Error",
+          isEnabled: selectedCategories.isNotEmpty,
+          onTap: () async {
+            List<String>? result = await _showCategoryInputDialog();
+
+            setState(() => selectedCategories = result ?? []);
+          }),
+      HybridButton(
+          preference: 1,
+          isEnabled: typeIndex % 3 != 0,
+          buttonType: HybridButtonType.toggle,
+          icon: typesIcons[typeIndex % 3],
+          onTap: () => setState(() {
+                typeIndex += 1;
+                transactionType = types[typeIndex % 3];
+              })),
+    ];
+
+    topRow.sort((a, b) {
+      if (a.isEnabled && b.isEnabled) {
+        return b.preference.compareTo(a.preference);
+      }
+
+      return a.isEnabled ? -1 : 1;
+    });
+
     return Scaffold(
       appBar: AppBar(title: const Text("Transactions"), actions: actions),
       body: Center(
@@ -315,80 +489,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   spacing: 6,
                   runSpacing: 4,
-                  children: [
-                    datePickerButton(),
-                    _getButton(
-                        condition: amountFilter != null,
-                        onTap: () async {
-                          AmountFilter? result =
-                              await _showAmountFilterDialog();
-
-                          setState(() => amountFilter = result);
-                        },
-                        icon: Icons.attach_money,
-                        dynamicIcon: amountFilter == null
-                            ? Icons.attach_money
-                            : amountFilter!.type == AmountFilterType.exactly
-                                ? Icons.balance
-                                : amountFilter!.type ==
-                                        AmountFilterType.lessThan
-                                    ? Icons.chevron_left
-                                    : Icons.chevron_right,
-                        text: amountFilter == null
-                            ? '0'
-                            : amountFilter!.value.toString()),
-                    _getButton(
-                      icon: Icons.search,
-                      text: searchString.isNotEmpty ? searchString : "Error",
-                      condition: searchString.isNotEmpty,
-                      onTap: () async {
-                        String? result = await _showTextInputDialog("Search");
-
-                        setState(() => searchString = result ?? "");
-                      },
-                    ), // Make search search
-                    _getButton(
-                      icon: Icons.category,
-                      text: selectedCategories.isNotEmpty
-                          ? selectedCategories.join(", ")
-                          : "Error",
-                      condition: selectedCategories.isNotEmpty,
-                      onTap: () async {
-                        List<String>? result = await _showCategoryInputDialog();
-
-                        setState(() => selectedCategories = result ?? []);
-                      },
-                    ),
-                    IconButton.outlined(
-                        onPressed: () {
-                          setState(() {
-                            typeIndex += 1;
-                            transactionType = types[typeIndex % 3];
-                          });
-                        },
-                        icon: typesIcons[typeIndex % 3],
-                        color: typeIndex % 3 != 0
-                            ? Theme.of(context)
-                                .buttonTheme
-                                .colorScheme
-                                ?.onPrimary
-                            : null,
-                        style: ButtonStyle(
-                          backgroundColor:
-                              WidgetStateProperty.resolveWith<Color?>(
-                            (states) {
-                              if (typeIndex % 3 != 0) {
-                                return Theme.of(context)
-                                    .buttonTheme
-                                    .colorScheme
-                                    ?.primary;
-                              }
-
-                              return null;
-                            },
-                          ),
-                        ))
-                  ],
+                  children: topRow,
                 ),
               ),
             ),
