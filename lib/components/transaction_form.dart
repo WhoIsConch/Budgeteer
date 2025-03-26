@@ -69,7 +69,7 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
 
   Future<void> _loadCategories() async {
     try {
-      final loadedCategories = await dbHelper.getUniqueCategories();
+      final loadedCategories = await dbHelper.getCategoriesList();
 
       setState(() {
         categories = loadedCategories;

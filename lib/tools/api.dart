@@ -24,12 +24,14 @@ class Category {
   double balance;
   CategoryResetIncrement resetIncrement;
   int associatedTransactions;
+  bool isPermanent;
 
   Category({
     required this.name,
     this.balance = 0,
     this.resetIncrement = CategoryResetIncrement.never,
     this.associatedTransactions = 0,
+    this.isPermanent = false,
   });
 
   factory Category.fromMap(Map<String, dynamic> map) {
@@ -38,6 +40,7 @@ class Category {
       balance: map['balance'],
       resetIncrement: CategoryResetIncrement.fromValue(map['resetIncrement']),
       associatedTransactions: map['associatedTransactions'],
+      isPermanent: map['isPermanent'] == 0 ? false : true,
     );
   }
 
@@ -47,18 +50,18 @@ class Category {
       'balance': balance,
       'resetIncrement': resetIncrement.value,
       'associatedTransactions': associatedTransactions,
+      'isPermanent': isPermanent ? 1 : 0,
     };
   }
 }
 
 class Transaction {
-  // DB v1
   final String title;
   final double amount;
   final DateTime date;
   final TransactionType type;
   int? id;
-  String? category;
+  String category;
   String? location;
   String? notes;
 
@@ -68,7 +71,7 @@ class Transaction {
     required this.amount,
     required this.date,
     required this.type,
-    this.category,
+    this.category = "",
     this.location,
     this.notes,
   });
@@ -152,8 +155,43 @@ class TransactionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> _incrementOrCreateCategory(String categoryName) async {
+    Category? category = await _dbHelper.getCategory(categoryName);
+
+    if (category == null) {
+      await _dbHelper.createCategory(
+          Category(name: categoryName, associatedTransactions: 1));
+      return;
+    }
+
+    category.associatedTransactions++;
+    await _dbHelper.updateCategory(category);
+  }
+
+  Future<void> _decrementOrDeleteCategory(String categoryName) async {
+    Category? category = await _dbHelper.getCategory(categoryName);
+    if (category == null) {
+      return;
+    }
+
+    category.associatedTransactions--;
+
+    if (category.associatedTransactions <= 0 && !category.isPermanent) {
+      _dbHelper.deleteCategory(category.name);
+      return;
+    } else {
+      category.associatedTransactions = 0;
+    }
+
+    _dbHelper.updateCategory(category);
+  }
+
   Future<void> addTransaction(Transaction transaction) async {
     final newTransaction = await _dbHelper.insertTransaction(transaction);
+
+    if (transaction.category.isNotEmpty) {
+      _incrementOrCreateCategory(transaction.category);
+    }
 
     _transactions.add(newTransaction);
     notifyListeners();
@@ -161,6 +199,10 @@ class TransactionProvider extends ChangeNotifier {
 
   Future<void> removeTransaction(Transaction transaction) async {
     await _dbHelper.deleteTransaction(transaction);
+
+    if (transaction.category.isNotEmpty) {
+      _decrementOrDeleteCategory(transaction.category);
+    }
 
     _transactions.removeWhere((t) => t.id == transaction.id);
     notifyListeners();
@@ -170,6 +212,30 @@ class TransactionProvider extends ChangeNotifier {
     await _dbHelper.updateTransaction(transaction);
     final index = _transactions.indexWhere((t) => t.id == transaction.id);
 
+    Transaction oldTransaction = transactions[index];
+    Transaction newTransaction = transaction;
+
+    // Manage the category of this transaction.
+    // If the category is not equal, that means they are both not null and
+    // they are both not the same (which would mean the category is the same)
+    if (newTransaction.category != oldTransaction.category) {
+      if (newTransaction.category.isEmpty &&
+          oldTransaction.category.isNotEmpty) {
+        // Did the transaction change to nothing?
+        _decrementOrDeleteCategory(oldTransaction.category);
+      } else if (oldTransaction.category.isEmpty &&
+          newTransaction.category.isNotEmpty) {
+        // Did the transaction change from nothing?
+        _incrementOrCreateCategory(newTransaction.category);
+      } else {
+        // If neither of them are null, but they are not equal to each other,
+        // both the previous and current had a category that is now changed.
+        // Update both of their categories.
+        _decrementOrDeleteCategory(transactions[index].category);
+        _incrementOrCreateCategory(transaction.category);
+      }
+    }
+
     if (index != -1) {
       _transactions[index] = transaction;
       notifyListeners();
@@ -177,11 +243,11 @@ class TransactionProvider extends ChangeNotifier {
   }
 
   Future<Category?> getCategoryFromTransaction(Transaction transaction) async {
-    if (transaction.category == null) {
+    if (transaction.category.isEmpty) {
       return null;
     }
 
-    return await _dbHelper.getCategory(transaction.category!);
+    return await _dbHelper.getCategory(transaction.category);
   }
 
   Future<double> getAmountSpent(DateTimeRange? dateRange) async {
@@ -204,7 +270,7 @@ class TransactionProvider extends ChangeNotifier {
   }
 
   Future<List<String>> getCategories() async {
-    return await _dbHelper.getUniqueCategories();
+    return await _dbHelper.getCategoriesList();
   }
 }
 
@@ -222,40 +288,42 @@ class DatabaseHelper {
   }
 
   Future<void> close() async {
-      final db = await database;
+    final db = await database;
 
-      await db.close();
+    await db.close();
 
-      _db = null;
-    }
+    _db = null;
+  }
 
   Future<Database> _initDatabase() async {
     return await openDatabase(join(await getDatabasesPath(), 'budget.db'),
-        version: 1, onCreate: _onCreate, onUpgrade: _onUpgrade);
+        version: 1, onCreate: _onCreate,
+        onUpgrade: (Database db, int oldVersion, int newVersion) async {
+      for (int version = oldVersion; version < newVersion; version++) {
+        await _performUpgrade(db, version + 1);
+      }
+    });
   }
 
-  Future<void> _onCreate(Database db, int version) async {
-    // DBv1
+  Future<void> _onCreate(Database db, int newVersion) async {
+    for (int version = 0; version < newVersion; version++) {
+      await _performUpgrade(db, version + 1);
+    }
+  }
+
+  static Future<void> _performUpgrade(Database db, int newVersion) async {
+    switch (newVersion) {
+      case 1:
+        _dbUpdatesVersion_1(db);
+    }
+  }
+
+  static Future<void> _dbUpdatesVersion_1(Database db) async {
     await db.execute(
       'CREATE TABLE transactions(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, amount REAL, date TEXT, type INTEGER, category TEXT, location TEXT, notes TEXT)',
     );
-    // DBv2
     await db.execute(
-        'CREATE TABLE categories(name STRING PRIMARY KEY, balance REAL, resetIncrement INTEGER, associatedTransactions INTEGER)');
-  }
-
-  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {}
-
-  Future<Transaction> insertTransaction(Transaction transaction) async {
-    final Database db = await database;
-
-    return transaction.copyWith(
-      id: await db.insert(
-        'transactions',
-        transaction.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      ),
-    );
+        'CREATE TABLE categories(name STRING PRIMARY KEY, balance REAL, resetIncrement INTEGER, associatedTransactions INTEGER, isPermanent INTEGER)');
   }
 
   Future<List<Transaction>> getTransactions({
@@ -286,6 +354,39 @@ class DatabaseHelper {
     return maps.map((map) => Transaction.fromMap(map)).toList();
   }
 
+  Future<Transaction> insertTransaction(Transaction transaction) async {
+    final Database db = await database;
+
+    return transaction.copyWith(
+      id: await db.insert(
+        'transactions',
+        transaction.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      ),
+    );
+  }
+
+  Future<void> updateTransaction(Transaction transaction) async {
+    final db = await database;
+
+    await db.update(
+      'transactions',
+      transaction.toMap(),
+      where: 'id = ?',
+      whereArgs: [transaction.id],
+    );
+  }
+
+  Future<void> deleteTransaction(Transaction transaction) async {
+    final db = await database;
+
+    await db.delete(
+      'transactions',
+      where: 'id = ?',
+      whereArgs: [transaction.id],
+    );
+  }
+
   Future<double> getTotalAmount({
     DateTimeRange? dateRange,
     required TransactionType type,
@@ -311,7 +412,7 @@ class DatabaseHelper {
     return (result.first['total'] as num?)?.toDouble() ?? 0.0;
   }
 
-  Future<List<String>> getUniqueCategories() async {
+  Future<List<String>> getCategoriesList() async {
     try {
       final db = await database;
 
@@ -335,8 +436,7 @@ class DatabaseHelper {
     }
   }
 
-  Future<Category?> getCategory(String categoryName,
-      {deleteIfUnused = true}) async {
+  Future<Category?> getCategory(String categoryName) async {
     try {
       final db = await database;
 
@@ -352,10 +452,6 @@ class DatabaseHelper {
 
       Category category = Category.fromMap(results.first);
 
-      if (results.first['associatedTransactions']! as double <= 0 && deleteIfUnused) {
-        deleteCategoryIfZero(category: category);
-      }
-
       return category;
     } catch (e) {
       print("Error: $e");
@@ -363,63 +459,33 @@ class DatabaseHelper {
     }
   }
 
-  Future<void> deleteCategoryIfZero(
-      {String? categoryName,
-      Category? category,
-      bool subtractOne = false}) async {
-    // Delete a category if there are no more transactions that rely on it.
-
-    if (categoryName == null && category == null) {
-      return;
-    } else if (categoryName != null) {
-      category = await getCategory(categoryName);
-    } // If neither of these conditions are true, it means `category` is not
-    // null and can be used as it is
-
-    if (subtractOne) {
-      category!.associatedTransactions -= 1;
-    }
-
-    if (category!.associatedTransactions <= 0) {
-      // Delete the category if it is unused
-      final db = await database;
-
-      await db.delete(
-        'categories',
-        where: 'name = ?',
-        whereArgs: [category.name],
-      );
-    }
-  }
-
-  Future<void> updateTransaction(Transaction transaction) async {
-    final db = await database;
-
-    List<Map> previous = await db
-        .query('transactions', where: 'id = ?', whereArgs: [transaction.id]);
-
-    if (previous.first['category'] != transaction.category) {
-      deleteCategoryIfZero(categoryName: previous.first['category'], subtractOne: true);
-    }
-
-    await db.update(
-      'transactions',
-      transaction.toMap(),
-      where: 'id = ?',
-      whereArgs: [transaction.id],
-    );
-  }
-
-  Future<void> deleteTransaction(Transaction transaction) async {
+  Future<void> deleteCategory(String categoryName) async {
+    // Delete the category if it is unused
     final db = await database;
 
     await db.delete(
-      'transactions',
-      where: 'id = ?',
-      whereArgs: [transaction.id],
+      'categories',
+      where: 'name = ?',
+      whereArgs: [categoryName],
+    );
+  }
+
+  Future<Category> createCategory(Category category) async {
+    final db = await database;
+
+    await db.insert(
+      'categories',
+      category.toMap(),
     );
 
-    deleteCategoryIfZero(categoryName: transaction.category, subtractOne: true);
+    print(category);
+    return category;
   }
 
+  Future<void> updateCategory(Category category) async {
+    final db = await database;
+
+    await db.update('categories', category.toMap(),
+        where: 'name = ?', whereArgs: [category.name]);
   }
+}

@@ -158,7 +158,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     // This shows an AlertDialog with nothing in it other than a dropdown
     // which a user can select multiple categories from.
 
-    List<String> categories = await _dbHelper.getUniqueCategories();
+    List<String> categories = await _dbHelper.getCategoriesList();
 
     if (!context.mounted) {
       return [];
@@ -288,7 +288,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
         });
   }
 
-  Future<String?> _showTextInputDialog(BuildContext context, String title) async {
+  Future<String?> _showTextInputDialog(
+      BuildContext context, String title) async {
     TextEditingController controller = TextEditingController();
 
     return showDialog<String>(
