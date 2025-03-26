@@ -152,13 +152,17 @@ class _TransactionsPageState extends State<TransactionsPage> {
         amountFilter != null;
   }
 
-  Future<List<String>?> _showCategoryInputDialog() async {
+  Future<List<String>?> _showCategoryInputDialog(BuildContext context) async {
     // Shows a dropdown of all available categories.
     // Returns a list of selected categories.
     // This shows an AlertDialog with nothing in it other than a dropdown
     // which a user can select multiple categories from.
 
     List<String> categories = await _dbHelper.getUniqueCategories();
+
+    if (!context.mounted) {
+      return [];
+    }
 
     return showDialog<List<String>>(
       context: context,
@@ -213,7 +217,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     );
   }
 
-  Future<AmountFilter?> _showAmountFilterDialog() async {
+  Future<AmountFilter?> _showAmountFilterDialog(BuildContext context) async {
     // Shows a dialog inline with a dropdown showing the filter type first,
     // then the amount as an input.
     TextEditingController controller = TextEditingController();
@@ -284,7 +288,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
         });
   }
 
-  Future<String?> _showTextInputDialog(String title) async {
+  Future<String?> _showTextInputDialog(BuildContext context, String title) async {
     TextEditingController controller = TextEditingController();
 
     return showDialog<String>(
@@ -307,7 +311,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               ]);
         });
   }
-  
+
   @override
   void initState() {
     super.initState();
@@ -364,7 +368,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
         buttonType: HybridButtonType.input,
         isEnabled: amountFilter != null,
         onTap: () async {
-          AmountFilter? result = await _showAmountFilterDialog();
+          AmountFilter? result = await _showAmountFilterDialog(context);
 
           setState(() => amountFilter = result);
         },
@@ -383,7 +387,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
         preference: 3,
         buttonType: HybridButtonType.input,
         onTap: () async {
-          String? result = await _showTextInputDialog("Search");
+          String? result = await _showTextInputDialog(context, "Search");
 
           setState(() => searchString = result ?? "");
         },
@@ -400,7 +404,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               : "Error",
           isEnabled: selectedCategories.isNotEmpty,
           onTap: () async {
-            List<String>? result = await _showCategoryInputDialog();
+            List<String>? result = await _showCategoryInputDialog(context);
 
             setState(() => selectedCategories = result ?? []);
           }),
