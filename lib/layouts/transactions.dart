@@ -3,7 +3,6 @@ import 'package:budget/tools/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:budget/components/transactions_list.dart';
 import 'package:budget/tools/enums.dart';
-import 'package:flutter/services.dart';
 
 enum AmountFilterType { greaterThan, lessThan, exactly }
 
@@ -308,57 +307,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               ]);
         });
   }
-
-  Widget _getButton({
-    required bool condition,
-    required Function onTap,
-    required IconData icon,
-    required String text,
-    IconData? dynamicIcon,
-  }) {
-    if (condition) {
-      return GestureDetector(
-        onTap: () => onTap(),
-        child: Container(
-          decoration: BoxDecoration(
-            color:
-                Theme.of(context).buttonTheme.colorScheme?.secondaryContainer,
-            borderRadius: BorderRadius.circular(50),
-          ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(text,
-                  style: TextStyle(
-                      fontSize: 16,
-                      color: Theme.of(context)
-                          .buttonTheme
-                          .colorScheme
-                          ?.onSecondaryContainer)),
-            ),
-            Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Theme.of(context).buttonTheme.colorScheme?.primary),
-                child: Icon(dynamicIcon ?? icon,
-                    color: Theme.of(context)
-                        .buttonTheme
-                        .colorScheme
-                        ?.onSecondary)),
-          ]),
-        ),
-      );
-    }
-
-    return IconButton.outlined(
-        onPressed: () => onTap(),
-        style: TextButton.styleFrom(
-            shape: const CircleBorder(),
-            side: BorderSide(color: Theme.of(context).dividerColor)),
-        icon: Icon(icon));
-  }
-
+  
   @override
   void initState() {
     super.initState();
