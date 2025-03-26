@@ -3,6 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:budget/components/transactions_list.dart';
 import 'package:budget/tools/enums.dart';
 
+enum AmountFilterType { greaterThan, lessThan, exactly }
+
+class AmountFilter {
+  final AmountFilterType? type;
+  final double? value;
+
+  AmountFilter({this.type, this.value});
+}
+
 class TransactionsPage extends StatefulWidget {
   const TransactionsPage(
       {super.key, this.startingDateRange, this.startingTransactionType});
@@ -26,6 +35,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     const Icon(Icons.add)
   ];
   int typeIndex = 0;
+  AmountFilter? amountFilter;
 
   String searchString = "";
   List<String> allCategories = <String>[];
@@ -36,7 +46,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
         dateRange != null ||
         allCategories.isNotEmpty ||
         typeIndex % 3 != 0 ||
-        selectedCategories.isNotEmpty;
+        selectedCategories.isNotEmpty ||
+        amountFilter != null;
   }
 
   Widget datePickerButton() {
@@ -127,6 +138,66 @@ class _TransactionsPageState extends State<TransactionsPage> {
     );
   }
 
+  Future<AmountFilter?> _showAmountFilterDialog() async {
+    // Shows a dialog inline with a dropdown showing the filter type first,
+    // then the amount as an input.
+    TextEditingController controller = TextEditingController();
+    controller.text = amountFilter?.value.toString() ?? "";
+    amountFilter = amountFilter ?? AmountFilter(type: AmountFilterType.exactly);
+
+    return showDialog<AmountFilter>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+              title: const Text("Filter by Amount"),
+              content: Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    DropdownMenu(
+                      width: 150,
+                      initialSelection:
+                          amountFilter?.type ?? AmountFilterType.exactly,
+                      label: const Text("Type"),
+                      dropdownMenuEntries: AmountFilterType.values
+                          .map((value) => DropdownMenuEntry(
+                              value: value, label: value.name))
+                          .toList(),
+                      onSelected: (AmountFilterType? value) => setState(() {
+                        amountFilter = AmountFilter(type: value);
+                      }),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: TextField(
+                            controller: controller,
+                            decoration: const InputDecoration(
+                                hintText: "Amount", prefixText: "\$ ")),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, null),
+                  child: const Text("Cancel"),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(
+                      context,
+                      AmountFilter(
+                          type: amountFilter?.type,
+                          value: double.parse(controller.text))),
+                  child: const Text("OK"),
+                )
+              ]);
+        });
+  }
+
   Future<String?> _showTextInputDialog(String title) async {
     TextEditingController controller = TextEditingController();
 
@@ -151,11 +222,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
         });
   }
 
-  Widget _getButton(
-      {required bool condition,
-      required Function onTap,
-      required IconData icon,
-      required String text}) {
+  Widget _getButton({
+    required bool condition,
+    required Function onTap,
+    required IconData icon,
+    required String text,
+    IconData? dynamicIcon,
+  }) {
     if (condition) {
       return GestureDetector(
         onTap: () => onTap(),
@@ -181,7 +254,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Theme.of(context).buttonTheme.colorScheme?.primary),
-                child: Icon(icon,
+                child: Icon(dynamicIcon ?? icon,
                     color: Theme.of(context)
                         .buttonTheme
                         .colorScheme
@@ -245,6 +318,26 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   children: [
                     datePickerButton(),
                     _getButton(
+                        condition: amountFilter != null,
+                        onTap: () async {
+                          AmountFilter? result =
+                              await _showAmountFilterDialog();
+
+                          setState(() => amountFilter = result);
+                        },
+                        icon: Icons.attach_money,
+                        dynamicIcon: amountFilter == null
+                            ? Icons.attach_money
+                            : amountFilter!.type == AmountFilterType.exactly
+                                ? Icons.balance
+                                : amountFilter!.type ==
+                                        AmountFilterType.lessThan
+                                    ? Icons.chevron_left
+                                    : Icons.chevron_right,
+                        text: amountFilter == null
+                            ? '0'
+                            : amountFilter!.value.toString()),
+                    _getButton(
                       icon: Icons.search,
                       text: searchString.isNotEmpty ? searchString : "Error",
                       condition: searchString.isNotEmpty,
@@ -301,7 +394,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
             ),
             Expanded(
                 child: TransactionsList(
-                    dateRange: dateRange, type: transactionType)),
+              dateRange: dateRange,
+              type: transactionType,
+              containsString: searchString,
+              categories: selectedCategories,
+            )),
           ],
         ),
       ),

@@ -5,10 +5,17 @@ import 'package:budget/components/transaction_form.dart';
 import 'package:budget/tools/enums.dart';
 
 class TransactionsList extends StatefulWidget {
-  const TransactionsList({super.key, this.dateRange, this.type});
+  const TransactionsList(
+      {super.key,
+      this.dateRange,
+      this.type,
+      this.categories,
+      this.containsString});
 
   final DateTimeRange? dateRange;
   final TransactionType? type;
+  final List<String>? categories;
+  final String? containsString;
 
   @override
   State<TransactionsList> createState() => _TransactionsListState();
@@ -105,6 +112,26 @@ class _TransactionsListState extends State<TransactionsList> {
                     widget.dateRange!.end.add(const Duration(days: 1)));
           }).toList();
         }
+
+        // If there are categories specified, filter the transactions by those
+        if (widget.categories != null && widget.categories!.isNotEmpty) {
+          transactions = transactions.where((transaction) {
+            return widget.categories!.contains(transaction.category);
+          }).toList();
+        }
+
+        // If a string is specified, search the description and the title for
+        // that string and return results containing it
+        if (widget.containsString != null &&
+            widget.containsString!.isNotEmpty) {
+          transactions = transactions.where((transaction) {
+            return transaction.title.contains(widget.containsString!) ||
+                transaction.notes!.contains(widget.containsString!);
+          }).toList();
+        }
+
+        print(widget.containsString);
+        print(widget.categories);
 
         // Sort transactions by date, most recent first
         transactions.sort((a, b) => b.date.compareTo(a.date));
