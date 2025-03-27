@@ -36,8 +36,14 @@ class OverviewCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(textAlign: TextAlign.center, title, style: titleStyle),
-            Text(textAlign: TextAlign.center, content, style: contentStyle),
+            AutoSizeText(title,
+                textAlign: TextAlign.center, style: titleStyle, maxLines: 1),
+            AutoSizeText(
+              content,
+              textAlign: TextAlign.center,
+              style: contentStyle,
+              maxLines: 1,
+            ),
           ]),
     );
 
@@ -95,7 +101,13 @@ class AsyncOverviewCard extends StatelessWidget {
               if (snapshot.hasError) {
                 displayAmount = "Error";
               } else if (snapshot.hasData) {
-                displayAmount = '\$${snapshot.data!.toStringAsFixed(2)}';
+                if (snapshot.data! < 0) {
+                  displayAmount =
+                      '-\$${snapshot.data!.abs().toStringAsFixed(2)}';
+                } else {
+                  displayAmount =
+                      '\$${snapshot.data!.abs().toStringAsFixed(2)}';
+                }
                 onContentUpdated?.call(displayAmount);
               }
             }
