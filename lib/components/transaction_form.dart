@@ -55,7 +55,7 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
     // There's probably a better way to do this
     if (widget.mode == TransactionManageMode.edit) {
       titleController.text = widget.transaction!.title;
-      amountController.text = widget.transaction!.amount.toString();
+      amountController.text = widget.transaction!.amount.toStringAsFixed(2);
       notesController.text = widget.transaction!.notes ?? "";
       selectedDate = widget.transaction!.date;
       dateController.text = DateFormat('MM/dd/yyyy').format(selectedDate);
@@ -124,12 +124,12 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
           validator: validateTitle),
       TextFormField(
         controller: amountController,
-        decoration: const InputDecoration(
-          labelText: "Amount",
-        ),
+        decoration:
+            const InputDecoration(labelText: "Amount", prefix: Text("\$")),
         keyboardType:
             const TextInputType.numberWithOptions(decimal: true, signed: true),
         validator: validateAmount,
+        inputFormatters: [DecimalTextInputFormatter()],
       ),
       TextFormField(
         readOnly: true,
@@ -167,28 +167,18 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
           labelText: "Notes",
         ),
       ),
-      Row(children: [
-        Radio<TransactionType>(
-          value: TransactionType.expense,
-          groupValue: selectedType,
-          onChanged: (TransactionType? value) {
-            setState(() {
-              selectedType = value!;
-            });
-          },
-        ),
-        const Text("Expense"),
-        Radio<TransactionType>(
-          value: TransactionType.income,
-          groupValue: selectedType,
-          onChanged: (TransactionType? value) {
-            setState(() {
-              selectedType = value!;
-            });
-          },
-        ),
-        const Text("Income"),
-      ]),
+      SegmentedButton(
+        selected: {selectedType},
+        segments: const [
+          ButtonSegment(value: TransactionType.expense, label: Text("Expense")),
+          ButtonSegment(value: TransactionType.income, label: Text("Income"))
+        ],
+        onSelectionChanged: (Set<TransactionType> value) {
+          setState(() {
+            selectedType = value.first;
+          });
+        },
+      ),
     ];
     Widget title = const Text("Add Transaction");
 
@@ -204,6 +194,7 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
             builder: (BuildContext context, StateSetter setState) {
           return SingleChildScrollView(
             child: Column(
+              spacing: 10,
               mainAxisSize: MainAxisSize.min,
               children: formFields,
             ),

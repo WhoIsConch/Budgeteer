@@ -383,13 +383,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
           AmountFilterType.lessThan => const Icon(Icons.chevron_left),
           _ => const Icon(Icons.balance),
         },
-        // dynamicIconSelector: () => amountFilter == null
-        //     ? const Icon(Icons.attach_money)
-        //     : amountFilter!.type == AmountFilterType.exactly
-        //         ? const Icon(Icons.balance)
-        //         : amountFilter!.type == AmountFilterType.lessThan
-        //             ? const Icon(Icons.chevron_left)
-        //             : const Icon(Icons.chevron_right),
       ),
       HybridButton(
         preference: 3,
