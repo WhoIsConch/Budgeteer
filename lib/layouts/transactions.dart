@@ -129,7 +129,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
   final _dbHelper = DatabaseHelper();
 
   DateTimeRange? dateRange;
-  TransactionType? transactionType;
   List types = [null, ...TransactionType.values];
   List typesIcons = [
     const Icon(Icons.all_inclusive),
@@ -150,6 +149,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
         typeIndex % 3 != 0 ||
         selectedCategories.isNotEmpty ||
         amountFilter != null;
+  }
+
+  TransactionType? get transactionType {
+    return types[typeIndex % 3];
   }
 
   Future<List<String>?> _showCategoryInputDialog(BuildContext context) async {
@@ -317,7 +320,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
   void initState() {
     super.initState();
     dateRange = widget.startingDateRange;
-    transactionType = widget.startingTransactionType;
+
+    for (int i = 0; i < types.length; i++) {
+      if (widget.startingTransactionType == types[i]) {
+        typeIndex = i;
+        break;
+      }
+    }
   }
 
   @override
@@ -336,6 +345,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   dateRange = null;
                   typeIndex = 0;
                   selectedCategories = [];
+                  amountFilter = null;
                 });
               }),
         )
@@ -416,7 +426,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
           icon: typesIcons[typeIndex % 3],
           onTap: () => setState(() {
                 typeIndex += 1;
-                transactionType = types[typeIndex % 3];
               })),
     ];
 
