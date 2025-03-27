@@ -151,34 +151,36 @@ class _OverviewHeaderState extends State<OverviewHeader> {
     ];
   }
 
-  List<AsyncOverviewCard> getAvailableCards(
-      TransactionProvider transactionProvider) {
+  List<Widget> getAvailableCards(TransactionProvider transactionProvider) {
     return List.generate(cardConfigs.length, (index) {
       final config = cardConfigs[index];
 
-      return AsyncOverviewCard(
-        title: config.title,
-        previousContent: _previousContents[index],
-        amountCalculator: (provider) => config.type == TransactionType.expense
-            ? provider.getAmountSpent(config.dateRange())
-            : provider.getAmountEarned(config.dateRange()),
-        onPressed: () {
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => TransactionsPage(
-                        startingDateRange: config.dateRange(),
-                        startingTransactionType: config.type,
-                      )));
-        },
-        onContentUpdated: (newContent) =>
-            _updatePreviousContent(index, newContent),
+      return Padding(
+        padding: const EdgeInsets.all(4.0),
+        child: AsyncOverviewCard(
+          title: config.title,
+          previousContent: _previousContents[index],
+          amountCalculator: (provider) => config.type == TransactionType.expense
+              ? provider.getAmountSpent(config.dateRange())
+              : provider.getAmountEarned(config.dateRange()),
+          onPressed: () {
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => TransactionsPage(
+                          startingDateRange: config.dateRange(),
+                          startingTransactionType: config.type,
+                        )));
+          },
+          onContentUpdated: (newContent) =>
+              _updatePreviousContent(index, newContent),
+        ),
       );
     });
   }
 
   Widget getMinimized(TransactionProvider transactionProvider) {
-    List<AsyncOverviewCard> availableCards =
+    List<Widget> availableCards =
         getAvailableCards(transactionProvider).sublist(0, 4);
     return Column(children: [
       Expanded(
@@ -201,8 +203,7 @@ class _OverviewHeaderState extends State<OverviewHeader> {
   }
 
   Widget getMaximized(TransactionProvider transactionProvider) {
-    List<AsyncOverviewCard> availableCards =
-        getAvailableCards(transactionProvider);
+    List<Widget> availableCards = getAvailableCards(transactionProvider);
 
     return GridView.count(
       crossAxisCount: 2,

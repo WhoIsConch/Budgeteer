@@ -46,23 +46,15 @@ class Overview extends StatelessWidget {
                   const Spacer(),
                   Expanded(
                       flex: 8,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                              flex: 8,
-                              child: CardButton(
-                                content: "Add a transaction",
-                                callback: () {
-                                  showDialog(
-                                      context: context,
-                                      builder: (context) =>
-                                          const TransactionManageDialog(
-                                              mode: tools
-                                                  .TransactionManageMode.add));
-                                },
-                              )),
-                        ],
+                      child: CardButton(
+                        content: "Add a transaction",
+                        callback: () {
+                          showDialog(
+                              context: context,
+                              builder: (context) =>
+                                  const TransactionManageDialog(
+                                      mode: tools.TransactionManageMode.add));
+                        },
                       ))
                 ],
               ),

@@ -49,20 +49,22 @@ class OverviewCard extends StatelessWidget {
 
     if (onPressed != null) {
       return Card(
+        margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.0),
+          borderRadius: BorderRadius.circular(16.0),
         ),
         color: theme.colorScheme.primaryContainer,
         child: InkWell(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(16.0),
           onTap: onPressed as void Function()?,
           child: cardContent,
         ),
       );
     } else {
       return Card(
+          margin: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10.0),
+            borderRadius: BorderRadius.circular(16.0),
           ),
           color: theme.colorScheme.primaryContainer,
           child: cardContent);
@@ -71,6 +73,9 @@ class OverviewCard extends StatelessWidget {
 }
 
 class AsyncOverviewCard extends StatelessWidget {
+  // TODO: Make this stateful so it doesn't reload the amount every time
+  // Make the color of the text change to slight red based on whether the text
+  // color is dark or bright if the balance is negative
   final String title;
   final Future<double> Function(TransactionProvider) amountCalculator;
   final VoidCallback? onPressed;
