@@ -1,3 +1,4 @@
+import 'package:budget/components/transaction_form.dart';
 import 'package:budget/tools/api.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:flutter/material.dart';
@@ -323,8 +324,18 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> actions = [];
+    List<Widget> actions = [
+      IconButton(
+        icon: const Icon(Icons.add),
+        onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => const TransactionManageDialog(
+                    mode: TransactionManageMode.add))),
+      )
+    ];
 
+    // Purposely swap out the plus button 
     if (resultsAreFiltered()) {
       actions = [
         Padding(
@@ -453,6 +464,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               containsString: searchString,
               categories: selectedCategories,
               amountFilter: amountFilter,
+              showActionButton: false,
             )),
           ],
         ),

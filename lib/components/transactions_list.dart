@@ -11,13 +11,15 @@ class TransactionsList extends StatefulWidget {
       this.type,
       this.categories,
       this.containsString,
-      this.amountFilter});
+      this.amountFilter,
+      this.showActionButton = true});
 
   final DateTimeRange? dateRange;
   final TransactionType? type;
   final List<String>? categories;
   final String? containsString;
   final AmountFilter? amountFilter;
+  final bool showActionButton;
 
   @override
   State<TransactionsList> createState() => _TransactionsListState();
@@ -186,32 +188,31 @@ class _TransactionsListState extends State<TransactionsList> {
 
         // Return a stack with a listview in it so we can put that floating
         // action button at the bottom right
-        return Stack(children: [
+
+        List<Widget> stackChildren = [
           ListView.builder(
-            itemCount: transactions.length,
-            itemBuilder: (context, index) {
-              Transaction transaction = transactions[index];
-              return Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: Card(
-                  child: tileFromTransaction(
-                      transaction, Theme.of(context), transactionProvider),
-                ),
-              );
-            },
-          ),
+              itemCount: transactions.length,
+              itemBuilder: (context, index) {
+                Transaction transaction = transactions[index];
+                return Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Card(
+                    child: tileFromTransaction(
+                        transaction, Theme.of(context), transactionProvider),
+                  ),
+                );
+              },
+            ),
+          ];
+
+        if (widget.showActionButton) {
+          stackChildren.add(
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Align(
               alignment: Alignment.bottomRight,
               child: FloatingActionButton(
                 child: const Icon(Icons.add),
-                // onPressed: () {
-                //   showDialog(
-                //       context: context,
-                //       builder: (context) => const TransactionManageDialog(
-                //           mode: TransactionManageMode.add));
-                // },
                 onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -220,7 +221,10 @@ class _TransactionsListState extends State<TransactionsList> {
               ),
             ),
           )
-        ]);
+          );
+        }
+
+        return Stack(children: stackChildren);
       },
     );
   }
