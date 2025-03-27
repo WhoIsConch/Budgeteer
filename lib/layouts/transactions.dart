@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:budget/components/transactions_list.dart';
 import 'package:budget/tools/enums.dart';
 
-enum AmountFilterType { greaterThan, lessThan, exactly }
-
 enum HybridButtonType { toggle, input }
 
 String toTitleCase(String s) => s
@@ -105,13 +103,6 @@ class HybridButton extends StatelessWidget {
     }
     return const Placeholder();
   }
-}
-
-class AmountFilter {
-  final AmountFilterType? type;
-  final double? value;
-
-  AmountFilter({this.type, this.value});
 }
 
 class TransactionsPage extends StatefulWidget {
@@ -225,6 +216,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     // then the amount as an input.
     TextEditingController controller = TextEditingController();
     controller.text = amountFilter?.value.toString() ?? "";
+    amountFilter = AmountFilter(type: AmountFilterType.exactly);
 
     return showDialog<AmountFilter>(
         context: context,
@@ -386,13 +378,18 @@ class _TransactionsPageState extends State<TransactionsPage> {
         icon: const Icon(Icons.attach_money),
         text:
             amountFilter == null ? '0' : "\$${amountFilter!.value.toString()}",
-        dynamicIconSelector: () => amountFilter == null
-            ? const Icon(Icons.attach_money)
-            : amountFilter!.type == AmountFilterType.exactly
-                ? const Icon(Icons.balance)
-                : amountFilter!.type == AmountFilterType.lessThan
-                    ? const Icon(Icons.chevron_left)
-                    : const Icon(Icons.chevron_right),
+        dynamicIconSelector: () => switch (amountFilter?.type) {
+          AmountFilterType.greaterThan => const Icon(Icons.chevron_right),
+          AmountFilterType.lessThan => const Icon(Icons.chevron_left),
+          _ => const Icon(Icons.balance),
+        },
+        // dynamicIconSelector: () => amountFilter == null
+        //     ? const Icon(Icons.attach_money)
+        //     : amountFilter!.type == AmountFilterType.exactly
+        //         ? const Icon(Icons.balance)
+        //         : amountFilter!.type == AmountFilterType.lessThan
+        //             ? const Icon(Icons.chevron_left)
+        //             : const Icon(Icons.chevron_right),
       ),
       HybridButton(
         preference: 3,
@@ -462,6 +459,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               type: transactionType,
               containsString: searchString,
               categories: selectedCategories,
+              amountFilter: amountFilter,
             )),
           ],
         ),

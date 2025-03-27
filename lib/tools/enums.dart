@@ -1,5 +1,7 @@
 enum TransactionManageMode { add, edit } // Normal enum
 
+enum AmountFilterType { greaterThan, lessThan, exactly }
+
 // Enums with values, in case I need to store them in a database
 enum TransactionType {
   expense(0),
@@ -15,4 +17,16 @@ enum PageType {
 
   const PageType(this.value);
   final int value;
+}
+
+// Not by definition an enum but it works nonetheless
+class AmountFilter {
+  final AmountFilterType? type;
+  final double? value;
+
+  AmountFilter({this.type, this.value});
+
+  bool isPopulated() {
+    return type != null && value != null;
+  }
 }

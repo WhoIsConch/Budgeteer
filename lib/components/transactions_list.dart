@@ -10,12 +10,14 @@ class TransactionsList extends StatefulWidget {
       this.dateRange,
       this.type,
       this.categories,
-      this.containsString});
+      this.containsString,
+      this.amountFilter});
 
   final DateTimeRange? dateRange;
   final TransactionType? type;
   final List<String>? categories;
   final String? containsString;
+  final AmountFilter? amountFilter;
 
   @override
   State<TransactionsList> createState() => _TransactionsListState();
@@ -127,6 +129,19 @@ class _TransactionsListState extends State<TransactionsList> {
           transactions = transactions.where((transaction) {
             return transaction.title.contains(widget.containsString!) ||
                 transaction.notes!.contains(widget.containsString!);
+          }).toList();
+        }
+
+        if (widget.amountFilter != null && widget.amountFilter!.isPopulated()) {
+          transactions = transactions.where((transaction) {
+            switch (widget.amountFilter!.type) {
+              case AmountFilterType.greaterThan:
+                return transaction.amount > widget.amountFilter!.value!;
+              case AmountFilterType.lessThan:
+                return transaction.amount < widget.amountFilter!.value!;
+              case _:
+                return transaction.amount == widget.amountFilter!.value!;
+            }
           }).toList();
         }
 
