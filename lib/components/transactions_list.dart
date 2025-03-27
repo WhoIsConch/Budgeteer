@@ -37,11 +37,12 @@ class _TransactionsListState extends State<TransactionsList> {
               title: const Text("Edit"),
               onTap: () {
                 Navigator.pop(context);
-                showDialog(
-                    context: context,
-                    builder: (context) => TransactionManageDialog(
-                        mode: TransactionManageMode.edit,
-                        transaction: transaction));
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => TransactionManageDialog(
+                            mode: TransactionManageMode.edit,
+                            transaction: transaction)));
               },
             ),
             ListTile(
@@ -69,10 +70,11 @@ class _TransactionsListState extends State<TransactionsList> {
           : const Icon(Icons.add_circle),
       title: Text("${transaction.formatAmount()} at ${transaction.title}"),
       subtitle: Text(transaction.formatDate()),
-      onTap: () => showDialog(
-          context: context,
-          builder: (context) => TransactionManageDialog(
-              mode: TransactionManageMode.edit, transaction: transaction)),
+      onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => TransactionManageDialog(
+                  mode: TransactionManageMode.edit, transaction: transaction))),
       onLongPress: () => showOptionsDialog(transaction, transactionProvider),
       trailing: IconButton(
         icon: const Icon(Icons.more_vert),
@@ -172,12 +174,11 @@ class _TransactionsListState extends State<TransactionsList> {
                             fontSize: 24.0,
                           )),
                     ),
-                    onPressed: () {
-                      showDialog(
-                          context: context,
-                          builder: (context) => const TransactionManageDialog(
-                              mode: TransactionManageMode.add));
-                    },
+                    onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const TransactionManageDialog(
+                                mode: TransactionManageMode.add))),
                   )
                 ]),
           );
@@ -205,12 +206,17 @@ class _TransactionsListState extends State<TransactionsList> {
               alignment: Alignment.bottomRight,
               child: FloatingActionButton(
                 child: const Icon(Icons.add),
-                onPressed: () {
-                  showDialog(
-                      context: context,
-                      builder: (context) => const TransactionManageDialog(
-                          mode: TransactionManageMode.add));
-                },
+                // onPressed: () {
+                //   showDialog(
+                //       context: context,
+                //       builder: (context) => const TransactionManageDialog(
+                //           mode: TransactionManageMode.add));
+                // },
+                onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const TransactionManageDialog(
+                            mode: TransactionManageMode.add))),
               ),
             ),
           )

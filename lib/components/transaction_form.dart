@@ -41,7 +41,7 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
       date: selectedDate,
       notes: notesController.text,
       type: selectedType,
-      category: categoryController.text,
+      category: selectedCategory ?? "",
     );
 
     return transaction;
@@ -80,25 +80,31 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
     }
   }
 
-  DropdownMenu getCategoryDropdown() {
+  Widget getCategoryDropdown() {
+    List<DropdownMenuEntry<String>> dropdownEntries = categories
+        .map<DropdownMenuEntry<String>>((String cat) => DropdownMenuEntry(
+              value: cat,
+              label: cat,
+            ))
+        .toList();
+
+    dropdownEntries
+        .add(const DropdownMenuEntry<String>(value: "", label: "No Category"));
+
     print("getCat: $selectedCategory");
     return DropdownMenu<String>(
+      inputDecorationTheme: InputDecorationTheme(border: InputBorder.none),
       initialSelection: selectedCategory,
       controller: categoryController,
       requestFocusOnTap: true,
-      width: 230,
       label: const Text('Category'),
       onSelected: (String? category) {
         setState(() {
-          selectedCategory = category;
+          print(category);
+          selectedCategory = category ?? "";
         });
       },
-      dropdownMenuEntries: categories
-          .map<DropdownMenuEntry<String>>((String cat) => DropdownMenuEntry(
-                value: cat,
-                label: cat,
-              ))
-          .toList(),
+      dropdownMenuEntries: dropdownEntries,
     );
   }
 
@@ -115,27 +121,63 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
 
   @override
   Widget build(BuildContext context) {
+    TextStyle fieldTextStyle = TextStyle(fontSize: 24, height: 2);
+    TextStyle labelStyle = TextStyle(fontSize: 24);
+
     List<Widget> formFields = [
       TextFormField(
+          style: fieldTextStyle,
           controller: titleController,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
+            labelStyle: labelStyle,
             labelText: "Title",
           ),
           validator: validateTitle),
-      TextFormField(
-        controller: amountController,
-        decoration:
-            const InputDecoration(labelText: "Amount", prefix: Text("\$")),
-        keyboardType:
-            const TextInputType.numberWithOptions(decimal: true, signed: true),
-        validator: validateAmount,
-        inputFormatters: [DecimalTextInputFormatter()],
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Expanded(
+            child: TextFormField(
+              style: fieldTextStyle,
+              controller: amountController,
+              decoration: InputDecoration(
+                  labelText: "Amount",
+                  prefix: const Text("\$"),
+                  labelStyle: labelStyle),
+              keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true, signed: true),
+              validator: validateAmount,
+              inputFormatters: [DecimalTextInputFormatter()],
+            ),
+          ),
+          const SizedBox(width: 24),
+          SegmentedButton(
+            style: ButtonStyle(
+                shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)))),
+            direction: Axis.vertical,
+            selected: {selectedType},
+            segments: const [
+              ButtonSegment(
+                  value: TransactionType.expense, label: Text("Expense")),
+              ButtonSegment(
+                  value: TransactionType.income, label: Text("Income"))
+            ],
+            onSelectionChanged: (Set<TransactionType> value) {
+              setState(() {
+                selectedType = value.first;
+              });
+            },
+          ),
+        ],
       ),
       TextFormField(
         readOnly: true,
         controller: dateController,
+        style: fieldTextStyle,
         decoration: InputDecoration(
           labelText: "Date",
+          labelStyle: labelStyle,
           suffixIcon: IconButton(
               icon: const Icon(Icons.calendar_today),
               onPressed: () {
@@ -157,27 +199,11 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
               }),
         ),
       ),
-      Padding(
-        padding: const EdgeInsets.only(top: 20, bottom: 10),
-        child: getCategoryDropdown(),
-      ),
+      getCategoryDropdown(),
       TextFormField(
         controller: notesController,
-        decoration: const InputDecoration(
-          labelText: "Notes",
-        ),
-      ),
-      SegmentedButton(
-        selected: {selectedType},
-        segments: const [
-          ButtonSegment(value: TransactionType.expense, label: Text("Expense")),
-          ButtonSegment(value: TransactionType.income, label: Text("Income"))
-        ],
-        onSelectionChanged: (Set<TransactionType> value) {
-          setState(() {
-            selectedType = value.first;
-          });
-        },
+        style: fieldTextStyle,
+        decoration: InputDecoration(labelText: "Notes", labelStyle: labelStyle),
       ),
     ];
     Widget title = const Text("Add Transaction");
@@ -186,51 +212,46 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
       title = const Text("Edit Transaction");
     }
 
-    return Form(
-      key: _formKey,
-      child: AlertDialog(
-        title: title,
-        content: StatefulBuilder(
+    return Scaffold(
+      appBar: AppBar(title: title, actions: [
+        Consumer<TransactionProvider>(
+          builder: (context, transactionProvider, child) => IconButton(
+            icon: Icon(Icons.check),
+            onPressed: () async {
+              if (_formKey.currentState!.validate()) {
+                try {
+                  if (widget.mode == TransactionManageMode.edit) {
+                    await transactionProvider
+                        .updateTransaction(getTransaction());
+                  } else {
+                    await transactionProvider.addTransaction(getTransaction());
+                  }
+                  Navigator.of(context).pop();
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to save transaction: $e')),
+                  );
+                }
+              }
+            },
+          ),
+        ),
+      ]),
+      body: Form(
+        key: _formKey,
+        // title: title,
+        child: StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
           return SingleChildScrollView(
-            child: Column(
-              spacing: 10,
-              mainAxisSize: MainAxisSize.min,
-              children: formFields,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Column(
+                spacing: 24,
+                children: formFields,
+              ),
             ),
           );
         }),
-        actions: [
-          TextButton(
-            child: const Text("Cancel"),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
-          Consumer<TransactionProvider>(
-            builder: (context, transactionProvider, child) => TextButton(
-              child: const Text("Save"),
-              onPressed: () async {
-                if (_formKey.currentState!.validate()) {
-                  try {
-                    if (widget.mode == TransactionManageMode.edit) {
-                      await transactionProvider
-                          .updateTransaction(getTransaction());
-                    } else {
-                      await transactionProvider
-                          .addTransaction(getTransaction());
-                    }
-                    Navigator.of(context).pop();
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to save transaction: $e')),
-                    );
-                  }
-                }
-              },
-            ),
-          ),
-        ],
       ),
     );
   }

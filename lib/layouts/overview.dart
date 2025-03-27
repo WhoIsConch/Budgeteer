@@ -47,15 +47,17 @@ class Overview extends StatelessWidget {
                   Expanded(
                       flex: 8,
                       child: CardButton(
-                        content: "Add a transaction",
-                        callback: () {
-                          showDialog(
-                              context: context,
-                              builder: (context) =>
-                                  const TransactionManageDialog(
-                                      mode: tools.TransactionManageMode.add));
-                        },
-                      ))
+                          content: "Add a transaction",
+                          callback: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const TransactionManageDialog(
+                                        mode: tools.TransactionManageMode.add),
+                              ),
+                            );
+                          }))
                 ],
               ),
             ),
