@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:budget/tools/api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -26,6 +28,9 @@ class TransactionsList extends StatefulWidget {
 }
 
 class _TransactionsListState extends State<TransactionsList> {
+  bool isMultiselect = false;
+  List<int> selectedTransactionIds = [];
+
   void showOptionsDialog(
       Transaction transaction, TransactionProvider transactionProvider) {
     showModalBottomSheet(
@@ -66,10 +71,43 @@ class _TransactionsListState extends State<TransactionsList> {
   ListTile tileFromTransaction(Transaction transaction, ThemeData theme,
       TransactionProvider transactionProvider) {
     // Dart formats all of this code horribly, but I can't really change it.
+
+    Widget leadingWidget;
+
+    if (isMultiselect) {
+      leadingWidget = SizedBox(
+        height: 24,
+        width: 24,
+        child: Checkbox(
+          value: selectedTransactionIds.contains(transaction.id),
+          onChanged: (value) => setState(() {
+            if (value != null && value) {
+              selectedTransactionIds.add(transaction.id!);
+            } else {
+              selectedTransactionIds.remove(transaction.id!);
+        
+              if (selectedTransactionIds.isEmpty) {
+                isMultiselect = false;
+              }
+            }
+          })
+        ),
+      );
+    } else {
+      leadingWidget = GestureDetector(
+        child: 
+        (transaction.type == TransactionType.expense) 
+        ? const Icon(Icons.remove_circle)
+        : const Icon(Icons.add_circle), 
+        onTap: () => setState(() {
+          isMultiselect = true;
+          selectedTransactionIds.add(transaction.id!);
+          })
+        );  
+    }
+
     return ListTile(
-      leading: (transaction.type == TransactionType.expense)
-          ? const Icon(Icons.remove_circle)
-          : const Icon(Icons.add_circle),
+      leading: leadingWidget,
       title: Text("${transaction.formatAmount()} at ${transaction.title}"),
       subtitle: Text(transaction.formatDate()),
       onTap: () => Navigator.push(
@@ -160,9 +198,11 @@ class _TransactionsListState extends State<TransactionsList> {
           return Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                // crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  // Makes the card that holds the transactions fill up all available horizontal space
+                  const SizedBox(height: 0, child: SizedBox.expand()), 
                   const Text("No transactions.",
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -205,20 +245,28 @@ class _TransactionsListState extends State<TransactionsList> {
             ),
           ];
 
+
         if (widget.showActionButton) {
-          stackChildren.add(
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Align(
-              alignment: Alignment.bottomRight,
-              child: FloatingActionButton(
+          if (isMultiselect) {
+            FloatingActionButton actionButton = FloatingActionButton(
+              child: const Icon(Icons.delete),
+              onPressed: () {});
+          } else {
+            FloatingActionButton actionButton = FloatingActionButton(
                 child: const Icon(Icons.add),
                 onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
                         builder: (context) => const TransactionManageDialog(
                             mode: TransactionManageMode.add))),
-              ),
+              );
+          }
+          stackChildren.add(
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Align(
+              alignment: Alignment.bottomRight,
+              child: actionButton,
             ),
           )
           );
