@@ -23,8 +23,8 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
   final TextEditingController notesController = TextEditingController();
   final TextEditingController dateController = TextEditingController();
   final TextEditingController categoryController = TextEditingController();
-  String? selectedCategory;
-  List<String> categories = [];
+  Category? selectedCategory;
+  List<Category> categories = [];
 
   final dbHelper = DatabaseHelper();
 
@@ -41,7 +41,7 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
       date: selectedDate,
       notes: notesController.text,
       type: selectedType,
-      category: selectedCategory ?? "",
+      category: selectedCategory?.name ?? "",
     );
 
     return transaction;
@@ -60,11 +60,22 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
       selectedDate = widget.transaction!.date;
       dateController.text = DateFormat('MM/dd/yyyy').format(selectedDate);
       selectedType = widget.transaction!.type;
-      selectedCategory = widget.transaction!.category;
-      categoryController.text = selectedCategory ?? "";
     }
 
     _loadCategories();
+  }
+
+  Future<void> _loadSelectedCategory(String name) async {
+    Category? category = await dbHelper.getCategory(name);
+
+    if (category == null) {
+      return;
+    }
+
+    setState(() {
+      selectedCategory = category;
+      categoryController.text = category.name;
+    });
   }
 
   Future<void> _loadCategories() async {
@@ -72,7 +83,7 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
       final loadedCategories = await dbHelper.getCategoriesList();
 
       setState(() {
-        categories = loadedCategories;
+        for (int i = 0; i < loadedCategories.length; i++) {}
       });
       print("Set state with categories: $categories");
     } catch (e) {
@@ -82,9 +93,9 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
 
   Widget getCategoryDropdown() {
     List<DropdownMenuEntry<String>> dropdownEntries = categories
-        .map<DropdownMenuEntry<String>>((String cat) => DropdownMenuEntry(
-              value: cat,
-              label: cat,
+        .map<DropdownMenuEntry<String>>((Category cat) => DropdownMenuEntry(
+              value: cat.name,
+              label: cat.name,
             ))
         .toList();
 
@@ -93,41 +104,61 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
 
     DropdownMenu menu = DropdownMenu<String>(
       inputDecorationTheme: InputDecorationTheme(border: InputBorder.none),
-      initialSelection: selectedCategory,
+      initialSelection: selectedCategory?.name,
       controller: categoryController,
       requestFocusOnTap: true,
       label: const Text('Category'),
       expandedInsets: EdgeInsets.zero,
-      onSelected: (String? category) {
+      onSelected: (String? categoryName) {
         setState(() {
-          print(category);
-          selectedCategory = category ?? "";
+          print(categoryName);
+          selectedCategory =
+              categories.firstWhere((e) => e.name == categoryName);
         });
       },
       dropdownMenuEntries: dropdownEntries,
     );
 
-    return Container(
+    Container categorySelector = Container(
+      height: 64,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(width: 4),
+        border: Border(
+            bottom: BorderSide(
+          width: 1,
+          color: Theme.of(context).dividerColor,
+        )),
       ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
         Expanded(
             child: Padding(
-                padding: EdgeInsets.fromLTRB(12, 4, 4, 4), child: menu)),
-        VerticalDivider(width: 4, thickness: 4, color: Colors.black),
+                padding: const EdgeInsets.fromLTRB(16, 4, 4, 4), child: menu)),
+        Container(width: 1, height: 64, color: Theme.of(context).dividerColor),
         Padding(
-            padding: EdgeInsets.only(right: 12),
-            child: SizedBox(
-                width: 48,
-                height: 48,
-                child: IconButton(
-                  icon: Icon(Icons.add),
-                  onPressed: () {},
-                ))),
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: IconButton(
+              icon: selectedCategory == null
+                  ? const Icon(Icons.add)
+                  : const Icon(Icons.edit),
+              onPressed: () {},
+            )),
       ]),
     );
+
+    return Container(
+        decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border:
+                Border.all(width: 1, color: Theme.of(context).dividerColor)),
+        child: Column(
+          children: [
+            categorySelector,
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text("Hello"),
+            ),
+          ],
+        ));
   }
 
   @override

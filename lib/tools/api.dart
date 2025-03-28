@@ -25,8 +25,10 @@ class Category {
   CategoryResetIncrement resetIncrement;
   int associatedTransactions;
   bool isPermanent;
+  int? id;
 
   Category({
+    this.id,
     required this.name,
     this.balance = 0,
     this.resetIncrement = CategoryResetIncrement.never,
@@ -36,6 +38,7 @@ class Category {
 
   factory Category.fromMap(Map<String, dynamic> map) {
     return Category(
+      id: map['id'],
       name: map['name'],
       balance: map['balance'],
       resetIncrement: CategoryResetIncrement.fromValue(map['resetIncrement']),
@@ -46,6 +49,7 @@ class Category {
 
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'name': name,
       'balance': balance,
       'resetIncrement': resetIncrement.value,
@@ -269,7 +273,7 @@ class TransactionProvider extends ChangeNotifier {
     return earned - spent;
   }
 
-  Future<List<String>> getCategories() async {
+  Future<List<Category>> getCategories() async {
     return await _dbHelper.getCategoriesList();
   }
 }
@@ -323,7 +327,7 @@ class DatabaseHelper {
       'CREATE TABLE transactions(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, amount REAL, date TEXT, type INTEGER, category TEXT, location TEXT, notes TEXT)',
     );
     await db.execute(
-        'CREATE TABLE categories(name STRING PRIMARY KEY, balance REAL, resetIncrement INTEGER, associatedTransactions INTEGER, isPermanent INTEGER)');
+        'CREATE TABLE categories(id INTEGER PRIMARY KEY AUTOINCREMENT, name STRING UNIQUE, balance REAL, resetIncrement INTEGER, associatedTransactions INTEGER, isPermanent INTEGER)');
   }
 
   Future<List<Transaction>> getTransactions({
@@ -412,7 +416,7 @@ class DatabaseHelper {
     return (result.first['total'] as num?)?.toDouble() ?? 0.0;
   }
 
-  Future<List<String>> getCategoriesList() async {
+  Future<List<Category>> getCategoriesList() async {
     try {
       final db = await database;
 
@@ -427,9 +431,8 @@ class DatabaseHelper {
       // );
 
       // Now searches through DB v2's `categories` table for all categories
-      final results =
-          await db.query('categories', columns: ['name'], orderBy: 'name ASC');
-      return results.map((res) => res['name'] as String).toList();
+      final results = await db.query('categories', orderBy: 'name ASC');
+      return results.map((res) => Category.fromMap(res)).toList();
     } catch (e) {
       print('error in getUniqueCats: $e');
       return [];
