@@ -91,13 +91,13 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
     dropdownEntries
         .add(const DropdownMenuEntry<String>(value: "", label: "No Category"));
 
-    print("getCat: $selectedCategory");
-    return DropdownMenu<String>(
+    DropdownMenu menu = DropdownMenu<String>(
       inputDecorationTheme: InputDecorationTheme(border: InputBorder.none),
       initialSelection: selectedCategory,
       controller: categoryController,
       requestFocusOnTap: true,
       label: const Text('Category'),
+      expandedInsets: EdgeInsets.zero,
       onSelected: (String? category) {
         setState(() {
           print(category);
@@ -105,6 +105,28 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
         });
       },
       dropdownMenuEntries: dropdownEntries,
+    );
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(width: 4),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+        Expanded(
+            child: Padding(
+                padding: EdgeInsets.fromLTRB(12, 4, 4, 4), child: menu)),
+        VerticalDivider(width: 4, thickness: 4, color: Colors.black),
+        Padding(
+            padding: EdgeInsets.only(right: 12),
+            child: SizedBox(
+                width: 48,
+                height: 48,
+                child: IconButton(
+                  icon: Icon(Icons.add),
+                  onPressed: () {},
+                ))),
+      ]),
     );
   }
 
@@ -145,7 +167,7 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
                   prefix: const Text("\$"),
                   labelStyle: labelStyle),
               keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true, signed: true),
+                  decimal: true, signed: false),
               validator: validateAmount,
               inputFormatters: [DecimalTextInputFormatter()],
             ),
