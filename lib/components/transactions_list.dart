@@ -1,4 +1,4 @@
-import 'dart:math';
+import 'dart:async';
 
 import 'package:budget/tools/api.dart';
 import 'package:flutter/material.dart';
@@ -29,7 +29,7 @@ class TransactionsList extends StatefulWidget {
 
 class _TransactionsListState extends State<TransactionsList> {
   bool isMultiselect = false;
-  List<int> selectedTransactionIds = [];
+  List<Transaction> selectedTransactions = [];
 
   void showOptionsDialog(
       Transaction transaction, TransactionProvider transactionProvider) {
@@ -79,31 +79,28 @@ class _TransactionsListState extends State<TransactionsList> {
         height: 24,
         width: 24,
         child: Checkbox(
-          value: selectedTransactionIds.contains(transaction.id),
-          onChanged: (value) => setState(() {
-            if (value != null && value) {
-              selectedTransactionIds.add(transaction.id!);
-            } else {
-              selectedTransactionIds.remove(transaction.id!);
-        
-              if (selectedTransactionIds.isEmpty) {
-                isMultiselect = false;
-              }
-            }
-          })
-        ),
+            value: selectedTransactions.contains(transaction),
+            onChanged: (value) => setState(() {
+                  if (value != null && value) {
+                    selectedTransactions.add(transaction);
+                  } else {
+                    selectedTransactions.remove(transaction);
+
+                    if (selectedTransactions.isEmpty) {
+                      isMultiselect = false;
+                    }
+                  }
+                })),
       );
     } else {
       leadingWidget = GestureDetector(
-        child: 
-        (transaction.type == TransactionType.expense) 
-        ? const Icon(Icons.remove_circle)
-        : const Icon(Icons.add_circle), 
-        onTap: () => setState(() {
-          isMultiselect = true;
-          selectedTransactionIds.add(transaction.id!);
-          })
-        );  
+          child: (transaction.type == TransactionType.expense)
+              ? const Icon(Icons.remove_circle)
+              : const Icon(Icons.add_circle),
+          onTap: () => setState(() {
+                isMultiselect = true;
+                selectedTransactions.add(transaction);
+              }));
     }
 
     return ListTile(
@@ -202,7 +199,7 @@ class _TransactionsListState extends State<TransactionsList> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Makes the card that holds the transactions fill up all available horizontal space
-                  const SizedBox(height: 0, child: SizedBox.expand()), 
+                  const SizedBox(height: 0, child: SizedBox.expand()),
                   const Text("No transactions.",
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -231,45 +228,101 @@ class _TransactionsListState extends State<TransactionsList> {
 
         List<Widget> stackChildren = [
           ListView.builder(
-              itemCount: transactions.length,
-              itemBuilder: (context, index) {
-                Transaction transaction = transactions[index];
-                return Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: Card(
-                    child: tileFromTransaction(
-                        transaction, Theme.of(context), transactionProvider),
-                  ),
-                );
-              },
-            ),
-          ];
+            itemCount: transactions.length,
+            itemBuilder: (context, index) {
+              Transaction transaction = transactions[index];
+              return Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Card(
+                  child: tileFromTransaction(
+                      transaction, Theme.of(context), transactionProvider),
+                ),
+              );
+            },
+          ),
+        ];
 
+        FloatingActionButton actionButton;
 
         if (widget.showActionButton) {
           if (isMultiselect) {
-            FloatingActionButton actionButton = FloatingActionButton(
-              child: const Icon(Icons.delete),
-              onPressed: () {});
+            actionButton = FloatingActionButton(
+                child: const Icon(Icons.delete),
+                onPressed: () {
+                  // Create a copy of the list, not a reference
+                  List<Transaction> removedTransactions = [
+                    ...selectedTransactions
+                  ];
+                  List<int> removedItemIndices = [];
+
+                  setState(() {
+                    selectedTransactions.clear();
+                    isMultiselect = false;
+
+                    for (int i = 0; i < removedTransactions.length; i++) {
+                      int index = transactions.indexOf(removedTransactions[i]);
+
+                      removedItemIndices.add(index);
+                      transactions.removeAt(index);
+                    }
+                  });
+
+                  bool undoPressed = false;
+
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      behavior: SnackBarBehavior.floating,
+                      duration: const Duration(seconds: 3),
+                      action: SnackBarAction(
+                          label: "Undo",
+                          onPressed: () {
+                            undoPressed = true;
+
+                            setState(() {
+                              for (int i = 0;
+                                  i < removedTransactions.length;
+                                  i++) {
+                                transactions.insert(removedItemIndices[i],
+                                    removedTransactions[i]);
+                              }
+                            });
+                          }),
+                      content: Text(
+                          "${removedTransactions.length} ${removedTransactions.length == 1 ? "item" : "items"} deleted")));
+
+                  Timer.periodic(const Duration(seconds: 3, milliseconds: 250),
+                      (timer) async {
+                    if (undoPressed) {
+                      timer.cancel();
+                    } else {
+                      timer.cancel();
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                      setState(() {
+                        for (int i = 0; i < removedTransactions.length; i++) {
+                          transactionProvider
+                              .removeTransaction(removedTransactions[i]);
+                        }
+                      });
+                    }
+                  });
+                });
           } else {
-            FloatingActionButton actionButton = FloatingActionButton(
-                child: const Icon(Icons.add),
-                onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const TransactionManageDialog(
-                            mode: TransactionManageMode.add))),
-              );
+            actionButton = FloatingActionButton(
+              child: const Icon(Icons.add),
+              onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const TransactionManageDialog(
+                          mode: TransactionManageMode.add))),
+            );
           }
-          stackChildren.add(
-          Padding(
+          stackChildren.add(Padding(
             padding: const EdgeInsets.all(16.0),
             child: Align(
               alignment: Alignment.bottomRight,
               child: actionButton,
             ),
-          )
-          );
+          ));
         }
 
         return Stack(children: stackChildren);
