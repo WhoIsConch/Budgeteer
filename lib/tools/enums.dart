@@ -11,6 +11,32 @@ enum TransactionType {
   final int value;
 }
 
+enum CategoryResetIncrement {
+  daily(1),
+  weekly(2),
+  biweekly(3),
+  monthly(4),
+  yearly(5),
+  never(0);
+
+  const CategoryResetIncrement(this.value);
+  final num value;
+
+  factory CategoryResetIncrement.fromValue(int value) {
+    return values.firstWhere((e) => e.value == value);
+  }
+
+  String getText() => switch (value) {
+        1 => "Day",
+        2 => "Week",
+        3 => "Two Weeks",
+        4 => "Month",
+        5 => "Year",
+        0 => "Never Reset",
+        _ => "Error"
+      };
+}
+
 enum PageType {
   home(0),
   transactions(1);

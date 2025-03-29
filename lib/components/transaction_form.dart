@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/tools/api.dart';
@@ -24,7 +26,6 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
   final TextEditingController dateController = TextEditingController();
   final TextEditingController categoryController = TextEditingController();
   Category? selectedCategory;
-  List<Category> categories = [];
 
   final dbHelper = DatabaseHelper();
 
@@ -80,7 +81,7 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
     });
   }
 
-  Widget getCategoryDropdown() {
+  Widget getCategoryDropdown(List<Category> categories) {
     List<DropdownMenuEntry<String>> dropdownEntries = categories
         .map<DropdownMenuEntry<String>>((Category cat) => DropdownMenuEntry(
               value: cat.name,
@@ -93,12 +94,17 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
 
     DropdownMenu menu = DropdownMenu<String>(
       inputDecorationTheme: InputDecorationTheme(border: InputBorder.none),
-      initialSelection: selectedCategory?.name,
+      initialSelection: selectedCategory?.name ?? "",
       controller: categoryController,
       requestFocusOnTap: true,
       label: const Text('Category'),
       expandedInsets: EdgeInsets.zero,
       onSelected: (String? categoryName) {
+        if (categoryName == null || categoryName.isEmpty) {
+          setState(() => selectedCategory = null);
+          return;
+        }
+
         setState(() {
           print(categoryName);
           selectedCategory =
@@ -132,63 +138,13 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
               onPressed: () {
                 if (selectedCategory == null) {
                   showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: Text("Create Category"),
-                      actions: [
-                        TextButton(
-                          child: Text("Ok"),
-                          onPressed: () {},
-                        )
-                      ],
-                      content: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            TextFormField(
-                                decoration:
-                                    InputDecoration(hintText: "Category Name")),
-                            SizedBox(height: 16),
-                            Text("Maximum Balance"),
-                            TextField(
-                                decoration: InputDecoration(
-                              prefixText: "\$",
-                              hintText: "\500.00",
-                            )),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: Checkbox(
-                                      semanticLabel: "Allow Negative Balance",
-                                      value: true,
-                                      onChanged: (value) {},
-                                    ),
-                                  ),
-                                  SizedBox(width: 4),
-                                  Text("Allow Negative Balance")
-                                ],
-                              ),
-                            ),
-                            SizedBox(
-                              height: 16,
-                            ),
-                            Text("Reset every", style: TextStyle(fontSize: 16)),
-                            SizedBox(height: 2),
-                            DropdownMenu(
-                              expandedInsets: EdgeInsets.zero,
-                              textStyle: TextStyle(fontSize: 16),
-                              dropdownMenuEntries: [
-                                DropdownMenuEntry(label: "Two Weeks", value: 2)
-                              ],
-                            ),
-                          ]),
-                    ),
-                  );
+                      context: context,
+                      builder: (context) => CategoryManageDialog(
+                            category: selectedCategory,
+                            mode: selectedCategory == null
+                                ? ObjectManageMode.add
+                                : ObjectManageMode.edit,
+                          ));
                 }
               },
             )),
@@ -302,7 +258,9 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
               }),
         ),
       ),
-      getCategoryDropdown(),
+      Consumer<TransactionProvider>(
+          builder: (context, transactionProvider, child) =>
+              getCategoryDropdown(transactionProvider.categories)),
       TextFormField(
         controller: notesController,
         style: fieldTextStyle,
@@ -354,6 +312,179 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
               ),
             ),
           );
+        }),
+      ),
+    );
+  }
+}
+
+class CategoryManageDialog extends StatefulWidget {
+  const CategoryManageDialog(
+      {super.key, this.mode = ObjectManageMode.add, this.category});
+
+  final ObjectManageMode mode;
+  final Category? category;
+
+  @override
+  State<CategoryManageDialog> createState() => _CategoryManageDialogState();
+}
+
+class _CategoryManageDialogState extends State<CategoryManageDialog> {
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController amountController = TextEditingController();
+
+  final _formKey = GlobalKey<FormState>();
+  final dbHelper = DatabaseHelper();
+
+  bool allowNegatives = true;
+  CategoryResetIncrement resetIncrement = CategoryResetIncrement.never;
+
+  Category getCategory() {
+    return Category(
+      id: widget.category?.id,
+      name: nameController.text,
+      balance: double.parse(amountController.text),
+      resetIncrement: resetIncrement,
+      allowNegatives: allowNegatives,
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.mode == ObjectManageMode.edit) {
+      nameController.text = widget.category!.name;
+      amountController.text = widget.category!.balance.toStringAsFixed(2);
+      allowNegatives = widget.category!.allowNegatives;
+      resetIncrement = widget.category!.resetIncrement;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    String title = "Create Category";
+
+    // Random category hints for fun
+    List<String> categoryHints = [
+      "CD Collection",
+      "Eating Out",
+      "Phone Bill",
+      "Video Games",
+      "Entertainment",
+      "Streaming Services",
+      "ChatGPT Credits",
+      "Clothes",
+      "Car"
+    ];
+
+    Random random = Random();
+    String categoryHint =
+        categoryHints[random.nextInt(categoryHints.length - 1)];
+
+    if (widget.category != null) {
+      title = "Edit Category";
+    }
+
+    return Form(
+      key: _formKey,
+      child: AlertDialog(
+        title: Text(title),
+        actions: [
+          TextButton(
+              child: Text("Cancel"), onPressed: () => Navigator.pop(context)),
+          TextButton(
+            child: Text("Ok"),
+            onPressed: () async {
+              try {
+                if (_formKey.currentState!.validate()) {
+                  if (widget.mode == ObjectManageMode.edit) {
+                    await dbHelper.updateCategory(getCategory());
+                  } else {
+                    await dbHelper.createCategory(getCategory());
+                  }
+
+                  Navigator.of(context).pop();
+                }
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Failed to save transaction: $e")),
+                );
+              }
+            },
+          ),
+        ],
+        content: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+          return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                      labelText: "Category Name", hintText: categoryHint),
+                  validator: validateTitle,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true, signed: false),
+                    validator: validateAmount,
+                    inputFormatters: [DecimalTextInputFormatter()],
+                    controller: amountController,
+                    decoration: const InputDecoration(
+                        prefixText: "\$",
+                        hintText: "\500.00",
+                        labelText: "Maximum Balance")),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: GestureDetector(
+                    onTap: () => setState(
+                      () => allowNegatives = !allowNegatives,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: Checkbox(
+                            semanticLabel: "Allow Negative Balance",
+                            value: allowNegatives,
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() => allowNegatives = value);
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Text("Allow Negative Balance")
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text("Reset every", style: TextStyle(fontSize: 16)),
+                const SizedBox(height: 4),
+                DropdownMenu(
+                  expandedInsets: EdgeInsets.zero,
+                  textStyle: const TextStyle(fontSize: 16),
+                  initialSelection: widget.category?.resetIncrement ??
+                      CategoryResetIncrement.never,
+                  dropdownMenuEntries: CategoryResetIncrement.values
+                      .map(
+                        (e) => DropdownMenuEntry(label: e.getText(), value: e),
+                      )
+                      .toList(),
+                  onSelected: (value) {
+                    if (value != null) {
+                      setState(() => resetIncrement = value);
+                    }
+                  },
+                ),
+              ]);
         }),
       ),
     );

@@ -4,26 +4,11 @@ import 'package:budget/tools/enums.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
-enum CategoryResetIncrement {
-  daily(1),
-  weekly(2),
-  monthly(3),
-  yearly(4),
-  never(0);
-
-  const CategoryResetIncrement(this.value);
-  final num value;
-
-  factory CategoryResetIncrement.fromValue(int value) {
-    return values.firstWhere((e) => e.value == value);
-  }
-}
-
 class Category {
   final String name;
   double balance;
   CategoryResetIncrement resetIncrement;
-  bool canBeNegative;
+  bool allowNegatives;
   int? id;
 
   Category({
@@ -31,7 +16,7 @@ class Category {
     required this.name,
     this.balance = 0,
     this.resetIncrement = CategoryResetIncrement.never,
-    this.canBeNegative = true,
+    this.allowNegatives = true,
   });
 
   factory Category.fromMap(Map<String, dynamic> map) {
@@ -40,7 +25,7 @@ class Category {
       name: map['name'],
       balance: map['balance'],
       resetIncrement: CategoryResetIncrement.fromValue(map['resetIncrement']),
-      canBeNegative: map['canBeNegative'] != 1,
+      allowNegatives: map['allowNegatives'] != 1,
     );
   }
 
@@ -50,7 +35,7 @@ class Category {
       'name': name,
       'balance': balance,
       'resetIncrement': resetIncrement.value,
-      'canBeNegative': canBeNegative ? 1 : 0
+      'allowNegatives': allowNegatives ? 1 : 0
     };
   }
 }
@@ -171,6 +156,7 @@ class TransactionProvider extends ChangeNotifier {
 
   Future<void> updateCategory(Category category) async {
     await _dbHelper.updateCategory(category);
+
     final index = _categories.indexWhere((c) => c.id == category.id);
 
     if (index == -1) {
@@ -293,7 +279,7 @@ class DatabaseHelper {
       'CREATE TABLE transactions(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, amount REAL, date TEXT, type INTEGER, category TEXT, location TEXT, notes TEXT)',
     );
     await db.execute(
-        'CREATE TABLE categories(id INTEGER PRIMARY KEY AUTOINCREMENT, name STRING UNIQUE, balance REAL, resetIncrement INTEGER, associatedTransactions INTEGER, isPermanent INTEGER)');
+        'CREATE TABLE categories(id INTEGER PRIMARY KEY AUTOINCREMENT, name STRING UNIQUE, balance REAL, resetIncrement INTEGER, allowNegatives BOOL)');
   }
 
   Future<List<Transaction>> getTransactions({
