@@ -131,8 +131,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
   AmountFilter? amountFilter;
 
   String searchString = "";
-  List<String> allCategories = <String>[];
-  List<String> selectedCategories = [];
+  List<Category> allCategories = <Category>[];
+  List<Category> selectedCategories = [];
 
   bool resultsAreFiltered() {
     return searchString.isNotEmpty ||
@@ -147,19 +147,19 @@ class _TransactionsPageState extends State<TransactionsPage> {
     return types[typeIndex % 3];
   }
 
-  Future<List<String>?> _showCategoryInputDialog(BuildContext context) async {
+  Future<List<Category>?> _showCategoryInputDialog(BuildContext context) async {
     // Shows a dropdown of all available categories.
     // Returns a list of selected categories.
     // This shows an AlertDialog with nothing in it other than a dropdown
     // which a user can select multiple categories from.
 
-    List<String> categories = await _dbHelper.getCategoriesList();
+    List<Category> categories = await _dbHelper.getCategoriesList();
 
     if (!context.mounted) {
       return [];
     }
 
-    return showDialog<List<String>>(
+    return showDialog<List<Category>>(
       context: context,
       builder: (context) {
         return StatefulBuilder(
@@ -174,7 +174,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   itemBuilder: (BuildContext context, int index) {
                     final category = categories[index];
                     return CheckboxListTile(
-                      title: Text(category),
+                      title: Text(category.name),
                       value: selectedCategories.contains(category),
                       onChanged: (bool? value) {
                         setState(() {
@@ -330,12 +330,12 @@ class _TransactionsPageState extends State<TransactionsPage> {
         onPressed: () => Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (context) => const TransactionManageDialog(
-                    mode: TransactionManageMode.add))),
+                builder: (context) =>
+                    const TransactionManageScreen(mode: ObjectManageMode.add))),
       )
     ];
 
-    // Purposely swap out the plus button 
+    // Purposely swap out the plus button
     if (resultsAreFiltered()) {
       actions = [
         Padding(
@@ -416,7 +416,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               : "Error",
           isEnabled: selectedCategories.isNotEmpty,
           onTap: () async {
-            List<String>? result = await _showCategoryInputDialog(context);
+            List<Category>? result = await _showCategoryInputDialog(context);
 
             setState(() => selectedCategories = result ?? []);
           }),
@@ -461,8 +461,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 child: TransactionsList(
               dateRange: dateRange,
               type: transactionType,
-              containsString: searchString,
-              categories: selectedCategories,
+              searchString: searchString,
+              searchCategories: selectedCategories,
               amountFilter: amountFilter,
               showActionButton: false,
             )),

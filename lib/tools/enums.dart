@@ -1,4 +1,4 @@
-enum TransactionManageMode { add, edit } // Normal enum
+enum ObjectManageMode { add, edit } // Normal enum
 
 enum AmountFilterType { greaterThan, lessThan, exactly }
 

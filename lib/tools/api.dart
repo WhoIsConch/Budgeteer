@@ -23,8 +23,7 @@ class Category {
   final String name;
   double balance;
   CategoryResetIncrement resetIncrement;
-  int associatedTransactions;
-  bool isPermanent;
+  bool canBeNegative;
   int? id;
 
   Category({
@@ -32,8 +31,7 @@ class Category {
     required this.name,
     this.balance = 0,
     this.resetIncrement = CategoryResetIncrement.never,
-    this.associatedTransactions = 0,
-    this.isPermanent = false,
+    this.canBeNegative = true,
   });
 
   factory Category.fromMap(Map<String, dynamic> map) {
@@ -42,8 +40,7 @@ class Category {
       name: map['name'],
       balance: map['balance'],
       resetIncrement: CategoryResetIncrement.fromValue(map['resetIncrement']),
-      associatedTransactions: map['associatedTransactions'],
-      isPermanent: map['isPermanent'] == 0 ? false : true,
+      canBeNegative: map['canBeNegative'] != 1,
     );
   }
 
@@ -53,8 +50,7 @@ class Category {
       'name': name,
       'balance': balance,
       'resetIncrement': resetIncrement.value,
-      'associatedTransactions': associatedTransactions,
-      'isPermanent': isPermanent ? 1 : 0,
+      'canBeNegative': canBeNegative ? 1 : 0
     };
   }
 }
@@ -145,8 +141,10 @@ class Transaction {
 class TransactionProvider extends ChangeNotifier {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   List<Transaction> _transactions = [];
+  List<Category> _categories = [];
 
   List<Transaction> get transactions => _transactions;
+  List<Category> get categories => _categories;
 
   Future<void> loadTransactions({
     DateTimeRange? dateRange,
@@ -159,43 +157,39 @@ class TransactionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _incrementOrCreateCategory(String categoryName) async {
-    Category? category = await _dbHelper.getCategory(categoryName);
-
-    if (category == null) {
-      await _dbHelper.createCategory(
-          Category(name: categoryName, associatedTransactions: 1));
-      return;
-    }
-
-    category.associatedTransactions++;
-    await _dbHelper.updateCategory(category);
+  Future<void> loadCategories() async {
+    _categories = await _dbHelper.getCategoriesList();
+    notifyListeners();
   }
 
-  Future<void> _decrementOrDeleteCategory(String categoryName) async {
-    Category? category = await _dbHelper.getCategory(categoryName);
-    if (category == null) {
+  Future<void> createCategory(Category category) async {
+    final newCategory = await _dbHelper.createCategory(category);
+
+    _categories.add(newCategory);
+    notifyListeners();
+  }
+
+  Future<void> updateCategory(Category category) async {
+    await _dbHelper.updateCategory(category);
+    final index = _categories.indexWhere((c) => c.id == category.id);
+
+    if (index == -1) {
       return;
     }
 
-    category.associatedTransactions--;
+    _categories[index] = category;
+    notifyListeners();
+  }
 
-    if (category.associatedTransactions <= 0 && !category.isPermanent) {
-      _dbHelper.deleteCategory(category.name);
-      return;
-    } else {
-      category.associatedTransactions = 0;
-    }
+  Future<void> removeCategory(Category category) async {
+    await _dbHelper.deleteCategory(category);
 
-    _dbHelper.updateCategory(category);
+    _categories.removeWhere((c) => c.id == category.id);
+    notifyListeners();
   }
 
   Future<void> addTransaction(Transaction transaction) async {
     final newTransaction = await _dbHelper.insertTransaction(transaction);
-
-    if (transaction.category.isNotEmpty) {
-      _incrementOrCreateCategory(transaction.category);
-    }
 
     _transactions.add(newTransaction);
     notifyListeners();
@@ -204,10 +198,6 @@ class TransactionProvider extends ChangeNotifier {
   Future<void> removeTransaction(Transaction transaction) async {
     await _dbHelper.deleteTransaction(transaction);
 
-    if (transaction.category.isNotEmpty) {
-      _decrementOrDeleteCategory(transaction.category);
-    }
-
     _transactions.removeWhere((t) => t.id == transaction.id);
     notifyListeners();
   }
@@ -215,30 +205,6 @@ class TransactionProvider extends ChangeNotifier {
   Future<void> updateTransaction(Transaction transaction) async {
     await _dbHelper.updateTransaction(transaction);
     final index = _transactions.indexWhere((t) => t.id == transaction.id);
-
-    Transaction oldTransaction = transactions[index];
-    Transaction newTransaction = transaction;
-
-    // Manage the category of this transaction.
-    // If the category is not equal, that means they are both not null and
-    // they are both not the same (which would mean the category is the same)
-    if (newTransaction.category != oldTransaction.category) {
-      if (newTransaction.category.isEmpty &&
-          oldTransaction.category.isNotEmpty) {
-        // Did the transaction change to nothing?
-        _decrementOrDeleteCategory(oldTransaction.category);
-      } else if (oldTransaction.category.isEmpty &&
-          newTransaction.category.isNotEmpty) {
-        // Did the transaction change from nothing?
-        _incrementOrCreateCategory(newTransaction.category);
-      } else {
-        // If neither of them are null, but they are not equal to each other,
-        // both the previous and current had a category that is now changed.
-        // Update both of their categories.
-        _decrementOrDeleteCategory(transactions[index].category);
-        _incrementOrCreateCategory(transaction.category);
-      }
-    }
 
     if (index != -1) {
       _transactions[index] = transaction;
@@ -462,14 +428,14 @@ class DatabaseHelper {
     }
   }
 
-  Future<void> deleteCategory(String categoryName) async {
+  Future<void> deleteCategory(Category category) async {
     // Delete the category if it is unused
     final db = await database;
 
     await db.delete(
       'categories',
-      where: 'name = ?',
-      whereArgs: [categoryName],
+      where: 'id = ?',
+      whereArgs: [category.id],
     );
   }
 
@@ -489,6 +455,6 @@ class DatabaseHelper {
     final db = await database;
 
     await db.update('categories', category.toMap(),
-        where: 'name = ?', whereArgs: [category.name]);
+        where: 'id = ?', whereArgs: [category.id]);
   }
 }

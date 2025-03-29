@@ -33,6 +33,7 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   final provider = TransactionProvider();
   provider.loadTransactions();
+  provider.loadCategories();
 
   setup().then(((value) {
     runApp(ChangeNotifierProvider(

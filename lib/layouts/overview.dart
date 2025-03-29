@@ -53,8 +53,8 @@ class Overview extends StatelessWidget {
                               context,
                               MaterialPageRoute(
                                 builder: (context) =>
-                                    const TransactionManageDialog(
-                                        mode: tools.TransactionManageMode.add),
+                                    const TransactionManageScreen(
+                                        mode: tools.ObjectManageMode.add),
                               ),
                             );
                           }))

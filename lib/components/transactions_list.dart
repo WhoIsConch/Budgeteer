@@ -11,15 +11,15 @@ class TransactionsList extends StatefulWidget {
       {super.key,
       this.dateRange,
       this.type,
-      this.categories,
-      this.containsString,
+      this.searchCategories,
+      this.searchString,
       this.amountFilter,
       this.showActionButton = true});
 
   final DateTimeRange? dateRange;
   final TransactionType? type;
-  final List<String>? categories;
-  final String? containsString;
+  final List<Category>? searchCategories;
+  final String? searchString;
   final AmountFilter? amountFilter;
   final bool showActionButton;
 
@@ -47,8 +47,8 @@ class _TransactionsListState extends State<TransactionsList> {
                 Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => TransactionManageDialog(
-                            mode: TransactionManageMode.edit,
+                        builder: (context) => TransactionManageScreen(
+                            mode: ObjectManageMode.edit,
                             transaction: transaction)));
               },
             ),
@@ -110,8 +110,8 @@ class _TransactionsListState extends State<TransactionsList> {
       onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (context) => TransactionManageDialog(
-                  mode: TransactionManageMode.edit, transaction: transaction))),
+              builder: (context) => TransactionManageScreen(
+                  mode: ObjectManageMode.edit, transaction: transaction))),
       onLongPress: () => showOptionsDialog(transaction, transactionProvider),
       trailing: IconButton(
         icon: const Icon(Icons.more_vert),
@@ -155,19 +155,19 @@ class _TransactionsListState extends State<TransactionsList> {
         }
 
         // If there are categories specified, filter the transactions by those
-        if (widget.categories != null && widget.categories!.isNotEmpty) {
+        if (widget.searchCategories != null &&
+            widget.searchCategories!.isNotEmpty) {
           transactions = transactions.where((transaction) {
-            return widget.categories!.contains(transaction.category);
+            return widget.searchCategories!.contains(transaction.category);
           }).toList();
         }
 
         // If a string is specified, search the description and the title for
         // that string and return results containing it
-        if (widget.containsString != null &&
-            widget.containsString!.isNotEmpty) {
+        if (widget.searchString != null && widget.searchString!.isNotEmpty) {
           transactions = transactions.where((transaction) {
-            return transaction.title.contains(widget.containsString!) ||
-                transaction.notes!.contains(widget.containsString!);
+            return transaction.title.contains(widget.searchString!) ||
+                transaction.notes!.contains(widget.searchString!);
           }).toList();
         }
 
@@ -184,8 +184,8 @@ class _TransactionsListState extends State<TransactionsList> {
           }).toList();
         }
 
-        print(widget.containsString);
-        print(widget.categories);
+        print(widget.searchString);
+        print(widget.searchCategories);
 
         // Sort transactions by date, most recent first
         transactions.sort((a, b) => b.date.compareTo(a.date));
@@ -216,8 +216,8 @@ class _TransactionsListState extends State<TransactionsList> {
                     onPressed: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const TransactionManageDialog(
-                                mode: TransactionManageMode.add))),
+                            builder: (context) => const TransactionManageScreen(
+                                mode: ObjectManageMode.add))),
                   )
                 ]),
           );
@@ -312,8 +312,8 @@ class _TransactionsListState extends State<TransactionsList> {
               onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const TransactionManageDialog(
-                          mode: TransactionManageMode.add))),
+                      builder: (context) => const TransactionManageScreen(
+                          mode: ObjectManageMode.add))),
             );
           }
           stackChildren.add(Padding(

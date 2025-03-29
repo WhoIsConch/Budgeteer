@@ -5,19 +5,19 @@ import 'package:budget/tools/enums.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:intl/intl.dart';
 
-class TransactionManageDialog extends StatefulWidget {
-  const TransactionManageDialog(
-      {super.key, this.mode = TransactionManageMode.add, this.transaction});
+class TransactionManageScreen extends StatefulWidget {
+  const TransactionManageScreen(
+      {super.key, this.mode = ObjectManageMode.add, this.transaction});
 
-  final TransactionManageMode mode;
+  final ObjectManageMode mode;
   final Transaction? transaction;
 
   @override
-  State<TransactionManageDialog> createState() =>
-      _TransactionManageDialogState();
+  State<TransactionManageScreen> createState() =>
+      _TransactionManageScreenState();
 }
 
-class _TransactionManageDialogState extends State<TransactionManageDialog> {
+class _TransactionManageScreenState extends State<TransactionManageScreen> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController amountController = TextEditingController();
   final TextEditingController notesController = TextEditingController();
@@ -53,7 +53,7 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
     dateController.text = DateFormat('MM/dd/yyyy').format(selectedDate);
 
     // There's probably a better way to do this
-    if (widget.mode == TransactionManageMode.edit) {
+    if (widget.mode == ObjectManageMode.edit) {
       titleController.text = widget.transaction!.title;
       amountController.text = widget.transaction!.amount.toStringAsFixed(2);
       notesController.text = widget.transaction!.notes ?? "";
@@ -62,7 +62,9 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
       selectedType = widget.transaction!.type;
     }
 
-    _loadCategories();
+    if (widget.transaction?.category != null) {
+      _loadSelectedCategory(widget.transaction!.category);
+    }
   }
 
   Future<void> _loadSelectedCategory(String name) async {
@@ -76,19 +78,6 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
       selectedCategory = category;
       categoryController.text = category.name;
     });
-  }
-
-  Future<void> _loadCategories() async {
-    try {
-      final loadedCategories = await dbHelper.getCategoriesList();
-
-      setState(() {
-        for (int i = 0; i < loadedCategories.length; i++) {}
-      });
-      print("Set state with categories: $categories");
-    } catch (e) {
-      print("Failed to load categories: $e");
-    }
   }
 
   Widget getCategoryDropdown() {
@@ -140,7 +129,68 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
               icon: selectedCategory == null
                   ? const Icon(Icons.add)
                   : const Icon(Icons.edit),
-              onPressed: () {},
+              onPressed: () {
+                if (selectedCategory == null) {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text("Create Category"),
+                      actions: [
+                        TextButton(
+                          child: Text("Ok"),
+                          onPressed: () {},
+                        )
+                      ],
+                      content: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            TextFormField(
+                                decoration:
+                                    InputDecoration(hintText: "Category Name")),
+                            SizedBox(height: 16),
+                            Text("Maximum Balance"),
+                            TextField(
+                                decoration: InputDecoration(
+                              prefixText: "\$",
+                              hintText: "\500.00",
+                            )),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: Checkbox(
+                                      semanticLabel: "Allow Negative Balance",
+                                      value: true,
+                                      onChanged: (value) {},
+                                    ),
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text("Allow Negative Balance")
+                                ],
+                              ),
+                            ),
+                            SizedBox(
+                              height: 16,
+                            ),
+                            Text("Reset every", style: TextStyle(fontSize: 16)),
+                            SizedBox(height: 2),
+                            DropdownMenu(
+                              expandedInsets: EdgeInsets.zero,
+                              textStyle: TextStyle(fontSize: 16),
+                              dropdownMenuEntries: [
+                                DropdownMenuEntry(label: "Two Weeks", value: 2)
+                              ],
+                            ),
+                          ]),
+                    ),
+                  );
+                }
+              },
             )),
       ]),
     );
@@ -261,7 +311,7 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
     ];
     Widget title = const Text("Add Transaction");
 
-    if (widget.mode == TransactionManageMode.edit) {
+    if (widget.mode == ObjectManageMode.edit) {
       title = const Text("Edit Transaction");
     }
 
@@ -273,7 +323,7 @@ class _TransactionManageDialogState extends State<TransactionManageDialog> {
             onPressed: () async {
               if (_formKey.currentState!.validate()) {
                 try {
-                  if (widget.mode == TransactionManageMode.edit) {
+                  if (widget.mode == ObjectManageMode.edit) {
                     await transactionProvider
                         .updateTransaction(getTransaction());
                   } else {
