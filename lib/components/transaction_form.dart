@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -27,11 +28,11 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
   final TextEditingController categoryController = TextEditingController();
   Category? selectedCategory;
 
-  final dbHelper = DatabaseHelper();
-
-  final _formKey = GlobalKey<FormState>();
   DateTime selectedDate = DateTime.now();
   TransactionType selectedType = TransactionType.expense;
+
+  final dbHelper = DatabaseHelper();
+  final _formKey = GlobalKey<FormState>();
 
   Transaction getTransaction() {
     // Create a transaction based on the data in the form
@@ -135,16 +136,26 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
               icon: selectedCategory == null
                   ? const Icon(Icons.add)
                   : const Icon(Icons.edit),
-              onPressed: () {
-                if (selectedCategory == null) {
-                  showDialog(
-                      context: context,
-                      builder: (context) => CategoryManageDialog(
-                            category: selectedCategory,
-                            mode: selectedCategory == null
-                                ? ObjectManageMode.add
-                                : ObjectManageMode.edit,
-                          ));
+              onPressed: () async {
+                final result = await showDialog(
+                    context: context,
+                    builder: (context) => CategoryManageDialog(
+                          category: selectedCategory,
+                          mode: selectedCategory == null
+                              ? ObjectManageMode.add
+                              : ObjectManageMode.edit,
+                        ));
+
+                if (result is String && result.isEmpty) {
+                  setState(() {
+                    selectedCategory = null;
+                    categoryController.text = "No Category";
+                  });
+                } else if (result is Category) {
+                  setState(() {
+                    selectedCategory = result;
+                    categoryController.text = result.name;
+                  });
                 }
               },
             )),
@@ -339,6 +350,29 @@ class _CategoryManageDialogState extends State<CategoryManageDialog> {
   bool allowNegatives = true;
   CategoryResetIncrement resetIncrement = CategoryResetIncrement.never;
 
+  String? validateCategoryTitle(value) {
+    String? initialCheck = validateTitle(value);
+
+    if (widget.mode == ObjectManageMode.edit) {
+      return initialCheck;
+    }
+
+    final provider = Provider.of<TransactionProvider>(context, listen: false);
+
+    bool isUnique = provider.categories.indexWhere(
+          (element) => element.name == value,
+        ) ==
+        -1;
+
+    if (initialCheck == null && isUnique) {
+      return null;
+    } else if (!isUnique) {
+      return "Category already exists";
+    } else {
+      return initialCheck;
+    }
+  }
+
   Category getCategory() {
     return Category(
       id: widget.category?.id,
@@ -386,34 +420,104 @@ class _CategoryManageDialogState extends State<CategoryManageDialog> {
       title = "Edit Category";
     }
 
+    TextButton okButton = TextButton(
+      child: Text("Ok"),
+      onPressed: () async {
+        if (!_formKey.currentState!.validate()) {
+          return;
+        }
+
+        final provider =
+            Provider.of<TransactionProvider>(context, listen: false);
+        Category savedCategory;
+
+        try {
+          if (widget.mode == ObjectManageMode.edit) {
+            await provider.updateCategory(getCategory());
+            savedCategory = getCategory();
+          } else {
+            savedCategory = await provider.createCategory(getCategory());
+          }
+
+          Navigator.of(context).pop(savedCategory);
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Failed to save transaction: $e")),
+          );
+        }
+      },
+    );
+
+    List<Widget> formActions;
+
+    if (widget.mode == ObjectManageMode.add) {
+      formActions = [okButton];
+    } else {
+      formActions = [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            TextButton(
+                child: Text("Delete",
+                    style:
+                        TextStyle(color: Theme.of(context).colorScheme.error)),
+                onPressed: () {
+                  final provider =
+                      Provider.of<TransactionProvider>(context, listen: false);
+                  Category removedCategory = getCategory();
+                  int removedIndex = provider.categories
+                      .indexWhere((e) => e.id == removedCategory.id);
+
+                  bool undoPressed = false;
+
+                  Navigator.of(context).pop("");
+
+                  provider.removeCategoryFromList(removedIndex);
+
+                  scaffoldMessengerKey.currentState!.hideCurrentSnackBar();
+                  scaffoldMessengerKey.currentState!.showSnackBar(SnackBar(
+                      behavior: SnackBarBehavior.floating,
+                      duration: const Duration(seconds: 3),
+                      action: SnackBarAction(
+                          label: "Undo",
+                          onPressed: () {
+                            undoPressed = true;
+
+                            provider.insertCategoryToList(
+                                removedIndex, removedCategory);
+                          }),
+                      content: Text(
+                          "Category \"${removedCategory.name}\" deleted")));
+
+                  Timer(const Duration(seconds: 3, milliseconds: 250), () {
+                    scaffoldMessengerKey.currentState!.hideCurrentSnackBar();
+
+                    if (!undoPressed) {
+                      provider.removeCategory(removedCategory);
+                      print("Removed");
+                    }
+                  });
+                }),
+            Row(
+              children: [okButton],
+            ),
+          ],
+        )
+      ];
+    }
+
     return Form(
       key: _formKey,
       child: AlertDialog(
-        title: Text(title),
-        actions: [
-          TextButton(
-              child: Text("Cancel"), onPressed: () => Navigator.pop(context)),
-          TextButton(
-            child: Text("Ok"),
-            onPressed: () async {
-              try {
-                if (_formKey.currentState!.validate()) {
-                  if (widget.mode == ObjectManageMode.edit) {
-                    await dbHelper.updateCategory(getCategory());
-                  } else {
-                    await dbHelper.createCategory(getCategory());
-                  }
-
-                  Navigator.of(context).pop();
-                }
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Failed to save transaction: $e")),
-                );
-              }
-            },
-          ),
-        ],
+        title:
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text(title),
+          IconButton(
+            icon: Icon(Icons.close),
+            onPressed: () => Navigator.pop(context),
+          )
+        ]),
+        actions: formActions,
         content: StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
           return Column(
@@ -424,7 +528,7 @@ class _CategoryManageDialogState extends State<CategoryManageDialog> {
                   controller: nameController,
                   decoration: InputDecoration(
                       labelText: "Category Name", hintText: categoryHint),
-                  validator: validateTitle,
+                  validator: validateCategoryTitle,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(

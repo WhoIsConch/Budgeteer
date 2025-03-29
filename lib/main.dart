@@ -74,6 +74,7 @@ class _BudgetAppState extends State<BudgetApp> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return DynamicColorBuilder(builder: (lightDynamic, darkDynamic) {
       return MaterialApp(
+          scaffoldMessengerKey: tools.scaffoldMessengerKey,
           title: 'Budget App',
           home: const HomePage(),
           theme: ThemeData(

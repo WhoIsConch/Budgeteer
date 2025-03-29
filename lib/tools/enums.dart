@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 enum ObjectManageMode { add, edit } // Normal enum
 
 enum AmountFilterType { greaterThan, lessThan, exactly }
@@ -56,3 +58,6 @@ class AmountFilter {
     return type != null && value != null;
   }
 }
+
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();

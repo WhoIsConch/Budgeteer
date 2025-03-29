@@ -147,11 +147,13 @@ class TransactionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> createCategory(Category category) async {
+  Future<Category> createCategory(Category category) async {
     final newCategory = await _dbHelper.createCategory(category);
 
     _categories.add(newCategory);
     notifyListeners();
+
+    return newCategory;
   }
 
   Future<void> updateCategory(Category category) async {
@@ -171,6 +173,26 @@ class TransactionProvider extends ChangeNotifier {
     await _dbHelper.deleteCategory(category);
 
     _categories.removeWhere((c) => c.id == category.id);
+    notifyListeners();
+  }
+
+  void removeCategoryFromList(int index) {
+    categories.removeAt(index);
+    notifyListeners();
+  }
+
+  void insertCategoryToList(int index, Category category) {
+    categories.insert(index, category);
+    notifyListeners();
+  }
+
+  void removeTransactionFromList(int index) {
+    transactions.remove(index);
+    notifyListeners();
+  }
+
+  void insertTransactionToList(int index, Transaction transaction) {
+    transactions.insert(index, transaction);
     notifyListeners();
   }
 
