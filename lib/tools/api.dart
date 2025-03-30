@@ -25,7 +25,7 @@ class Category {
       name: map['name'],
       balance: map['balance'],
       resetIncrement: CategoryResetIncrement.fromValue(map['resetIncrement']),
-      allowNegatives: map['allowNegatives'] != 1,
+      allowNegatives: map['allowNegatives'] != 0,
     );
   }
 
@@ -37,6 +37,97 @@ class Category {
       'resetIncrement': resetIncrement.value,
       'allowNegatives': allowNegatives ? 1 : 0
     };
+  }
+
+  DateTimeRange? getDateRange() {
+    DateTimeRange? cumRange;
+    DateTime now = DateTime.now();
+
+    switch (resetIncrement) {
+      case CategoryResetIncrement.daily:
+        cumRange = DateTimeRange(
+            start: DateTime(now.year, now.month, now.day), end: now);
+        break;
+      case CategoryResetIncrement.weekly:
+        // Get the weekly DateTimeRange
+        // First, subtract one from the weekday number (1-7)
+        // Then subtract that many days from the current date
+        // For example, (2025, 3, 29) would have 6 as a weekday
+        // So subtract 1 from 6 to get 5, then 29 - 5 = 24 (monday)
+        DateTime weekStart = now.subtract(Duration(days: now.weekday - 1));
+        cumRange = DateTimeRange(
+            start: DateTime(now.year, now.month, weekStart.day), end: now);
+        break;
+
+      case CategoryResetIncrement.monthly:
+        // Get the Month to Date
+        cumRange = DateTimeRange(
+          start: DateTime(now.year, now.month, 1),
+          end: now,
+        );
+        break;
+
+      case CategoryResetIncrement.yearly:
+        cumRange = DateTimeRange(
+          start: DateTime(now.year),
+          end: now,
+        );
+        break;
+
+      case _:
+        break;
+    }
+
+    return cumRange;
+  }
+
+  String getTimeUntilNextReset() {
+    DateTime now = DateTime.now();
+    DateTime nextReset;
+
+    switch (resetIncrement) {
+      case CategoryResetIncrement.daily:
+        // Next day at midnight
+        nextReset = DateTime(now.year, now.month, now.day + 1);
+        break;
+      case CategoryResetIncrement.weekly:
+        // Next Monday at midnight
+        nextReset = DateTime(now.year, now.month, now.day + (8 - now.weekday));
+        break;
+      case CategoryResetIncrement.monthly:
+        // First day of next month
+        if (now.month == 12) {
+          nextReset = DateTime(now.year + 1, 1, 1);
+        } else {
+          nextReset = DateTime(now.year, now.month + 1, 1);
+        }
+        break;
+      case CategoryResetIncrement.yearly:
+        // First day of next year
+        nextReset = DateTime(now.year + 1, 1, 1);
+        break;
+      default:
+        return "";
+    }
+
+    Duration timeLeft = nextReset.difference(now);
+    int days = timeLeft.inDays;
+    int hours = timeLeft.inHours % 24;
+    int minutes = timeLeft.inMinutes % 60;
+
+    if (days > 30) {
+      int months = days ~/ 30;
+      return months == 1 ? "a month" : "$months months";
+    } else if (days >= 7) {
+      int weeks = days ~/ 7;
+      return weeks == 1 ? "a week" : "$weeks weeks";
+    } else if (days > 0) {
+      return days == 1 ? "a day" : "$days days";
+    } else if (hours > 0) {
+      return hours == 1 ? "an hour" : "$hours hours";
+    } else {
+      return minutes == 1 ? "a minute" : "$minutes minutes";
+    }
   }
 }
 
@@ -228,21 +319,27 @@ class TransactionProvider extends ChangeNotifier {
     return await _dbHelper.getCategory(transaction.category);
   }
 
-  Future<double> getAmountSpent(DateTimeRange? dateRange) async {
+  Future<double> getAmountSpent(DateTimeRange? dateRange,
+      {Category? category}) async {
     return await _dbHelper.getTotalAmount(
-        dateRange: dateRange, type: TransactionType.expense);
+        dateRange: dateRange,
+        type: TransactionType.expense,
+        category: category);
   }
 
-  Future<double> getAmountEarned(DateTimeRange? dateRange) async {
+  Future<double> getAmountEarned(DateTimeRange? dateRange,
+      {Category? category}) async {
     return await _dbHelper.getTotalAmount(
       dateRange: dateRange,
       type: TransactionType.income,
+      category: category,
     );
   }
 
-  Future<double> getTotal(DateTimeRange? dateRange) async {
-    final earned = await getAmountEarned(dateRange);
-    final spent = await getAmountSpent(dateRange);
+  Future<double> getTotal(DateTimeRange? dateRange,
+      {Category? category}) async {
+    final earned = await getAmountEarned(dateRange, category: category);
+    final spent = await getAmountSpent(dateRange, category: category);
 
     return earned - spent;
   }
@@ -365,10 +462,10 @@ class DatabaseHelper {
     );
   }
 
-  Future<double> getTotalAmount({
-    DateTimeRange? dateRange,
-    required TransactionType type,
-  }) async {
+  Future<double> getTotalAmount(
+      {DateTimeRange? dateRange,
+      required TransactionType type,
+      Category? category}) async {
     final Database db = await database;
 
     List<String> whereConditions = ['type = ?'];
@@ -378,6 +475,11 @@ class DatabaseHelper {
       whereConditions.add('date BETWEEN ? AND ?');
       whereArgs.addAll(
           [dateRange.start.toIso8601String(), dateRange.end.toIso8601String()]);
+    }
+
+    if (category != null) {
+      whereConditions.add('category = ?');
+      whereArgs.add(category.name);
     }
 
     final result = await db.query(

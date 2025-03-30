@@ -27,6 +27,7 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
   final TextEditingController dateController = TextEditingController();
   final TextEditingController categoryController = TextEditingController();
   Category? selectedCategory;
+  double? selectedCategoryTotal;
 
   DateTime selectedDate = DateTime.now();
   TransactionType selectedType = TransactionType.expense;
@@ -72,13 +73,43 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
   Future<void> _loadSelectedCategory(String name) async {
     Category? category = await dbHelper.getCategory(name);
 
+    _setCategoryInfo(category);
+  }
+
+  Future<void> _setCategoryInfo(Category? category) async {
+    String catText;
+    double? catTotal;
+
     if (category == null) {
-      return;
+      catText = "No Category";
+    } else {
+      final provider = Provider.of<TransactionProvider>(context, listen: false);
+
+      catText = category.name;
+      catTotal =
+          await provider.getTotal(category.getDateRange(), category: category);
+
+      catTotal = category.balance + catTotal;
+
+      try {
+        Transaction currentTransaction = getTransaction();
+
+        if (widget.transaction?.amount != null) {
+          catTotal += widget.transaction!.amount;
+        }
+
+        if (currentTransaction.type == TransactionType.expense) {
+          catTotal -= currentTransaction.amount;
+        } else {
+          catTotal += currentTransaction.amount;
+        }
+      } catch (e) {}
     }
 
     setState(() {
       selectedCategory = category;
-      categoryController.text = category.name;
+      categoryController.text = catText;
+      selectedCategoryTotal = catTotal;
     });
   }
 
@@ -102,7 +133,7 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
       expandedInsets: EdgeInsets.zero,
       onSelected: (String? categoryName) {
         if (categoryName == null || categoryName.isEmpty) {
-          setState(() => selectedCategory = null);
+          _setCategoryInfo(null);
           return;
         }
 
@@ -110,21 +141,24 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
           print(categoryName);
           selectedCategory =
               categories.firstWhere((e) => e.name == categoryName);
+
+          _setCategoryInfo(selectedCategory);
         });
       },
       dropdownMenuEntries: dropdownEntries,
     );
 
+    BoxDecoration jointBoxDecoration = BoxDecoration(
+      border: Border(
+          bottom: BorderSide(
+        width: 1,
+        color: Theme.of(context).dividerColor,
+      )),
+    );
+
     Container categorySelector = Container(
       height: 64,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        border: Border(
-            bottom: BorderSide(
-          width: 1,
-          color: Theme.of(context).dividerColor,
-        )),
-      ),
+      decoration: selectedCategory == null ? null : jointBoxDecoration,
       child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
         Expanded(
             child: Padding(
@@ -147,20 +181,43 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
                         ));
 
                 if (result is String && result.isEmpty) {
-                  setState(() {
-                    selectedCategory = null;
-                    categoryController.text = "No Category";
-                  });
+                  _setCategoryInfo(null);
                 } else if (result is Category) {
-                  setState(() {
-                    selectedCategory = result;
-                    categoryController.text = result.name;
-                  });
+                  _setCategoryInfo(result);
                 }
               },
             )),
       ]),
     );
+
+    List<Widget> columnChildren = [categorySelector];
+
+    if (selectedCategory != null) {
+      columnChildren.add(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 2),
+          child: Text(
+              "${selectedCategoryTotal != null && selectedCategoryTotal! < 0 ? "-" : ""}\$${selectedCategoryTotal?.abs().toStringAsFixed(2)} Remaining",
+              style: selectedCategoryTotal != null &&
+                      selectedCategoryTotal! < 0 &&
+                      !selectedCategory!.allowNegatives
+                  ? TextStyle(
+                      fontSize: 18, color: Theme.of(context).colorScheme.error)
+                  : TextStyle(fontSize: 18)),
+        ),
+      );
+      if (selectedCategory?.resetIncrement != CategoryResetIncrement.never) {
+        columnChildren.add(Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+                "Resets in ${selectedCategory?.getTimeUntilNextReset()}")));
+      } else {
+        columnChildren.add(Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text("Amount doesn't reset"),
+        ));
+      }
+    }
 
     return Container(
         decoration: BoxDecoration(
@@ -168,13 +225,8 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
             border:
                 Border.all(width: 1, color: Theme.of(context).dividerColor)),
         child: Column(
-          children: [
-            categorySelector,
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text("Hello"),
-            ),
-          ],
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: columnChildren,
         ));
   }
 
@@ -187,6 +239,22 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
     categoryController.dispose();
 
     super.dispose();
+  }
+
+  String? validateTransactionAmount(value) {
+    String? initialCheck = validateAmount(value);
+
+    if (initialCheck != null) {
+      return initialCheck;
+    }
+
+    if (selectedCategoryTotal != null &&
+        selectedCategoryTotal! < 0 &&
+        !selectedCategory!.allowNegatives) {
+      return "Category balance can't be negative";
+    }
+
+    return null;
   }
 
   @override
@@ -208,6 +276,7 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
         children: [
           Expanded(
             child: TextFormField(
+              onChanged: (value) => _setCategoryInfo(selectedCategory),
               style: fieldTextStyle,
               controller: amountController,
               decoration: InputDecoration(
@@ -216,7 +285,7 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
                   labelStyle: labelStyle),
               keyboardType: const TextInputType.numberWithOptions(
                   decimal: true, signed: false),
-              validator: validateAmount,
+              validator: validateTransactionAmount,
               inputFormatters: [DecimalTextInputFormatter()],
             ),
           ),
@@ -234,6 +303,7 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
                   value: TransactionType.income, label: Text("Income"))
             ],
             onSelectionChanged: (Set<TransactionType> value) {
+              _setCategoryInfo(selectedCategory);
               setState(() {
                 selectedType = value.first;
               });
