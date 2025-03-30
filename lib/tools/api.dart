@@ -222,14 +222,8 @@ class TransactionProvider extends ChangeNotifier {
   List<Transaction> get transactions => _transactions;
   List<Category> get categories => _categories;
 
-  Future<void> loadTransactions({
-    DateTimeRange? dateRange,
-    TransactionType? type,
-  }) async {
-    _transactions = await _dbHelper.getTransactions(
-      dateRange: dateRange,
-      type: type,
-    );
+  Future<void> loadTransactions() async {
+    _transactions = await _dbHelper.getTransactions();
     notifyListeners();
   }
 

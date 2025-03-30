@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:budget/tools/api.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -7,55 +8,114 @@ import 'package:budget/tools/enums.dart';
 class BudgetPage extends StatelessWidget {
   const BudgetPage({super.key});
 
-  Widget getPieChart() {
-    return PieChart(PieChartData(centerSpaceRadius: 0.0, sections: [
-      PieChartSectionData(
-          radius: 100.0,
-          value: 40,
-          color: Colors.red,
-          titleStyle: const TextStyle(fontSize: 32)),
-      PieChartSectionData(
-        radius: 75.0,
-        value: 40,
-        color: Colors.blue,
-      ),
-      PieChartSectionData(
-        radius: 50.0,
-        value: 40,
-        color: Colors.green,
-      )
-    ]));
+  @override
+  Widget build(BuildContext context) {
+    return CategoryPieChart();
   }
+}
 
-  Widget getScatterChart() {
-    List<ScatterSpot> scatterSpots = [];
+class CategoryPieChart extends StatefulWidget {
+  const CategoryPieChart({super.key});
 
-    return Consumer<TransactionProvider>(
-        builder: (context, transactionProvider, child) {
-      List<Transaction> transactions = transactionProvider.transactions;
-      List<String> xTitles = [];
-      List<String> yTitles = [];
+  @override
+  State<CategoryPieChart> createState() => _CategoryPieChartState();
+}
 
-      for (Transaction transaction in transactions) {
-        scatterSpots.add(
-            ScatterSpot(transaction.date.day.toDouble(), transaction.amount,
-                dotPainter: FlDotCirclePainter(
-                  color: transaction.type == TransactionType.income
-                      ? Colors.blue
-                      : Colors.red,
-                  radius: 10,
-                )));
+class _CategoryPieChartState extends State<CategoryPieChart> {
+  List<PieChartSectionData>? pieChartSectionData;
+  RelativeTimeRange selectedDateRange = RelativeTimeRange.today;
+  bool chartIsLoading = true;
 
-        xTitles.add(transaction.formatDate());
-        yTitles.add(transaction.formatAmount());
+  Future<void> _prepareData() async {
+    final provider = Provider.of<TransactionProvider>(context, listen: false);
+    final List<Category> categories = provider.categories;
+
+    List<PieChartSectionData> sectionData = [];
+    List<MaterialColor> colors = [
+      Colors.red,
+      Colors.green,
+      Colors.orange,
+      Colors.blue,
+      Colors.yellow,
+      Colors.purple
+    ];
+
+    for (int i = 0; i < categories.length; i++) {
+      Category category = categories[i];
+
+      double total = await provider.getTotal(selectedDateRange.getRange(),
+          category: category);
+
+      if (total == 0) {
+        continue;
       }
 
-      return ScatterChart(ScatterChartData(scatterSpots: scatterSpots));
+      sectionData.add(PieChartSectionData(
+        value: total,
+        radius: 32,
+        title: category.name,
+        color: colors[i],
+      ));
+    }
+
+    setState(() {
+      pieChartSectionData = sectionData;
+      chartIsLoading = false;
     });
   }
 
   @override
+  void initState() {
+    super.initState();
+
+    _prepareData();
+  }
+
+  PieChart getPieChart() {
+    return PieChart(PieChartData(
+        centerSpaceRadius: 100,
+        sectionsSpace: 2,
+        sections: pieChartSectionData));
+  }
+
+  DropdownMenu getDateRangeDropdown() => DropdownMenu(
+        initialSelection: selectedDateRange,
+        onSelected: (value) {
+          selectedDateRange = value;
+          _prepareData();
+        },
+        dropdownMenuEntries: RelativeTimeRange.values
+            .map(
+              (e) => DropdownMenuEntry(
+                label: e.name,
+                value: e,
+              ),
+            )
+            .toList(),
+      );
+
+  @override
   Widget build(BuildContext context) {
-    return getScatterChart();
+    Widget pieChart;
+
+    if (chartIsLoading) {
+      pieChart = Center(
+          child: SizedBox(
+              width: 24, height: 24, child: CircularProgressIndicator()));
+    } else if (pieChartSectionData!.isEmpty) {
+      pieChart = const Center(
+          child: Text("Nothing to show.", style: TextStyle(fontSize: 24)));
+    } else {
+      pieChart = getPieChart();
+    }
+
+    return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        spacing: 8,
+        children: [
+          getDateRangeDropdown(),
+          Expanded(child: pieChart),
+        ]);
   }
 }

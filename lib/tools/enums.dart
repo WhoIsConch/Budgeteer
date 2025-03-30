@@ -13,6 +13,37 @@ enum TransactionType {
   final int value;
 }
 
+enum RelativeTimeRange {
+  today("Today"),
+  yesterday("Yesterday"),
+  thisWeek("This Week"),
+  thisMonth("This Month"),
+  thisYear("This Year");
+
+  const RelativeTimeRange(this.name);
+  final String name;
+
+  DateTimeRange getRange() {
+    DateTime now = DateTime.now();
+
+    return switch (this) {
+      RelativeTimeRange.today =>
+        DateTimeRange(start: DateTime(now.year, now.month, now.day), end: now),
+      RelativeTimeRange.yesterday => DateTimeRange(
+          start: DateTime(now.year, now.month, now.day - 1),
+          end: DateTime(now.year, now.month, now.day)),
+      RelativeTimeRange.thisWeek => DateTimeRange(
+          start: DateTime(now.year, now.month, now.day)
+              .subtract(Duration(days: now.weekday - 1)),
+          end: now),
+      RelativeTimeRange.thisMonth =>
+        DateTimeRange(start: DateTime(now.year, now.month), end: now),
+      RelativeTimeRange.thisYear =>
+        DateTimeRange(start: DateTime(now.year), end: now),
+    };
+  }
+}
+
 enum CategoryResetIncrement {
   daily(1),
   weekly(2),
