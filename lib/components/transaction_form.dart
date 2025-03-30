@@ -103,7 +103,9 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
         } else {
           catTotal += currentTransaction.amount;
         }
-      } catch (e) {}
+      } catch (e) {
+        print(e);
+      }
     }
 
     setState(() {
@@ -125,7 +127,8 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
         .add(const DropdownMenuEntry<String>(value: "", label: "No Category"));
 
     DropdownMenu menu = DropdownMenu<String>(
-      inputDecorationTheme: InputDecorationTheme(border: InputBorder.none),
+      inputDecorationTheme:
+          const InputDecorationTheme(border: InputBorder.none),
       initialSelection: selectedCategory?.name ?? "",
       controller: categoryController,
       requestFocusOnTap: true,
@@ -203,7 +206,7 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
                       !selectedCategory!.allowNegatives
                   ? TextStyle(
                       fontSize: 18, color: Theme.of(context).colorScheme.error)
-                  : TextStyle(fontSize: 18)),
+                  : const TextStyle(fontSize: 18)),
         ),
       );
       if (selectedCategory?.resetIncrement != CategoryResetIncrement.never) {
@@ -212,8 +215,8 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
             child: Text(
                 "Resets in ${selectedCategory?.getTimeUntilNextReset()}")));
       } else {
-        columnChildren.add(Padding(
-          padding: const EdgeInsets.all(8.0),
+        columnChildren.add(const Padding(
+          padding: EdgeInsets.all(8.0),
           child: Text("Amount doesn't reset"),
         ));
       }
@@ -259,8 +262,8 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
 
   @override
   Widget build(BuildContext context) {
-    TextStyle fieldTextStyle = TextStyle(fontSize: 24, height: 2);
-    TextStyle labelStyle = TextStyle(fontSize: 24);
+    TextStyle fieldTextStyle = const TextStyle(fontSize: 24, height: 2);
+    TextStyle labelStyle = const TextStyle(fontSize: 24);
 
     List<Widget> formFields = [
       TextFormField(
@@ -358,7 +361,7 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
       appBar: AppBar(title: title, actions: [
         Consumer<TransactionProvider>(
           builder: (context, transactionProvider, child) => IconButton(
-            icon: Icon(Icons.check),
+            icon: const Icon(Icons.check),
             onPressed: () async {
               if (_formKey.currentState!.validate()) {
                 try {
@@ -368,11 +371,16 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
                   } else {
                     await transactionProvider.addTransaction(getTransaction());
                   }
-                  Navigator.of(context).pop();
+
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to save transaction: $e')),
-                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to save transaction: $e')),
+                    );
+                  }
                 }
               }
             },
@@ -491,7 +499,7 @@ class _CategoryManageDialogState extends State<CategoryManageDialog> {
     }
 
     TextButton okButton = TextButton(
-      child: Text("Ok"),
+      child: const Text("Ok"),
       onPressed: () async {
         if (!_formKey.currentState!.validate()) {
           return;
@@ -509,11 +517,15 @@ class _CategoryManageDialogState extends State<CategoryManageDialog> {
             savedCategory = await provider.createCategory(getCategory());
           }
 
-          Navigator.of(context).pop(savedCategory);
+          if (context.mounted) {
+            Navigator.of(context).pop(savedCategory);
+          }
         } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Failed to save transaction: $e")),
-          );
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Failed to save transaction: $e")),
+            );
+          }
         }
       },
     );
@@ -583,7 +595,7 @@ class _CategoryManageDialogState extends State<CategoryManageDialog> {
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Text(title),
           IconButton(
-            icon: Icon(Icons.close),
+            icon: const Icon(Icons.close),
             onPressed: () => Navigator.pop(context),
           )
         ]),
@@ -609,7 +621,7 @@ class _CategoryManageDialogState extends State<CategoryManageDialog> {
                     controller: amountController,
                     decoration: const InputDecoration(
                         prefixText: "\$",
-                        hintText: "\500.00",
+                        hintText: "500.00",
                         labelText: "Maximum Balance")),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
