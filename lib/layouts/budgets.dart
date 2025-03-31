@@ -28,7 +28,7 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
 
   Future<void> _prepareData() async {
     final provider = Provider.of<TransactionProvider>(context, listen: false);
-    final List<Category> categories = provider.categories;
+    final List<Category> categories = [...provider.categories, Category(name: "Uncategorized")];
 
     List<PieChartSectionData> sectionData = [];
     List<MaterialColor> colors = [
@@ -115,7 +115,7 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
         spacing: 8,
         children: [
           getDateRangeDropdown(),
-          AspectRatio(aspectRatio: 1.0, child: pieChart),
+          SizedBox(child: AspectRatio(aspectRatio: 1.0, child: pieChart)),
         ]);
   }
 }
