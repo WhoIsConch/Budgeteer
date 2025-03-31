@@ -115,7 +115,7 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
         spacing: 8,
         children: [
           getDateRangeDropdown(),
-          Expanded(child: pieChart),
+          AspectRatio(aspectRatio: 1.0, child: pieChart),
         ]);
   }
 }
