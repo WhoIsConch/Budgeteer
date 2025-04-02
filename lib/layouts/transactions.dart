@@ -175,14 +175,19 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     final category = categories[index];
                     return CheckboxListTile(
                       title: Text(category.name),
-                      value: selectedCategories.contains(category),
+                      value: selectedCategories
+                          .where(
+                            (e) => e.id == category.id,
+                          )
+                          .isNotEmpty,
                       onChanged: (bool? value) {
                         setState(() {
                           if (value != null) {
                             if (value) {
                               selectedCategories.add(category);
                             } else {
-                              selectedCategories.remove(category);
+                              selectedCategories
+                                  .removeWhere((e) => e.id == category.id);
                             }
                           }
                         });
@@ -412,7 +417,12 @@ class _TransactionsPageState extends State<TransactionsPage> {
           buttonType: HybridButtonType.input,
           icon: const Icon(Icons.category),
           text: selectedCategories.isNotEmpty
-              ? selectedCategories.join(", ")
+              ? selectedCategories
+                  .map(
+                    (e) => e.name,
+                  )
+                  .toList()
+                  .join(", ")
               : "Error",
           isEnabled: selectedCategories.isNotEmpty,
           onTap: () async {

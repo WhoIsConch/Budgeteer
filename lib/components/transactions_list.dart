@@ -160,7 +160,8 @@ class _TransactionsListState extends State<TransactionsList> {
         if (widget.searchCategories != null &&
             widget.searchCategories!.isNotEmpty) {
           transactions = transactions.where((transaction) {
-            return widget.searchCategories!.contains(transaction.category);
+            return widget.searchCategories!
+                .contains(transaction.category); // Fix This
           }).toList();
         }
 
