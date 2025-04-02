@@ -62,8 +62,9 @@ class DecimalTextInputFormatter extends TextInputFormatter {
     if (regex.hasMatch(text)) {
       // A regex match would mean the number is a valid number formatted as
       // `xxx.xx`, `xxx`, or `xxx.x`, or similar.
-      if (newValue.text[0] == "0" ||
-          (newValue.text[0] == "0" && oldValue.text == "0")) {
+      if (newValue.text[0] == "0" &&
+          newValue.text.length > 1 &&
+          newValue.text[1] != ".") {
         return TextEditingValue(text: newValue.text.substring(1));
       }
       return newValue;
