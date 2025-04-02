@@ -36,10 +36,10 @@ class Overview extends StatelessWidget {
                     flex: 16,
                     child: AsyncOverviewCard(
                       title: "Net Gain Today",
-                      amountCalculator: (provider) => provider.getTotal(
+                      amountCalculator: (provider) => (provider.getTotal(
                           DateTimeRange(
                               start: DateTime(now.year, now.month, now.day),
-                              end: now)),
+                              end: now))),
                       textStyle: CardTextStyle.major,
                     ),
                   ),

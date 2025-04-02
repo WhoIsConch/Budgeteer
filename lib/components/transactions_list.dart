@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:budget/tools/api.dart';
+import 'package:budget/tools/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/components/transaction_form.dart';
@@ -105,7 +106,8 @@ class _TransactionsListState extends State<TransactionsList> {
 
     return ListTile(
       leading: leadingWidget,
-      title: Text("${transaction.formatAmount()} at ${transaction.title}"),
+      title: Text(
+          "${"\$${formatAmount(transaction.amount)}"} at ${transaction.title}"),
       subtitle: Text(transaction.formatDate()),
       onTap: () => Navigator.push(
           context,

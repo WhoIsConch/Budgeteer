@@ -1,5 +1,6 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:budget/tools/api.dart';
+import 'package:budget/tools/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
@@ -10,7 +11,7 @@ class BudgetPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CategoryPieChart();
+    return Column(children: [CategoryPieChart()]);
   }
 }
 
@@ -76,7 +77,7 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
       double percentage = (total.abs() / overallTotal) * 100;
 
       if (percentage < 2) {
-        otherSectionTotal += total;
+        otherSectionTotal += total.abs();
         continue;
       }
 
@@ -186,9 +187,7 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
                     child: Padding(
                   padding: const EdgeInsets.all(4.0),
                   child: AutoSizeText(
-                    chartIsLoading
-                        ? ""
-                        : "\$${totalSpent.round().toStringAsFixed(0)}",
+                    "\$${formatAmount(totalSpent.round())}",
                     style: const TextStyle(fontSize: 48),
                     maxLines: 1,
                   ),
@@ -257,5 +256,19 @@ class ChartKeyItem extends StatelessWidget {
             : Icon(icon, color: color),
       ],
     );
+  }
+}
+
+class CategoryBarChart extends StatefulWidget {
+  const CategoryBarChart({super.key});
+
+  @override
+  State<CategoryBarChart> createState() => _CategoryBarChartState();
+}
+
+class _CategoryBarChartState extends State<CategoryBarChart> {
+  @override
+  Widget build(BuildContext context) {
+    return const Placeholder();
   }
 }

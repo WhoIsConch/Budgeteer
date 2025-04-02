@@ -5,6 +5,7 @@
 */
 
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 String? validateAmount(value) {
   /*
@@ -74,4 +75,18 @@ class DecimalTextInputFormatter extends TextInputFormatter {
       return oldValue;
     }
   }
+}
+
+String formatAmount(num amount) {
+  final formatter = NumberFormat('#,###.##');
+
+  if (amount >= 1000000000) {
+    return '${formatter.format(amount / 1000000000)}B';
+  } else if (amount >= 1000000) {
+    return '${formatter.format(amount / 1000000)}M';
+  } else if (amount >= 1000) {
+    return '${formatter.format(amount / 1000)}K';
+  }
+
+  return formatter.format(amount);
 }

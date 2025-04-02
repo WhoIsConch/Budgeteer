@@ -1,3 +1,4 @@
+import 'package:budget/tools/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:budget/tools/api.dart';
@@ -107,11 +108,9 @@ class AsyncOverviewCard extends StatelessWidget {
                 displayAmount = "Error";
               } else if (snapshot.hasData) {
                 if (snapshot.data! < 0) {
-                  displayAmount =
-                      '-\$${snapshot.data!.abs().toStringAsFixed(2)}';
+                  displayAmount = '-\$${formatAmount(snapshot.data!.abs())}';
                 } else {
-                  displayAmount =
-                      '\$${snapshot.data!.abs().toStringAsFixed(2)}';
+                  displayAmount = '\$${formatAmount(snapshot.data!.abs())}';
                 }
                 onContentUpdated?.call(displayAmount);
               }

@@ -161,10 +161,6 @@ class Transaction {
     return DateFormat('MM/dd/yyyy').format(date);
   }
 
-  String formatAmount() {
-    return "\$${amount.toStringAsFixed(2)}";
-  }
-
   Map<String, dynamic> toMap() {
     return {
       'id': id,
