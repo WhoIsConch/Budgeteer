@@ -107,7 +107,7 @@ class _TransactionsListState extends State<TransactionsList> {
     return ListTile(
       leading: leadingWidget,
       title: Text(
-          "${"\$${formatAmount(transaction.amount)}"} at ${transaction.title}"),
+          "${"\$${formatAmount(transaction.amount)}"}: \"${transaction.title}\""),
       subtitle: Text(transaction.formatDate()),
       onTap: () => Navigator.push(
           context,
@@ -161,7 +161,8 @@ class _TransactionsListState extends State<TransactionsList> {
             widget.searchCategories!.isNotEmpty) {
           transactions = transactions.where((transaction) {
             return widget.searchCategories!
-                .contains(transaction.category); // Fix This
+                .where((e) => e.name == transaction.category)
+                .isNotEmpty;
           }).toList();
         }
 

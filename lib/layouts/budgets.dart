@@ -27,7 +27,7 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
   List<ChartKeyItem>? chartKeyItems;
   RelativeTimeRange selectedDateRange = RelativeTimeRange.today;
   bool chartIsLoading = true;
-  double totalSpent = 0;
+  double cashFlow = 0;
 
   Future<void> _prepareData() async {
     final provider = Provider.of<TransactionProvider>(context, listen: false);
@@ -35,7 +35,7 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
       Category(name: ""),
       ...provider.categories,
     ];
-    totalSpent = 0;
+    cashFlow = 0;
 
     List<PieChartSectionData> sectionData = [];
     List<ChartKeyItem> keyItems = [];
@@ -53,7 +53,6 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
 
     List<double> totals = [];
     double otherSectionTotal = 0;
-    double overallTotal = 0;
 
     for (int i = 0; i < categories.length; i++) {
       double total = await provider.getTotal(selectedDateRange.getRange(),
@@ -66,15 +65,14 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
 
       totals.add(total);
 
-      overallTotal += total.abs();
-      totalSpent -= total;
+      cashFlow += total.abs();
     }
 
     for (int i = 0; i < categories.length; i++) {
       if (totals[i] == 0) continue;
 
       double total = totals[i];
-      double percentage = (total.abs() / overallTotal) * 100;
+      double percentage = (total.abs() / cashFlow) * 100;
 
       if (percentage < 2) {
         otherSectionTotal += total.abs();
@@ -110,7 +108,7 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
     }
 
     if (otherSectionTotal != 0 &&
-        (otherSectionTotal.abs() / overallTotal) * 100 >= 1) {
+        (otherSectionTotal.abs() / cashFlow) * 100 >= 1) {
       sectionData.add(PieChartSectionData(
         value: otherSectionTotal,
         radius: 32,
@@ -118,7 +116,7 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
         color: Colors.grey,
       ));
 
-      keyItems.add(ChartKeyItem(color: Colors.grey, name: "Other"));
+      keyItems.add(const ChartKeyItem(color: Colors.grey, name: "Other"));
     }
 
     setState(() {
@@ -187,7 +185,7 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
                     child: Padding(
                   padding: const EdgeInsets.all(4.0),
                   child: AutoSizeText(
-                    "\$${formatAmount(totalSpent.round())}",
+                    "\$${formatAmount(cashFlow.round())}",
                     style: const TextStyle(fontSize: 48),
                     maxLines: 1,
                   ),
