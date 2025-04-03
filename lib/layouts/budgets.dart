@@ -184,10 +184,20 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
                 child: Center(
                     child: Padding(
                   padding: const EdgeInsets.all(4.0),
-                  child: AutoSizeText(
-                    "\$${formatAmount(cashFlow.round())}",
-                    style: const TextStyle(fontSize: 48),
-                    maxLines: 1,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      AutoSizeText(
+                        "\$${formatAmount(cashFlow.round())}",
+                        style: const TextStyle(fontSize: 48),
+                        maxLines: 1,
+                      ),
+                      AutoSizeText(
+                        "Cash Flow",
+                        style: const TextStyle(fontSize: 12),
+                        maxLines: 1,
+                      ),
+                    ],
                   ),
                 )),
               ),
