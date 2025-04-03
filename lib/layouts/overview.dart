@@ -14,8 +14,6 @@ class Overview extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<TransactionProvider>(
       builder: (context, transactionProvider, child) {
-        final DateTime now = DateTime.now();
-
         return ListView(
           children: [
             SizedBox(
@@ -37,9 +35,7 @@ class Overview extends StatelessWidget {
                     child: AsyncOverviewCard(
                       title: "Net Gain Today",
                       amountCalculator: (provider) => (provider.getTotal(
-                          DateTimeRange(
-                              start: DateTime(now.year, now.month, now.day),
-                              end: now))),
+                          tools.RelativeTimeRange.today.getRange())),
                       textStyle: CardTextStyle.major,
                     ),
                   ),

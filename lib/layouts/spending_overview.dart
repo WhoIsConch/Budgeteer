@@ -9,7 +9,7 @@ import 'package:budget/components/cards.dart';
 class CardConfig {
   final String title;
   final TransactionType type;
-  final DateTimeRange Function() dateRange;
+  final DateTimeRange dateRange;
 
   CardConfig({
     required this.title,
@@ -106,48 +106,40 @@ class _OverviewHeaderState extends State<OverviewHeader> {
   }
 
   List<CardConfig> get cardConfigs {
-    DateTime now = DateTime.now();
-
     return [
       CardConfig(
           title: "Spent Today",
           type: TransactionType.expense,
-          dateRange: () => DateTimeRange(
-              start: DateTime(now.year, now.month, now.day), end: now)),
+          dateRange: RelativeTimeRange.today.getRange()),
       CardConfig(
           title: "Earned Today",
           type: TransactionType.income,
-          dateRange: () => DateTimeRange(
-              start: DateTime(now.year, now.month, now.day), end: now)),
+          dateRange: RelativeTimeRange.today.getRange()),
       CardConfig(
         title: "Spent This Month",
         type: TransactionType.expense,
-        dateRange: () =>
-            DateTimeRange(start: DateTime(now.year, now.month), end: now),
+        dateRange: RelativeTimeRange.thisMonth.getRange(),
       ),
       CardConfig(
           title: "Earned This Month",
           type: TransactionType.income,
-          dateRange: () =>
-              DateTimeRange(start: DateTime(now.year, now.month), end: now)),
+          dateRange: RelativeTimeRange.thisMonth.getRange()),
       CardConfig(
           title: 'Spent This Week',
           type: TransactionType.expense,
-          dateRange: () => DateTimeRange(
-              start: now.subtract(Duration(days: now.weekday - 1)), end: now)),
+          dateRange: RelativeTimeRange.thisWeek.getRange()),
       CardConfig(
           title: 'Earned This Week',
           type: TransactionType.income,
-          dateRange: () => DateTimeRange(
-              start: now.subtract(Duration(days: now.weekday - 1)), end: now)),
+          dateRange: RelativeTimeRange.thisWeek.getRange()),
       CardConfig(
           title: "Spent This Year",
           type: TransactionType.expense,
-          dateRange: () => DateTimeRange(start: DateTime(now.year), end: now)),
+          dateRange: RelativeTimeRange.thisYear.getRange()),
       CardConfig(
           title: "Earned This Year",
           type: TransactionType.income,
-          dateRange: () => DateTimeRange(start: DateTime(now.year), end: now))
+          dateRange: RelativeTimeRange.thisYear.getRange())
     ];
   }
 
@@ -161,14 +153,14 @@ class _OverviewHeaderState extends State<OverviewHeader> {
           title: config.title,
           previousContent: _previousContents[index],
           amountCalculator: (provider) => config.type == TransactionType.expense
-              ? provider.getAmountSpent(config.dateRange())
-              : provider.getAmountEarned(config.dateRange()),
+              ? provider.getAmountSpent(config.dateRange)
+              : provider.getAmountEarned(config.dateRange),
           onPressed: () {
             Navigator.push(
                 context,
                 MaterialPageRoute(
                     builder: (context) => TransactionsPage(
-                          startingDateRange: config.dateRange(),
+                          startingDateRange: config.dateRange,
                           startingTransactionType: config.type,
                         )));
           },

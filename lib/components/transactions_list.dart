@@ -106,8 +106,10 @@ class _TransactionsListState extends State<TransactionsList> {
 
     return ListTile(
       leading: leadingWidget,
-      title: Text(
-          "${"\$${formatAmount(transaction.amount)}"}: \"${transaction.title}\""),
+      title: Text( // Formats as "$500: Title of the Budget"
+          "${"\$${formatAmount(transaction.amount)}"}: \"${transaction.title}\"",
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis),
       subtitle: Text(transaction.formatDate()),
       onTap: () => Navigator.push(
           context,
