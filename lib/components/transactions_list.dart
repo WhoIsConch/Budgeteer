@@ -108,7 +108,8 @@ class _TransactionsListState extends State<TransactionsList> {
 
     return ListTile(
       leading: leadingWidget,
-      title: Text( // Formats as "$500: Title of the Budget"
+      title: Text(
+          // Formats as "$500: Title of the Budget"
           "${"\$${formatAmount(transaction.amount)}"}: \"${transaction.title}\"",
           maxLines: 2,
           overflow: TextOverflow.ellipsis),
@@ -277,8 +278,8 @@ class _TransactionsListState extends State<TransactionsList> {
 
                   bool undoPressed = false;
 
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  scaffoldMessengerKey.currentState!.hideCurrentSnackBar();
+                  scaffoldMessengerKey.currentState!.showSnackBar(SnackBar(
                       behavior: SnackBarBehavior.floating,
                       duration: const Duration(seconds: 3),
                       action: SnackBarAction(
@@ -304,21 +305,21 @@ class _TransactionsListState extends State<TransactionsList> {
                       timer.cancel();
                     } else {
                       timer.cancel();
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar(); // This doesn't work if you move screens
-                      setState(() {
-                        for (int i = 0; i < removedTransactions.length; i++) {
-                          transactionProvider
-                              .removeTransaction(removedTransactions[i]);
-                        }
-                      });
+                      scaffoldMessengerKey.currentState!
+                          .hideCurrentSnackBar(); // This doesn't work if you move screens
+
+                      for (int i = 0; i < removedTransactions.length; i++) {
+                        transactionProvider
+                            .removeTransaction(removedTransactions[i]);
+                      }
                     }
                   });
                 });
           } else {
             actionButton = FloatingActionButton(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8.0),
-        ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.0),
+              ),
               child: const Icon(Icons.add),
               onPressed: () => Navigator.push(
                   context,
@@ -344,13 +345,13 @@ class _TransactionsListState extends State<TransactionsList> {
   @override
   Widget build(BuildContext context) {
     if (widget.showBackground) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16.0),
-      ),
-      child: getList(),
-    );
-    }  else {
+      return Card(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+        child: getList(),
+      );
+    } else {
       return getList();
     }
   }
