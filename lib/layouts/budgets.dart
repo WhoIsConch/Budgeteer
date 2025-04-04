@@ -7,23 +7,14 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/tools/enums.dart';
 
-class BudgetPage extends StatelessWidget {
+class BudgetPage extends StatefulWidget {
   const BudgetPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Column(children: [CategoryPieChart()]);
-  }
+  State<BudgetPage> createState() => _BudgetPageState();
 }
 
-class CategoryPieChart extends StatefulWidget {
-  const CategoryPieChart({super.key});
-
-  @override
-  State<CategoryPieChart> createState() => _CategoryPieChartState();
-}
-
-class _CategoryPieChartState extends State<CategoryPieChart> {
+class _BudgetPageState extends State<BudgetPage> {
   List<PieChartSectionData>? pieChartSectionData;
   List<ChartKeyItem>? chartKeyItems;
   RelativeTimeRange selectedDateRange = RelativeTimeRange.today;
@@ -97,7 +88,7 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
         otherSectionTotal += total.abs();
         continue;
       }
-    
+
       sectionData.add(PieChartSectionData(
         value: total.abs(),
         radius: 32,
@@ -126,12 +117,12 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
 
     if (otherSectionTotal != 0) {
       if ((otherSectionTotal.abs() / cashFlow) * 100 >= 1) {
-      sectionData.add(PieChartSectionData(
-        value: otherSectionTotal,
-        radius: 32,
-        showTitle: false,
-        color: Colors.grey,
-      ));
+        sectionData.add(PieChartSectionData(
+          value: otherSectionTotal,
+          radius: 32,
+          showTitle: false,
+          color: Colors.grey,
+        ));
       }
 
       keyItems.add(const ChartKeyItem(color: Colors.grey, name: "Other"));
@@ -178,14 +169,38 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
   @override
   Widget build(BuildContext context) {
     Widget pieChartArea;
+    List<Icon> typesIcons = [
+      const Icon(Icons.all_inclusive),
+      const Icon(Icons.remove),
+      const Icon(Icons.add),
+    ];
 
     if (chartIsLoading) {
-      pieChartArea = const Center(
-          child: SizedBox(
-              width: 24, height: 24, child: CircularProgressIndicator()));
+      pieChartArea = const Expanded(
+        child: Center(
+            child: SizedBox(
+                width: 24, height: 24, child: CircularProgressIndicator())),
+      );
     } else if (pieChartSectionData!.isEmpty) {
-      pieChartArea = const Center(
-          child: Text("Nothing to show.", style: TextStyle(fontSize: 24)));
+      pieChartArea = const Expanded(
+        child: SizedBox(
+            width: 300,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "Nothing to show.",
+                  style: TextStyle(fontSize: 24),
+                  textAlign: TextAlign.center,
+                ),
+                Text(
+                  "Try changing the date range or adding some transactions.",
+                  style: TextStyle(fontSize: 18),
+                  textAlign: TextAlign.center,
+                )
+              ],
+            )),
+      );
     } else {
       pieChartArea = Row(
         // Contains the Pie Chart and the Legend
@@ -230,12 +245,6 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
         ],
       );
     }
-
-    List<Icon> typesIcons = [
-      const Icon(Icons.all_inclusive),
-      const Icon(Icons.remove),
-      const Icon(Icons.add),
-    ];
 
     return Column(
       // Contains the pie chart and all of its associated data

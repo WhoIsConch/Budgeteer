@@ -193,9 +193,6 @@ class _TransactionsListState extends State<TransactionsList> {
           }).toList();
         }
 
-        print(widget.searchString);
-        print(widget.searchCategories);
-
         // Sort transactions by date, most recent first
         transactions.sort((a, b) => b.date.compareTo(a.date));
 
