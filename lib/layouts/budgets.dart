@@ -1,4 +1,5 @@
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:budget/components/hybrid_button.dart';
 import 'package:budget/tools/api.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +29,11 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
   RelativeTimeRange selectedDateRange = RelativeTimeRange.today;
   bool chartIsLoading = true;
   double cashFlow = 0;
+  int typeIndex = 0;
+  List<TransactionType?> transactionTypes = [null, ...TransactionType.values];
+
+  TransactionType? get currentTransactionType =>
+      transactionTypes[typeIndex % transactionTypes.length];
 
   Future<void> _prepareData() async {
     final provider = Provider.of<TransactionProvider>(context, listen: false);
@@ -55,8 +61,17 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
     double otherSectionTotal = 0;
 
     for (int i = 0; i < categories.length; i++) {
-      double total = await provider.getTotal(selectedDateRange.getRange(),
-          category: categories[i]);
+      double total =
+          switch (transactionTypes[typeIndex % transactionTypes.length]) {
+        null => await provider.getTotal(selectedDateRange.getRange(),
+            category: categories[i]),
+        TransactionType.expense => await provider.getAmountSpent(
+            selectedDateRange.getRange(),
+            category: categories[i]),
+        TransactionType.income => await provider.getAmountEarned(
+            selectedDateRange.getRange(),
+            category: categories[i]),
+      };
 
       if (total == 0) {
         totals.add(0); // Add a zero to keep indexes aligned
@@ -82,7 +97,7 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
       sectionData.add(PieChartSectionData(
         value: total.abs(),
         radius: 32,
-        showTitle: false,
+        // showTitle: false, // Todo: Removed for DEBUG PURPOSES
         color: colors[i],
       ));
 
@@ -96,14 +111,22 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
                 name: categories[i].name.isNotEmpty
                     ? categories[i].name
                     : "Uncategorized",
-                icon: Icons.add_circle));
+                icon: switch (currentTransactionType) {
+                  null => total > 0 ? Icons.add_circle : Icons.remove_circle,
+                  TransactionType.expense => Icons.remove_circle,
+                  TransactionType.income => Icons.add_circle,
+                }));
       } else {
         keyItems.add(ChartKeyItem(
             color: colors[i],
             name: categories[i].name.isNotEmpty
                 ? categories[i].name
                 : "Uncategorized",
-            icon: Icons.remove_circle));
+            icon: switch (currentTransactionType) {
+              null => total > 0 ? Icons.add_circle : Icons.remove_circle,
+              TransactionType.expense => Icons.remove_circle,
+              TransactionType.income => Icons.add_circle,
+            }));
       }
     }
 
@@ -192,9 +215,9 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
                         style: const TextStyle(fontSize: 48),
                         maxLines: 1,
                       ),
-                      AutoSizeText(
+                      const AutoSizeText(
                         "Cash Flow",
-                        style: const TextStyle(fontSize: 12),
+                        style: TextStyle(fontSize: 12),
                         maxLines: 1,
                       ),
                     ],
@@ -218,10 +241,32 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
       );
     }
 
+    List<Icon> typesIcons = [
+      const Icon(Icons.all_inclusive),
+      const Icon(Icons.remove),
+      const Icon(Icons.add),
+    ];
+
     return Column(
       // Contains the pie chart and all of its associated data
       children: [
-        getDateRangeDropdown(), // Decide which time period to visit
+        Row(
+          spacing: 8.0,
+          children: [
+            Expanded(child: getDateRangeDropdown()),
+            HybridButton(
+                isEnabled: typeIndex % typesIcons.length != 0,
+                buttonType: HybridButtonType.toggle,
+                onTap: () {
+                  setState(() {
+                    typeIndex += 1;
+                  });
+                  _prepareData();
+                },
+                icon: typesIcons[typeIndex % typesIcons.length])
+          ],
+        ),
+        // Decide which time period to visit
         const SizedBox(height: 16),
         pieChartArea
       ],
