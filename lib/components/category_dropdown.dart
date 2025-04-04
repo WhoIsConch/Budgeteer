@@ -10,6 +10,7 @@ class CategoryDropdown extends StatelessWidget {
     required this.onChanged,
     required this.selectedCategory,
     required this.selectedCategoryTotal,
+    this.showExpanded = true,
   });
 
   final List<Category> categories;
@@ -17,6 +18,9 @@ class CategoryDropdown extends StatelessWidget {
   final Category? selectedCategory;
   final double? selectedCategoryTotal;
   final TextEditingController categoryController = TextEditingController();
+  final bool showExpanded;
+
+  bool get shouldShowExpanded => showExpanded && selectedCategory != null;
 
   @override
   Widget build(BuildContext context) {
@@ -48,11 +52,15 @@ class CategoryDropdown extends StatelessWidget {
           return;
         }
 
+        // This should usually be either a list of 1 or 0, so we use firstOrNull
         onChanged(categories.where((e) => e.name == categoryName).firstOrNull);
       },
       dropdownMenuEntries: dropdownEntries,
     );
 
+    // This decoration has a single bottom border for when the category selector
+    // is showing category information. The rest of the border is constructed by
+    // its outer container
     BoxDecoration jointBoxDecoration = BoxDecoration(
       border: Border(
           bottom: BorderSide(
@@ -61,9 +69,11 @@ class CategoryDropdown extends StatelessWidget {
       )),
     );
 
+    // This is the inner, first-row container that holds the category dropdown
+    // and add/edit button
     Container categorySelector = Container(
       height: 64,
-      decoration: selectedCategory == null ? null : jointBoxDecoration,
+      decoration: shouldShowExpanded ? jointBoxDecoration : null,
       child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
         Expanded(
             child: Padding(
@@ -97,7 +107,9 @@ class CategoryDropdown extends StatelessWidget {
 
     List<Widget> columnChildren = [categorySelector];
 
-    if (selectedCategory != null) {
+    // The rest of the column children will be the category information
+    // if the expanded view is up
+    if (shouldShowExpanded) {
       columnChildren.add(
         Padding(
           padding: const EdgeInsets.fromLTRB(8, 8, 8, 2),
@@ -111,19 +123,18 @@ class CategoryDropdown extends StatelessWidget {
                   : const TextStyle(fontSize: 18)),
         ),
       );
-      if (selectedCategory?.resetIncrement != CategoryResetIncrement.never) {
-        columnChildren.add(Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-                "Resets in ${selectedCategory?.getTimeUntilNextReset()}")));
-      } else {
-        columnChildren.add(const Padding(
-          padding: EdgeInsets.all(8.0),
-          child: Text("Amount doesn't reset"),
-        ));
-      }
+
+      columnChildren.add(Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(
+            (selectedCategory?.resetIncrement != CategoryResetIncrement.never
+                ? "Resets in ${selectedCategory?.getTimeUntilNextReset()}"
+                : "Amount doesn't reset")),
+      ));
     }
 
+    // This outer container shows the rest of the selector's border. Won't be
+    // visible unless the container is expanded
     return Container(
         decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
