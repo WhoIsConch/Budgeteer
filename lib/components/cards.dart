@@ -52,11 +52,11 @@ class OverviewCard extends StatelessWidget {
       return Card(
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16.0),
+          borderRadius: BorderRadius.circular(10.0),
         ),
         color: theme.colorScheme.primaryContainer,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16.0),
+          borderRadius: BorderRadius.circular(10.0),
           onTap: onPressed as void Function()?,
           child: cardContent,
         ),

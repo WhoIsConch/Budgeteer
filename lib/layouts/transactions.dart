@@ -379,6 +379,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               searchCategories: selectedCategories,
               amountFilter: amountFilter,
               showActionButton: false,
+              showBackground: false,
             )),
           ],
         ),

@@ -15,7 +15,8 @@ class TransactionsList extends StatefulWidget {
       this.searchCategories,
       this.searchString,
       this.amountFilter,
-      this.showActionButton = true});
+      this.showActionButton = true,
+      this.showBackground = true});
 
   final DateTimeRange? dateRange;
   final TransactionType? type;
@@ -23,6 +24,7 @@ class TransactionsList extends StatefulWidget {
   final String? searchString;
   final AmountFilter? amountFilter;
   final bool showActionButton;
+  final bool showBackground;
 
   @override
   State<TransactionsList> createState() => _TransactionsListState();
@@ -302,7 +304,7 @@ class _TransactionsListState extends State<TransactionsList> {
                       timer.cancel();
                     } else {
                       timer.cancel();
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar(); // This doesn't work if you move screens
                       setState(() {
                         for (int i = 0; i < removedTransactions.length; i++) {
                           transactionProvider
@@ -314,6 +316,9 @@ class _TransactionsListState extends State<TransactionsList> {
                 });
           } else {
             actionButton = FloatingActionButton(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8.0),
+        ),
               child: const Icon(Icons.add),
               onPressed: () => Navigator.push(
                   context,
@@ -338,11 +343,15 @@ class _TransactionsListState extends State<TransactionsList> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.showBackground) {
     return Card(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10.0),
+        borderRadius: BorderRadius.circular(16.0),
       ),
       child: getList(),
     );
+    }  else {
+      return getList();
+    }
   }
 }

@@ -97,7 +97,7 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
         otherSectionTotal += total.abs();
         continue;
       }
-
+    
       sectionData.add(PieChartSectionData(
         value: total.abs(),
         radius: 32,
@@ -124,14 +124,15 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
       }
     }
 
-    if (otherSectionTotal != 0 &&
-        (otherSectionTotal.abs() / cashFlow) * 100 >= 1) {
+    if (otherSectionTotal != 0) {
+      if ((otherSectionTotal.abs() / cashFlow) * 100 >= 1) {
       sectionData.add(PieChartSectionData(
         value: otherSectionTotal,
         radius: 32,
         showTitle: false,
         color: Colors.grey,
       ));
+      }
 
       keyItems.add(const ChartKeyItem(color: Colors.grey, name: "Other"));
     }
