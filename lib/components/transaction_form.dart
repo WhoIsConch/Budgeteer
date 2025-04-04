@@ -128,7 +128,7 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
   }
 
   String? validateTransactionAmount(value) {
-    String? initialCheck = validateAmount(value);
+    String? initialCheck = const AmountValidator().validateAmount(value);
 
     if (initialCheck != null) {
       return initialCheck;
@@ -519,7 +519,8 @@ class _CategoryManageDialogState extends State<CategoryManageDialog> {
                 TextFormField(
                     keyboardType: const TextInputType.numberWithOptions(
                         decimal: true, signed: false),
-                    validator: validateAmount,
+                    validator:
+                        const AmountValidator(allowZero: true).validateAmount,
                     inputFormatters: [DecimalTextInputFormatter()],
                     controller: amountController,
                     decoration: const InputDecoration(

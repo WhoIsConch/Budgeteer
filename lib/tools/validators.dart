@@ -7,31 +7,37 @@
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
-String? validateAmount(value) {
-  /*
+class AmountValidator {
+  final bool allowZero;
+
+  const AmountValidator({this.allowZero = false});
+
+  String? validateAmount(value) {
+    /*
   Used in a TextFormField, validateAmount ensures only positive numbers can be
   input in a text field. DecimalTextInputFormatter is also typically used with
   this validator which generally makes this validator useless, but if someone
   bypasses the input formatter somehow, this is a reasonable failsafe. 
   */
-  double? amount = double.tryParse(value);
+    double? amount = double.tryParse(value);
 
-  if ([null, 0].contains(amount)) {
-    return "Please enter a valid amount";
-  }
+    if (amount == null || (!allowZero && amount == 0)) {
+      return "Please enter a valid amount";
+    }
 
-  // Make sure the amount entered isn't too small or too high
-  if (amount! < 0) {
-    return "Please enter a positive amount";
-  } else if (amount > 100000000) {
-    // Enforce a hard limit because it would probably mess up the UI to put in a
-    // number too big
-    // If some hyper rich guy likes using my app for some reason and requests I
-    // allow him to input transactions that are more than 100 million dollars
-    // I might fix it
-    return "No way you have that much money";
+    // Make sure the amount entered isn't too small or too high
+    if (amount < 0) {
+      return "Please enter a positive amount";
+    } else if (amount > 100000000) {
+      // Enforce a hard limit because it would probably mess up the UI to put in a
+      // number too big
+      // If some hyper rich guy likes using my app for some reason and requests I
+      // allow him to input transactions that are more than 100 million dollars
+      // I might fix it
+      return "No way you have that much money";
+    }
+    return null;
   }
-  return null;
 }
 
 String? validateTitle(value) {
@@ -78,7 +84,7 @@ class DecimalTextInputFormatter extends TextInputFormatter {
 }
 
 String formatAmount(num amount) {
-  final formatter = NumberFormat('#,###.##');
+  final formatter = NumberFormat('#,##0.00');
 
   if (amount >= 1000000000) {
     return '${formatter.format(amount / 1000000000)}B';

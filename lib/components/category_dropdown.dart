@@ -114,7 +114,7 @@ class CategoryDropdown extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(8, 8, 8, 2),
           child: Text(
-              "${selectedCategoryTotal != null && selectedCategoryTotal! < 0 ? "-" : ""}\$${selectedCategoryTotal?.abs().toStringAsFixed(2)} Remaining",
+              "Balance: ${selectedCategoryTotal != null && selectedCategoryTotal! < 0 ? "-" : ""}\$${selectedCategoryTotal?.abs().toStringAsFixed(2)}",
               style: selectedCategoryTotal != null &&
                       selectedCategoryTotal! < 0 &&
                       !selectedCategory!.allowNegatives
