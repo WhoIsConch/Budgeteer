@@ -63,8 +63,12 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
     for (int i = 0; i < categories.length; i++) {
       double total =
           switch (transactionTypes[typeIndex % transactionTypes.length]) {
-        null => await provider.getTotal(selectedDateRange.getRange(),
-            category: categories[i]),
+        null => (await provider.getAmountSpent(selectedDateRange.getRange(),
+                    category: categories[i]))
+                .abs() +
+            (await provider.getAmountEarned(selectedDateRange.getRange(),
+                    category: categories[i]))
+                .abs(),
         TransactionType.expense => await provider.getAmountSpent(
             selectedDateRange.getRange(),
             category: categories[i]),
@@ -97,7 +101,7 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
       sectionData.add(PieChartSectionData(
         value: total.abs(),
         radius: 32,
-        // showTitle: false, // Todo: Removed for DEBUG PURPOSES
+        showTitle: false,
         color: colors[i],
       ));
 
@@ -110,23 +114,13 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
                 color: colors[i],
                 name: categories[i].name.isNotEmpty
                     ? categories[i].name
-                    : "Uncategorized",
-                icon: switch (currentTransactionType) {
-                  null => total > 0 ? Icons.add_circle : Icons.remove_circle,
-                  TransactionType.expense => Icons.remove_circle,
-                  TransactionType.income => Icons.add_circle,
-                }));
+                    : "Uncategorized"));
       } else {
         keyItems.add(ChartKeyItem(
             color: colors[i],
             name: categories[i].name.isNotEmpty
                 ? categories[i].name
-                : "Uncategorized",
-            icon: switch (currentTransactionType) {
-              null => total > 0 ? Icons.add_circle : Icons.remove_circle,
-              TransactionType.expense => Icons.remove_circle,
-              TransactionType.income => Icons.add_circle,
-            }));
+                : "Uncategorized"));
       }
     }
 
@@ -215,11 +209,6 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
                         style: const TextStyle(fontSize: 48),
                         maxLines: 1,
                       ),
-                      const AutoSizeText(
-                        "Cash Flow",
-                        style: TextStyle(fontSize: 12),
-                        maxLines: 1,
-                      ),
                     ],
                   ),
                 )),
@@ -292,19 +281,22 @@ class ChartKeyItem extends StatelessWidget {
           child: AutoSizeText(
             name,
             softWrap: true,
-            style: TextStyle(fontSize: 18),
+            style: const TextStyle(fontSize: 18),
             maxLines: 1,
             minFontSize: 10,
           ),
         ),
         const SizedBox(width: 6),
         icon == null
-            ? Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(3),
-                  color: color,
+            ? Padding(
+                padding: const EdgeInsets.all(2.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const SizedBox(height: 20, width: 20),
                 ),
-                child: SizedBox(height: 16, width: 16),
               )
             : Icon(icon, color: color),
       ],
