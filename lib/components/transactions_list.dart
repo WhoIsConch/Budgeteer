@@ -154,8 +154,7 @@ class _TransactionsListState extends State<TransactionsList> {
             // Adding and subtracting a day to the start and end of the date
             // because "After" and "Before" are not inclusive of the start and
             // end dates
-            return transaction.date.isAfter(widget.dateRange!.start
-                    .subtract(const Duration(days: 1))) &&
+            return transaction.date.isAfter(widget.dateRange!.start) &&
                 transaction.date.isBefore(
                     widget.dateRange!.end.add(const Duration(days: 1)));
           }).toList();
@@ -175,8 +174,12 @@ class _TransactionsListState extends State<TransactionsList> {
         // that string and return results containing it
         if (widget.searchString != null && widget.searchString!.isNotEmpty) {
           transactions = transactions.where((transaction) {
-            return transaction.title.contains(widget.searchString!) ||
-                transaction.notes!.contains(widget.searchString!);
+            return transaction.title
+                    .toLowerCase()
+                    .contains(widget.searchString!.toLowerCase()) ||
+                transaction.notes!
+                    .toLowerCase()
+                    .contains(widget.searchString!.toLowerCase());
           }).toList();
         }
 

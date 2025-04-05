@@ -125,7 +125,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     // Shows a dialog inline with a dropdown showing the filter type first,
     // then the amount as an input.
     TextEditingController controller = TextEditingController();
-    controller.text = amountFilter?.value.toString() ?? "";
+    controller.text = amountFilter?.value!.toStringAsFixed(2) ?? "";
     amountFilter = AmountFilter(type: AmountFilterType.exactly);
 
     return showDialog<AmountFilter>(
@@ -266,6 +266,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
     List<HybridButton> topRow = [
       HybridButton(
+          // Date Range Button
           buttonType: HybridButtonType.input,
           preference: 5,
           icon: const Icon(Icons.date_range),
@@ -281,23 +282,29 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         DateTime.now().subtract(const Duration(days: 365 * 10)),
                     lastDate: DateTime.now())
                 .then((value) {
+              if (value == dateRange) return;
+
               setState(() {
                 dateRange = value;
               });
             });
           }),
       HybridButton(
+        // Amount Filter Button
         preference: 4,
         buttonType: HybridButtonType.input,
         isEnabled: amountFilter != null,
         onTap: () async {
           AmountFilter? result = await _showAmountFilterDialog(context);
 
+          if (result == amountFilter) return;
+
           setState(() => amountFilter = result);
         },
         icon: const Icon(Icons.attach_money),
-        text:
-            amountFilter == null ? '0' : "\$${amountFilter!.value.toString()}",
+        text: amountFilter == null
+            ? '0'
+            : "\$${formatAmount(amountFilter!.value!)}",
         dynamicIconSelector: () => switch (amountFilter?.type) {
           AmountFilterType.greaterThan => const Icon(Icons.chevron_right),
           AmountFilterType.lessThan => const Icon(Icons.chevron_left),
@@ -305,10 +312,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
         },
       ),
       HybridButton(
+        // Search String Button
         preference: 3,
         buttonType: HybridButtonType.input,
         onTap: () async {
           String? result = await _showTextInputDialog(context, "Search");
+
+          if (result == searchString) return;
 
           setState(() => searchString = result ?? "");
         },
@@ -317,6 +327,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
         text: searchString.isNotEmpty ? searchString : "Error",
       ),
       HybridButton(
+          // Category Selector Button
           preference: 2,
           buttonType: HybridButtonType.input,
           icon: const Icon(Icons.category),
