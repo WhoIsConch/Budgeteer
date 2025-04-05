@@ -509,109 +509,112 @@ class _CategoryManageDialogState extends State<CategoryManageDialog> {
         actions: formActions,
         content: StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
-          return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                      labelText: "Category Name", hintText: categoryHint),
-                  validator: validateCategoryTitle,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                    keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true, signed: false),
-                    validator:
-                        const AmountValidator(allowZero: true).validateAmount,
-                    inputFormatters: [DecimalTextInputFormatter()],
-                    controller: amountController,
-                    decoration: const InputDecoration(
-                        prefixText: "\$",
-                        hintText: "500.00",
-                        labelText: "Maximum Balance")),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: GestureDetector(
-                    onTap: () => setState(
-                      () => allowNegatives = !allowNegatives,
+          return SingleChildScrollView(
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                        labelText: "Category Name", hintText: categoryHint),
+                    validator: validateCategoryTitle,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                      keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true, signed: false),
+                      validator:
+                          const AmountValidator(allowZero: true).validateAmount,
+                      inputFormatters: [DecimalTextInputFormatter()],
+                      controller: amountController,
+                      decoration: const InputDecoration(
+                          prefixText: "\$",
+                          hintText: "500.00",
+                          labelText: "Maximum Balance")),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: GestureDetector(
+                      onTap: () => setState(
+                        () => allowNegatives = !allowNegatives,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: Checkbox(
+                              semanticLabel: "Allow Negative Balance",
+                              value: allowNegatives,
+                              onChanged: (value) {
+                                if (value != null) {
+                                  setState(() => allowNegatives = value);
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Text("Allow Negative Balance")
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text("Reset every", style: TextStyle(fontSize: 16)),
+                  const SizedBox(height: 4),
+                  DropdownMenu(
+                    expandedInsets: EdgeInsets.zero,
+                    textStyle: const TextStyle(fontSize: 16),
+                    initialSelection: widget.category?.resetIncrement ??
+                        CategoryResetIncrement.never,
+                    dropdownMenuEntries: CategoryResetIncrement.values
+                        .map(
+                          (e) =>
+                              DropdownMenuEntry(label: e.getText(), value: e),
+                        )
+                        .toList(),
+                    onSelected: (value) {
+                      if (value != null) {
+                        setState(() => resetIncrement = value);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  GestureDetector(
+                    onTap: () => showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                          title: const Text("Pick a color"),
+                          content: MaterialPicker(
+                              pickerColor: selectedColor ?? Colors.white,
+                              onColorChanged: (newColor) =>
+                                  setState(() => selectedColor = newColor)),
+                          actions: [
+                            TextButton(
+                              child: const Text("Ok"),
+                              onPressed: () => Navigator.pop(context),
+                            )
+                          ]),
                     ),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: Checkbox(
-                            semanticLabel: "Allow Negative Balance",
-                            value: allowNegatives,
-                            onChanged: (value) {
-                              if (value != null) {
-                                setState(() => allowNegatives = value);
-                              }
-                            },
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const Text(
+                            "Color: ",
+                            style: TextStyle(fontSize: 18),
                           ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Text("Allow Negative Balance")
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text("Reset every", style: TextStyle(fontSize: 16)),
-                const SizedBox(height: 4),
-                DropdownMenu(
-                  expandedInsets: EdgeInsets.zero,
-                  textStyle: const TextStyle(fontSize: 16),
-                  initialSelection: widget.category?.resetIncrement ??
-                      CategoryResetIncrement.never,
-                  dropdownMenuEntries: CategoryResetIncrement.values
-                      .map(
-                        (e) => DropdownMenuEntry(label: e.getText(), value: e),
-                      )
-                      .toList(),
-                  onSelected: (value) {
-                    if (value != null) {
-                      setState(() => resetIncrement = value);
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-                GestureDetector(
-                  onTap: () => showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                        title: const Text("Pick a color"),
-                        content: MaterialPicker(
-                            pickerColor: selectedColor ?? Colors.white,
-                            onColorChanged: (newColor) =>
-                                setState(() => selectedColor = newColor)),
-                        actions: [
-                          TextButton(
-                            child: const Text("Ok"),
-                            onPressed: () => Navigator.pop(context),
-                          )
+                          Expanded(
+                            child: Container(
+                                height: 30,
+                                decoration: BoxDecoration(
+                                    color: selectedColor ?? Colors.white,
+                                    borderRadius: BorderRadius.circular(2))),
+                          ),
                         ]),
                   ),
-                  child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const Text(
-                          "Color: ",
-                          style: TextStyle(fontSize: 18),
-                        ),
-                        Expanded(
-                          child: Container(
-                              height: 30,
-                              decoration: BoxDecoration(
-                                  color: selectedColor ?? Colors.white,
-                                  borderRadius: BorderRadius.circular(2))),
-                        ),
-                      ]),
-                ),
-              ]);
+                ]),
+          );
         }),
       ),
     );

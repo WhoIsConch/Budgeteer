@@ -84,7 +84,7 @@ class _BudgetPageState extends State<BudgetPage> {
         value: total.abs(),
         radius: 32,
         showTitle: false,
-        color: categories[i].color,
+        color: categories[i].color ?? Colors.white,
       ));
 
       // This sorts the data to ensure any income stays on top to
@@ -93,13 +93,13 @@ class _BudgetPageState extends State<BudgetPage> {
         keyItems.insert(
             0,
             ChartKeyItem(
-                color: categories[i].color!,
+                color: categories[i].color ?? Colors.white,
                 name: categories[i].name.isNotEmpty
                     ? categories[i].name
                     : "Uncategorized"));
       } else {
         keyItems.add(ChartKeyItem(
-            color: categories[i].color!,
+            color: categories[i].color ?? Colors.white,
             name: categories[i].name.isNotEmpty
                 ? categories[i].name
                 : "Uncategorized"));
