@@ -177,9 +177,10 @@ class _TransactionsListState extends State<TransactionsList> {
             return transaction.title
                     .toLowerCase()
                     .contains(widget.searchString!.toLowerCase()) ||
-                transaction.notes!
-                    .toLowerCase()
-                    .contains(widget.searchString!.toLowerCase());
+                (transaction.notes != null &&
+                    transaction.notes!
+                        .toLowerCase()
+                        .contains(widget.searchString!.toLowerCase()));
           }).toList();
         }
 

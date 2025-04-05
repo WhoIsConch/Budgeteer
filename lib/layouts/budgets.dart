@@ -27,6 +27,8 @@ class _BudgetPageState extends State<BudgetPage> {
       transactionTypes[typeIndex % transactionTypes.length];
 
   Future<void> _prepareData() async {
+    setState(() => chartIsLoading = true);
+
     final provider = Provider.of<TransactionProvider>(context, listen: false);
     final List<Category> categories = [
       Category(name: ""),
@@ -93,7 +95,7 @@ class _BudgetPageState extends State<BudgetPage> {
         value: total.abs(),
         radius: 32,
         showTitle: false,
-        color: colors[i],
+        color: colors[i % 8],
       ));
 
       // This sorts the data to ensure any income stays on top to
@@ -102,13 +104,13 @@ class _BudgetPageState extends State<BudgetPage> {
         keyItems.insert(
             0,
             ChartKeyItem(
-                color: colors[i],
+                color: colors[i % 8],
                 name: categories[i].name.isNotEmpty
                     ? categories[i].name
                     : "Uncategorized"));
       } else {
         keyItems.add(ChartKeyItem(
-            color: colors[i],
+            color: colors[i % 8],
             name: categories[i].name.isNotEmpty
                 ? categories[i].name
                 : "Uncategorized"));
@@ -233,13 +235,11 @@ class _BudgetPageState extends State<BudgetPage> {
             ]),
           ),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: Column(
-                spacing: 4,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: chartKeyItems!,
-              ),
+            child: SizedBox(
+              height: 180,
+              child: Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: ListView(children: chartKeyItems!)),
             ),
           ),
         ],
