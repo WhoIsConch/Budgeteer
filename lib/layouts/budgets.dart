@@ -39,17 +39,6 @@ class _BudgetPageState extends State<BudgetPage> {
     List<PieChartSectionData> sectionData = [];
     List<ChartKeyItem> keyItems = [];
 
-    List<MaterialColor> colors = [
-      Colors.red,
-      Colors.green,
-      Colors.orange,
-      Colors.blue,
-      Colors.yellow,
-      Colors.purple,
-      Colors.cyan,
-      Colors.lightGreen,
-    ];
-
     List<double> totals = [];
     double otherSectionTotal = 0;
 
@@ -95,7 +84,7 @@ class _BudgetPageState extends State<BudgetPage> {
         value: total.abs(),
         radius: 32,
         showTitle: false,
-        color: colors[i % 8],
+        color: categories[i].color,
       ));
 
       // This sorts the data to ensure any income stays on top to
@@ -104,13 +93,13 @@ class _BudgetPageState extends State<BudgetPage> {
         keyItems.insert(
             0,
             ChartKeyItem(
-                color: colors[i % 8],
+                color: categories[i].color!,
                 name: categories[i].name.isNotEmpty
                     ? categories[i].name
                     : "Uncategorized"));
       } else {
         keyItems.add(ChartKeyItem(
-            color: colors[i % 8],
+            color: categories[i].color!,
             name: categories[i].name.isNotEmpty
                 ? categories[i].name
                 : "Uncategorized"));
@@ -277,7 +266,7 @@ class ChartKeyItem extends StatelessWidget {
   const ChartKeyItem(
       {super.key, required this.color, required this.name, this.icon});
 
-  final MaterialColor color;
+  final Color color;
   final String name;
   final IconData? icon;
 

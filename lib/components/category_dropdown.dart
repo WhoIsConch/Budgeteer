@@ -1,4 +1,4 @@
-import 'package:budget/components/transaction_form.dart';
+import 'package:budget/components/manage_object_forms.dart';
 import 'package:budget/tools/api.dart';
 import 'package:budget/tools/enums.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +21,9 @@ class CategoryDropdown extends StatelessWidget {
   final bool showExpanded;
 
   bool get shouldShowExpanded => showExpanded && selectedCategory != null;
+
+  Color getDividerColor(BuildContext context) =>
+      selectedCategory?.color ?? Theme.of(context).dividerColor;
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +68,7 @@ class CategoryDropdown extends StatelessWidget {
       border: Border(
           bottom: BorderSide(
         width: 1,
-        color: Theme.of(context).dividerColor,
+        color: getDividerColor(context),
       )),
     );
 
@@ -78,7 +81,7 @@ class CategoryDropdown extends StatelessWidget {
         Expanded(
             child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 4, 4), child: menu)),
-        Container(width: 1, height: 64, color: Theme.of(context).dividerColor),
+        Container(width: 1, height: 64, color: getDividerColor(context)),
         Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
             child: IconButton(
@@ -138,8 +141,7 @@ class CategoryDropdown extends StatelessWidget {
     return Container(
         decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            border:
-                Border.all(width: 1, color: Theme.of(context).dividerColor)),
+            border: Border.all(width: 1, color: getDividerColor(context))),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: columnChildren,

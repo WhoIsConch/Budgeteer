@@ -4,7 +4,7 @@ import 'package:budget/tools/api.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:budget/components/transaction_form.dart';
+import 'package:budget/components/manage_object_forms.dart';
 import 'package:budget/tools/enums.dart';
 
 class TransactionsList extends StatefulWidget {

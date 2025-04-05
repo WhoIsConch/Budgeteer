@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:budget/tools/enums.dart';
@@ -10,10 +12,12 @@ class Category {
   CategoryResetIncrement resetIncrement;
   bool allowNegatives;
   int? id;
+  Color? color;
 
   Category({
     this.id,
     required this.name,
+    this.color,
     this.balance = 0,
     this.resetIncrement = CategoryResetIncrement.never,
     this.allowNegatives = true,
@@ -26,6 +30,7 @@ class Category {
       balance: map['balance'],
       resetIncrement: CategoryResetIncrement.fromValue(map['resetIncrement']),
       allowNegatives: map['allowNegatives'] != 0,
+      color: Color(map['color']),
     );
   }
 
@@ -35,7 +40,9 @@ class Category {
       'name': name,
       'balance': balance,
       'resetIncrement': resetIncrement.value,
-      'allowNegatives': allowNegatives ? 1 : 0
+      'allowNegatives': allowNegatives ? 1 : 0,
+      'color':
+          color?.toARGB32() ?? Color((Random().nextDouble() * 0xFFFFFF).toInt())
     };
   }
 
@@ -388,7 +395,7 @@ class DatabaseHelper {
       'CREATE TABLE transactions(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, amount REAL, date TEXT, type INTEGER, category TEXT, location TEXT, notes TEXT)',
     );
     await db.execute(
-        'CREATE TABLE categories(id INTEGER PRIMARY KEY AUTOINCREMENT, name STRING UNIQUE, balance REAL, resetIncrement INTEGER, allowNegatives BOOL)');
+        'CREATE TABLE categories(id INTEGER PRIMARY KEY AUTOINCREMENT, name STRING UNIQUE, balance REAL, resetIncrement INTEGER, allowNegatives BOOL, color INTEGER)');
   }
 
   Future<List<Transaction>> getTransactions({

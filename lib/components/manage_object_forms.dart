@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:budget/components/category_dropdown.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/tools/api.dart';
 import 'package:budget/tools/enums.dart';
@@ -330,6 +331,7 @@ class _CategoryManageDialogState extends State<CategoryManageDialog> {
 
   bool allowNegatives = true;
   CategoryResetIncrement resetIncrement = CategoryResetIncrement.never;
+  Color? selectedColor;
 
   String? validateCategoryTitle(value) {
     String? initialCheck = validateTitle(value);
@@ -361,6 +363,7 @@ class _CategoryManageDialogState extends State<CategoryManageDialog> {
       balance: double.parse(amountController.text),
       resetIncrement: resetIncrement,
       allowNegatives: allowNegatives,
+      color: selectedColor,
     );
   }
 
@@ -373,6 +376,7 @@ class _CategoryManageDialogState extends State<CategoryManageDialog> {
       amountController.text = widget.category!.balance.toStringAsFixed(2);
       allowNegatives = widget.category!.allowNegatives;
       resetIncrement = widget.category!.resetIncrement;
+      selectedColor = widget.category!.color!;
     }
   }
 
@@ -573,6 +577,39 @@ class _CategoryManageDialogState extends State<CategoryManageDialog> {
                       setState(() => resetIncrement = value);
                     }
                   },
+                ),
+                const SizedBox(height: 16),
+                GestureDetector(
+                  onTap: () => showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                        title: const Text("Pick a color"),
+                        content: MaterialPicker(
+                            pickerColor: selectedColor ?? Colors.white,
+                            onColorChanged: (newColor) =>
+                                setState(() => selectedColor = newColor)),
+                        actions: [
+                          TextButton(
+                            child: const Text("Ok"),
+                            onPressed: () => Navigator.pop(context),
+                          )
+                        ]),
+                  ),
+                  child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Text(
+                          "Color: ",
+                          style: TextStyle(fontSize: 18),
+                        ),
+                        Expanded(
+                          child: Container(
+                              height: 30,
+                              decoration: BoxDecoration(
+                                  color: selectedColor ?? Colors.white,
+                                  borderRadius: BorderRadius.circular(2))),
+                        ),
+                      ]),
                 ),
               ]);
         }),

@@ -1,5 +1,5 @@
 import 'package:budget/components/cards.dart';
-import 'package:budget/components/transaction_form.dart';
+import 'package:budget/components/manage_object_forms.dart';
 import 'package:budget/tools/enums.dart' as tools;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -34,8 +34,8 @@ class Overview extends StatelessWidget {
                     flex: 16,
                     child: AsyncOverviewCard(
                       title: "Net Gain Today",
-                      amountCalculator: (provider) => (provider.getTotal(
-                          tools.RelativeTimeRange.today.getRange())),
+                      amountCalculator: (provider) => (provider
+                          .getTotal(tools.RelativeTimeRange.today.getRange())),
                       textStyle: CardTextStyle.major,
                     ),
                   ),
