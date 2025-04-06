@@ -110,36 +110,36 @@ class _OverviewHeaderState extends State<OverviewHeader> {
       CardConfig(
           title: "Spent Today",
           type: TransactionType.expense,
-          dateRange: RelativeTimeRange.today.getRange()),
+          dateRange: RelativeDateRange.today.getRange()),
       CardConfig(
           title: "Earned Today",
           type: TransactionType.income,
-          dateRange: RelativeTimeRange.today.getRange()),
+          dateRange: RelativeDateRange.today.getRange()),
       CardConfig(
         title: "Spent This Month",
         type: TransactionType.expense,
-        dateRange: RelativeTimeRange.thisMonth.getRange(),
+        dateRange: RelativeDateRange.thisMonth.getRange(),
       ),
       CardConfig(
           title: "Earned This Month",
           type: TransactionType.income,
-          dateRange: RelativeTimeRange.thisMonth.getRange()),
+          dateRange: RelativeDateRange.thisMonth.getRange()),
       CardConfig(
           title: 'Spent This Week',
           type: TransactionType.expense,
-          dateRange: RelativeTimeRange.thisWeek.getRange()),
+          dateRange: RelativeDateRange.thisWeek.getRange()),
       CardConfig(
           title: 'Earned This Week',
           type: TransactionType.income,
-          dateRange: RelativeTimeRange.thisWeek.getRange()),
+          dateRange: RelativeDateRange.thisWeek.getRange()),
       CardConfig(
           title: "Spent This Year",
           type: TransactionType.expense,
-          dateRange: RelativeTimeRange.thisYear.getRange()),
+          dateRange: RelativeDateRange.thisYear.getRange()),
       CardConfig(
           title: "Earned This Year",
           type: TransactionType.income,
-          dateRange: RelativeTimeRange.thisYear.getRange())
+          dateRange: RelativeDateRange.thisYear.getRange())
     ];
   }
 
@@ -232,10 +232,12 @@ class _OverviewHeaderState extends State<OverviewHeader> {
               widget.changeParentState(isMinimized);
             })
           },
-          child: Card(child: child, 
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16.0),
-        ),),
+          child: Card(
+            child: child,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16.0),
+            ),
+          ),
         );
       },
     );

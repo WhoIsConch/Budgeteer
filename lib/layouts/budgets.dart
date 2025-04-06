@@ -1,4 +1,5 @@
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:budget/components/category_dropdown.dart';
 import 'package:budget/components/hybrid_button.dart';
 import 'package:budget/tools/api.dart';
 import 'package:budget/tools/validators.dart';
@@ -17,7 +18,7 @@ class BudgetPage extends StatefulWidget {
 class _BudgetPageState extends State<BudgetPage> {
   List<PieChartSectionData>? pieChartSectionData;
   List<ChartKeyItem>? chartKeyItems;
-  RelativeTimeRange selectedDateRange = RelativeTimeRange.today;
+  RelativeDateRange selectedDateRange = RelativeDateRange.today;
   bool chartIsLoading = true;
   double cashFlow = 0;
   int typeIndex = 0;
@@ -27,8 +28,6 @@ class _BudgetPageState extends State<BudgetPage> {
       transactionTypes[typeIndex % transactionTypes.length];
 
   Future<void> _prepareData() async {
-    setState(() => chartIsLoading = true);
-
     final provider = Provider.of<TransactionProvider>(context, listen: false);
     final List<Category> categories = [
       Category(name: ""),
@@ -147,7 +146,7 @@ class _BudgetPageState extends State<BudgetPage> {
           selectedDateRange = value;
           _prepareData();
         },
-        dropdownMenuEntries: RelativeTimeRange.values
+        dropdownMenuEntries: RelativeDateRange.values
             .map(
               (e) => DropdownMenuEntry(
                 label: e.name,
@@ -256,7 +255,11 @@ class _BudgetPageState extends State<BudgetPage> {
         ),
         // Decide which time period to visit
         const SizedBox(height: 16),
-        pieChartArea
+        pieChartArea,
+        const SizedBox(height: 32),
+        CategoryBarChart(
+            dateRange: selectedDateRange,
+            transactionType: currentTransactionType)
       ],
     );
   }
@@ -304,15 +307,198 @@ class ChartKeyItem extends StatelessWidget {
 }
 
 class CategoryBarChart extends StatefulWidget {
-  const CategoryBarChart({super.key});
+  const CategoryBarChart(
+      {super.key, required this.dateRange, this.transactionType});
+
+  final RelativeDateRange dateRange;
+  final TransactionType? transactionType;
 
   @override
   State<CategoryBarChart> createState() => _CategoryBarChartState();
 }
 
 class _CategoryBarChartState extends State<CategoryBarChart> {
+  Category? selectedCategory;
+
+  BarTouchData get barTouchData => BarTouchData(
+      enabled: false,
+      touchTooltipData: BarTouchTooltipData(
+          getTooltipColor: (group) => Colors.transparent,
+          tooltipPadding: EdgeInsets.zero,
+          tooltipMargin: 8,
+          getTooltipItem: (
+            BarChartGroupData group,
+            int groupIndex,
+            BarChartRodData rod,
+            int rodIndex,
+          ) =>
+              BarTooltipItem(
+                  "\$${formatAmount(rod.toY, round: true)}",
+                  TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    fontSize: 24,
+                  ))));
+
+  FlTitlesData get titlesData => FlTitlesData(
+        bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+          showTitles: true,
+          reservedSize: 30,
+          getTitlesWidget: getTitles,
+        )),
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles:
+            const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      );
+
+  SideTitleWidget getTitles(double value, TitleMeta meta) {
+    String text = switch (widget.dateRange) {
+      RelativeDateRange.today || RelativeDateRange.yesterday => switch (value) {
+          0 => "Spent",
+          1 => "Earned",
+          _ => "!!!"
+        },
+      RelativeDateRange.thisWeek => switch (value) {
+          1 => "Mn",
+          2 => "Tu",
+          3 => "Wd",
+          4 => "Th",
+          5 => "Fr",
+          6 => "St",
+          7 => "Sn",
+          _ => "!!"
+        },
+      RelativeDateRange.thisMonth => value.toStringAsFixed(0),
+      RelativeDateRange.thisYear => switch (value) {
+          1 => "Jan",
+          2 => "Feb",
+          3 => "Mar",
+          4 => "Apr",
+          5 => "May",
+          6 => "Jun",
+          7 => "Jul",
+          8 => "Aug",
+          9 => "Sep",
+          10 => "Oct",
+          11 => "Nov",
+          12 => "Dec",
+          _ => "!!!"
+        }
+    };
+
+    return SideTitleWidget(
+      axisSide: AxisSide.bottom,
+      child: Text(text),
+    );
+  }
+
+  BarChart? _buildBarChart() {
+    final dateRange = widget.dateRange.getRange();
+    final provider = Provider.of<TransactionProvider>(context);
+
+    List<Transaction> transactions = provider.transactions
+        .where((e) =>
+            e.category == (selectedCategory?.name ?? "") &&
+            e.date.isAfter(
+                dateRange.start.subtract(const Duration(microseconds: 1))) &&
+            e.date.isBefore(dateRange.end) &&
+            (widget.transactionType != null
+                ? e.type == widget.transactionType
+                : true))
+        .toList();
+
+    Map<int, double> valuePairs = {};
+
+    for (int i = 0; i < transactions.length; i++) {
+      Transaction e = transactions[i];
+
+      int xValue = switch (widget.dateRange) {
+        RelativeDateRange.today ||
+        RelativeDateRange.yesterday =>
+          e.type == TransactionType.expense ? 0 : 1,
+        RelativeDateRange.thisWeek => e.date.weekday,
+        RelativeDateRange.thisMonth => e.date.day,
+        RelativeDateRange.thisYear => e.date.month,
+      };
+
+      // Either adds a new key or updates the existing key to ensure
+      // the data is represented in the table in the same groups
+      valuePairs.update(xValue, (value) => value + e.amount,
+          ifAbsent: () => e.amount);
+    }
+
+    if (valuePairs.isEmpty) return null;
+
+    List<BarChartGroupData> bars = [];
+    valuePairs.forEach(
+      (key, value) => bars.add(BarChartGroupData(
+        barsSpace: 10,
+        showingTooltipIndicators: [0],
+        x: key,
+        barRods: [
+          BarChartRodData(
+              width: 16,
+              color: Theme.of(context).colorScheme.primary,
+              toY: value)
+        ],
+      )),
+    );
+
+    return BarChart(BarChartData(
+        maxY: valuePairs.values.reduce(
+          (value, element) => value > element ? value : element,
+        ),
+        barTouchData: barTouchData,
+        gridData: const FlGridData(show: false),
+        borderData: FlBorderData(show: false),
+        barGroups: bars,
+        alignment: BarChartAlignment.spaceAround,
+        titlesData: titlesData));
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return Consumer<TransactionProvider>(builder: (context, provider, child) {
+      BarChart? barChart = _buildBarChart();
+
+      List<Widget> children = [
+        CategoryDropdown(
+            showExpanded: false,
+            categories: provider.categories,
+            onChanged: (category) =>
+                setState(() => selectedCategory = category),
+            selectedCategory: selectedCategory),
+      ];
+
+      if (barChart == null) {
+        children.add(const Expanded(
+            child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              "Nothing to show.",
+              style: TextStyle(fontSize: 24),
+              textAlign: TextAlign.center,
+            ),
+            Text(
+              "Try changing the category or date range.",
+              style: TextStyle(fontSize: 18),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        )));
+      } else {
+        children.add(AspectRatio(
+            aspectRatio: 1.6,
+            child: _buildBarChart() ?? Text("Nothing to Show. Try ")));
+      }
+
+      return Expanded(
+          flex: 2,
+          child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: children));
+    });
   }
 }

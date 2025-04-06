@@ -34,6 +34,10 @@ class Category {
     );
   }
 
+  int genColor() => Color((Random().nextDouble() * 0xFFFFFF).toInt())
+      .withAlpha(255)
+      .toARGB32();
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -41,8 +45,7 @@ class Category {
       'balance': balance,
       'resetIncrement': resetIncrement.value,
       'allowNegatives': allowNegatives ? 1 : 0,
-      'color':
-          color?.toARGB32() ?? Color((Random().nextDouble() * 0xFFFFFF).toInt())
+      'color': color?.toARGB32() ?? genColor()
     };
   }
 
@@ -225,7 +228,32 @@ class TransactionProvider extends ChangeNotifier {
   List<Transaction> get transactions => _transactions;
   List<Category> get categories => _categories;
 
+  Future<void> _createDummyData() async {
+    List<Category> cats = [];
+    Random random = Random();
+
+    for (int i = 0; i < 10; i++) {
+      Category cat = await createCategory(Category(name: "Cat $i"));
+      cats.add(cat);
+    }
+
+    for (int i = 0; i < 100; i++) {
+      await addTransaction(Transaction(
+          category: cats[i % cats.length].name,
+          title: "Tran $i",
+          amount: random.nextInt(100).toDouble(),
+          date: DateTime(
+            2025,
+            random.nextInt(3) + 1,
+            i % 30 + 1,
+          ),
+          type: i % 2 == 0 ? TransactionType.expense : TransactionType.income));
+    }
+  }
+
   Future<void> loadTransactions() async {
+    await _createDummyData();
+
     _transactions = await _dbHelper.getTransactions();
     notifyListeners();
   }
@@ -503,7 +531,7 @@ class DatabaseHelper {
       //   orderBy: 'category ASC',
       // );
 
-      // Now searches through DB v2's `categories` table for all categories
+      // Now searches through DB's `categories` table for all categories
       final results = await db.query('categories', orderBy: 'name ASC');
       return results.map((res) => Category.fromMap(res)).toList();
     } catch (e) {
@@ -549,13 +577,16 @@ class DatabaseHelper {
   Future<Category> createCategory(Category category) async {
     final db = await database;
 
-    await db.insert(
+    int id = await db.insert(
       'categories',
       category.toMap(),
     );
 
-    print(category);
-    return category;
+    Category dbCat = Category.fromMap(
+        (await db.query('categories', where: "id = ?", whereArgs: [id])).first);
+
+    print(dbCat);
+    return dbCat;
   }
 
   Future<void> updateCategory(Category category) async {

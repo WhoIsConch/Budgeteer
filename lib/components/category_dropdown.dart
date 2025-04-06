@@ -9,7 +9,7 @@ class CategoryDropdown extends StatelessWidget {
     required this.categories,
     required this.onChanged,
     required this.selectedCategory,
-    required this.selectedCategoryTotal,
+    this.selectedCategoryTotal,
     this.showExpanded = true,
   });
 
@@ -27,7 +27,9 @@ class CategoryDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (selectedCategory != null) {
+    if (selectedCategory == null || selectedCategory!.name.isEmpty) {
+      categoryController.text = "No Category";
+    } else {
       categoryController.text = selectedCategory!.name;
     }
 
@@ -75,13 +77,13 @@ class CategoryDropdown extends StatelessWidget {
     // This is the inner, first-row container that holds the category dropdown
     // and add/edit button
     Container categorySelector = Container(
-      height: 64,
+      height: 56,
       decoration: shouldShowExpanded ? jointBoxDecoration : null,
       child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
         Expanded(
             child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 4, 4), child: menu)),
-        Container(width: 1, height: 64, color: getDividerColor(context)),
+        Container(width: 1, height: 56, color: getDividerColor(context)),
         Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
             child: IconButton(

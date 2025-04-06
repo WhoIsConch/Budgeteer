@@ -83,8 +83,15 @@ class DecimalTextInputFormatter extends TextInputFormatter {
   }
 }
 
-String formatAmount(num amount) {
-  final formatter = NumberFormat('#,##0.00');
+String formatAmount(num amount, {bool round = false}) {
+  NumberFormat formatter;
+
+  if (round) {
+    formatter = NumberFormat("#,###");
+    amount = amount.round();
+  } else {
+    formatter = NumberFormat('#,##0.00');
+  }
 
   if (amount >= 1000000000) {
     return '${formatter.format(amount / 1000000000)}B';
