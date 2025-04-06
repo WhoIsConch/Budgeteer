@@ -228,32 +228,226 @@ class TransactionProvider extends ChangeNotifier {
   List<Transaction> get transactions => _transactions;
   List<Category> get categories => _categories;
 
-  Future<void> _createDummyData() async {
-    List<Category> cats = [];
+  Future<void> createDummyData() async {
     Random random = Random();
 
-    for (int i = 0; i < 10; i++) {
-      Category cat = await createCategory(Category(name: "Cat $i"));
-      cats.add(cat);
+    // Reduced list of categories for better chart density
+    List<String> expenseCategories = [
+      "Groceries",
+      "Dining",
+      "Entertainment",
+      "Shopping",
+      "Transportation",
+      "Utilities"
+    ];
+
+    List<String> incomeCategories = ["Salary", "Freelance", "Investments"];
+
+    // Create actual Category objects
+    List<Category> expenseCats = [];
+    List<Category> incomeCats = [];
+
+    for (String name in expenseCategories) {
+      Category cat = await createCategory(Category(name: name));
+      expenseCats.add(cat);
     }
 
-    for (int i = 0; i < 100; i++) {
+    for (String name in incomeCategories) {
+      Category cat = await createCategory(Category(name: name));
+      incomeCats.add(cat);
+    }
+
+    // Transaction title templates
+    Map<String, List<String>> transactionTitles = {
+      "Groceries": [
+        "Supermarket",
+        "Local Store",
+        "Farmer's Market",
+        "Convenience Store"
+      ],
+      "Dining": ["Restaurant", "Coffee Shop", "Food Delivery", "Fast Food"],
+      "Entertainment": ["Movies", "Concert", "Gaming", "Streaming Service"],
+      "Shopping": [
+        "Clothing Store",
+        "Electronics",
+        "Online Shopping",
+        "Department Store"
+      ],
+      "Transportation": [
+        "Gas",
+        "Public Transit",
+        "Ride Share",
+        "Car Maintenance"
+      ],
+      "Utilities": ["Electric Bill", "Water Bill", "Internet", "Phone Bill"],
+      "Salary": ["Monthly Salary", "Paycheck", "Direct Deposit"],
+      "Freelance": ["Client Payment", "Project Fee", "Contract Work"],
+      "Investments": ["Dividend", "Stock Sale", "Interest Income"]
+    };
+
+    // Generate more transactions per category
+    List<DateTime> timestamps = [];
+
+    // January to April 2025
+    for (int month = 1; month <= 4; month++) {
+      int daysInMonth = DateTime(2025, month + 1, 0).day;
+
+      // Create more consistent transactions for each category throughout the month
+      for (int day = 1; day <= daysInMonth; day++) {
+        DateTime date = DateTime(2025, month, day);
+        int weekday = date.weekday;
+        bool isWeekend = weekday >= 6;
+
+        // Ensure we have transactions for most categories almost every day
+        // This creates denser category representation over time
+        for (Category cat in expenseCats) {
+          // Skip some days randomly but maintain high frequency
+          if (random.nextDouble() < 0.8) {
+            // 80% chance of transaction for this category today
+            int transactionsForCategory =
+                random.nextInt(3) + 1; // 1-3 transactions per category per day
+
+            // Add more on weekends for certain categories
+            if (isWeekend &&
+                (cat.name == "Dining" ||
+                    cat.name == "Entertainment" ||
+                    cat.name == "Shopping")) {
+              transactionsForCategory += random.nextInt(2) + 1;
+            }
+
+            // Specific category patterns
+            if (cat.name == "Groceries" && (weekday == 1 || weekday == 6)) {
+              // Monday and Saturday grocery shopping
+              transactionsForCategory += 2;
+            }
+
+            if (cat.name == "Utilities" && day <= 5) {
+              // Bills at beginning of month
+              transactionsForCategory += 1;
+            }
+
+            // Generate timestamps for this category today
+            for (int i = 0; i < transactionsForCategory; i++) {
+              int hour = 8 + random.nextInt(14);
+              int minute = random.nextInt(60);
+              timestamps.add(DateTime(2025, month, day, hour, minute));
+            }
+          }
+        }
+
+        // Income transactions are less frequent
+        for (Category cat in incomeCats) {
+          // Salary typically twice a month
+          if (cat.name == "Salary" && (day == 15 || day == daysInMonth)) {
+            timestamps.add(DateTime(2025, month, day, 9, 0)); // Morning deposit
+          }
+          // Other income more randomly distributed
+          else if (random.nextDouble() < 0.15) {
+            // 15% chance per day
+            int hour = 8 + random.nextInt(14);
+            int minute = random.nextInt(60);
+            timestamps.add(DateTime(2025, month, day, hour, minute));
+          }
+        }
+      }
+    }
+
+    // Sort timestamps chronologically
+    timestamps.sort();
+
+    // Generate transactions
+    for (DateTime timestamp in timestamps) {
+      // First determine if it's income or expense
+      bool isIncome =
+          random.nextDouble() < 0.2; // 20% income, 80% expense ratio
+
+      // Select category
+      Category selectedCategory;
+      if (isIncome) {
+        selectedCategory = incomeCats[random.nextInt(incomeCats.length)];
+      } else {
+        selectedCategory = expenseCats[random.nextInt(expenseCats.length)];
+
+        // Override random selection to ensure specific date patterns
+        // This makes certain categories appear more consistently on certain days
+        int day = timestamp.day;
+        int weekday = timestamp.weekday;
+
+        if (day <= 5 && random.nextDouble() < 0.7) {
+          // Beginning of month more likely to be utilities
+          selectedCategory =
+              expenseCats.firstWhere((cat) => cat.name == "Utilities");
+        } else if ((weekday == 6 || weekday == 7) &&
+            random.nextDouble() < 0.6) {
+          // Weekends more likely to be entertainment or dining
+          List<String> weekendCats = ["Entertainment", "Dining"];
+          String weekendCat = weekendCats[random.nextInt(weekendCats.length)];
+          selectedCategory =
+              expenseCats.firstWhere((cat) => cat.name == weekendCat);
+        } else if (weekday >= 1 && weekday <= 5 && random.nextDouble() < 0.5) {
+          // Weekdays more likely to be transportation or lunch (dining)
+          List<String> weekdayCats = ["Transportation", "Dining"];
+          String weekdayCat = weekdayCats[random.nextInt(weekdayCats.length)];
+          selectedCategory =
+              expenseCats.firstWhere((cat) => cat.name == weekdayCat);
+        }
+      }
+
+      // Get realistic title for category
+      List<String> possibleTitles =
+          transactionTitles[selectedCategory.name] ?? ["Payment"];
+      String title = possibleTitles[random.nextInt(possibleTitles.length)];
+
+      // Generate amount based on category
+      double amount;
+      if (isIncome) {
+        if (selectedCategory.name == "Salary") {
+          amount = 1500.0 + random.nextDouble() * 2500.0;
+        } else if (selectedCategory.name == "Investments") {
+          amount = 100.0 + random.nextDouble() * 500.0;
+        } else {
+          amount = 200.0 + random.nextDouble() * 800.0; // Freelance
+        }
+      } else {
+        // Expense amounts vary by category
+        switch (selectedCategory.name) {
+          case "Groceries":
+            amount = 20.0 + random.nextDouble() * 120.0;
+            break;
+          case "Dining":
+            amount = 10.0 + random.nextDouble() * 80.0;
+            break;
+          case "Entertainment":
+            amount = 15.0 + random.nextDouble() * 100.0;
+            break;
+          case "Shopping":
+            amount = 25.0 + random.nextDouble() * 200.0;
+            break;
+          case "Transportation":
+            amount = 5.0 + random.nextDouble() * 60.0;
+            break;
+          case "Utilities":
+            amount = 50.0 + random.nextDouble() * 150.0;
+            break;
+          default:
+            amount = 10.0 + random.nextDouble() * 50.0;
+        }
+      }
+
+      // Round to 2 decimal places
+      amount = double.parse(amount.toStringAsFixed(2));
+
+      // Create transaction
       await addTransaction(Transaction(
-          category: cats[i % cats.length].name,
-          title: "Tran $i",
-          amount: random.nextInt(100).toDouble(),
-          date: DateTime(
-            2025,
-            random.nextInt(3) + 1,
-            i % 30 + 1,
-          ),
-          type: i % 2 == 0 ? TransactionType.expense : TransactionType.income));
+          category: selectedCategory.name,
+          title: title,
+          amount: amount,
+          date: timestamp,
+          type: isIncome ? TransactionType.income : TransactionType.expense));
     }
   }
 
   Future<void> loadTransactions() async {
-    await _createDummyData();
-
     _transactions = await _dbHelper.getTransactions();
     notifyListeners();
   }

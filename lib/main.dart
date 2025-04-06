@@ -134,9 +134,9 @@ class _HomePageState extends State<HomePage> {
               label: "Budget",
             ),
             NavigationDestination(
-              icon: Icon(Icons.person_outlined),
-              selectedIcon: Icon(Icons.person),
-              label: "Account",
+              icon: Icon(Icons.code),
+              selectedIcon: Icon(Icons.code),
+              label: "Debug",
             ),
           ],
         ),
