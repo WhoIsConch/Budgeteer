@@ -91,8 +91,8 @@ class Category {
     return cumRange;
   }
 
-  String getTimeUntilNextReset() {
-    DateTime now = DateTime.now();
+  String getTimeUntilNextReset({DateTime? fromDate}) {
+    DateTime now = fromDate ?? DateTime.now();
     DateTime nextReset;
 
     switch (resetIncrement) {
