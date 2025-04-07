@@ -80,7 +80,7 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
 
   Future<void> _setCategoryInfo(Category? category) async {
     String catText;
-    double? catTotal;
+    double? catTotal = selectedCategoryTotal;
 
     if (category == null) {
       catText = "No Category";
@@ -95,10 +95,6 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
 
       try {
         Transaction currentTransaction = getTransaction();
-
-        if (widget.transaction?.amount != null) {
-          catTotal += widget.transaction!.amount;
-        }
 
         if (currentTransaction.type == TransactionType.expense) {
           catTotal -= currentTransaction.amount;
