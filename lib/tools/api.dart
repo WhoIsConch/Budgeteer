@@ -466,16 +466,16 @@ class TransactionProvider extends ChangeNotifier {
     return newCategory;
   }
 
-  Future<void> updateCategory(Category category) async {
-    await _dbHelper.updateCategory(category);
+  Future<void> updateCategory(Category before, Category after) async {
+    await _dbHelper.updateCategory(before, after);
 
-    final index = _categories.indexWhere((c) => c.id == category.id);
+    final index = _categories.indexWhere((c) => c.id == after.id);
 
     if (index == -1) {
       return;
     }
 
-    _categories[index] = category;
+    _categories[index] = after;
     notifyListeners();
   }
 
@@ -783,10 +783,25 @@ class DatabaseHelper {
     return dbCat;
   }
 
-  Future<void> updateCategory(Category category) async {
+  Future<void> updateCategory(Category before, Category after) async {
     final db = await database;
 
-    await db.update('categories', category.toMap(),
-        where: 'id = ?', whereArgs: [category.id]);
+    await db.update('categories', after.toMap(),
+        where: 'id = ?', whereArgs: [before.id]);
+
+    if (before.name != after.name) {
+      // This means the name has changed. Update the existing transactions to match.
+      bulkUpdateTransactionCategory(before.name, after.name);
+    }
+  }
+
+  Future<void> bulkUpdateTransactionCategory(
+      String before, String after) async {
+    // Used when a category name is changed to make sure all transactions
+    // stick with their category.
+    final db = await database;
+
+    await db.update('transactions', {'category': after},
+        where: 'category = ?', whereArgs: [before]);
   }
 }

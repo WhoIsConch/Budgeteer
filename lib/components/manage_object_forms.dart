@@ -418,7 +418,7 @@ class _CategoryManageDialogState extends State<CategoryManageDialog> {
 
         try {
           if (widget.mode == ObjectManageMode.edit) {
-            await provider.updateCategory(getCategory());
+            await provider.updateCategory(widget.category!, getCategory());
             savedCategory = getCategory();
           } else {
             savedCategory = await provider.createCategory(getCategory());
