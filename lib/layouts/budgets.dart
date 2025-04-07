@@ -410,9 +410,9 @@ class _CategoryBarChartState extends State<CategoryBarChart> {
 
     Map<int, double> valuePairs = {};
 
-    for (int i = 0; i < transactions.length; i++) {
-      Transaction e = transactions[i];
-
+    // Used reversed because the resultant is usually in descending order
+    // which is not preferred
+    for (Transaction e in transactions.reversed) {
       int xValue = switch (widget.dateRange) {
         RelativeDateRange.today ||
         RelativeDateRange.yesterday =>
