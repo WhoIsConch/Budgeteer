@@ -221,8 +221,10 @@ class Transaction {
 }
 
 class TransactionProvider extends ChangeNotifier {
+  // Allows the rest of the app to know when a transactin
+  // changes
   final DatabaseHelper _dbHelper = DatabaseHelper();
-  List<Transaction> _transactions = [];
+  List<Transaction> _transactions = []; // Cache db transactions and categories
   List<Category> _categories = [];
 
   List<Transaction> get transactions => _transactions;
@@ -448,6 +450,7 @@ class TransactionProvider extends ChangeNotifier {
   }
 
   Future<void> loadTransactions() async {
+    // Load transactions from the database
     _transactions = await _dbHelper.getTransactions();
     notifyListeners();
   }
