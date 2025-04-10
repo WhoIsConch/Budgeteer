@@ -400,9 +400,7 @@ class _CategoryBarChartState extends State<CategoryBarChart> {
     List<Transaction> transactions = provider.transactions
         .where((e) =>
             e.category == (selectedCategory?.name ?? "") &&
-            e.date.isAfter(
-                dateRange.start.subtract(const Duration(microseconds: 1))) &&
-            e.date.isBefore(dateRange.end) &&
+            e.date.isInRange(dateRange) &&
             (widget.transactionType != null
                 ? e.type == widget.transactionType
                 : true))

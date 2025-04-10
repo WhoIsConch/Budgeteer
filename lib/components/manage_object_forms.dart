@@ -93,7 +93,7 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
         Transaction currentTransaction = getTransaction();
 
         RelativeDateRange? categoryRelRange =
-            category.resetIncrement.getRelRange();
+            category.resetIncrement.relativeDateRange;
 
         catTotal = await provider.getTotal(
             categoryRelRange?.getRange(
@@ -575,8 +575,7 @@ class _CategoryManageDialogState extends State<CategoryManageDialog> {
                         CategoryResetIncrement.never,
                     dropdownMenuEntries: CategoryResetIncrement.values
                         .map(
-                          (e) =>
-                              DropdownMenuEntry(label: e.getText(), value: e),
+                          (e) => DropdownMenuEntry(label: e.text, value: e),
                         )
                         .toList(),
                     onSelected: (value) {

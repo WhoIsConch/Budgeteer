@@ -148,7 +148,7 @@ class _OverviewHeaderState extends State<OverviewHeader> {
       final config = cardConfigs[index];
 
       return Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(4.0),
         child: AsyncOverviewCard(
           title: config.title,
           previousContent: _previousContents[index],

@@ -154,9 +154,7 @@ class _TransactionsListState extends State<TransactionsList> {
             // Adding and subtracting a day to the start and end of the date
             // because "After" and "Before" are not inclusive of the start and
             // end dates
-            return transaction.date.isAfter(widget.dateRange!.start) &&
-                transaction.date.isBefore(
-                    widget.dateRange!.end.add(const Duration(days: 1)));
+            return transaction.date.isInRange(widget.dateRange!);
           }).toList();
         }
 

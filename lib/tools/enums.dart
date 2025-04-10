@@ -66,7 +66,7 @@ enum RelativeDateRange {
 enum CategoryResetIncrement {
   daily(1),
   weekly(2),
-  biweekly(3),
+  // biweekly(3), // This is not currently usable
   monthly(4),
   yearly(5),
   never(0);
@@ -78,17 +78,15 @@ enum CategoryResetIncrement {
     return values.firstWhere((e) => e.value == value);
   }
 
-  RelativeDateRange? getRelRange() {
-    return switch (value) {
-      1 => RelativeDateRange.today,
-      2 => RelativeDateRange.thisWeek,
-      4 => RelativeDateRange.thisMonth,
-      5 => RelativeDateRange.thisYear,
-      _ => null,
-    };
-  }
+  RelativeDateRange? get relativeDateRange => switch (value) {
+        1 => RelativeDateRange.today,
+        2 => RelativeDateRange.thisWeek,
+        4 => RelativeDateRange.thisMonth,
+        5 => RelativeDateRange.thisYear,
+        _ => null,
+      };
 
-  String getText() => switch (value) {
+  String get text => switch (value) {
         1 => "Day",
         2 => "Week",
         3 => "Two Weeks",
@@ -121,3 +119,9 @@ class AmountFilter {
 
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
+
+extension RangeModifier on DateTime {
+  bool isInRange(DateTimeRange range) =>
+      (isAfter(range.start) || isAtSameMomentAs(range.start)) &&
+      (isBefore(range.end) || isAtSameMomentAs(range.end));
+}

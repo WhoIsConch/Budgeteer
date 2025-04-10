@@ -1,6 +1,6 @@
 import 'package:budget/components/cards.dart';
 import 'package:budget/components/manage_object_forms.dart';
-import 'package:budget/tools/enums.dart' as tools;
+import 'package:budget/tools/enums.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/tools/api.dart';
@@ -34,8 +34,8 @@ class Overview extends StatelessWidget {
                     flex: 16,
                     child: AsyncOverviewCard(
                       title: "Net Gain Today",
-                      amountCalculator: (provider) => (provider
-                          .getTotal(tools.RelativeDateRange.today.getRange())),
+                      amountCalculator: (provider) =>
+                          provider.getTotal(RelativeDateRange.today.getRange()),
                       textStyle: CardTextStyle.major,
                     ),
                   ),
@@ -50,7 +50,7 @@ class Overview extends StatelessWidget {
                               MaterialPageRoute(
                                 builder: (context) =>
                                     const TransactionManageScreen(
-                                        mode: tools.ObjectManageMode.add),
+                                        mode: ObjectManageMode.add),
                               ),
                             );
                           }))
@@ -69,7 +69,7 @@ class Overview extends StatelessWidget {
                         child: CardButton(
                             content: "Go to Totals Overview",
                             callback: () =>
-                                swapCallback(tools.PageType.transactions)),
+                                swapCallback(PageType.transactions)),
                       ),
                       const Spacer(),
                       Expanded(
@@ -77,7 +77,7 @@ class Overview extends StatelessWidget {
                         child: CardButton(
                             content: "Go to Budget Overview",
                             callback: () =>
-                                swapCallback(tools.PageType.transactions)),
+                                swapCallback(PageType.transactions)),
                       )
                     ]))
           ],
