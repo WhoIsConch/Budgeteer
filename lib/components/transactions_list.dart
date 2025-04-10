@@ -79,8 +79,8 @@ class _TransactionsListState extends State<TransactionsList> {
 
     if (isMultiselect) {
       leadingWidget = SizedBox(
-        height: 24,
-        width: 24,
+        height: 48,
+        width: 48,
         child: Checkbox(
             value: selectedTransactions.contains(transaction),
             onChanged: (value) => setState(() {
@@ -96,17 +96,21 @@ class _TransactionsListState extends State<TransactionsList> {
                 })),
       );
     } else {
-      leadingWidget = GestureDetector(
-          child: (transaction.type == TransactionType.expense)
-              ? const Icon(Icons.remove_circle)
+      leadingWidget = IconButton(
+          icon: (transaction.type == TransactionType.expense)
+              ? const Icon(
+                  Icons.remove_circle,
+                )
               : const Icon(Icons.add_circle),
-          onTap: () => setState(() {
+          onPressed: () => setState(() {
                 isMultiselect = true;
                 selectedTransactions.add(transaction);
               }));
     }
 
     return ListTile(
+      contentPadding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      horizontalTitleGap: 4,
       leading: leadingWidget,
       title: Text(
           // Formats as "$500: Title of the Budget"
@@ -239,12 +243,9 @@ class _TransactionsListState extends State<TransactionsList> {
             itemCount: transactions.length,
             itemBuilder: (context, index) {
               Transaction transaction = transactions[index];
-              return Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: Card(
-                  child: tileFromTransaction(
-                      transaction, Theme.of(context), transactionProvider),
-                ),
+              return Card(
+                child: tileFromTransaction(
+                    transaction, Theme.of(context), transactionProvider),
               );
             },
           ),
