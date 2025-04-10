@@ -75,13 +75,15 @@ class _BudgetAppState extends State<BudgetApp> with WidgetsBindingObserver {
     return DynamicColorBuilder(builder: (lightDynamic, darkDynamic) {
       return MaterialApp(
           scaffoldMessengerKey: tools.scaffoldMessengerKey,
-          title: 'Budget App',
+          title: 'Budgeteer',
           home: const HomePage(),
           theme: ThemeData(
-            colorScheme: lightDynamic ?? ThemeData.light().colorScheme,
+            colorScheme:
+                lightDynamic?.harmonized() ?? ThemeData.light().colorScheme,
           ),
           darkTheme: ThemeData(
-            colorScheme: darkDynamic ?? ThemeData.dark().colorScheme,
+            colorScheme:
+                darkDynamic?.harmonized() ?? ThemeData.dark().colorScheme,
           ),
           themeMode: theme);
     });
