@@ -1,3 +1,4 @@
+import 'package:budget/panels/transaction_search.dart';
 import 'package:flutter/material.dart';
 import 'package:budget/components/transactions_list.dart';
 import 'package:budget/panels/transaction_search_legacy.dart';
@@ -64,7 +65,7 @@ class _SpendingOverviewState extends State<SpendingOverview> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const SpendingPage(),
+                        builder: (context) => const TransactionSearch(),
                       ),
                     );
                   },
