@@ -1,401 +1,245 @@
-import 'package:budget/components/hybrid_button.dart';
-import 'package:budget/dialogs/manage_transaction.dart';
-import 'package:budget/tools/api.dart';
-import 'package:budget/tools/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:budget/components/transactions_list.dart';
+import 'package:budget/panels/transaction_search_legacy.dart';
+import 'package:provider/provider.dart';
+import 'package:budget/tools/api.dart';
 import 'package:budget/tools/enums.dart';
+import 'package:budget/components/cards.dart';
 
-String toTitleCase(String s) => s
-    .replaceAllMapped(RegExp(r'([a-z])([A-Z])'), (m) => '${m[1]} ${m[2]}')
-    .replaceFirstMapped(RegExp(r'^\w'), (m) => m[0]!.toUpperCase());
+class CardConfig {
+  final String title;
+  final TransactionType type;
+  final DateTimeRange dateRange;
 
-class SpendingPage extends StatefulWidget {
-  const SpendingPage(
-      {super.key, this.startingDateRange, this.startingTransactionType});
-
-  final DateTimeRange? startingDateRange;
-  final TransactionType? startingTransactionType;
-
-  @override
-  State<SpendingPage> createState() => _SpendingPageState();
+  CardConfig({
+    required this.title,
+    required this.type,
+    required this.dateRange,
+  });
 }
 
-class _SpendingPageState extends State<SpendingPage> {
-  final _dbHelper = DatabaseHelper();
-
-  DateTimeRange? dateRange;
-  List types = [null, ...TransactionType.values];
-  List typesIcons = [
-    const Icon(Icons.all_inclusive),
-    const Icon(Icons.remove),
-    const Icon(Icons.add)
-  ];
-  int typeIndex = 0;
-  AmountFilter? amountFilter;
-
-  String searchString = "";
-  List<Category> allCategories = <Category>[];
-  List<Category> selectedCategories = [];
-
-  bool resultsAreFiltered() {
-    return searchString.isNotEmpty ||
-        dateRange != null ||
-        allCategories.isNotEmpty ||
-        typeIndex % 3 != 0 ||
-        selectedCategories.isNotEmpty ||
-        amountFilter != null;
-  }
-
-  TransactionType? get transactionType {
-    return types[typeIndex % 3];
-  }
-
-  Future<List<Category>?> _showCategoryInputDialog(BuildContext context) async {
-    // Shows a dropdown of all available categories.
-    // Returns a list of selected categories.
-    // This shows an AlertDialog with nothing in it other than a dropdown
-    // which a user can select multiple categories from.
-
-    List<Category> categories = await _dbHelper.getCategoriesList();
-
-    if (!context.mounted) {
-      return [];
-    }
-
-    return showDialog<List<Category>>(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return AlertDialog(
-              title: const Text("Select Categories"),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: categories.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    final category = categories[index];
-                    return CheckboxListTile(
-                      title: Text(category.name),
-                      value: selectedCategories
-                          .where(
-                            (e) => e.id == category.id,
-                          )
-                          .isNotEmpty,
-                      onChanged: (bool? value) {
-                        setState(() {
-                          if (value != null) {
-                            if (value) {
-                              selectedCategories.add(category);
-                            } else {
-                              selectedCategories
-                                  .removeWhere((e) => e.id == category.id);
-                            }
-                          }
-                        });
-                      },
-                    );
-                  },
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(null);
-                  },
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(selectedCategories);
-                  },
-                  child: const Text('OK'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Future<AmountFilter?> _showAmountFilterDialog(BuildContext context) async {
-    // Shows a dialog inline with a dropdown showing the filter type first,
-    // then the amount as an input.
-    TextEditingController controller = TextEditingController();
-    controller.text = amountFilter?.value!.toStringAsFixed(2) ?? "";
-    amountFilter = AmountFilter(type: AmountFilterType.exactly);
-
-    return showDialog<AmountFilter>(
-        context: context,
-        builder: (context) {
-          return StatefulBuilder(
-              builder: (BuildContext context, StateSetter setState) {
-            return AlertDialog(
-                title: const Text("Filter by Amount"),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SegmentedButton(
-                      onSelectionChanged: (type) => setState(() {
-                        amountFilter = AmountFilter(type: type.first);
-                      }),
-                      showSelectedIcon: false,
-                      selected: {
-                        amountFilter?.type ?? AmountFilterType.exactly
-                      },
-                      segments: AmountFilterType.values
-                          .map((value) => ButtonSegment(
-                              value: value,
-                              label: Text(
-                                toTitleCase(value.name),
-                                maxLines: 2,
-                              )))
-                          .toList(),
-                    ),
-                    const SizedBox(height: 24),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: TextField(
-                          inputFormatters: [DecimalTextInputFormatter()],
-                          keyboardType: TextInputType.number,
-                          controller: controller,
-                          decoration: const InputDecoration(
-                              hintText: "Amount",
-                              prefixText: "\$ ",
-                              isDense: true)),
-                    ),
-                  ],
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, null),
-                    child: const Text("Cancel"),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      if (double.tryParse(controller.text) == null) {
-                        return Navigator.pop(context, null);
-                      }
-
-                      return Navigator.pop(
-                          context,
-                          AmountFilter(
-                              type: amountFilter?.type,
-                              value: double.parse(controller.text)));
-                    },
-                    child: const Text("OK"),
-                  )
-                ]);
-          });
-        });
-  }
-
-  Future<String?> _showTextInputDialog(
-      BuildContext context, String title) async {
-    TextEditingController controller = TextEditingController();
-
-    return showDialog<String>(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-              title: Text(title),
-              content: TextField(
-                  controller: controller,
-                  decoration: const InputDecoration(hintText: "...")),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, null),
-                  child: const Text("Cancel"),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, controller.text),
-                  child: const Text("OK"),
-                )
-              ]);
-        });
-  }
+class SpendingOverview extends StatefulWidget {
+  const SpendingOverview({super.key});
 
   @override
-  void initState() {
-    super.initState();
-    dateRange = widget.startingDateRange;
+  State<SpendingOverview> createState() => _SpendingOverviewState();
+}
 
-    for (int i = 0; i < types.length; i++) {
-      if (widget.startingTransactionType == types[i]) {
-        typeIndex = i;
-        break;
-      }
-    }
+class _SpendingOverviewState extends State<SpendingOverview> {
+  bool showTransactions = true;
+
+  void setTransactions(bool show) {
+    setState(() {
+      showTransactions = show;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> actions = [
-      IconButton(
-        icon: const Icon(Icons.add),
-        onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) =>
-                    const ManageTransactionDialog(mode: ObjectManageMode.add))),
-      )
-    ];
-
-    // Purposely swap out the plus button
-    if (resultsAreFiltered()) {
-      actions = [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(0, 0, 4, 0),
-          child: IconButton(
-              icon: const Icon(Icons.delete_sweep),
-              onPressed: () {
-                setState(() {
-                  searchString = "";
-                  dateRange = null;
-                  typeIndex = 0;
-                  selectedCategories = [];
-                  amountFilter = null;
-                });
-              }),
-        )
-      ];
+    if (!showTransactions) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Expanded(
+            flex: 8, child: SpendingHeader(changeParentState: setTransactions)),
+      ]);
     }
 
-    List<HybridButton> topRow = [
-      HybridButton(
-          // Date Range Button
-          buttonType: HybridButtonType.input,
-          preference: 5,
-          icon: const Icon(Icons.date_range),
-          text: dateRange != null
-              ? "${dateRange!.start.month}/${dateRange!.start.day}/${dateRange!.start.year} - ${dateRange!.end.month}/${dateRange!.end.day}/${dateRange!.end.year}"
-              : "All Time",
-          isEnabled: dateRange != null,
-          onTap: () {
-            showDateRangePicker(
-                    context: context,
-                    initialDateRange: dateRange,
-                    firstDate:
-                        DateTime.now().subtract(const Duration(days: 365 * 10)),
-                    lastDate:
-                        DateTime.now().add(const Duration(days: 365 * 10)))
-                .then((DateTimeRange? value) {
-              if (value == dateRange || value == null) return;
-
-              setState(() {
-                dateRange = value.makeInclusive();
-              });
-            });
-          }),
-      HybridButton(
-        // Amount Filter Button
-        preference: 4,
-        buttonType: HybridButtonType.input,
-        isEnabled: amountFilter != null,
-        onTap: () async {
-          AmountFilter? result = await _showAmountFilterDialog(context);
-
-          if (result == amountFilter) return;
-
-          setState(() => amountFilter = result);
-        },
-        icon: const Icon(Icons.attach_money),
-        text: amountFilter == null
-            ? '0'
-            : "\$${formatAmount(amountFilter!.value!)}",
-        dynamicIconSelector: () => switch (amountFilter?.type) {
-          AmountFilterType.greaterThan => const Icon(Icons.chevron_right),
-          AmountFilterType.lessThan => const Icon(Icons.chevron_left),
-          _ => const Icon(Icons.balance),
-        },
-      ),
-      HybridButton(
-        // Search String Button
-        preference: 3,
-        buttonType: HybridButtonType.input,
-        onTap: () async {
-          String? result = await _showTextInputDialog(context, "Search");
-
-          if (result == searchString) return;
-
-          setState(() => searchString = result ?? "");
-        },
-        icon: const Icon(Icons.search),
-        isEnabled: searchString.isNotEmpty,
-        text: searchString.isNotEmpty ? searchString : "Error",
-      ),
-      HybridButton(
-          // Category Selector Button
-          preference: 2,
-          buttonType: HybridButtonType.input,
-          icon: const Icon(Icons.category),
-          text: selectedCategories.isNotEmpty
-              ? selectedCategories
-                  .map(
-                    (e) => e.name,
-                  )
-                  .toList()
-                  .join(", ")
-              : "Error",
-          isEnabled: selectedCategories.isNotEmpty,
-          onTap: () async {
-            List<Category>? result = await _showCategoryInputDialog(context);
-
-            setState(() => selectedCategories = result ?? []);
-          }),
-      HybridButton(
-          preference: 1,
-          isEnabled: typeIndex % 3 != 0,
-          buttonType: HybridButtonType.toggle,
-          icon: typesIcons[typeIndex % 3],
-          onTap: () => setState(() {
-                typeIndex += 1;
-              })),
-    ];
-
-    topRow.sort((a, b) {
-      if (a.isEnabled && b.isEnabled) {
-        return b.preference.compareTo(a.preference);
-      }
-
-      return a.isEnabled ? -1 : 1;
-    });
-
-    return Scaffold(
-      appBar: AppBar(title: const Text("Transactions"), actions: actions),
-      body: Center(
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Expanded(
+          flex: 8, child: SpendingHeader(changeParentState: setTransactions)),
+      Expanded(
+        flex: 16,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Align(
-                alignment: Alignment.topRight,
-                child: Wrap(
-                  alignment: WrapAlignment.end,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 6,
-                  runSpacing: 4,
-                  children: topRow,
+            Row(children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 16, 2, 4),
+                child: Text("Recent Transactions",
+                    style: Theme.of(context).textTheme.headlineSmall),
+              ),
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(2, 16, 2, 4),
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SpendingPage(),
+                      ),
+                    );
+                  },
+                  child: const Text("See All"),
                 ),
               ),
-            ),
-            Expanded(
-                child: TransactionsList(
-              dateRange: dateRange,
-              type: transactionType,
-              searchString: searchString,
-              searchCategories: selectedCategories,
-              amountFilter: amountFilter,
-              showActionButton: false,
-              showBackground: false,
-            )),
+            ]),
+            const Expanded(child: TransactionsList()),
           ],
         ),
       ),
+    ]);
+  }
+}
+
+class SpendingHeader extends StatefulWidget {
+  /* 
+  OverviewHeader is a section at the top of the page with a 2x2 grid of 
+  cards that hold information about the user's spending. These cards are:
+  - Spending Today
+  - Spending This Week
+  - Spending This Month
+  - Spending This Year
+  */
+  const SpendingHeader({super.key, required this.changeParentState});
+
+  final Function changeParentState;
+
+  @override
+  State<SpendingHeader> createState() => _SpendingHeaderState();
+}
+
+class _SpendingHeaderState extends State<SpendingHeader> {
+  bool isMinimized = true;
+  final List<String> _previousContents = List.filled(8, '\$0.00');
+
+  void _updatePreviousContent(int index, String newContent) {
+    _previousContents[index] = newContent;
+  }
+
+  List<CardConfig> get cardConfigs {
+    return [
+      CardConfig(
+          title: "Spent Today",
+          type: TransactionType.expense,
+          dateRange: RelativeDateRange.today.getRange()),
+      CardConfig(
+          title: "Earned Today",
+          type: TransactionType.income,
+          dateRange: RelativeDateRange.today.getRange()),
+      CardConfig(
+        title: "Spent This Month",
+        type: TransactionType.expense,
+        dateRange: RelativeDateRange.thisMonth.getRange(),
+      ),
+      CardConfig(
+          title: "Earned This Month",
+          type: TransactionType.income,
+          dateRange: RelativeDateRange.thisMonth.getRange()),
+      CardConfig(
+          title: 'Spent This Week',
+          type: TransactionType.expense,
+          dateRange: RelativeDateRange.thisWeek.getRange()),
+      CardConfig(
+          title: 'Earned This Week',
+          type: TransactionType.income,
+          dateRange: RelativeDateRange.thisWeek.getRange()),
+      CardConfig(
+          title: "Spent This Year",
+          type: TransactionType.expense,
+          dateRange: RelativeDateRange.thisYear.getRange()),
+      CardConfig(
+          title: "Earned This Year",
+          type: TransactionType.income,
+          dateRange: RelativeDateRange.thisYear.getRange())
+    ];
+  }
+
+  List<Widget> getAvailableCards(TransactionProvider transactionProvider) {
+    return List.generate(cardConfigs.length, (index) {
+      final config = cardConfigs[index];
+
+      return Padding(
+        padding: const EdgeInsets.all(4.0),
+        child: AsyncOverviewCard(
+          title: config.title,
+          previousContent: _previousContents[index],
+          amountCalculator: (provider) => config.type == TransactionType.expense
+              ? provider.getAmountSpent(config.dateRange)
+              : provider.getAmountEarned(config.dateRange),
+          onPressed: () {
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => SpendingPage(
+                          startingDateRange: config.dateRange,
+                          startingTransactionType: config.type,
+                        )));
+          },
+          onContentUpdated: (newContent) =>
+              _updatePreviousContent(index, newContent),
+        ),
+      );
+    });
+  }
+
+  Widget getMinimized(TransactionProvider transactionProvider) {
+    List<Widget> availableCards =
+        getAvailableCards(transactionProvider).sublist(0, 4);
+    return Column(children: [
+      Expanded(
+        child: Row(
+          children: [
+            Expanded(child: availableCards[0]),
+            Expanded(child: availableCards[1]),
+          ],
+        ),
+      ),
+      Expanded(
+        child: Row(
+          children: [
+            Expanded(child: availableCards[2]),
+            Expanded(child: availableCards[3]),
+          ],
+        ),
+      )
+    ]);
+  }
+
+  Widget getMaximized(TransactionProvider transactionProvider) {
+    List<Widget> availableCards = getAvailableCards(transactionProvider);
+
+    return GridView.count(
+      crossAxisCount: 2,
+      physics: const NeverScrollableScrollPhysics(),
+      childAspectRatio: 1.5,
+      children: availableCards,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // When making this stateful, make sure the numbers update when the user
+    // adds a new transaction. Also make sure the numbers do not overflow,
+    // possibly replace some if they get too big (eg. $1000.00 > $1.0k)
+    return Consumer<TransactionProvider>(
+      builder: (context, transactionProvider, child) {
+        Widget child = getMinimized(transactionProvider);
+
+        if (!isMinimized) {
+          child = getMaximized(transactionProvider);
+        }
+
+        return GestureDetector(
+          onPanUpdate: (details) {
+            if (details.delta.dy + 5 < 0) {
+              isMinimized = true;
+            } else if (details.delta.dy - 5 > 0) {
+              isMinimized = false;
+            }
+          },
+          onPanEnd: (details) => {
+            setState(() {
+              isMinimized = isMinimized;
+              widget.changeParentState(isMinimized);
+            })
+          },
+          child: Card(
+            child: child,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16.0),
+            ),
+          ),
+        );
+      },
     );
   }
 }

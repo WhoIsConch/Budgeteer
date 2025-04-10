@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:budget/panels/home.dart';
-import 'package:budget/components/spending_headers.dart';
+import 'package:budget/panels/spending.dart';
 import 'package:budget/panels/account.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/tools/enums.dart' as tools;
