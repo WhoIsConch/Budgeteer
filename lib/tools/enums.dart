@@ -121,6 +121,7 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
 
 extension RangeModifier on DateTime {
+  // Tells us if a date is within a certain DateTimeRange
   bool isInRange(DateTimeRange range) =>
       (isAfter(range.start) || isAtSameMomentAs(range.start)) &&
       (isBefore(range.end) || isAtSameMomentAs(range.end));

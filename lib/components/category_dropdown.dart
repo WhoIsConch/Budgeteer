@@ -1,6 +1,7 @@
 import 'package:budget/components/manage_object_forms.dart';
 import 'package:budget/tools/api.dart';
 import 'package:budget/tools/enums.dart';
+import 'package:budget/tools/validators.dart';
 import 'package:flutter/material.dart';
 
 class CategoryDropdown extends StatelessWidget {
@@ -114,6 +115,14 @@ class CategoryDropdown extends StatelessWidget {
 
     List<Widget> columnChildren = [categorySelector];
 
+    String balance;
+
+    if (selectedCategoryTotal != null) {
+      balance = formatAmount(selectedCategoryTotal!.abs(), exact: true);
+    } else {
+      balance = "ERR";
+    }
+
     // The rest of the column children will be the category information
     // if the expanded view is up
     if (shouldShowExpanded) {
@@ -121,7 +130,7 @@ class CategoryDropdown extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(8, 8, 8, 2),
           child: Text(
-              "Balance: ${selectedCategoryTotal != null && selectedCategoryTotal! < 0 ? "-" : ""}\$${selectedCategoryTotal?.abs().toStringAsFixed(2)}",
+              "Balance: ${selectedCategoryTotal != null && selectedCategoryTotal! < 0 ? "-" : ""}\$$balance",
               style: selectedCategoryTotal != null &&
                       selectedCategoryTotal! < 0 &&
                       !selectedCategory!.allowNegatives
