@@ -97,8 +97,7 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
 
         catTotal = await provider.getTotal(
             categoryRelRange?.getRange(
-                fullRange: true,
-                fromDate: currentTransaction.date.add(Duration(days: 1))),
+                fullRange: true, fromDate: currentTransaction.date),
             category: category);
 
         if (currentTransaction.type == TransactionType.expense) {

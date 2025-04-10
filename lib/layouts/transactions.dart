@@ -282,11 +282,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         DateTime.now().subtract(const Duration(days: 365 * 10)),
                     lastDate:
                         DateTime.now().add(const Duration(days: 365 * 10)))
-                .then((value) {
-              if (value == dateRange) return;
+                .then((DateTimeRange? value) {
+              if (value == dateRange || value == null) return;
 
               setState(() {
-                dateRange = value;
+                dateRange = value.makeInclusive();
               });
             });
           }),

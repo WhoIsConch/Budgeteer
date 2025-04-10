@@ -32,12 +32,14 @@ enum RelativeDateRange {
       // From the beginning of the day to right now
       // (or the end of the day)
       RelativeDateRange.today => DateTimeRange(
-          start: DateTime(now.year, now.month, now.day),
-          end: DateTime(now.year, now.month, now.day + 1)),
+              start: DateTime(now.year, now.month, now.day),
+              end: DateTime(now.year, now.month, now.day))
+          .makeInclusive(),
       // Same thing as above, but for yesterday
       RelativeDateRange.yesterday => DateTimeRange(
-          start: DateTime(now.year, now.month, now.day - 1),
-          end: DateTime(now.year, now.month, now.day)),
+              start: DateTime(now.year, now.month, now.day - 1),
+              end: DateTime(now.year, now.month, now.day - 1))
+          .makeInclusive(),
       // From the beginning of the week to right now
       // (or the end of the week)
       RelativeDateRange.thisWeek => fullRange
@@ -125,4 +127,14 @@ extension RangeModifier on DateTime {
   bool isInRange(DateTimeRange range) =>
       (isAfter(range.start) || isAtSameMomentAs(range.start)) &&
       (isBefore(range.end) || isAtSameMomentAs(range.end));
+}
+
+extension InclusiveModifier on DateTimeRange {
+  DateTimeRange makeInclusive() {
+    return DateTimeRange(
+      start: DateTime(start.year, start.month, start.day),
+      end: DateTime(end.year, end.month, end.day + 1)
+          .subtract(const Duration(microseconds: 1)),
+    );
+  }
 }
