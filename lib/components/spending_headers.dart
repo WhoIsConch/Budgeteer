@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:budget/components/transactions_list.dart';
-import 'package:budget/layouts/transactions.dart';
+import 'package:budget/panels/spending.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/tools/api.dart';
 import 'package:budget/tools/enums.dart';
@@ -18,14 +18,14 @@ class CardConfig {
   });
 }
 
-class TransactionsOverview extends StatefulWidget {
-  const TransactionsOverview({super.key});
+class SpendingOverview extends StatefulWidget {
+  const SpendingOverview({super.key});
 
   @override
-  State<TransactionsOverview> createState() => _TransactionsOverviewState();
+  State<SpendingOverview> createState() => _SpendingOverviewState();
 }
 
-class _TransactionsOverviewState extends State<TransactionsOverview> {
+class _SpendingOverviewState extends State<SpendingOverview> {
   bool showTransactions = true;
 
   void setTransactions(bool show) {
@@ -39,13 +39,13 @@ class _TransactionsOverviewState extends State<TransactionsOverview> {
     if (!showTransactions) {
       return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Expanded(
-            flex: 8, child: OverviewHeader(changeParentState: setTransactions)),
+            flex: 8, child: SpendingHeader(changeParentState: setTransactions)),
       ]);
     }
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Expanded(
-          flex: 8, child: OverviewHeader(changeParentState: setTransactions)),
+          flex: 8, child: SpendingHeader(changeParentState: setTransactions)),
       Expanded(
         flex: 16,
         child: Column(
@@ -64,7 +64,7 @@ class _TransactionsOverviewState extends State<TransactionsOverview> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const TransactionsPage(),
+                        builder: (context) => const SpendingPage(),
                       ),
                     );
                   },
@@ -80,7 +80,7 @@ class _TransactionsOverviewState extends State<TransactionsOverview> {
   }
 }
 
-class OverviewHeader extends StatefulWidget {
+class SpendingHeader extends StatefulWidget {
   /* 
   OverviewHeader is a section at the top of the page with a 2x2 grid of 
   cards that hold information about the user's spending. These cards are:
@@ -89,15 +89,15 @@ class OverviewHeader extends StatefulWidget {
   - Spending This Month
   - Spending This Year
   */
-  const OverviewHeader({super.key, required this.changeParentState});
+  const SpendingHeader({super.key, required this.changeParentState});
 
   final Function changeParentState;
 
   @override
-  State<OverviewHeader> createState() => _OverviewHeaderState();
+  State<SpendingHeader> createState() => _SpendingHeaderState();
 }
 
-class _OverviewHeaderState extends State<OverviewHeader> {
+class _SpendingHeaderState extends State<SpendingHeader> {
   bool isMinimized = true;
   final List<String> _previousContents = List.filled(8, '\$0.00');
 
@@ -159,7 +159,7 @@ class _OverviewHeaderState extends State<OverviewHeader> {
             Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => TransactionsPage(
+                    builder: (context) => SpendingPage(
                           startingDateRange: config.dateRange,
                           startingTransactionType: config.type,
                         )));

@@ -1,5 +1,5 @@
 import 'package:budget/components/hybrid_button.dart';
-import 'package:budget/components/manage_object_forms.dart';
+import 'package:budget/dialogs/manage_transaction.dart';
 import 'package:budget/tools/api.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:flutter/material.dart';
@@ -10,18 +10,18 @@ String toTitleCase(String s) => s
     .replaceAllMapped(RegExp(r'([a-z])([A-Z])'), (m) => '${m[1]} ${m[2]}')
     .replaceFirstMapped(RegExp(r'^\w'), (m) => m[0]!.toUpperCase());
 
-class TransactionsPage extends StatefulWidget {
-  const TransactionsPage(
+class SpendingPage extends StatefulWidget {
+  const SpendingPage(
       {super.key, this.startingDateRange, this.startingTransactionType});
 
   final DateTimeRange? startingDateRange;
   final TransactionType? startingTransactionType;
 
   @override
-  State<TransactionsPage> createState() => _TransactionsPageState();
+  State<SpendingPage> createState() => _SpendingPageState();
 }
 
-class _TransactionsPageState extends State<TransactionsPage> {
+class _SpendingPageState extends State<SpendingPage> {
   final _dbHelper = DatabaseHelper();
 
   DateTimeRange? dateRange;
@@ -240,7 +240,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
             context,
             MaterialPageRoute(
                 builder: (context) =>
-                    const TransactionManageScreen(mode: ObjectManageMode.add))),
+                    const ManageTransactionDialog(mode: ObjectManageMode.add))),
       )
     ];
 

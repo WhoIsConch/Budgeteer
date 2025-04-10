@@ -1,10 +1,10 @@
-import 'package:budget/layouts/budgets.dart';
+import 'package:budget/panels/statistics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:budget/layouts/overview.dart';
-import 'package:budget/layouts/spending_overview.dart';
-import 'package:budget/layouts/account.dart';
+import 'package:budget/panels/home.dart';
+import 'package:budget/components/spending_headers.dart';
+import 'package:budget/panels/account.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/tools/enums.dart' as tools;
 import 'package:budget/tools/api.dart';
@@ -152,7 +152,7 @@ class _HomePageState extends State<HomePage> {
           const SafeArea(
               child: Padding(
             padding: EdgeInsets.all(16),
-            child: TransactionsOverview(),
+            child: SpendingOverview(),
           )),
           const SafeArea(
               child: Padding(padding: EdgeInsets.all(16), child: BudgetPage())),

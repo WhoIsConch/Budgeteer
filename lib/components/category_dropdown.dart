@@ -1,4 +1,4 @@
-import 'package:budget/components/manage_object_forms.dart';
+import 'package:budget/dialogs/manage_category.dart';
 import 'package:budget/tools/api.dart';
 import 'package:budget/tools/enums.dart';
 import 'package:budget/tools/validators.dart';
@@ -96,7 +96,7 @@ class CategoryDropdown extends StatelessWidget {
               onPressed: () async {
                 final result = await showDialog(
                     context: context,
-                    builder: (context) => CategoryManageDialog(
+                    builder: (context) => ManageCategoryDialog(
                           category: selectedCategory,
                           mode: selectedCategory == null
                               ? ObjectManageMode.add

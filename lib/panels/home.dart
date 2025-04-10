@@ -1,5 +1,5 @@
 import 'package:budget/components/cards.dart';
-import 'package:budget/components/manage_object_forms.dart';
+import 'package:budget/dialogs/manage_transaction.dart';
 import 'package:budget/tools/enums.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -49,7 +49,7 @@ class Overview extends StatelessWidget {
                               context,
                               MaterialPageRoute(
                                 builder: (context) =>
-                                    const TransactionManageScreen(
+                                    const ManageTransactionDialog(
                                         mode: ObjectManageMode.add),
                               ),
                             );

@@ -4,7 +4,7 @@ import 'package:budget/tools/api.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:budget/components/manage_object_forms.dart';
+import 'package:budget/dialogs/manage_transaction.dart';
 import 'package:budget/tools/enums.dart';
 
 class TransactionsList extends StatefulWidget {
@@ -50,7 +50,7 @@ class _TransactionsListState extends State<TransactionsList> {
                 Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => TransactionManageScreen(
+                        builder: (context) => ManageTransactionDialog(
                             mode: ObjectManageMode.edit,
                             transaction: transaction)));
               },
@@ -121,7 +121,7 @@ class _TransactionsListState extends State<TransactionsList> {
       onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (context) => TransactionManageScreen(
+              builder: (context) => ManageTransactionDialog(
                   mode: ObjectManageMode.edit, transaction: transaction))),
       onLongPress: () => showOptionsDialog(transaction, transactionProvider),
       trailing: IconButton(
@@ -228,7 +228,7 @@ class _TransactionsListState extends State<TransactionsList> {
                     onPressed: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const TransactionManageScreen(
+                            builder: (context) => const ManageTransactionDialog(
                                 mode: ObjectManageMode.add))),
                   )
                 ]),
@@ -323,7 +323,7 @@ class _TransactionsListState extends State<TransactionsList> {
             onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => const TransactionManageScreen(
+                    builder: (context) => const ManageTransactionDialog(
                         mode: ObjectManageMode.add))),
           );
         } else {
