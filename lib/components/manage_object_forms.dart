@@ -89,27 +89,31 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
 
       catText = category.name;
 
-      try {
-        Transaction currentTransaction = getTransaction();
+      // Get the transaction that's currently represented in the form
+      Transaction currentTransaction = getTransaction();
 
-        RelativeDateRange? categoryRelRange =
-            category.resetIncrement.relativeDateRange;
+      RelativeDateRange? categoryRelRange =
+          category.resetIncrement.relativeDateRange;
 
-        catTotal = await provider.getTotal(
-            categoryRelRange?.getRange(
-                fullRange: true, fromDate: currentTransaction.date),
-            category: category);
+      catTotal = await provider.getTotal(
+          categoryRelRange?.getRange(
+              fullRange: true, fromDate: currentTransaction.date),
+          category: category);
 
-        if (currentTransaction.type == TransactionType.expense) {
-          catTotal -= currentTransaction.amount;
-        } else {
-          catTotal += currentTransaction.amount;
-        }
-
-        catTotal = category.balance + catTotal;
-      } catch (e) {
-        print(e);
+      if (widget.transaction != null) {
+        // This means we're editing.
+        // For accurate results, we subtract the original transaction amount from
+        // catTotal, then add the current transaction amount.
+        catTotal -= widget.transaction!.amount;
       }
+
+      if (currentTransaction.type == TransactionType.expense) {
+        catTotal -= currentTransaction.amount;
+      } else {
+        catTotal += currentTransaction.amount;
+      }
+
+      catTotal = category.balance + catTotal;
     }
 
     setState(() {
@@ -192,10 +196,10 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
                   value: TransactionType.income, label: Text("Income"))
             ],
             onSelectionChanged: (Set<TransactionType> value) {
-              _setCategoryInfo(selectedCategory);
               setState(() {
                 selectedType = value.first;
               });
+              _setCategoryInfo(selectedCategory);
             },
           ),
         ],
