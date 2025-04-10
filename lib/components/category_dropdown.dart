@@ -11,12 +11,14 @@ class CategoryDropdown extends StatelessWidget {
     required this.selectedCategory,
     this.selectedCategoryTotal,
     this.showExpanded = true,
+    this.transactionDate,
   });
 
   final List<Category> categories;
   final Function(Category?) onChanged;
   final Category? selectedCategory;
   final double? selectedCategoryTotal;
+  final DateTime? transactionDate;
   final TextEditingController categoryController = TextEditingController();
   final bool showExpanded;
 
@@ -131,10 +133,10 @@ class CategoryDropdown extends StatelessWidget {
 
       columnChildren.add(Padding(
         padding: const EdgeInsets.all(8.0),
-        child: Text(
-            (selectedCategory?.resetIncrement != CategoryResetIncrement.never
-                ? "Resets in ${selectedCategory?.getTimeUntilNextReset()}"
-                : "Amount doesn't reset")),
+        child: Text((selectedCategory?.resetIncrement !=
+                CategoryResetIncrement.never
+            ? "Resets in ${selectedCategory?.getTimeUntilNextReset(fromDate: transactionDate)}"
+            : "Amount doesn't reset")),
       ));
     }
 

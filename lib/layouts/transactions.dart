@@ -280,7 +280,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     initialDateRange: dateRange,
                     firstDate:
                         DateTime.now().subtract(const Duration(days: 365 * 10)),
-                    lastDate: DateTime.now())
+                    lastDate:
+                        DateTime.now().add(const Duration(days: 365 * 10)))
                 .then((value) {
               if (value == dateRange) return;
 

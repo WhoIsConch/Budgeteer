@@ -80,7 +80,7 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
 
   Future<void> _setCategoryInfo(Category? category) async {
     String catText;
-    double? catTotal;
+    double? catTotal = selectedCategoryTotal;
 
     if (category == null) {
       catText = "No Category";
@@ -88,23 +88,26 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
       final provider = Provider.of<TransactionProvider>(context, listen: false);
 
       catText = category.name;
-      catTotal =
-          await provider.getTotal(category.getDateRange(), category: category);
-
-      catTotal = category.balance + catTotal;
 
       try {
         Transaction currentTransaction = getTransaction();
 
-        if (widget.transaction?.amount != null) {
-          catTotal += widget.transaction!.amount;
-        }
+        RelativeDateRange? categoryRelRange =
+            category.resetIncrement.getRelRange();
+
+        catTotal = await provider.getTotal(
+            categoryRelRange?.getRange(
+                fullRange: true,
+                fromDate: currentTransaction.date.add(Duration(days: 1))),
+            category: category);
 
         if (currentTransaction.type == TransactionType.expense) {
           catTotal -= currentTransaction.amount;
         } else {
           catTotal += currentTransaction.amount;
         }
+
+        catTotal = category.balance + catTotal;
       } catch (e) {
         print(e);
       }
@@ -220,6 +223,7 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
                       selectedDate = value;
                       dateController.text =
                           DateFormat('MM/dd/yyyy').format(selectedDate);
+                      _setCategoryInfo(selectedCategory);
                     });
                   }
                 });
@@ -229,6 +233,7 @@ class _TransactionManageScreenState extends State<TransactionManageScreen> {
       Consumer<TransactionProvider>(
           builder: (context, transactionProvider, child) => CategoryDropdown(
                 categories: transactionProvider.categories,
+                transactionDate: selectedDate,
                 onChanged: (category) {
                   setState(() {
                     selectedCategory =
@@ -418,7 +423,7 @@ class _CategoryManageDialogState extends State<CategoryManageDialog> {
 
         try {
           if (widget.mode == ObjectManageMode.edit) {
-            await provider.updateCategory(getCategory());
+            await provider.updateCategory(widget.category!, getCategory());
             savedCategory = getCategory();
           } else {
             savedCategory = await provider.createCategory(getCategory());

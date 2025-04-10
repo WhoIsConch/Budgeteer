@@ -252,83 +252,86 @@ class _TransactionsListState extends State<TransactionsList> {
           ),
         ];
 
-        FloatingActionButton actionButton;
+        FloatingActionButton? actionButton;
 
-        if (widget.showActionButton) {
-          if (isMultiselect) {
-            actionButton = FloatingActionButton(
-                child: const Icon(Icons.delete),
-                onPressed: () {
-                  // Create a copy of the list, not a reference
-                  List<Transaction> removedTransactions = [
-                    ...selectedTransactions
-                  ];
-                  List<int> removedItemIndices = [];
+        if (isMultiselect) {
+          actionButton = FloatingActionButton(
+              child: const Icon(Icons.delete),
+              onPressed: () {
+                // Create a copy of the list, not a reference
+                List<Transaction> removedTransactions = [
+                  ...selectedTransactions
+                ];
+                List<int> removedItemIndices = [];
 
-                  setState(() {
-                    selectedTransactions.clear();
-                    isMultiselect = false;
+                setState(() {
+                  selectedTransactions.clear();
+                  isMultiselect = false;
+
+                  for (int i = 0; i < removedTransactions.length; i++) {
+                    int index = transactions.indexOf(removedTransactions[i]);
+
+                    removedItemIndices.add(index);
+                    transactions.removeAt(index);
+                  }
+                });
+
+                bool undoPressed = false;
+
+                scaffoldMessengerKey.currentState!.hideCurrentSnackBar();
+                scaffoldMessengerKey.currentState!.showSnackBar(SnackBar(
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 3),
+                    action: SnackBarAction(
+                        label: "Undo",
+                        onPressed: () {
+                          undoPressed = true;
+
+                          setState(() {
+                            for (int i = 0;
+                                i < removedTransactions.length;
+                                i++) {
+                              transactions.insert(removedItemIndices[i],
+                                  removedTransactions[i]);
+                            }
+                          });
+                        }),
+                    content: Text(
+                        "${removedTransactions.length} ${removedTransactions.length == 1 ? "item" : "items"} deleted")));
+
+                Timer.periodic(const Duration(seconds: 3, milliseconds: 250),
+                    (timer) async {
+                  if (undoPressed) {
+                    timer.cancel();
+                  } else {
+                    timer.cancel();
+                    scaffoldMessengerKey.currentState!
+                        .hideCurrentSnackBar(); // This doesn't work if you move screens
 
                     for (int i = 0; i < removedTransactions.length; i++) {
-                      int index = transactions.indexOf(removedTransactions[i]);
-
-                      removedItemIndices.add(index);
-                      transactions.removeAt(index);
+                      transactionProvider
+                          .removeTransaction(removedTransactions[i]);
                     }
-                  });
-
-                  bool undoPressed = false;
-
-                  scaffoldMessengerKey.currentState!.hideCurrentSnackBar();
-                  scaffoldMessengerKey.currentState!.showSnackBar(SnackBar(
-                      behavior: SnackBarBehavior.floating,
-                      duration: const Duration(seconds: 3),
-                      action: SnackBarAction(
-                          label: "Undo",
-                          onPressed: () {
-                            undoPressed = true;
-
-                            setState(() {
-                              for (int i = 0;
-                                  i < removedTransactions.length;
-                                  i++) {
-                                transactions.insert(removedItemIndices[i],
-                                    removedTransactions[i]);
-                              }
-                            });
-                          }),
-                      content: Text(
-                          "${removedTransactions.length} ${removedTransactions.length == 1 ? "item" : "items"} deleted")));
-
-                  Timer.periodic(const Duration(seconds: 3, milliseconds: 250),
-                      (timer) async {
-                    if (undoPressed) {
-                      timer.cancel();
-                    } else {
-                      timer.cancel();
-                      scaffoldMessengerKey.currentState!
-                          .hideCurrentSnackBar(); // This doesn't work if you move screens
-
-                      for (int i = 0; i < removedTransactions.length; i++) {
-                        transactionProvider
-                            .removeTransaction(removedTransactions[i]);
-                      }
-                    }
-                  });
+                  }
                 });
-          } else {
-            actionButton = FloatingActionButton(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.0),
-              ),
-              child: const Icon(Icons.add),
-              onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const TransactionManageScreen(
-                          mode: ObjectManageMode.add))),
-            );
-          }
+              });
+        } else if (widget.showActionButton) {
+          actionButton = FloatingActionButton(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+            child: const Icon(Icons.add),
+            onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const TransactionManageScreen(
+                        mode: ObjectManageMode.add))),
+          );
+        } else {
+          actionButton = null;
+        }
+
+        if (actionButton != null) {
           stackChildren.add(Padding(
             padding: const EdgeInsets.all(16.0),
             child: Align(

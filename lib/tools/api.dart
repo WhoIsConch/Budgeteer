@@ -91,8 +91,8 @@ class Category {
     return cumRange;
   }
 
-  String getTimeUntilNextReset() {
-    DateTime now = DateTime.now();
+  String getTimeUntilNextReset({DateTime? fromDate}) {
+    DateTime now = fromDate ?? DateTime.now();
     DateTime nextReset;
 
     switch (resetIncrement) {
@@ -221,8 +221,10 @@ class Transaction {
 }
 
 class TransactionProvider extends ChangeNotifier {
+  // Allows the rest of the app to know when a transactin
+  // changes
   final DatabaseHelper _dbHelper = DatabaseHelper();
-  List<Transaction> _transactions = [];
+  List<Transaction> _transactions = []; // Cache db transactions and categories
   List<Category> _categories = [];
 
   List<Transaction> get transactions => _transactions;
@@ -448,6 +450,7 @@ class TransactionProvider extends ChangeNotifier {
   }
 
   Future<void> loadTransactions() async {
+    // Load transactions from the database
     _transactions = await _dbHelper.getTransactions();
     notifyListeners();
   }
@@ -466,16 +469,16 @@ class TransactionProvider extends ChangeNotifier {
     return newCategory;
   }
 
-  Future<void> updateCategory(Category category) async {
-    await _dbHelper.updateCategory(category);
+  Future<void> updateCategory(Category before, Category after) async {
+    await _dbHelper.updateCategory(before, after);
 
-    final index = _categories.indexWhere((c) => c.id == category.id);
+    final index = _categories.indexWhere((c) => c.id == after.id);
 
     if (index == -1) {
       return;
     }
 
-    _categories[index] = category;
+    _categories[index] = after;
     notifyListeners();
   }
 
@@ -783,10 +786,25 @@ class DatabaseHelper {
     return dbCat;
   }
 
-  Future<void> updateCategory(Category category) async {
+  Future<void> updateCategory(Category before, Category after) async {
     final db = await database;
 
-    await db.update('categories', category.toMap(),
-        where: 'id = ?', whereArgs: [category.id]);
+    await db.update('categories', after.toMap(),
+        where: 'id = ?', whereArgs: [before.id]);
+
+    if (before.name != after.name) {
+      // This means the name has changed. Update the existing transactions to match.
+      bulkUpdateTransactionCategory(before.name, after.name);
+    }
+  }
+
+  Future<void> bulkUpdateTransactionCategory(
+      String before, String after) async {
+    // Used when a category name is changed to make sure all transactions
+    // stick with their category.
+    final db = await database;
+
+    await db.update('transactions', {'category': after},
+        where: 'category = ?', whereArgs: [before]);
   }
 }
