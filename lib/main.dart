@@ -9,6 +9,8 @@ import 'package:provider/provider.dart';
 import 'package:budget/tools/enums.dart' as tools;
 import 'package:budget/tools/api.dart';
 import 'package:budget/tools/settings.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 ThemeMode? theme;
 
@@ -27,6 +29,8 @@ Future<void> setup() async {
     default:
       theme = ThemeMode.system;
   }
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 }
 
 void main() {

@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "project_number": "985459568170",
+    "project_id": "budgeteer-854f9",
+    "storage_bucket": "budgeteer-854f9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:985459568170:android:7ae02dbd8f69ce74f81d53",
+        "android_client_info": {
+          "package_name": "com.conchdev.budgeteer"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "985459568170-oiq9jqchnb1cbvab3c59u09871b7hatd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCzMwakMiKvKK_w2EOmO5kRE2EOh9-TBTA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "985459568170-oiq9jqchnb1cbvab3c59u09871b7hatd.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "985459568170-csa3prkb7v98gpf2vtmuao2q3u3pa9mr.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.conchdev.budgeteer"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:985459568170:android:33f6b6794fe4142ff81d53",
+        "android_client_info": {
+          "package_name": "com.conchdev.budgeteer"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "985459568170-oiq9jqchnb1cbvab3c59u09871b7hatd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCzMwakMiKvKK_w2EOmO5kRE2EOh9-TBTA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "985459568170-oiq9jqchnb1cbvab3c59u09871b7hatd.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "985459568170-csa3prkb7v98gpf2vtmuao2q3u3pa9mr.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.conchdev.budgeteer"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
