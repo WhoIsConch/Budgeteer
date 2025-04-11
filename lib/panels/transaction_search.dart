@@ -292,6 +292,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
 
   List<Widget> get sortMenuButtons => SortType.values
       .map((type) => MenuItemButton(
+          closeOnActivate: false,
           trailingIcon: sort.sortType == type
               ? switch (sort.sortOrder) {
                   SortOrder.ascending => const Icon(Icons.arrow_upward),
