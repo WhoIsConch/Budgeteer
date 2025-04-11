@@ -10,6 +10,7 @@ import 'package:budget/tools/enums.dart' as tools;
 import 'package:budget/tools/api.dart';
 import 'package:budget/tools/settings.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 
 ThemeMode? theme;
