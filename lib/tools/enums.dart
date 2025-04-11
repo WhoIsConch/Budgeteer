@@ -2,7 +2,19 @@ import 'package:flutter/material.dart';
 
 enum ObjectManageMode { add, edit } // Normal enum
 
-enum AmountFilterType { greaterThan, lessThan, exactly }
+enum AmountFilterType { exactly, lessThan, greaterThan }
+
+// Not by definition an enum but it works nonetheless
+class AmountFilter {
+  final AmountFilterType? type;
+  final double? value;
+
+  AmountFilter({this.type, this.value});
+
+  bool isPopulated() {
+    return type != null && value != null;
+  }
+}
 
 // Enums with values, in case I need to store them in a database
 enum TransactionType {
@@ -105,18 +117,6 @@ enum PageType {
 
   const PageType(this.value);
   final int value;
-}
-
-// Not by definition an enum but it works nonetheless
-class AmountFilter {
-  final AmountFilterType? type;
-  final double? value;
-
-  AmountFilter({this.type, this.value});
-
-  bool isPopulated() {
-    return type != null && value != null;
-  }
 }
 
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =

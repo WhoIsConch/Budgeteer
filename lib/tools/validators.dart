@@ -107,3 +107,7 @@ String formatAmount(num amount, {bool round = false, bool exact = false}) {
 
   return formatter.format(amount);
 }
+
+String toTitleCase(String s) => s
+    .replaceAllMapped(RegExp(r'([a-z])([A-Z])'), (m) => '${m[1]} ${m[2]}')
+    .replaceFirstMapped(RegExp(r'^\w'), (m) => m[0]!.toUpperCase());
