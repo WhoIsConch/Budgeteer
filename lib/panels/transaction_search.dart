@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 
 class TransactionSearch extends StatefulWidget {
   final Set<TransactionFilter>? initialFilters;
-  final SortType? initialSortType;
+  final Sort? initialSortType;
 
   const TransactionSearch(
       {super.key, this.initialFilters, this.initialSortType});
@@ -21,7 +21,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
   // Making filters a Set ensures that all items are unique and there is not
   // a multiple of a filter in there
   late Set<TransactionFilter> filters;
-  SortType? sortType;
+  late Sort sort;
   bool isSearching = false; // Is the title bar a search field?
   TextEditingController searchController = TextEditingController();
 
@@ -290,17 +290,32 @@ class _TransactionSearchState extends State<TransactionSearch> {
         ),
       ];
 
-  List<Widget> get sortMenuButtons => const [
-        MenuItemButton(
-          child: Text("Name"),
-        ),
-        MenuItemButton(
-          child: Text("Date"),
-        ),
-        MenuItemButton(
-          child: Text("Amount"),
-        ),
-      ];
+  List<Widget> get sortMenuButtons => SortType.values
+      .map((type) => MenuItemButton(
+          trailingIcon: sort.sortType == type
+              ? switch (sort.sortOrder) {
+                  SortOrder.ascending => const Icon(Icons.arrow_upward),
+                  SortOrder.descending => const Icon(Icons.arrow_downward)
+                }
+              : null,
+          onPressed: () {
+            if (sort.sortType == type) {
+              sort = Sort(
+                  type,
+                  sort.sortOrder == SortOrder.descending
+                      ? SortOrder.ascending
+                      : SortOrder.descending);
+            } else {
+              sort = Sort(
+                type,
+                SortOrder.descending,
+              );
+            }
+
+            setState(() => sort = sort);
+          },
+          child: Text(toTitleCase(type.name))))
+      .toList();
 
   List<Widget> get mainMenuButtons => [
         SubmenuButton(
@@ -378,7 +393,8 @@ class _TransactionSearchState extends State<TransactionSearch> {
 
     // Initialize these filters to easily use and edit inside of the menus
     filters = widget.initialFilters ?? {};
-    sortType = widget.initialSortType;
+    sort = widget.initialSortType ??
+        const Sort(SortType.date, SortOrder.descending);
   }
 
   @override
@@ -452,11 +468,14 @@ class _TransactionSearchState extends State<TransactionSearch> {
           Expanded(
               child: TransactionsList(
             filters: filters,
+            sort: sort,
           ))
         ],
       );
     } else {
-      body = const TransactionsList();
+      body = TransactionsList(
+        sort: sort,
+      );
     }
 
     return Scaffold(

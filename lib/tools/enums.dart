@@ -6,7 +6,16 @@ enum FilterType { string, category, type, amount, dateRange }
 
 enum SortType { name, date, amount }
 
+enum SortOrder { ascending, descending }
+
 enum AmountFilterType { exactly, lessThan, greaterThan }
+
+class Sort {
+  final SortType sortType;
+  final SortOrder sortOrder;
+
+  const Sort(this.sortType, this.sortOrder);
+}
 
 class TransactionFilter {
   final FilterType filterType;

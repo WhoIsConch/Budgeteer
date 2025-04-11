@@ -11,10 +11,12 @@ class TransactionsList extends StatefulWidget {
   const TransactionsList(
       {super.key,
       this.filters,
+      this.sort,
       this.showActionButton = true,
       this.showBackground = true});
 
   final Set<TransactionFilter>? filters;
+  final Sort? sort;
   final bool showActionButton;
   final bool showBackground;
 
@@ -191,7 +193,33 @@ class _TransactionsListState extends State<TransactionsList> {
         }
 
         // Sort transactions by date, most recent first
-        transactions.sort((a, b) => b.date.compareTo(a.date));
+        Sort sort =
+            widget.sort ?? const Sort(SortType.date, SortOrder.descending);
+
+        switch (sort.sortType) {
+          case SortType.date:
+            if (sort.sortOrder == SortOrder.descending) {
+              transactions.sort((a, b) => b.date.compareTo(a.date));
+            } else {
+              transactions.sort((a, b) => -b.date.compareTo(a.date));
+            }
+            break;
+          case SortType.name:
+            if (sort.sortOrder == SortOrder.descending) {
+              transactions.sort((a, b) =>
+                  -b.title.toLowerCase().compareTo(a.title.toLowerCase()));
+            } else {
+              transactions.sort((a, b) =>
+                  b.title.toLowerCase().compareTo(a.title.toLowerCase()));
+            }
+            break;
+          case SortType.amount:
+            if (sort.sortOrder == SortOrder.descending) {
+              transactions.sort((a, b) => b.amount.compareTo(a.amount));
+            } else {
+              transactions.sort((a, b) => -b.amount.compareTo(a.amount));
+            }
+        }
 
         if (transactions.isEmpty) {
           // If there are no transactions, return a message saying so.
