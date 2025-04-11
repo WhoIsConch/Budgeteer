@@ -10,19 +10,11 @@ import 'package:budget/tools/enums.dart';
 class TransactionsList extends StatefulWidget {
   const TransactionsList(
       {super.key,
-      this.dateRange,
-      this.type,
-      this.searchCategories,
-      this.searchString,
-      this.amountFilter,
+      this.filters,
       this.showActionButton = true,
       this.showBackground = true});
 
-  final DateTimeRange? dateRange;
-  final TransactionType? type;
-  final List<Category>? searchCategories;
-  final String? searchString;
-  final AmountFilter? amountFilter;
+  final Set<TransactionFilter>? filters;
   final bool showActionButton;
   final bool showBackground;
 
@@ -141,62 +133,61 @@ class _TransactionsListState extends State<TransactionsList> {
       builder: (context, transactionProvider, child) {
         List<Transaction> transactions = transactionProvider.transactions;
 
-        // If a transaction type is specified, filter the transactions by that
-        if (widget.type == TransactionType.expense) {
-          transactions = transactions.where((transaction) {
-            return transaction.type == TransactionType.expense;
-          }).toList();
-        } else if (widget.type == TransactionType.income) {
-          transactions = transactions.where((transaction) {
-            return transaction.type == TransactionType.income;
-          }).toList();
-        }
-
-        // If there is a specified date range, filter the transactions by that
-        if (widget.dateRange != null) {
-          transactions = transactions.where((transaction) {
-            // Adding and subtracting a day to the start and end of the date
-            // because "After" and "Before" are not inclusive of the start and
-            // end dates
-            return transaction.date.isInRange(widget.dateRange!);
-          }).toList();
-        }
-
-        // If there are categories specified, filter the transactions by those
-        if (widget.searchCategories != null &&
-            widget.searchCategories!.isNotEmpty) {
-          transactions = transactions.where((transaction) {
-            return widget.searchCategories!
-                .where((e) => e.name == transaction.category)
-                .isNotEmpty;
-          }).toList();
-        }
-
-        // If a string is specified, search the description and the title for
-        // that string and return results containing it
-        if (widget.searchString != null && widget.searchString!.isNotEmpty) {
-          transactions = transactions.where((transaction) {
-            return transaction.title
-                    .toLowerCase()
-                    .contains(widget.searchString!.toLowerCase()) ||
-                (transaction.notes != null &&
-                    transaction.notes!
-                        .toLowerCase()
-                        .contains(widget.searchString!.toLowerCase()));
-          }).toList();
-        }
-
-        if (widget.amountFilter != null && widget.amountFilter!.isPopulated()) {
-          transactions = transactions.where((transaction) {
-            switch (widget.amountFilter!.type) {
-              case AmountFilterType.greaterThan:
-                return transaction.amount > widget.amountFilter!.value!;
-              case AmountFilterType.lessThan:
-                return transaction.amount < widget.amountFilter!.value!;
-              case _:
-                return transaction.amount == widget.amountFilter!.value!;
+        if (widget.filters != null) {
+          for (TransactionFilter filter in widget.filters!) {
+            switch (filter.filterType) {
+              case FilterType.type:
+                // If a transaction type is specified, filter the transactions by that
+                if (filter.value == TransactionType.expense) {
+                  transactions = transactions.where((transaction) {
+                    return transaction.type == TransactionType.expense;
+                  }).toList();
+                } else if (filter.value == TransactionType.income) {
+                  transactions = transactions.where((transaction) {
+                    return transaction.type == TransactionType.income;
+                  }).toList();
+                }
+                break;
+              case FilterType.dateRange:
+                transactions = transactions.where((transaction) {
+                  // Adding and subtracting a day to the start and end of the date
+                  // because "After" and "Before" are not inclusive of the start and
+                  // end dates
+                  return transaction.date.isInRange(filter.value);
+                }).toList();
+                break;
+              case FilterType.category:
+                transactions = transactions.where((transaction) {
+                  return filter.value!
+                      .where((e) => e.name == transaction.category)
+                      .isNotEmpty;
+                }).toList();
+                break;
+              case FilterType.string:
+                transactions = transactions.where((transaction) {
+                  return transaction.title
+                          .toLowerCase()
+                          .contains(filter.value.toLowerCase()) ||
+                      (transaction.notes != null &&
+                          transaction.notes!
+                              .toLowerCase()
+                              .contains(filter.value.toLowerCase()));
+                }).toList();
+                break;
+              case FilterType.amount:
+                transactions = transactions.where((transaction) {
+                  switch (filter.info) {
+                    case AmountFilterType.greaterThan:
+                      return transaction.amount > filter.value;
+                    case AmountFilterType.lessThan:
+                      return transaction.amount < filter.value;
+                    case _:
+                      return transaction.amount == filter.value;
+                  }
+                }).toList();
+                break;
             }
-          }).toList();
+          }
         }
 
         // Sort transactions by date, most recent first

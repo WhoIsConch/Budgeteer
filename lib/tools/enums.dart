@@ -2,7 +2,30 @@ import 'package:flutter/material.dart';
 
 enum ObjectManageMode { add, edit } // Normal enum
 
+enum FilterType { string, category, type, amount, dateRange }
+
+enum SortType { name, date, amount }
+
 enum AmountFilterType { exactly, lessThan, greaterThan }
+
+class TransactionFilter {
+  final FilterType filterType;
+  final dynamic info;
+  final dynamic value;
+
+  const TransactionFilter(this.filterType, this.info, this.value);
+
+  @override
+  bool operator ==(Object other) {
+    return other is TransactionFilter &&
+        filterType == other.filterType &&
+        info == other.info &&
+        value == other.value;
+  }
+
+  @override
+  int get hashCode => Object.hash(filterType, info, value);
+}
 
 // Not by definition an enum but it works nonetheless
 class AmountFilter {

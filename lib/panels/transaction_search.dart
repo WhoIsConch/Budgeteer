@@ -6,31 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-enum FilterType { string, category, type, amount, dateRange }
-
-enum SortType { name, date, amount }
-
-enum AmountFilterType { exactly, lessThan, greaterThan }
-
-class TransactionFilter {
-  final FilterType filterType;
-  final dynamic info;
-  final dynamic value;
-
-  const TransactionFilter(this.filterType, this.info, this.value);
-
-  @override
-  bool operator ==(Object other) {
-    return other is TransactionFilter &&
-        filterType == other.filterType &&
-        info == other.info &&
-        value == other.value;
-  }
-
-  @override
-  int get hashCode => Object.hash(filterType, info, value);
-}
-
 class TransactionSearch extends StatefulWidget {
   final Set<TransactionFilter>? initialFilters;
   final SortType? initialSortType;
@@ -474,7 +449,10 @@ class _TransactionSearchState extends State<TransactionSearch> {
               children: getFilterChips(),
             ),
           ),
-          const Expanded(child: TransactionsList())
+          Expanded(
+              child: TransactionsList(
+            filters: filters,
+          ))
         ],
       );
     } else {

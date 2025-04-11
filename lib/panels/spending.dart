@@ -1,7 +1,6 @@
 import 'package:budget/panels/transaction_search.dart';
 import 'package:flutter/material.dart';
 import 'package:budget/components/transactions_list.dart';
-import 'package:budget/panels/transaction_search_legacy.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/tools/api.dart';
 import 'package:budget/tools/enums.dart';
@@ -160,9 +159,13 @@ class _SpendingHeaderState extends State<SpendingHeader> {
             Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => SpendingPage(
-                          startingDateRange: config.dateRange,
-                          startingTransactionType: config.type,
+                    builder: (context) => TransactionSearch(
+                          initialFilters: {
+                            TransactionFilter(
+                                FilterType.dateRange, "Date", config.dateRange),
+                            TransactionFilter(
+                                FilterType.type, config.type, config.type)
+                          },
                         )));
           },
           onContentUpdated: (newContent) =>
