@@ -101,7 +101,7 @@ class _TransactionsListState extends State<TransactionsList> {
     }
 
     return ListTile(
-      contentPadding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
       horizontalTitleGap: 4,
       leading: leadingWidget,
       title: Text(

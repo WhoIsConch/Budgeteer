@@ -489,7 +489,7 @@ class _CategoryBarChartState extends State<CategoryBarChart> {
       } else {
         children.add(AspectRatio(
             aspectRatio: 1.6,
-            child: _buildBarChart() ?? Text("Nothing to Show. Try ")));
+            child: _buildBarChart() ?? const Text("Nothing to Show. Try ")));
       }
 
       return Expanded(

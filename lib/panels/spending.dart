@@ -237,10 +237,10 @@ class _SpendingHeaderState extends State<SpendingHeader> {
             })
           },
           child: Card(
-            child: child,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16.0),
             ),
+            child: child,
           ),
         );
       },

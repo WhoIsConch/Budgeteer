@@ -456,7 +456,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
         ],
       );
     } else {
-      body = TransactionsList();
+      body = const TransactionsList();
     }
 
     return Scaffold(
