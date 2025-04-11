@@ -1,8 +1,10 @@
 import 'package:budget/components/transactions_list.dart';
+import 'package:budget/tools/api.dart';
 import 'package:budget/tools/enums.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 enum FilterType { string, category, type, amount, dateRange }
 
@@ -56,6 +58,11 @@ class _TransactionSearchState extends State<TransactionSearch> {
     }
   }
 
+  void updateFilter(TransactionFilter newFilter) {
+    filters.removeWhere((e) => e.filterType == newFilter.filterType);
+    filters.add(newFilter);
+  }
+
   List<Widget> getFilterChips() {
     List<Widget> chips = [];
     DateFormat dateFormat = DateFormat('MM/dd');
@@ -70,7 +77,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
           }} \$${formatAmount(filter.value, exact: true)}", // > $Value
         FilterType.category => filter.value.length > 3
             ? "${filter.value.length} categories"
-            : filter.value.join(", "),
+            : filter.value.map((e) => e.name).join(", "),
         FilterType.dateRange =>
           "${dateFormat.format(filter.value.start)}–${dateFormat.format(filter.value.end)}",
         FilterType.type =>
@@ -184,6 +191,111 @@ class _TransactionSearchState extends State<TransactionSearch> {
         });
   }
 
+  Future<List<Category>?> _showCategoryInputDialog(BuildContext context) async {
+    // Shows a dropdown of all available categories.
+    // Returns a list of selected categories.
+    // This shows an AlertDialog with nothing in it other than a dropdown
+    // which a user can select multiple categories from.
+    final provider = Provider.of<TransactionProvider>(context, listen: false);
+
+    List<Category> categories = provider.categories;
+    List<Category> selectedCategories =
+        getFilterValue(FilterType.category) ?? [];
+
+    if (!context.mounted) {
+      return [];
+    }
+
+    return showDialog<List<Category>>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              scrollable: true,
+              title: const Text("Select Categories"),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: categories.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    final category = categories[index];
+                    return CheckboxListTile(
+                      title: Text(category.name),
+                      value: selectedCategories
+                          .where(
+                            (e) => e.id == category.id,
+                          )
+                          .isNotEmpty,
+                      onChanged: (bool? value) {
+                        setState(() {
+                          if (value != null) {
+                            if (value) {
+                              selectedCategories.add(category);
+                            } else {
+                              selectedCategories
+                                  .removeWhere((e) => e.id == category.id);
+                            }
+                          }
+                        });
+                      },
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () =>
+                            setState(() => selectedCategories = []),
+                        child: Text("Clear",
+                            style: TextStyle(
+                                color: Theme.of(context).colorScheme.error)),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop(selectedCategories);
+                        },
+                        child: const Text('OK'),
+                      ),
+                    ])
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void toggleTransactionType() {
+    TransactionType? typeFilterValue = getFilterValue(FilterType.type);
+    TransactionFilter? filter;
+
+    if (typeFilterValue == null || typeFilterValue == TransactionType.income) {
+      filter = const TransactionFilter(
+          FilterType.type, TransactionType.expense, TransactionType.expense);
+    } else if (typeFilterValue == TransactionType.expense) {
+      filter = const TransactionFilter(
+        FilterType.type,
+        TransactionType.income,
+        TransactionType.income,
+      );
+    }
+
+    setState(() {
+      filters.removeWhere((e) => e.filterType == FilterType.type);
+
+      if (filter == null) {
+        return;
+      }
+
+      filters.add(filter);
+    });
+  }
+
   List<Widget> get filterMenuButtons => [
         MenuItemButton(
           child: const Text("Date"),
@@ -195,11 +307,11 @@ class _TransactionSearchState extends State<TransactionSearch> {
         ),
         MenuItemButton(
           child: const Text("Type"),
-          onPressed: () {},
+          onPressed: () => _activateFilter(FilterType.type),
         ),
         MenuItemButton(
           child: const Text("Category"),
-          onPressed: () {},
+          onPressed: () => _activateFilter(FilterType.category),
         ),
       ];
 
@@ -269,7 +381,20 @@ class _TransactionSearchState extends State<TransactionSearch> {
               filters.add(value);
             });
           }),
-        _ => {}
+        FilterType.type => toggleTransactionType(),
+        FilterType.category => _showCategoryInputDialog(context).then((value) {
+            if (value == null) {
+              return;
+            } else if (value.isEmpty) {
+              setState(
+                () => filters
+                    .removeWhere((e) => e.filterType == FilterType.category),
+              );
+            } else {
+              setState(() => updateFilter(
+                  TransactionFilter(FilterType.category, "Categories", value)));
+            }
+          })
       };
 
   @override
