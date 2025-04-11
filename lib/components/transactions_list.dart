@@ -28,8 +28,16 @@ class _TransactionsListState extends State<TransactionsList> {
   bool isMultiselect = false;
   List<Transaction> selectedTransactions = [];
 
-  void showOptionsDialog(
-      Transaction transaction, TransactionProvider transactionProvider) {
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) =>
+        Provider.of<TransactionProvider>(context, listen: false)
+            .loadTransactionsBatch());
+  }
+
+  void showOptionsDialog(Transaction transaction) {
     showModalBottomSheet(
       context: context,
       builder: (context) {
@@ -53,8 +61,11 @@ class _TransactionsListState extends State<TransactionsList> {
               leading: const Icon(Icons.delete),
               title: const Text("Delete"),
               onTap: () {
+                final provider =
+                    Provider.of<TransactionProvider>(context, listen: false);
+
                 setState(() {
-                  transactionProvider.removeTransaction(transaction);
+                  provider.removeTransaction(transaction);
                 });
                 Navigator.pop(context);
               },
@@ -65,8 +76,7 @@ class _TransactionsListState extends State<TransactionsList> {
     );
   }
 
-  ListTile tileFromTransaction(Transaction transaction, ThemeData theme,
-      TransactionProvider transactionProvider) {
+  ListTile tileFromTransaction(Transaction transaction, ThemeData theme) {
     // Dart formats all of this code horribly, but I can't really change it.
 
     Widget leadingWidget;
@@ -122,10 +132,10 @@ class _TransactionsListState extends State<TransactionsList> {
           MaterialPageRoute(
               builder: (context) => ManageTransactionDialog(
                   mode: ObjectManageMode.edit, transaction: transaction))),
-      onLongPress: () => showOptionsDialog(transaction, transactionProvider),
+      onLongPress: () => showOptionsDialog(transaction),
       trailing: IconButton(
         icon: const Icon(Icons.more_vert),
-        onPressed: () => showOptionsDialog(transaction, transactionProvider),
+        onPressed: () => showOptionsDialog(transaction),
       ),
       tileColor: theme.colorScheme.secondaryContainer,
       textColor: theme.colorScheme.onSecondaryContainer,
@@ -264,12 +274,29 @@ class _TransactionsListState extends State<TransactionsList> {
 
         List<Widget> stackChildren = [
           ListView.builder(
-            itemCount: transactions.length,
+            itemCount: transactionProvider.transactions.length +
+                (transactionProvider.isLoading ||
+                        (!transactionProvider.hasMore &&
+                            transactionProvider.transactions.isNotEmpty)
+                    ? 1
+                    : 0),
             itemBuilder: (BuildContext context, int index) {
-              Transaction transaction = transactions[index];
+              Transaction? transaction =
+                  transactionProvider.getTransaction(index);
+
+              if (index == transactionProvider.transactions.length) {
+                if (transactionProvider.isLoading) {
+                  return Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Center(child: CircularProgressIndicator()));
+                }
+              }
+              if (transaction == null) {
+                return Center(child: Text("No More Transactions."));
+              }
+
               return Card(
-                child: tileFromTransaction(
-                    transaction, Theme.of(context), transactionProvider),
+                child: tileFromTransaction(transaction, Theme.of(context)),
               );
             },
           ),

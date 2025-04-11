@@ -226,6 +226,8 @@ class TransactionProvider extends ChangeNotifier {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   List<Transaction> _transactions = []; // Cache db transactions and categories
   List<Category> _categories = [];
+  bool isLoading = false;
+  bool hasMore = true;
 
   List<Transaction> get transactions => _transactions;
   List<Category> get categories => _categories;
@@ -449,9 +451,23 @@ class TransactionProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> loadTransactions() async {
+  Future<void> loadTransactionsBatch() async {
     // Load transactions from the database
-    _transactions = await _dbHelper.getTransactions();
+    if (isLoading || !hasMore) return;
+
+    isLoading = true;
+    notifyListeners();
+
+    List<Transaction> newBatch =
+        await _dbHelper.getTransactionsBatch(offset: _transactions.length);
+
+    if (newBatch.length != 20) {
+      hasMore = false;
+    }
+
+    _transactions.addAll(newBatch);
+    isLoading = false;
+
     notifyListeners();
   }
 
@@ -514,6 +530,17 @@ class TransactionProvider extends ChangeNotifier {
 
     _transactions.add(newTransaction);
     notifyListeners();
+  }
+
+  Transaction? getTransaction(int index) {
+    if (index - 1 > _transactions.length && hasMore) {
+      loadTransactionsBatch();
+      return null;
+    } else if (!hasMore && index - 1 > _transactions.length) {
+      return null;
+    }
+
+    return _transactions[index];
   }
 
   Future<void> removeTransaction(Transaction transaction) async {
@@ -623,10 +650,39 @@ class DatabaseHelper {
         'CREATE TABLE categories(id INTEGER PRIMARY KEY AUTOINCREMENT, name STRING UNIQUE, balance REAL, resetIncrement INTEGER, allowNegatives BOOL, color INTEGER)');
   }
 
-  Future<List<Transaction>> getTransactions({
-    DateTimeRange? dateRange,
-    TransactionType? type,
-  }) async {
+  // Future<List<Transaction>> getTransactions({
+  //   DateTimeRange? dateRange,
+  //   TransactionType? type,
+  // }) async {
+  //   final Database db = await database;
+
+  //   List<String> whereConditions = [];
+  //   List<dynamic> whereArgs = [];
+
+  //   if (dateRange != null) {
+  //     whereConditions.add('date BETWEEN ? AND ?');
+  //     whereArgs.addAll(
+  //         [dateRange.start.toIso8601String(), dateRange.end.toIso8601String()]);
+  //   }
+
+  //   if (type != null) {
+  //     whereConditions.add('type = ?');
+  //     whereArgs.add(type.value);
+  //   }
+
+  //   final List<Map<String, dynamic>> maps = await db.query('transactions',
+  //       where:
+  //           whereConditions.isNotEmpty ? whereConditions.join(' AND ') : null,
+  //       whereArgs: whereArgs.isNotEmpty ? whereArgs : null);
+
+  //   return maps.map((map) => Transaction.fromMap(map)).toList();
+  // }
+
+  Future<List<Transaction>> getTransactionsBatch(
+      {DateTimeRange? dateRange,
+      TransactionType? type,
+      int limit = 20,
+      int offset = 0}) async {
     final Database db = await database;
 
     List<String> whereConditions = [];
@@ -646,7 +702,9 @@ class DatabaseHelper {
     final List<Map<String, dynamic>> maps = await db.query('transactions',
         where:
             whereConditions.isNotEmpty ? whereConditions.join(' AND ') : null,
-        whereArgs: whereArgs.isNotEmpty ? whereArgs : null);
+        whereArgs: whereArgs.isNotEmpty ? whereArgs : null,
+        limit: limit,
+        offset: offset);
 
     return maps.map((map) => Transaction.fromMap(map)).toList();
   }
