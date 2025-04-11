@@ -105,7 +105,12 @@ class _TransactionsListState extends State<TransactionsList> {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
       horizontalTitleGap: 4,
-      leading: leadingWidget,
+      leading: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 125),
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return ScaleTransition(scale: animation, child: child);
+          },
+          child: leadingWidget),
       title: Text(
           // Formats as "$500: Title of the Budget"
           "${"\$${formatAmount(transaction.amount)}"}: \"${transaction.title}\"",
@@ -260,7 +265,7 @@ class _TransactionsListState extends State<TransactionsList> {
         List<Widget> stackChildren = [
           ListView.builder(
             itemCount: transactions.length,
-            itemBuilder: (context, index) {
+            itemBuilder: (BuildContext context, int index) {
               Transaction transaction = transactions[index];
               return Card(
                 child: tileFromTransaction(
