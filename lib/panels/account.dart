@@ -1,5 +1,6 @@
 import 'package:budget/tools/api.dart';
 import 'package:budget/tools/enums.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -10,7 +11,8 @@ class Account extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Row(
+        Column(
+          spacing: 16,
           children: [
             // const Text("Not Signed In", style: TextStyle(fontSize: 24.0)),
             // const Spacer(),
@@ -41,7 +43,13 @@ class Account extends StatelessWidget {
                     content: Text("Generated!"),
                   ));
                 },
-                child: const Text("Create Dummy Data"))
+                child: const Text("Create Dummy Data")),
+
+            TextButton(
+                onPressed: () async {
+                  await FirebaseAuth.instance.signOut();
+                },
+                child: Text("Log out with Firebase Auth"))
           ],
         ),
         const Divider(),

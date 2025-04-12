@@ -40,7 +40,24 @@ class AmountValidator {
   }
 }
 
-String? validateTitle(value) {
+String? validateEmail(String? value) {
+  final RegExp regex = RegExp(
+    r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b',
+    caseSensitive: false,
+  );
+
+  if (value == null || value.isEmpty) {
+    return "Required";
+  }
+
+  if (regex.hasMatch(value)) {
+    return null;
+  }
+
+  return "Invalid email addsress";
+}
+
+String? validateTitle(String? value) {
   /* 
   Ensure the transaction title input by a user is less than the maximum length.
   Also makes sure the title isn't empty. 

@@ -1,17 +1,12 @@
-import 'package:budget/panels/login.dart';
-import 'package:budget/panels/statistics.dart';
+import 'package:budget/panels/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:budget/panels/home.dart';
-import 'package:budget/panels/spending.dart';
-import 'package:budget/panels/account.dart';
 import 'package:provider/provider.dart';
-import 'package:budget/tools/enums.dart' as tools;
+import 'package:budget/tools/enums.dart';
 import 'package:budget/tools/api.dart';
 import 'package:budget/tools/settings.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 
 ThemeMode? theme;
@@ -80,11 +75,9 @@ class _BudgetAppState extends State<BudgetApp> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return DynamicColorBuilder(builder: (lightDynamic, darkDynamic) {
       return MaterialApp(
-          scaffoldMessengerKey: tools.scaffoldMessengerKey,
+          scaffoldMessengerKey: scaffoldMessengerKey,
           title: 'Budgeteer',
-          home: FirebaseAuth.instance.currentUser != null
-              ? const HomePage()
-              : const LoginPage(),
+          home: const AuthWrapper(),
           theme: ThemeData(
             colorScheme:
                 lightDynamic?.harmonized() ?? ThemeData.light().colorScheme,
@@ -95,80 +88,5 @@ class _BudgetAppState extends State<BudgetApp> with WidgetsBindingObserver {
           ),
           themeMode: theme);
     });
-  }
-}
-
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
-
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  int selectedIndex = 0;
-
-  void indexCallback(tools.PageType page) {
-    setState(() {
-      selectedIndex = page.value;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    ThemeData theme = Theme.of(context);
-
-    return Scaffold(
-        bottomNavigationBar: NavigationBar(
-          backgroundColor: theme.appBarTheme.backgroundColor,
-          selectedIndex: selectedIndex,
-          onDestinationSelected: (value) {
-            setState(() {
-              selectedIndex = value;
-            });
-          },
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              label: "Home",
-              selectedIcon: Icon(Icons.home),
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.paid_outlined),
-              selectedIcon: Icon(Icons.paid),
-              label: "Spending",
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.account_balance_wallet_outlined),
-              selectedIcon: Icon(Icons.account_balance_wallet),
-              label: "Budget",
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.code),
-              selectedIcon: Icon(Icons.code),
-              label: "Debug",
-            ),
-          ],
-        ),
-        body: [
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Overview(swapCallback: indexCallback),
-            ),
-          ),
-          const SafeArea(
-              child: Padding(
-            padding: EdgeInsets.all(16),
-            child: SpendingOverview(),
-          )),
-          const SafeArea(
-              child: Padding(padding: EdgeInsets.all(16), child: BudgetPage())),
-          const SafeArea(
-              child: Padding(
-            padding: EdgeInsets.all(16),
-            child: Account(),
-          )),
-        ][selectedIndex]);
   }
 }
