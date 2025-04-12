@@ -1,3 +1,4 @@
+import 'package:budget/panels/login.dart';
 import 'package:budget/panels/statistics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -81,7 +82,9 @@ class _BudgetAppState extends State<BudgetApp> with WidgetsBindingObserver {
       return MaterialApp(
           scaffoldMessengerKey: tools.scaffoldMessengerKey,
           title: 'Budgeteer',
-          home: const HomePage(),
+          home: FirebaseAuth.instance.currentUser != null
+              ? const HomePage()
+              : const LoginPage(),
           theme: ThemeData(
             colorScheme:
                 lightDynamic?.harmonized() ?? ThemeData.light().colorScheme,
