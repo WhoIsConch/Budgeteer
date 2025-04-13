@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:budget/tools/enums.dart';
@@ -11,8 +13,9 @@ class Category {
   double balance;
   CategoryResetIncrement resetIncrement;
   bool allowNegatives;
-  int? id;
+  String? id;
   Color? color;
+  DocumentSnapshot? snapshot;
 
   Category({
     this.id,
@@ -21,11 +24,11 @@ class Category {
     this.balance = 0,
     this.resetIncrement = CategoryResetIncrement.never,
     this.allowNegatives = true,
+    this.snapshot,
   });
 
   factory Category.fromMap(Map<String, dynamic> map) {
     return Category(
-      id: map['id'],
       name: map['name'],
       balance: map['balance'],
       resetIncrement: CategoryResetIncrement.fromValue(map['resetIncrement']),
@@ -34,13 +37,39 @@ class Category {
     );
   }
 
+  factory Category.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> snapshot,
+    SnapshotOptions? options,
+  ) {
+    final data = snapshot.data();
+
+    return Category(
+        id: snapshot.id,
+        snapshot: snapshot,
+        name: data?['name'],
+        balance: data?['balance'],
+        resetIncrement:
+            CategoryResetIncrement.fromValue(data?['resetIncrement']),
+        allowNegatives: data?['allowNegatives'],
+        color: Color(data?['color']));
+  }
+
+  Map<String, dynamic> toFirestore() {
+    return {
+      'name': name,
+      'balance': balance,
+      'resetIncrement': resetIncrement.value,
+      'allowNegatives': allowNegatives,
+      'color': color?.toARGB32() ?? genColor()
+    };
+  }
+
   int genColor() => Color((Random().nextDouble() * 0xFFFFFF).toInt())
       .withAlpha(255)
       .toARGB32();
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'name': name,
       'balance': balance,
       'resetIncrement': resetIncrement.value,
@@ -146,21 +175,22 @@ class Transaction {
   final double amount;
   final DateTime date;
   final TransactionType type;
-  int? id;
+  String? id;
   String category;
   String? location;
   String? notes;
+  DocumentSnapshot? snapshot;
 
-  Transaction({
-    this.id,
-    required this.title,
-    required this.amount,
-    required this.date,
-    required this.type,
-    this.category = "",
-    this.location,
-    this.notes,
-  });
+  Transaction(
+      {this.id,
+      required this.title,
+      required this.amount,
+      required this.date,
+      required this.type,
+      this.category = "",
+      this.location,
+      this.notes,
+      this.snapshot});
 
   @override
   String toString() {
@@ -173,7 +203,6 @@ class Transaction {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'title': title,
       'amount': amount,
       'date': date.toIso8601String(),
@@ -186,7 +215,6 @@ class Transaction {
 
   factory Transaction.fromMap(Map<String, dynamic> map) {
     return Transaction(
-      id: map['id'],
       title: map['title'],
       amount: map['amount'],
       date: DateTime.parse(map['date']),
@@ -197,8 +225,39 @@ class Transaction {
     );
   }
 
+  factory Transaction.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> snapshot,
+    SnapshotOptions? options,
+  ) {
+    final data = snapshot.data();
+
+    return Transaction(
+      id: snapshot.id,
+      snapshot: snapshot,
+      title: data?['title'],
+      amount: data?['amount'],
+      date: data?['date'].toDate(),
+      type: TransactionType.values[data?['type']],
+      category: data?['category'],
+      location: data?['location'],
+      notes: data?['notes'],
+    );
+  }
+
+  Map<String, dynamic> toFirestore() {
+    return {
+      'title': title,
+      'amount': amount,
+      'date': Timestamp.fromDate(date),
+      'type': type.value,
+      'category': category,
+      'location': location,
+      'notes': notes,
+    };
+  }
+
   Transaction copyWith({
-    int? id,
+    String? id,
     String? title,
     double? amount,
     DateTime? date,
@@ -510,9 +569,9 @@ class TransactionProvider extends ChangeNotifier {
   }
 
   Future<void> addTransaction(Transaction transaction) async {
-    final newTransaction = await _dbHelper.insertTransaction(transaction);
+    // final newTransaction = await _dbHelper.insertTransaction(transaction);
 
-    _transactions.add(newTransaction);
+    // _transactions.add(newTransaction);
     notifyListeners();
   }
 
@@ -651,17 +710,17 @@ class DatabaseHelper {
     return maps.map((map) => Transaction.fromMap(map)).toList();
   }
 
-  Future<Transaction> insertTransaction(Transaction transaction) async {
-    final Database db = await database;
+  // Future<Transaction> insertTransaction(Transaction transaction) async {
+  //   final Database db = await database;
 
-    return transaction.copyWith(
-      id: await db.insert(
-        'transactions',
-        transaction.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      ),
-    );
-  }
+  //   return transaction.copyWith(
+  //     id: await db.insert(
+  //       'transactions',
+  //       transaction.toMap(),
+  //       conflictAlgorithm: ConflictAlgorithm.replace,
+  //     ),
+  //   );
+  // }
 
   Future<void> updateTransaction(Transaction transaction) async {
     final db = await database;
@@ -806,5 +865,174 @@ class DatabaseHelper {
 
     await db.update('transactions', {'category': after},
         where: 'category = ?', whereArgs: [before]);
+  }
+}
+
+class FirestoreDatabaseHelper {
+  final _db = FirebaseFirestore.instance;
+  final _user = FirebaseAuth.instance.currentUser;
+  late final DocumentReference<Map<String, dynamic>> _userDoc;
+
+  CollectionReference get transactions =>
+      _userDoc.collection('transactions').withConverter<Transaction>(
+          fromFirestore: Transaction.fromFirestore,
+          toFirestore: (Transaction transaction, _) =>
+              transaction.toFirestore());
+
+  CollectionReference get categories =>
+      _userDoc.collection('categories').withConverter<Category>(
+          fromFirestore: Category.fromFirestore,
+          toFirestore: (Category category, _) => category.toFirestore());
+
+  Future<void> initUser() async {
+    if (_user == null) {
+      return;
+    }
+
+    _userDoc = _db.collection("users").doc(_user.uid);
+
+    DocumentSnapshot<Map<String, dynamic>> userDocData = await _userDoc.get();
+
+    // The user document already exists, so we don't have to create it. We just
+    // assigned it above.
+    if (userDocData.exists) return;
+
+    await _userDoc.set({});
+  }
+
+  FirestoreDatabaseHelper() {
+    initUser();
+  }
+
+  Future<void> test() async {
+    await createTransaction(Transaction(
+        title: "My Transaction",
+        amount: 24.32,
+        date: DateTime.now(),
+        type: TransactionType.expense,
+        category: "",
+        notes: "My Note"));
+  }
+
+  Future<Transaction> createTransaction(Transaction transaction) async {
+    var storedTran = await transactions.add(transaction);
+
+    return transaction.copyWith(id: storedTran.id);
+  }
+
+  Future<void> updateTransaction(Transaction transaction) async {
+    // Since we're updating the transaction, it's going to be assumed that this
+    // transaction has an ID. If it doesn't, that's a developer's skill issue.
+    await _userDoc
+        .collection('transactions')
+        .doc(transaction.id)
+        .update(transaction.toMap());
+  }
+
+  Future<void> deleteTransaction(Transaction transaction) async {
+    // Also assume this has an ID. It's the only way to already know if this
+    // transaction is real.
+    await _userDoc.collection('transactions').doc(transaction.id).delete();
+  }
+
+  Future<List<Transaction>> getTransactions(
+      {List<TransactionFilter>? filters,
+      Sort? sort,
+      DocumentSnapshot? startAfter,
+      int? limit}) async {
+    // Lazy loading is expected to be handled by the user, not this class.
+    Query query = transactions;
+
+    if (filters != null) {
+      for (TransactionFilter filter in filters) {
+        switch (filter.filterType) {
+          // filter.value should be of type int
+          // filter.info should be of type AmountFilterType
+          case FilterType.amount:
+            switch (filter.info) {
+              case AmountFilterType.greaterThan:
+                query = query.where("amount", isGreaterThan: filter.value);
+                break;
+              case AmountFilterType.lessThan:
+                query = query.where("amount", isLessThan: filter.value);
+                break;
+              case AmountFilterType.exactly:
+                query = query.where("amount", isEqualTo: filter.value);
+                break;
+            }
+            break;
+          case FilterType.string:
+            // filter.value should be of type String
+            query = query.where(Filter.or(
+              Filter("title", isEqualTo: filter.value),
+              Filter("notes", isEqualTo: filter.value),
+            ));
+            break;
+          case FilterType.dateRange:
+            // filter.value should be of type DateTimeRange
+            DateTimeRange value = filter.value;
+
+            query = query.where(Filter.and(
+                Filter("date",
+                    isGreaterThanOrEqualTo: Timestamp.fromDate(value.start)),
+                Filter("date",
+                    isLessThanOrEqualTo: Timestamp.fromDate(value.end))));
+            // .where("date", isGreaterThanOrEqualTo: filter.value.start)
+            // .where("date", isLessThanOrEqualTo: filter.value.end);
+            break;
+          case FilterType.type:
+            // filter.value should be of type TransactionType
+            query = query.where("type", isEqualTo: filter.value.value);
+            break;
+          case FilterType.category:
+            // filter.value should be of type String
+            query = query.where("category", isEqualTo: filter.value);
+            break;
+        }
+      }
+    }
+
+    if (sort != null) {
+      String field = sort.sortType.name;
+
+      query = query.orderBy(field,
+          descending: sort.sortOrder == SortOrder.ascending ? false : true);
+    }
+
+    if (limit != null) {
+      query = query.limit(limit);
+    }
+
+    if (startAfter != null) {
+      query = query.startAfterDocument(startAfter);
+    }
+
+    var snapshot = await query
+        .withConverter(
+            fromFirestore: Transaction.fromFirestore,
+            toFirestore: (Transaction transaction, _) =>
+                transaction.toFirestore())
+        .get();
+    List<Transaction> results = [];
+
+    for (DocumentSnapshot<Transaction> doc in snapshot.docs) {
+      Transaction? data = doc.data();
+
+      if (data != null) {
+        results.add(data);
+      }
+    }
+
+    return results;
+  }
+
+  Future<int?> getTransactionsAmount() async {
+    // Get the total amount of transactions in the database
+
+    return _userDoc
+        .collection('transactions')
+        .count()
+        .get()
+        .then((res) => res.count, onError: (_) => null);
   }
 }

@@ -49,7 +49,23 @@ class Account extends StatelessWidget {
                 onPressed: () async {
                   await FirebaseAuth.instance.signOut();
                 },
-                child: Text("Log out with Firebase Auth"))
+                child: Text("Log out with Firebase Auth")),
+
+            TextButton(
+              onPressed: () async {
+                var db = FirestoreDatabaseHelper();
+                // await db.createTransaction(Transaction(
+                //     title: "A third",
+                //     amount: 23,
+                //     date: DateTime.now(),
+                //     type: TransactionType.expense));
+                var transactions = await db.getTransactions(filters: [
+                  TransactionFilter(FilterType.category, "category", "")
+                ]);
+                print(transactions);
+              },
+              child: Text("Send Firestore Data"),
+            )
           ],
         ),
         const Divider(),
