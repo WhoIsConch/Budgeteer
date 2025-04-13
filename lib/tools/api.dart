@@ -873,13 +873,13 @@ class FirestoreDatabaseHelper {
   final _user = FirebaseAuth.instance.currentUser;
   late final DocumentReference<Map<String, dynamic>> _userDoc;
 
-  CollectionReference get transactions =>
+  CollectionReference<Transaction> get transactions =>
       _userDoc.collection('transactions').withConverter<Transaction>(
           fromFirestore: Transaction.fromFirestore,
           toFirestore: (Transaction transaction, _) =>
               transaction.toFirestore());
 
-  CollectionReference get categories =>
+  CollectionReference<Category> get categories =>
       _userDoc.collection('categories').withConverter<Category>(
           fromFirestore: Category.fromFirestore,
           toFirestore: (Category category, _) => category.toFirestore());
@@ -904,35 +904,29 @@ class FirestoreDatabaseHelper {
     initUser();
   }
 
-  Future<void> test() async {
-    await createTransaction(Transaction(
-        title: "My Transaction",
-        amount: 24.32,
-        date: DateTime.now(),
-        type: TransactionType.expense,
-        category: "",
-        notes: "My Note"));
-  }
-
   Future<Transaction> createTransaction(Transaction transaction) async {
     var storedTran = await transactions.add(transaction);
 
-    return transaction.copyWith(id: storedTran.id);
+    return (await storedTran.get()).data()!;
   }
 
-  Future<void> updateTransaction(Transaction transaction) async {
+  Future<bool> updateTransaction(Transaction transaction) async {
     // Since we're updating the transaction, it's going to be assumed that this
     // transaction has an ID. If it doesn't, that's a developer's skill issue.
-    await _userDoc
-        .collection('transactions')
-        .doc(transaction.id)
-        .update(transaction.toMap());
+    if (transaction.id == null) return false;
+
+    await transactions.doc(transaction.id).update(transaction.toFirestore());
+
+    return true;
   }
 
-  Future<void> deleteTransaction(Transaction transaction) async {
+  Future<bool> deleteTransaction(Transaction transaction) async {
     // Also assume this has an ID. It's the only way to already know if this
     // transaction is real.
-    await _userDoc.collection('transactions').doc(transaction.id).delete();
+    if (transaction.id == null) return false;
+
+    await transactions.doc(transaction.id).delete();
+    return true;
   }
 
   Future<List<Transaction>> getTransactions(
@@ -1029,10 +1023,47 @@ class FirestoreDatabaseHelper {
   Future<int?> getTransactionsAmount() async {
     // Get the total amount of transactions in the database
 
-    return _userDoc
-        .collection('transactions')
+    return transactions
         .count()
         .get()
         .then((res) => res.count, onError: (_) => null);
+  }
+
+  Future<double?> getTotalAmount({TransactionType? type}) async {
+    // Get the total amount of money in a field
+    Query query = type == null
+        ? transactions
+        : transactions.where('type', isEqualTo: type.value);
+
+    return query.aggregate(sum("amount")).get().then(
+          (value) => value.getSum("amount"),
+          onError: (_) => null,
+        );
+  }
+
+  Future<Category> createCategory(Category category) async {
+    var storedCat = await categories.add(category);
+
+    return (await storedCat.get()).data()!;
+  }
+
+  Future<bool> updateCategory(Category category) async {
+    if (category.id == null) return false;
+
+    await categories.doc(category.id).update(category.toFirestore());
+    return true;
+  }
+
+  Future<bool> deleteCategory(Category category) async {
+    if (category.id == null) return false;
+
+    await categories.doc(category.id).delete();
+    return true;
+  }
+
+  Future<Category?> getCategoryById(String id) async {
+    return categories.doc(id).get().then(
+          (value) => value.data(),
+        );
   }
 }
