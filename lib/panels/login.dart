@@ -1,4 +1,3 @@
-import 'package:budget/panels/home_page.dart';
 import 'package:budget/tools/enums.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:dynamic_color/dynamic_color.dart';
@@ -6,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 enum SignInType { signIn, signUp, google }
+
+// TODO: Make login page look better. It's currently in an ALPHA state
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -52,8 +53,8 @@ class _LoginPageState extends State<LoginPage> {
         } else if (e.code == 'invalid-email') {
           setState(() => usernameError = "Invalid email address");
         } else {
-          print(e);
-          print(e.code);
+          scaffoldMessengerKey.currentState!.showSnackBar(SnackBar(
+              content: Text("An unknown error occurred: ${e.message}")));
         }
       }
     } else if (type == SignInType.signUp) {
@@ -66,6 +67,9 @@ class _LoginPageState extends State<LoginPage> {
           setState(() => passwordError = "Too weak");
         } else if (e.code == 'email-already-in-use') {
           setState(() => usernameError = "Email already in use");
+        } else {
+          scaffoldMessengerKey.currentState!.showSnackBar(SnackBar(
+              content: Text("An unknown error occurred: ${e.message}")));
         }
       }
     }

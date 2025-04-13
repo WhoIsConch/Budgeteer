@@ -59,26 +59,33 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
-        body: [
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Overview(swapCallback: indexCallback),
-            ),
-          ),
-          const SafeArea(
-              child: Padding(
-            padding: EdgeInsets.all(16),
-            child: SpendingOverview(),
-          )),
-          const SafeArea(
-              child: Padding(padding: EdgeInsets.all(16), child: BudgetPage())),
-          const SafeArea(
-              child: Padding(
-            padding: EdgeInsets.all(16),
-            child: Account(),
-          )),
-        ][selectedIndex]);
+        body: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 100),
+            child: [
+              SafeArea(
+                key: const ValueKey('overview'),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Overview(swapCallback: indexCallback),
+                ),
+              ),
+              const SafeArea(
+                  key: ValueKey('spending'),
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: SpendingOverview(),
+                  )),
+              const SafeArea(
+                  key: ValueKey('budget'),
+                  child: Padding(
+                      padding: EdgeInsets.all(16), child: BudgetPage())),
+              const SafeArea(
+                  key: ValueKey('account'),
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Account(),
+                  )),
+            ][selectedIndex]));
   }
 }
 
@@ -90,14 +97,20 @@ class AuthWrapper extends StatelessWidget {
     return StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (BuildContext context, AsyncSnapshot snapshot) {
+          Widget body;
+
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
+            body = const Scaffold(
+                key: ValueKey('loading'),
                 body: Center(child: CircularProgressIndicator()));
           } else if (snapshot.hasData) {
-            return const HomePage();
+            body = const HomePage(key: ValueKey('home'));
+          } else {
+            body = const LoginPage(key: ValueKey('login'));
           }
 
-          return const LoginPage();
+          return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250), child: body);
         });
   }
 }
