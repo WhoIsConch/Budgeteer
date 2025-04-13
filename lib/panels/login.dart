@@ -3,6 +3,7 @@ import 'package:budget/tools/validators.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 enum SignInType { signIn, signUp, google }
 
@@ -35,7 +36,8 @@ class _LoginPageState extends State<LoginPage> {
 
     bool canFinish = false;
 
-    if (!_formKey.currentState!.validate()) {
+    if ([SignInType.signIn, SignInType.signUp].contains(type) &&
+        !_formKey.currentState!.validate()) {
       setState(() => isLoading = false);
       return;
     }
@@ -72,6 +74,24 @@ class _LoginPageState extends State<LoginPage> {
               content: Text("An unknown error occurred: ${e.message}")));
         }
       }
+    } else if (type == SignInType.google) {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+
+      // Obtain the auth details from the request
+      final GoogleSignInAuthentication? googleAuth =
+          await googleUser?.authentication;
+
+      if (googleAuth != null) {
+        // Create a new credential
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        // Once signed in, return the UserCredential
+        await FirebaseAuth.instance.signInWithCredential(credential);
+        canFinish = true;
+      }
     }
 
     // Make sure to re-enable all of the fields if the sign in fails
@@ -88,6 +108,23 @@ class _LoginPageState extends State<LoginPage> {
   Widget get signUpButton => LoginButton(
         text: "Sign up",
         callback: isLoading ? null : () => submitForm(SignInType.signUp),
+      );
+
+  Widget get googleButton => ElevatedButton(
+        style: ElevatedButton.styleFrom(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            backgroundColor: Colors.white
+                .harmonizeWith(Theme.of(context).colorScheme.primaryContainer)),
+        onPressed: () => submitForm(SignInType.google),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text("Sign in with Google",
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall!
+                  .copyWith(color: Colors.black)),
+        ),
       );
 
   Widget get emailField => TextFormField(
@@ -170,22 +207,7 @@ class _LoginPageState extends State<LoginPage> {
                       : signUpButton),
             ],
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                backgroundColor: Colors.white.harmonizeWith(
-                    Theme.of(context).colorScheme.primaryContainer)),
-            onPressed: null,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text("Sign in with Google",
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall!
-                      .copyWith(color: Colors.black)),
-            ),
-          ),
+          isLoading ? DisabledButtonOverlay(child: googleButton) : googleButton,
         ],
       ),
     )));
