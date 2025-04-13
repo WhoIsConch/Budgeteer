@@ -282,12 +282,9 @@ class Transaction {
 class TransactionProvider extends ChangeNotifier {
   // Allows the rest of the app to know when a transactin
   // changes
-  final DatabaseHelper _dbHelper = DatabaseHelper();
-  List<Transaction> _transactions = []; // Cache db transactions and categories
-  List<Category> _categories = [];
-
-  List<Transaction> get transactions => _transactions;
-  List<Category> get categories => _categories;
+  final FirestoreDatabaseHelper _dbHelper = FirestoreDatabaseHelper();
+  List<Transaction> currentTransactions = [];
+  List<Category> categories = [];
 
   Future<void> createDummyData() async {
     Random random = Random();
@@ -508,17 +505,6 @@ class TransactionProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> loadTransactions() async {
-    // Load transactions from the database
-    _transactions = await _dbHelper.getTransactions();
-    notifyListeners();
-  }
-
-  Future<void> loadCategories() async {
-    _categories = await _dbHelper.getCategoriesList();
-    notifyListeners();
-  }
-
   Future<Category> createCategory(Category category) async {
     final newCategory = await _dbHelper.createCategory(category);
 
@@ -630,244 +616,6 @@ class TransactionProvider extends ChangeNotifier {
   }
 }
 
-class DatabaseHelper {
-  static final DatabaseHelper _instance = DatabaseHelper._internal();
-  factory DatabaseHelper() => _instance;
-  DatabaseHelper._internal();
-
-  static Database? _db;
-
-  Future<Database> get database async {
-    if (_db != null) return _db!;
-    _db = await _initDatabase();
-    return _db!;
-  }
-
-  Future<void> close() async {
-    final db = await database;
-
-    await db.close();
-
-    _db = null;
-  }
-
-  Future<Database> _initDatabase() async {
-    return await openDatabase(join(await getDatabasesPath(), 'budget.db'),
-        version: 1, onCreate: _onCreate,
-        onUpgrade: (Database db, int oldVersion, int newVersion) async {
-      for (int version = oldVersion; version < newVersion; version++) {
-        await _performUpgrade(db, version + 1);
-      }
-    });
-  }
-
-  Future<void> _onCreate(Database db, int newVersion) async {
-    for (int version = 0; version < newVersion; version++) {
-      await _performUpgrade(db, version + 1);
-    }
-  }
-
-  static Future<void> _performUpgrade(Database db, int newVersion) async {
-    switch (newVersion) {
-      case 1:
-        _dbUpdatesVersion_1(db);
-    }
-  }
-
-  static Future<void> _dbUpdatesVersion_1(Database db) async {
-    await db.execute(
-      'CREATE TABLE transactions(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, amount REAL, date TEXT, type INTEGER, category TEXT, location TEXT, notes TEXT)',
-    );
-    await db.execute(
-        'CREATE TABLE categories(id INTEGER PRIMARY KEY AUTOINCREMENT, name STRING UNIQUE, balance REAL, resetIncrement INTEGER, allowNegatives BOOL, color INTEGER)');
-  }
-
-  Future<List<Transaction>> getTransactions({
-    DateTimeRange? dateRange,
-    TransactionType? type,
-  }) async {
-    final Database db = await database;
-
-    List<String> whereConditions = [];
-    List<dynamic> whereArgs = [];
-
-    if (dateRange != null) {
-      whereConditions.add('date BETWEEN ? AND ?');
-      whereArgs.addAll(
-          [dateRange.start.toIso8601String(), dateRange.end.toIso8601String()]);
-    }
-
-    if (type != null) {
-      whereConditions.add('type = ?');
-      whereArgs.add(type.value);
-    }
-
-    final List<Map<String, dynamic>> maps = await db.query('transactions',
-        where:
-            whereConditions.isNotEmpty ? whereConditions.join(' AND ') : null,
-        whereArgs: whereArgs.isNotEmpty ? whereArgs : null);
-
-    return maps.map((map) => Transaction.fromMap(map)).toList();
-  }
-
-  // Future<Transaction> insertTransaction(Transaction transaction) async {
-  //   final Database db = await database;
-
-  //   return transaction.copyWith(
-  //     id: await db.insert(
-  //       'transactions',
-  //       transaction.toMap(),
-  //       conflictAlgorithm: ConflictAlgorithm.replace,
-  //     ),
-  //   );
-  // }
-
-  Future<void> updateTransaction(Transaction transaction) async {
-    final db = await database;
-
-    await db.update(
-      'transactions',
-      transaction.toMap(),
-      where: 'id = ?',
-      whereArgs: [transaction.id],
-    );
-  }
-
-  Future<void> deleteTransaction(Transaction transaction) async {
-    final db = await database;
-
-    await db.delete(
-      'transactions',
-      where: 'id = ?',
-      whereArgs: [transaction.id],
-    );
-  }
-
-  Future<double> getTotalAmount(
-      {DateTimeRange? dateRange,
-      required TransactionType type,
-      Category? category}) async {
-    final Database db = await database;
-
-    List<String> whereConditions = ['type = ?'];
-    List<dynamic> whereArgs = [type.value];
-
-    if (dateRange != null) {
-      whereConditions.add('date BETWEEN ? AND ?');
-      whereArgs.addAll(
-          [dateRange.start.toIso8601String(), dateRange.end.toIso8601String()]);
-    }
-
-    if (category != null) {
-      whereConditions.add('category = ?');
-      whereArgs.add(category.name);
-    }
-
-    final result = await db.query(
-      'transactions',
-      columns: ['SUM(amount) as total'],
-      where: whereConditions.join(' AND '),
-      whereArgs: whereArgs,
-    );
-
-    return (result.first['total'] as num?)?.toDouble() ?? 0.0;
-  }
-
-  Future<List<Category>> getCategoriesList() async {
-    try {
-      final db = await database;
-
-      // Formerly searched through all transactions and returned the unique
-      // category names from them.
-      // final results = await db.query(
-      //   'transactions',
-      //   distinct: true,
-      //   columns: ['category'],
-      //   where: 'category IS NOT NULL AND category != ""',
-      //   orderBy: 'category ASC',
-      // );
-
-      // Now searches through DB's `categories` table for all categories
-      final results = await db.query('categories', orderBy: 'name ASC');
-      return results.map((res) => Category.fromMap(res)).toList();
-    } catch (e) {
-      print('error in getUniqueCats: $e');
-      return [];
-    }
-  }
-
-  Future<Category?> getCategory(String categoryName) async {
-    try {
-      final db = await database;
-
-      final results = await db.query(
-        'categories',
-        where: 'name = ?',
-        whereArgs: [categoryName],
-      );
-
-      if (results.firstOrNull == null) {
-        return null;
-      }
-
-      Category category = Category.fromMap(results.first);
-
-      return category;
-    } catch (e) {
-      print("Error: $e");
-      return null;
-    }
-  }
-
-  Future<void> deleteCategory(Category category) async {
-    // Delete the category if it is unused
-    final db = await database;
-
-    await db.delete(
-      'categories',
-      where: 'id = ?',
-      whereArgs: [category.id],
-    );
-  }
-
-  Future<Category> createCategory(Category category) async {
-    final db = await database;
-
-    int id = await db.insert(
-      'categories',
-      category.toMap(),
-    );
-
-    Category dbCat = Category.fromMap(
-        (await db.query('categories', where: "id = ?", whereArgs: [id])).first);
-
-    print(dbCat);
-    return dbCat;
-  }
-
-  Future<void> updateCategory(Category before, Category after) async {
-    final db = await database;
-
-    await db.update('categories', after.toMap(),
-        where: 'id = ?', whereArgs: [before.id]);
-
-    if (before.name != after.name) {
-      // This means the name has changed. Update the existing transactions to match.
-      bulkUpdateTransactionCategory(before.name, after.name);
-    }
-  }
-
-  Future<void> bulkUpdateTransactionCategory(
-      String before, String after) async {
-    // Used when a category name is changed to make sure all transactions
-    // stick with their category.
-    final db = await database;
-
-    await db.update('transactions', {'category': after},
-        where: 'category = ?', whereArgs: [before]);
-  }
-}
-
 class FirestoreDatabaseHelper {
   final _db = FirebaseFirestore.instance;
   final _user = FirebaseAuth.instance.currentUser;
@@ -929,7 +677,7 @@ class FirestoreDatabaseHelper {
     return true;
   }
 
-  Future<List<Transaction>> getTransactions(
+  Future<Iterable<Transaction>> getTransactions(
       {List<TransactionFilter>? filters,
       Sort? sort,
       DocumentSnapshot? startAfter,
@@ -1007,17 +755,8 @@ class FirestoreDatabaseHelper {
             toFirestore: (Transaction transaction, _) =>
                 transaction.toFirestore())
         .get();
-    List<Transaction> results = [];
 
-    for (DocumentSnapshot<Transaction> doc in snapshot.docs) {
-      Transaction? data = doc.data();
-
-      if (data != null) {
-        results.add(data);
-      }
-    }
-
-    return results;
+    return snapshot.docs.map((e) => e.data());
   }
 
   Future<int?> getTransactionsAmount() async {
@@ -1065,5 +804,12 @@ class FirestoreDatabaseHelper {
     return categories.doc(id).get().then(
           (value) => value.data(),
         );
+  }
+
+  Future<Iterable<Category>> getCategoryList() async {
+    // Get all available categories
+    QuerySnapshot<Category> result = await categories.get();
+
+    return result.docs.map((e) => e.data());
   }
 }
