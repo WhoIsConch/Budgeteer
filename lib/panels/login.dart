@@ -21,6 +21,7 @@ class _LoginPageState extends State<LoginPage> {
 
   bool passwordIsVisible = false;
   bool isLoading = false;
+  SignInType? signInType;
   TextEditingController usernameController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
 
@@ -32,6 +33,7 @@ class _LoginPageState extends State<LoginPage> {
       usernameError = null;
       passwordError = null;
       isLoading = true;
+      signInType = type;
     });
 
     bool canFinish = false;
@@ -119,11 +121,13 @@ class _LoginPageState extends State<LoginPage> {
         onPressed: () => submitForm(SignInType.google),
         child: Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Text("Sign in with Google",
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineSmall!
-                  .copyWith(color: Colors.black)),
+          child: isLoading && signInType == SignInType.google
+              ? CircularProgressIndicator()
+              : Text("Sign in with Google",
+                  style: Theme.of(context)
+                      .textTheme
+                      .headlineSmall!
+                      .copyWith(color: Colors.black)),
         ),
       );
 

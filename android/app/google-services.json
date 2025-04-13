@@ -14,41 +14,13 @@
       },
       "oauth_client": [
         {
-          "client_id": "985459568170-oiq9jqchnb1cbvab3c59u09871b7hatd.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCzMwakMiKvKK_w2EOmO5kRE2EOh9-TBTA"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "985459568170-oiq9jqchnb1cbvab3c59u09871b7hatd.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "985459568170-csa3prkb7v98gpf2vtmuao2q3u3pa9mr.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.conchdev.budgeteer"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:985459568170:android:33f6b6794fe4142ff81d53",
-        "android_client_info": {
-          "package_name": "com.conchdev.budgeteer"
-        }
-      },
-      "oauth_client": [
+          "client_id": "985459568170-9586nbbn4kdcu94tgpoph69bsbldsug8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.conchdev.budgeteer",
+            "certificate_hash": "385747c77be4c55ff80679af51e429ac6541c0ad"
+          }
+        },
         {
           "client_id": "985459568170-oiq9jqchnb1cbvab3c59u09871b7hatd.apps.googleusercontent.com",
           "client_type": 3
@@ -67,7 +39,7 @@
               "client_type": 3
             },
             {
-              "client_id": "985459568170-csa3prkb7v98gpf2vtmuao2q3u3pa9mr.apps.googleusercontent.com",
+              "client_id": "985459568170-0n2l3o6b3oubl4jjt447h5hp298ds8ud.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
                 "bundle_id": "com.conchdev.budgeteer"
