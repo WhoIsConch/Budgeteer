@@ -24,7 +24,6 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
   final TextEditingController amountController = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
-  final dbHelper = DatabaseHelper();
 
   bool allowNegatives = true;
   CategoryResetIncrement resetIncrement = CategoryResetIncrement.never;
@@ -115,10 +114,10 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
 
         try {
           if (widget.mode == ObjectManageMode.edit) {
-            await provider.updateCategory(widget.category!, getCategory());
+            provider.updateCategory(widget.category!);
             savedCategory = getCategory();
           } else {
-            savedCategory = await provider.createCategory(getCategory());
+            savedCategory = await provider.addCategory(getCategory());
           }
 
           if (context.mounted) {
@@ -151,14 +150,13 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                   final provider =
                       Provider.of<TransactionProvider>(context, listen: false);
                   Category removedCategory = getCategory();
-                  int removedIndex = provider.categories
-                      .indexWhere((e) => e.id == removedCategory.id);
 
                   bool undoPressed = false;
 
                   Navigator.of(context).pop("");
 
-                  provider.removeCategoryFromList(removedIndex);
+                  // TODO: Make sure this works
+                  provider.addPendingCategory(removedCategory);
 
                   scaffoldMessengerKey.currentState!.hideCurrentSnackBar();
                   scaffoldMessengerKey.currentState!.showSnackBar(SnackBar(
@@ -168,9 +166,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                           label: "Undo",
                           onPressed: () {
                             undoPressed = true;
-
-                            provider.insertCategoryToList(
-                                removedIndex, removedCategory);
+                            provider.removePendingCategory(removedCategory);
                           }),
                       content: Text(
                           "Category \"${removedCategory.name}\" deleted")));
@@ -179,7 +175,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                     scaffoldMessengerKey.currentState!.hideCurrentSnackBar();
 
                     if (!undoPressed) {
-                      provider.removeCategory(removedCategory);
+                      provider.deleteCategory(removedCategory);
                       print("Removed");
                     }
                   });

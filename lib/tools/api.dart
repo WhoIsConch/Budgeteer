@@ -5,8 +5,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:budget/tools/enums.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
 
 class Category {
   final String name;
@@ -282,9 +280,27 @@ class Transaction {
 class TransactionProvider extends ChangeNotifier {
   // Allows the rest of the app to know when a transactin
   // changes
-  final FirestoreDatabaseHelper _dbHelper = FirestoreDatabaseHelper();
-  List<Transaction> currentTransactions = [];
-  List<Category> categories = [];
+  final FirestoreDatabaseHelper _helper = FirestoreDatabaseHelper();
+  bool isLoading = false;
+  List<Category> _categoriesPendingRemoval = [];
+  List<Category> _categories = [];
+
+  List<Category> get categories => _categoriesPendingRemoval.isEmpty
+      ? _categories
+      : _categories
+          .where((e) => !_categoriesPendingRemoval.contains(e))
+          .toList();
+
+  TransactionProvider() {
+    _listenToCategories();
+  }
+
+  void _listenToCategories() {
+    _helper.getCategoriesStream().listen((data) {
+      _categories = data;
+      notifyListeners();
+    });
+  }
 
   Future<void> createDummyData() async {
     Random random = Random();
@@ -306,12 +322,12 @@ class TransactionProvider extends ChangeNotifier {
     List<Category> incomeCats = [];
 
     for (String name in expenseCategories) {
-      Category cat = await createCategory(Category(name: name));
+      Category cat = await addCategory(Category(name: name));
       expenseCats.add(cat);
     }
 
     for (String name in incomeCategories) {
-      Category cat = await createCategory(Category(name: name));
+      Category cat = await addCategory(Category(name: name));
       incomeCats.add(cat);
     }
 
@@ -496,7 +512,7 @@ class TransactionProvider extends ChangeNotifier {
       amount = double.parse(amount.toStringAsFixed(2));
 
       // Create transaction
-      await addTransaction(Transaction(
+      addTransaction(Transaction(
           category: selectedCategory.name,
           title: title,
           amount: amount,
@@ -505,114 +521,73 @@ class TransactionProvider extends ChangeNotifier {
     }
   }
 
-  Future<Category> createCategory(Category category) async {
-    final newCategory = await _dbHelper.createCategory(category);
-
-    _categories.add(newCategory);
-    notifyListeners();
-
-    return newCategory;
+  Future<Transaction> addTransaction(Transaction transaction) async {
+    return await _helper.createTransaction(transaction);
   }
 
-  Future<void> updateCategory(Category before, Category after) async {
-    await _dbHelper.updateCategory(before, after);
+  void updateTransaction(Transaction transaction) async {
+    await _helper.updateTransaction(transaction);
+  }
 
-    final index = _categories.indexWhere((c) => c.id == after.id);
+  void deleteTransaction(Transaction transaction) async {
+    await _helper.deleteTransaction(transaction);
+  }
 
-    if (index == -1) {
-      return;
+  Future<Category> addCategory(Category category) async {
+    return await _helper.createCategory(category);
+  }
+
+  void updateCategory(Category category) async {
+    await _helper.updateCategory(category);
+  }
+
+  void deleteCategory(Category category) async {
+    await _helper.deleteCategory(category);
+  }
+
+  Future<Category?> getCategory(String id) => _helper.getCategoryById(id);
+
+  Future<double> getTotalAmount(
+      {TransactionType? type,
+      Category? category,
+      DateTimeRange? dateRange}) async {
+    return await _helper.getTotalAmount(
+            type: type, category: category, dateRange: dateRange) ??
+        0;
+  }
+
+  Query<Transaction> getQuery(
+      {List<TransactionFilter>? filters,
+      Sort? sort,
+      DocumentSnapshot? startAfter,
+      int? limit}) {
+    return _helper.getTransactions(
+        filters: filters, sort: sort, startAfter: startAfter, limit: limit);
+  }
+
+  Stream<List<Transaction>> getQueryStream(Query<Transaction> query) {
+    return query
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+  }
+
+  void addPendingCategory(Category category) {
+    _categoriesPendingRemoval.add(category);
+    notifyListeners();
+  }
+
+  void deletePendingCategories() {
+    for (Category category in _categoriesPendingRemoval) {
+      _helper.deleteCategory(category);
     }
-
-    _categories[index] = after;
+    _categoriesPendingRemoval = [];
     notifyListeners();
   }
 
-  Future<void> removeCategory(Category category) async {
-    await _dbHelper.deleteCategory(category);
+  void removePendingCategory(Category category) {
+    bool didRemove = _categoriesPendingRemoval.remove(category);
 
-    _categories.removeWhere((c) => c.id == category.id);
-    notifyListeners();
-  }
-
-  void removeCategoryFromList(int index) {
-    categories.removeAt(index);
-    notifyListeners();
-  }
-
-  void insertCategoryToList(int index, Category category) {
-    categories.insert(index, category);
-    notifyListeners();
-  }
-
-  void removeTransactionFromList(int index) {
-    transactions.remove(index);
-    notifyListeners();
-  }
-
-  void insertTransactionToList(int index, Transaction transaction) {
-    transactions.insert(index, transaction);
-    notifyListeners();
-  }
-
-  Future<void> addTransaction(Transaction transaction) async {
-    // final newTransaction = await _dbHelper.insertTransaction(transaction);
-
-    // _transactions.add(newTransaction);
-    notifyListeners();
-  }
-
-  Future<void> removeTransaction(Transaction transaction) async {
-    await _dbHelper.deleteTransaction(transaction);
-
-    _transactions.removeWhere((t) => t.id == transaction.id);
-    notifyListeners();
-  }
-
-  Future<void> updateTransaction(Transaction transaction) async {
-    await _dbHelper.updateTransaction(transaction);
-    final index = _transactions.indexWhere((t) => t.id == transaction.id);
-
-    if (index != -1) {
-      _transactions[index] = transaction;
-      notifyListeners();
-    }
-  }
-
-  Future<Category?> getCategoryFromTransaction(Transaction transaction) async {
-    if (transaction.category.isEmpty) {
-      return null;
-    }
-
-    return await _dbHelper.getCategory(transaction.category);
-  }
-
-  Future<double> getAmountSpent(DateTimeRange? dateRange,
-      {Category? category}) async {
-    return await _dbHelper.getTotalAmount(
-        dateRange: dateRange,
-        type: TransactionType.expense,
-        category: category);
-  }
-
-  Future<double> getAmountEarned(DateTimeRange? dateRange,
-      {Category? category}) async {
-    return await _dbHelper.getTotalAmount(
-      dateRange: dateRange,
-      type: TransactionType.income,
-      category: category,
-    );
-  }
-
-  Future<double> getTotal(DateTimeRange? dateRange,
-      {Category? category}) async {
-    final earned = await getAmountEarned(dateRange, category: category);
-    final spent = await getAmountSpent(dateRange, category: category);
-
-    return earned - spent;
-  }
-
-  Future<List<Category>> getCategories() async {
-    return await _dbHelper.getCategoriesList();
+    if (didRemove) notifyListeners();
   }
 }
 
@@ -677,11 +652,11 @@ class FirestoreDatabaseHelper {
     return true;
   }
 
-  Future<Iterable<Transaction>> getTransactions(
+  Query<Transaction> getTransactions(
       {List<TransactionFilter>? filters,
       Sort? sort,
       DocumentSnapshot? startAfter,
-      int? limit}) async {
+      int? limit}) {
     // Lazy loading is expected to be handled by the user, not this class.
     Query query = transactions;
 
@@ -739,6 +714,8 @@ class FirestoreDatabaseHelper {
 
       query = query.orderBy(field,
           descending: sort.sortOrder == SortOrder.ascending ? false : true);
+    } else {
+      query = query.orderBy("date", descending: true);
     }
 
     if (limit != null) {
@@ -749,14 +726,9 @@ class FirestoreDatabaseHelper {
       query = query.startAfterDocument(startAfter);
     }
 
-    var snapshot = await query
-        .withConverter(
-            fromFirestore: Transaction.fromFirestore,
-            toFirestore: (Transaction transaction, _) =>
-                transaction.toFirestore())
-        .get();
-
-    return snapshot.docs.map((e) => e.data());
+    return query.withConverter<Transaction>(
+        fromFirestore: Transaction.fromFirestore,
+        toFirestore: (Transaction transaction, _) => transaction.toFirestore());
   }
 
   Future<int?> getTransactionsAmount() async {
@@ -768,11 +740,26 @@ class FirestoreDatabaseHelper {
         .then((res) => res.count, onError: (_) => null);
   }
 
-  Future<double?> getTotalAmount({TransactionType? type}) async {
+  Future<double?> getTotalAmount(
+      {TransactionType? type,
+      Category? category,
+      DateTimeRange? dateRange}) async {
     // Get the total amount of money in a field
     Query query = type == null
         ? transactions
         : transactions.where('type', isEqualTo: type.value);
+
+    if (category != null) {
+      query = query.where("category", isEqualTo: category.id);
+    }
+
+    if (dateRange != null) {
+      query = query.where(Filter.and(
+          Filter("date",
+              isGreaterThanOrEqualTo: Timestamp.fromDate(dateRange.start)),
+          Filter("date",
+              isLessThanOrEqualTo: Timestamp.fromDate(dateRange.end))));
+    }
 
     return query.aggregate(sum("amount")).get().then(
           (value) => value.getSum("amount"),
@@ -806,10 +793,7 @@ class FirestoreDatabaseHelper {
         );
   }
 
-  Future<Iterable<Category>> getCategoryList() async {
-    // Get all available categories
-    QuerySnapshot<Category> result = await categories.get();
-
-    return result.docs.map((e) => e.data());
-  }
+  Stream<List<Category>> getCategoriesStream() => categories
+      .snapshots()
+      .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
 }

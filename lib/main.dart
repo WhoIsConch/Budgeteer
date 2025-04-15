@@ -32,13 +32,10 @@ Future<void> setup() async {
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  final provider = TransactionProvider();
-  provider.loadTransactions();
-  provider.loadCategories();
 
   setup().then(((value) {
     runApp(ChangeNotifierProvider(
-        create: (context) => provider, child: const BudgetApp()));
+        create: (context) => TransactionProvider(), child: const BudgetApp()));
   }));
 }
 
@@ -60,15 +57,7 @@ class _BudgetAppState extends State<BudgetApp> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
 
-    DatabaseHelper().close();
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.detached) {
-      DatabaseHelper().close();
-    }
   }
 
   @override

@@ -42,20 +42,11 @@ class _BudgetPageState extends State<BudgetPage> {
     double otherSectionTotal = 0;
 
     for (int i = 0; i < categories.length; i++) {
-      double total =
-          switch (transactionTypes[typeIndex % transactionTypes.length]) {
-        null => (await provider.getAmountSpent(selectedDateRange.getRange(),
-                    category: categories[i]))
-                .abs() +
-            (await provider.getAmountEarned(selectedDateRange.getRange(),
-                    category: categories[i]))
-                .abs(),
-        TransactionType.expense => await provider.getAmountSpent(
-            selectedDateRange.getRange(),
-            category: categories[i]),
-        TransactionType.income => await provider.getAmountEarned(
-            selectedDateRange.getRange(),
-            category: categories[i]),
+      TransactionType? type =
+          transactionTypes[typeIndex % transactionTypes.length];
+      double total = switch (type) {
+        null => (await provider.getTotalAmount(category: categories[i])),
+        _ => await provider.getTotalAmount(type: type, category: categories[i])
       };
 
       if (total == 0) {
@@ -320,6 +311,18 @@ class CategoryBarChart extends StatefulWidget {
 class _CategoryBarChartState extends State<CategoryBarChart> {
   Category? selectedCategory;
 
+  Stream<List<Transaction>> _getTransactionsStream() {
+    final provider = Provider.of<TransactionProvider>(context, listen: false);
+    final dateRange = widget.dateRange.getRange();
+
+    var filters = [
+      TransactionFilter(
+          FilterType.category, "Category", selectedCategory?.id ?? ""),
+      TransactionFilter(FilterType.dateRange, "Date", dateRange),
+    ];
+    return provider.getQueryStream(provider.getQuery(filters: filters));
+  }
+
   BarTouchData get barTouchData => BarTouchData(
       enabled: false,
       touchTooltipData: BarTouchTooltipData(
@@ -393,19 +396,7 @@ class _CategoryBarChartState extends State<CategoryBarChart> {
     );
   }
 
-  BarChart? _buildBarChart() {
-    final dateRange = widget.dateRange.getRange();
-    final provider = Provider.of<TransactionProvider>(context);
-
-    List<Transaction> transactions = provider.transactions
-        .where((e) =>
-            e.category == (selectedCategory?.name ?? "") &&
-            e.date.isInRange(dateRange) &&
-            (widget.transactionType != null
-                ? e.type == widget.transactionType
-                : true))
-        .toList();
-
+  BarChart _buildBarChart(List<Transaction> transactions) {
     Map<int, double> valuePairs = {};
 
     // Used reversed because the resultant is usually in descending order
@@ -425,8 +416,6 @@ class _CategoryBarChartState extends State<CategoryBarChart> {
       valuePairs.update(xValue, (value) => value + e.amount,
           ifAbsent: () => e.amount);
     }
-
-    if (valuePairs.isEmpty) return null;
 
     List<BarChartGroupData> bars = [];
     valuePairs.forEach(
@@ -458,45 +447,46 @@ class _CategoryBarChartState extends State<CategoryBarChart> {
   @override
   Widget build(BuildContext context) {
     return Consumer<TransactionProvider>(builder: (context, provider, child) {
-      BarChart? barChart = _buildBarChart();
+      return StreamBuilder<List<Transaction>>(
+        stream: _getTransactionsStream(),
+        builder: (context, snapshot) {
+          List<Widget> children = [
+            CategoryDropdown(
+                showExpanded: false,
+                categories: provider.categories,
+                onChanged: (category) =>
+                    setState(() => selectedCategory = category),
+                selectedCategory: selectedCategory),
+          ];
+          if (!snapshot.hasData) {
+            children.add(const Expanded(
+                child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "Nothing to show.",
+                  style: TextStyle(fontSize: 24),
+                  textAlign: TextAlign.center,
+                ),
+                Text(
+                  "Try changing the category or date range.",
+                  style: TextStyle(fontSize: 18),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            )));
+          } else {
+            children.add(AspectRatio(
+                aspectRatio: 1.6, child: _buildBarChart(snapshot.data!)));
+          }
 
-      List<Widget> children = [
-        CategoryDropdown(
-            showExpanded: false,
-            categories: provider.categories,
-            onChanged: (category) =>
-                setState(() => selectedCategory = category),
-            selectedCategory: selectedCategory),
-      ];
-
-      if (barChart == null) {
-        children.add(const Expanded(
-            child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              "Nothing to show.",
-              style: TextStyle(fontSize: 24),
-              textAlign: TextAlign.center,
-            ),
-            Text(
-              "Try changing the category or date range.",
-              style: TextStyle(fontSize: 18),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        )));
-      } else {
-        children.add(AspectRatio(
-            aspectRatio: 1.6,
-            child: _buildBarChart() ?? const Text("Nothing to Show. Try ")));
-      }
-
-      return Expanded(
-          flex: 2,
-          child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: children));
+          return Expanded(
+              flex: 2,
+              child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: children));
+        },
+      );
     });
   }
 }

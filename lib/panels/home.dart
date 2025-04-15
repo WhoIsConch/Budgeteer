@@ -16,13 +16,13 @@ class Overview extends StatelessWidget {
       builder: (context, transactionProvider, child) {
         return ListView(
           children: [
-            SizedBox(
-                height: 200,
-                child: AsyncOverviewCard(
-                  title: "Total Balance",
-                  amountCalculator: (provider) => provider.getTotal(null),
-                  textStyle: CardTextStyle.major,
-                )),
+            // SizedBox(
+            //     height: 200,
+            //     child: AsyncOverviewCard(
+            //       title: "Total Balance",
+            //       amountCalculator: (provider) => provider.getTotalAmount(),
+            //       textStyle: CardTextStyle.major,
+            //     )),
             const SizedBox(height: 16),
             SizedBox(
               height: 160,
@@ -30,15 +30,15 @@ class Overview extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    flex: 16,
-                    child: AsyncOverviewCard(
-                      title: "Net Gain Today",
-                      amountCalculator: (provider) =>
-                          provider.getTotal(RelativeDateRange.today.getRange()),
-                      textStyle: CardTextStyle.major,
-                    ),
-                  ),
+                  // Expanded(
+                  //   flex: 16,
+                  //   child: AsyncOverviewCard(
+                  //     title: "Net Gain Today",
+                  //     amountCalculator: (provider) =>
+                  //         provider.getTotal(RelativeDateRange.today.getRange()),
+                  //     textStyle: CardTextStyle.major,
+                  //   ),
+                  // ),
                   const Spacer(),
                   Expanded(
                       flex: 8,

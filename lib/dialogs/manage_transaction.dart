@@ -32,7 +32,6 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
   DateTime selectedDate = DateTime.now();
   TransactionType selectedType = TransactionType.expense;
 
-  final dbHelper = DatabaseHelper();
   final _formKey = GlobalKey<FormState>();
 
   Transaction getTransaction() {
@@ -70,8 +69,10 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
     }
   }
 
-  Future<void> _loadSelectedCategory(String name) async {
-    Category? category = await dbHelper.getCategory(name);
+  Future<void> _loadSelectedCategory(String id) async {
+    final provider = Provider.of<TransactionProvider>(context, listen: false);
+
+    Category? category = await provider.getCategory(id);
 
     _setCategoryInfo(category);
   }
@@ -93,10 +94,13 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
       RelativeDateRange? categoryRelRange =
           category.resetIncrement.relativeDateRange;
 
-      catTotal = await provider.getTotal(
-          categoryRelRange?.getRange(
-              fullRange: true, fromDate: currentTransaction.date),
+      catTotal = await provider.getTotalAmount(
+          dateRange: categoryRelRange
+              ?.getRange(fullRange: true, fromDate: currentTransaction.date)
+              .makeInclusive(),
           category: category);
+
+      catTotal = 0;
 
       if (widget.transaction != null) {
         // This means we're editing.
@@ -276,8 +280,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
               if (_formKey.currentState!.validate()) {
                 try {
                   if (widget.mode == ObjectManageMode.edit) {
-                    await transactionProvider
-                        .updateTransaction(getTransaction());
+                    transactionProvider.updateTransaction(getTransaction());
                   } else {
                     await transactionProvider.addTransaction(getTransaction());
                   }

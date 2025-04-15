@@ -17,6 +17,7 @@ class Sort {
   const Sort(this.sortType, this.sortOrder);
 }
 
+// TODO: Make TransactionFilter use typedefs
 class TransactionFilter {
   final FilterType filterType;
   final dynamic info;

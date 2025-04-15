@@ -152,9 +152,8 @@ class _SpendingHeaderState extends State<SpendingHeader> {
         child: AsyncOverviewCard(
           title: config.title,
           previousContent: _previousContents[index],
-          amountCalculator: (provider) => config.type == TransactionType.expense
-              ? provider.getAmountSpent(config.dateRange)
-              : provider.getAmountEarned(config.dateRange),
+          amountCalculator: (provider) =>
+              provider.getTotalAmount(type: config.type),
           onPressed: () {
             Navigator.push(
                 context,
