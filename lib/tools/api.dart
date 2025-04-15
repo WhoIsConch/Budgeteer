@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:budget/tools/filters.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -662,48 +663,43 @@ class FirestoreDatabaseHelper {
 
     if (filters != null) {
       for (TransactionFilter filter in filters) {
-        switch (filter.filterType) {
-          // filter.value should be of type int
-          // filter.info should be of type AmountFilterType
-          case FilterType.amount:
-            switch (filter.info) {
+        switch (filter) {
+          // filter.value should be of type AmountFilter
+          case AmountFilter(:var value, :var amountType):
+            switch (amountType) {
               case AmountFilterType.greaterThan:
-                query = query.where("amount", isGreaterThan: filter.value);
+                query = query.where("amount", isGreaterThan: value);
                 break;
               case AmountFilterType.lessThan:
-                query = query.where("amount", isLessThan: filter.value);
+                query = query.where("amount", isLessThan: value);
                 break;
               case AmountFilterType.exactly:
-                query = query.where("amount", isEqualTo: filter.value);
+                query = query.where("amount", isEqualTo: value);
                 break;
             }
             break;
-          case FilterType.string:
+          case StringFilter(:var value):
             // filter.value should be of type String
             query = query.where(Filter.or(
-              Filter("title", isEqualTo: filter.value),
-              Filter("notes", isEqualTo: filter.value),
+              Filter("title", isEqualTo: value),
+              Filter("notes", isEqualTo: value),
             ));
             break;
-          case FilterType.dateRange:
+          case DateRangeFilter(:var value):
             // filter.value should be of type DateTimeRange
-            DateTimeRange value = filter.value;
-
             query = query.where(Filter.and(
                 Filter("date",
                     isGreaterThanOrEqualTo: Timestamp.fromDate(value.start)),
                 Filter("date",
                     isLessThanOrEqualTo: Timestamp.fromDate(value.end))));
-            // .where("date", isGreaterThanOrEqualTo: filter.value.start)
-            // .where("date", isLessThanOrEqualTo: filter.value.end);
             break;
-          case FilterType.type:
+          case TypeFilter(:var value):
             // filter.value should be of type TransactionType
-            query = query.where("type", isEqualTo: filter.value.value);
+            query = query.where("type", isEqualTo: value.value);
             break;
-          case FilterType.category:
+          case CategoryFilter(:var value):
             // filter.value should be of type String
-            query = query.where("category", isEqualTo: filter.value);
+            query = query.where("category", whereIn: value.map((e) => e.id));
             break;
         }
       }

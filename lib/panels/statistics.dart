@@ -2,6 +2,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:budget/components/category_dropdown.dart';
 import 'package:budget/components/hybrid_button.dart';
 import 'package:budget/tools/api.dart';
+import 'package:budget/tools/filters.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -315,10 +316,9 @@ class _CategoryBarChartState extends State<CategoryBarChart> {
     final provider = Provider.of<TransactionProvider>(context, listen: false);
     final dateRange = widget.dateRange.getRange();
 
-    var filters = [
-      TransactionFilter(
-          FilterType.category, "Category", selectedCategory?.id ?? ""),
-      TransactionFilter(FilterType.dateRange, "Date", dateRange),
+    List<TransactionFilter> filters = [
+      CategoryFilter(selectedCategory?.id ?? ""),
+      DateRangeFilter(dateRange)
     ];
     return provider.getQueryStream(provider.getQuery(filters: filters));
   }
