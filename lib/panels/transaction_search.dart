@@ -45,11 +45,8 @@ class _TransactionSearchState extends State<TransactionSearch> {
     for (TransactionFilter filter in filters) {
       String label = switch (filter.filterType) {
         FilterType.string => "\"${filter.value}\"", // "Value"
-        FilterType.amount => "${switch (filter.info as AmountFilterType) {
-            AmountFilterType.exactly => "=",
-            AmountFilterType.lessThan => "<",
-            AmountFilterType.greaterThan => ">"
-          }} \$${formatAmount(filter.value, exact: true)}", // > $Value
+        FilterType.amount =>
+          "${filter.value.type.symbol} \$${formatAmount(filter.value, exact: true)}", // > $Value
         FilterType.category => filter.value.length > 3
             ? "${filter.value.length} categories"
             : filter.value.map((e) => e.name).join(", "),
@@ -94,8 +91,8 @@ class _TransactionSearchState extends State<TransactionSearch> {
     // Either get the current amountFilter or create a new one
     TransactionFilter amountFilter = filters.firstWhere(
         (e) => e.filterType == FilterType.amount,
-        orElse: () => const TransactionFilter(
-            FilterType.amount, AmountFilterType.exactly, null));
+        orElse: () => TransactionFilter(FilterType.amount,
+            AmountFilter(type: AmountFilterType.exactly, amount: null)));
     // Update the text to match
     controller.text = amountFilter.value?.toStringAsFixed(2) ?? "";
 
@@ -103,8 +100,9 @@ class _TransactionSearchState extends State<TransactionSearch> {
     // than redoing it in the end, though probably less performant
     controller.addListener(() => amountFilter = TransactionFilter(
         FilterType.amount,
-        amountFilter.info,
-        double.tryParse(controller.text) ?? amountFilter.value));
+        AmountFilter(
+            type: amountFilter.value.type,
+            amount: double.tryParse(controller.text) ?? amountFilter.value)));
 
     return showDialog<TransactionFilter>(
         context: context,
@@ -119,10 +117,15 @@ class _TransactionSearchState extends State<TransactionSearch> {
                     SegmentedButton(
                       onSelectionChanged: (type) => setState(() {
                         amountFilter = TransactionFilter(
-                            FilterType.amount, type.first, amountFilter.value);
+                            FilterType.amount,
+                            AmountFilter(
+                                type: type.first,
+                                amount: amountFilter.value.amount));
                       }),
                       showSelectedIcon: false,
-                      selected: {amountFilter.info ?? AmountFilterType.exactly},
+                      selected: {
+                        amountFilter.value.type ?? AmountFilterType.exactly
+                      },
                       segments: AmountFilterType.values
                           .map((value) => ButtonSegment(
                               value: value,
@@ -250,12 +253,11 @@ class _TransactionSearchState extends State<TransactionSearch> {
     TransactionFilter? filter;
 
     if (typeFilterValue == null || typeFilterValue == TransactionType.income) {
-      filter = const TransactionFilter(
-          FilterType.type, TransactionType.expense, TransactionType.expense);
+      filter =
+          const TransactionFilter(FilterType.type, TransactionType.expense);
     } else if (typeFilterValue == TransactionType.expense) {
       filter = const TransactionFilter(
         FilterType.type,
-        TransactionType.income,
         TransactionType.income,
       );
     }
@@ -359,7 +361,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
             setState(() {
               filters.removeWhere((e) => e.filterType == filterType);
               filters.add(TransactionFilter(
-                  FilterType.dateRange, "Date", value.makeInclusive()));
+                  FilterType.dateRange, value.makeInclusive()));
             });
           }),
         FilterType.string => setState(() => isSearching = true),
@@ -382,8 +384,8 @@ class _TransactionSearchState extends State<TransactionSearch> {
                     .removeWhere((e) => e.filterType == FilterType.category),
               );
             } else {
-              setState(() => updateFilter(
-                  TransactionFilter(FilterType.category, "Categories", value)));
+              setState(() =>
+                  updateFilter(TransactionFilter(FilterType.category, value)));
             }
           })
       };
@@ -431,7 +433,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
             }
 
             TransactionFilter filter =
-                TransactionFilter(FilterType.string, "Text", text);
+                TransactionFilter(FilterType.string, text);
 
             if (filters.contains(filter) || filter.value.isEmpty) {
               // The list of filters already has the exact same filter,

@@ -8,7 +8,15 @@ enum SortType { name, date, amount }
 
 enum SortOrder { ascending, descending }
 
-enum AmountFilterType { exactly, lessThan, greaterThan }
+enum AmountFilterType {
+  exactly("="),
+  lessThan("<"),
+  greaterThan(">");
+
+  const AmountFilterType(this.symbol);
+
+  final String symbol;
+}
 
 class Sort {
   final SortType sortType;
@@ -20,32 +28,30 @@ class Sort {
 // TODO: Make TransactionFilter use typedefs
 class TransactionFilter {
   final FilterType filterType;
-  final dynamic info;
   final dynamic value;
 
-  const TransactionFilter(this.filterType, this.info, this.value);
+  const TransactionFilter(this.filterType, this.value);
 
   @override
   bool operator ==(Object other) {
     return other is TransactionFilter &&
         filterType == other.filterType &&
-        info == other.info &&
         value == other.value;
   }
 
   @override
-  int get hashCode => Object.hash(filterType, info, value);
+  int get hashCode => Object.hash(filterType, value);
 }
 
 // Not by definition an enum but it works nonetheless
 class AmountFilter {
   final AmountFilterType? type;
-  final double? value;
+  final double? amount;
 
-  AmountFilter({this.type, this.value});
+  AmountFilter({this.type, this.amount});
 
   bool isPopulated() {
-    return type != null && value != null;
+    return type != null && amount != null;
   }
 }
 

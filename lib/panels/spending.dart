@@ -161,9 +161,8 @@ class _SpendingHeaderState extends State<SpendingHeader> {
                     builder: (context) => TransactionSearch(
                           initialFilters: {
                             TransactionFilter(
-                                FilterType.dateRange, "Date", config.dateRange),
-                            TransactionFilter(
-                                FilterType.type, config.type, config.type)
+                                FilterType.dateRange, config.dateRange),
+                            TransactionFilter(FilterType.type, config.type)
                           },
                         )));
           },

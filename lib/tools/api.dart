@@ -663,18 +663,18 @@ class FirestoreDatabaseHelper {
     if (filters != null) {
       for (TransactionFilter filter in filters) {
         switch (filter.filterType) {
-          // filter.value should be of type int
-          // filter.info should be of type AmountFilterType
+          // filter.value should be of type AmountFilter
           case FilterType.amount:
-            switch (filter.info) {
+            switch (filter.value.type) {
               case AmountFilterType.greaterThan:
-                query = query.where("amount", isGreaterThan: filter.value);
+                query =
+                    query.where("amount", isGreaterThan: filter.value.amount);
                 break;
               case AmountFilterType.lessThan:
-                query = query.where("amount", isLessThan: filter.value);
+                query = query.where("amount", isLessThan: filter.value.amount);
                 break;
               case AmountFilterType.exactly:
-                query = query.where("amount", isEqualTo: filter.value);
+                query = query.where("amount", isEqualTo: filter.value.amount);
                 break;
             }
             break;

@@ -316,9 +316,8 @@ class _CategoryBarChartState extends State<CategoryBarChart> {
     final dateRange = widget.dateRange.getRange();
 
     var filters = [
-      TransactionFilter(
-          FilterType.category, "Category", selectedCategory?.id ?? ""),
-      TransactionFilter(FilterType.dateRange, "Date", dateRange),
+      TransactionFilter(FilterType.category, selectedCategory?.id ?? ""),
+      TransactionFilter(FilterType.dateRange, dateRange),
     ];
     return provider.getQueryStream(provider.getQuery(filters: filters));
   }
