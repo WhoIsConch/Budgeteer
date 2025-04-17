@@ -1,6 +1,4 @@
-import 'package:budget/tools/api.dart';
-import 'package:budget/tools/enums.dart';
-import 'package:flutter/material.dart';
+import 'package:collection/collection.dart';
 
 enum SortType { name, date, amount }
 
@@ -15,7 +13,14 @@ enum AmountFilterType {
   final String symbol;
 }
 
-abstract class TransactionFilter<T> {
+class AmountFilter {
+  final AmountFilterType type;
+  final double value;
+
+  const AmountFilter(this.type, this.value);
+}
+
+class TransactionFilter<T> {
   final T value;
 
   const TransactionFilter(this.value);
@@ -32,30 +37,38 @@ abstract class TransactionFilter<T> {
   int get hashCode => Object.hash(value.runtimeType, value);
 }
 
-class StringFilter extends TransactionFilter<String> {
-  StringFilter(String value) : super(value);
-}
-
-class CategoryFilter extends TransactionFilter {
-  CategoryFilter(List<Category> value) : super(value);
-}
-
-class TypeFilter extends TransactionFilter<TransactionType> {
-  TypeFilter(TransactionType value) : super(value);
-}
-
-class AmountFilter extends TransactionFilter<double> {
-  final AmountFilterType amountType;
-  AmountFilter(this.amountType, double value) : super(value);
-}
-
-class DateRangeFilter extends TransactionFilter<DateTimeRange> {
-  DateRangeFilter(DateTimeRange value) : super(value);
-}
-
 class Sort {
   final SortType sortType;
   final SortOrder sortOrder;
 
   const Sort(this.sortType, this.sortOrder);
+}
+
+TransactionFilter<T>? getFilter<T>(List<TransactionFilter> filters) {
+  TransactionFilter? filter = filters.firstWhereOrNull(
+    (element) => element.value.runtimeType == T,
+  );
+  return filter as TransactionFilter<T>?;
+}
+
+T? getFilterValue<T>(List<TransactionFilter> filters) {
+  TransactionFilter? filter = filters.firstWhereOrNull(
+    (element) => element.runtimeType == T,
+  );
+  return filter?.value as T?;
+}
+
+void updateFilter<T>(
+    List<TransactionFilter> filters, TransactionFilter<T> filter) {
+  removeFilter<T>(filters);
+
+  filters.add(filter);
+}
+
+void removeFilter<T>(List<TransactionFilter> filters) {
+  int index = filters.indexWhere((e) => e.value.runtimeType == T);
+
+  if (index != -1) {
+    filters.remove(index);
+  }
 }

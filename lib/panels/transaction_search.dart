@@ -26,26 +26,23 @@ class _TransactionSearchState extends State<TransactionSearch> {
   bool isSearching = false; // Is the title bar a search field?
   TextEditingController searchController = TextEditingController();
 
-  void updateFilter(TransactionFilter newFilter) {
-    filters.removeWhere((e) => e.runtimeType == newFilter.runtimeType);
-    filters.add(newFilter);
-  }
-
   List<Widget> getFilterChips() {
     List<Widget> chips = [];
     DateFormat dateFormat = DateFormat('MM/dd');
 
     for (TransactionFilter filter in filters) {
-      String label = switch (filter) {
-        StringFilter(:var value) => "\"$value\"", // "Value"
-        AmountFilter(:var value, :var amountType) =>
-          "${amountType.symbol} \$${formatAmount(value, exact: true)}",
-        CategoryFilter(:var value) => value.length > 3
+      var value = filter.value;
+
+      String label = switch (value.type) {
+        String => "\"$value\"", // "Value"
+        AmountFilter =>
+          "${value.type.symbol} \$${formatAmount(value.amount, exact: true)}",
+        List<Category>() => value.length > 3
             ? "${value.length} categories"
             : value.map((e) => e.name).join(", "),
-        DateRangeFilter(:var value) =>
+        DateTimeRange =>
           "${dateFormat.format(value.start)}–${dateFormat.format(value.end)}",
-        TypeFilter(:var value) =>
+        TransactionType =>
           value == TransactionType.expense ? "Expense" : "Income",
         _ => "Err"
       };
@@ -83,9 +80,9 @@ class _TransactionSearchState extends State<TransactionSearch> {
     // then the amount as an input.
     TextEditingController controller = TextEditingController();
     // Either get the current amountFilter or create a new one
-    AmountFilter amountFilter = filters.firstWhere((e) => e is AmountFilter,
-            orElse: () => AmountFilter(AmountFilterType.exactly, 0))
-        as AmountFilter;
+    AmountFilter amountFilter =
+        getFilterValue<AmountFilter>(filters.toList()) ??
+            const AmountFilter(AmountFilterType.exactly, 0);
     // Update the text to match
     controller.text = amountFilter.value.toStringAsFixed(2);
 
@@ -111,7 +108,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
                             AmountFilter(type.first, amountFilter.value);
                       }),
                       showSelectedIcon: false,
-                      selected: {amountFilter.amountType},
+                      selected: {amountFilter.type},
                       segments: AmountFilterType.values
                           .map((value) => ButtonSegment(
                               value: value,
@@ -163,9 +160,8 @@ class _TransactionSearchState extends State<TransactionSearch> {
     final provider = Provider.of<TransactionProvider>(context, listen: false);
 
     List<Category> categories = provider.categories;
-    CategoryFilter filter =
-        filters.firstWhere((e) => e is CategoryFilter) as CategoryFilter;
-    List<Category> selectedCategories = filter.value;
+    List<Category> selectedCategories =
+        getFilterValue<List<Category>>(filters.toList()) ?? [];
 
     if (!context.mounted) {
       return [];
@@ -236,42 +232,48 @@ class _TransactionSearchState extends State<TransactionSearch> {
   }
 
   void toggleTransactionType() {
-    TypeFilter? filter =
-        filters.singleWhere((e) => e is TypeFilter) as TypeFilter?;
+    TransactionType? type = getFilterValue<TransactionType>(filters.toList());
 
-    if (filter == null || filter.value == TransactionType.income) {
-      filter = TypeFilter(TransactionType.expense);
-    } else if (filter.value == TransactionType.expense) {
-      filter = TypeFilter(TransactionType.income);
+    if (type == null) {
+      type = TransactionType.expense;
+    } else if (type == TransactionType.expense) {
+      type = TransactionType.income;
+    } else {
+      type = null;
     }
 
     setState(() {
-      filters.removeWhere((e) => e is TypeFilter);
-
-      if (filter == null) {
-        return;
+      if (type == null) {
+        removeFilter<TransactionType>(filters.toList());
+      } else {
+        updateFilter(
+            filters.toList(), TransactionFilter<TransactionType>(type));
       }
-
-      filters.add(filter);
     });
   }
 
   List<Widget> get filterMenuButtons => [
         MenuItemButton(
           child: const Text("Date"),
-          onPressed: () => _activateFilter(DateRangeFilter()),
+          onPressed: () => _activateFilter<DateTimeRange>(
+              getFilter<DateTimeRange>(filters.toList()) ??
+                  TransactionFilter<DateTimeRange>(DateTimeRange(
+                      start: DateTime.now(), end: DateTime.now()))),
         ),
         MenuItemButton(
           child: const Text("Amount"),
-          onPressed: () => _activateFilter(AmountFilter),
+          onPressed: () => _activateFilter(
+              getFilter<AmountFilter>(filters.toList()) ??
+                  const TransactionFilter<AmountFilter>(
+                      AmountFilter(AmountFilterType.exactly, 0))),
         ),
         MenuItemButton(
           child: const Text("Type"),
-          onPressed: () => _activateFilter(FilterType.type),
+          onPressed: () => _activateFilter(getFilter<TransactionType>(filters.toList()) ?? const TransactionFilter<TransactionType>)),
         ),
         MenuItemButton(
           child: const Text("Category"),
-          onPressed: () => _activateFilter(FilterType.category),
+          onPressed: () => _activateFilter(List<Category>),
         ),
       ];
 
@@ -330,41 +332,48 @@ class _TransactionSearchState extends State<TransactionSearch> {
                     }),
       );
 
-  void _activateFilter(TransactionFilter filter) => switch (filter) {
-        DateRangeFilter(:var value) => showDateRangePicker(
+  void _activateFilter<T>(TransactionFilter<T> filter) => switch (filter) {
+        TransactionFilter<DateTimeRange> f => showDateRangePicker(
                   context: context,
-                  initialDateRange: value, // Should be null or a date range
+                  initialDateRange: f.value, // Should be null or a date range
                   firstDate:
                       DateTime.now().subtract(const Duration(days: 365 * 10)),
                   lastDate: DateTime.now().add(const Duration(days: 365 * 10)))
               .then((DateTimeRange? newValue) {
-            if (newValue == value || newValue == null) return;
+            if (newValue == f.value || newValue == null) return;
 
             setState(() {
-              filters.removeWhere((e) => e is DateRangeFilter);
-              filters.add(DateRangeFilter(value.makeInclusive()));
+              updateFilter(filters.toList(),
+                  TransactionFilter<DateTimeRange>(newValue.makeInclusive()));
             });
           }),
-        StringFilter() => setState(() => isSearching = true),
-        AmountFilter() => _showAmountFilterDialog(context).then((value) {
+        TransactionFilter<String> _ => setState(() => isSearching = true),
+        TransactionFilter<AmountFilter> _ =>
+          _showAmountFilterDialog(context).then((value) {
             if (value == null) {
               return;
             }
             setState(() {
-              filters.removeWhere((e) => e is AmountFilter);
-              filters.add(value);
+              updateFilter(filters.toList(), value);
             });
           }),
-        TypeFilter() => toggleTransactionType(),
-        CategoryFilter() => _showCategoryInputDialog(context).then((value) {
+        TransactionFilter<TransactionType> _ => toggleTransactionType(),
+        TransactionFilter<List<Category>> _ =>
+          _showCategoryInputDialog(context).then((value) {
             if (value == null) {
               return;
             } else if (value.isEmpty) {
               setState(
-                () => filters.removeWhere((e) => e is CategoryFilter),
+                () => removeFilter<List<Category>>(filters.toList()),
               );
             } else {
-              setState(() => updateFilter(CategoryFilter(value)));
+              // TODO: Make sure this works correctly. I wonder if we need to
+              // specify the generic type in both the TransactionFilter and
+              // the function call, or if just knowing what type the filter
+              // holds is enough and the updateFilter specification would be
+              // unnecessary
+              setState(() => updateFilter(
+                  filters.toList(), TransactionFilter<List<Category>>(value)));
             }
           }),
         _ => throw Error()
@@ -412,7 +421,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
               text = "${text.substring(0, 27)}...";
             }
 
-            StringFilter filter = StringFilter(text);
+            TransactionFilter<String> filter = TransactionFilter<String>(text);
 
             if (filters.contains(filter) || filter.value.isEmpty) {
               // The list of filters already has the exact same filter,
@@ -423,8 +432,8 @@ class _TransactionSearchState extends State<TransactionSearch> {
 
             setState(() {
               isSearching = false;
-              filters.removeWhere((e) => e is StringFilter);
-              filters.add(filter);
+
+              updateFilter<String>(filters.toList(), filter);
             });
           },
         )
