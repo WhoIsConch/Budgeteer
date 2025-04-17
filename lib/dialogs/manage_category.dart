@@ -29,29 +29,6 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
   CategoryResetIncrement resetIncrement = CategoryResetIncrement.never;
   Color? selectedColor;
 
-  String? validateCategoryTitle(value) {
-    String? initialCheck = validateTitle(value);
-
-    if (widget.mode == ObjectManageMode.edit) {
-      return initialCheck;
-    }
-
-    final provider = Provider.of<TransactionProvider>(context, listen: false);
-
-    bool isUnique = provider.categories.indexWhere(
-          (element) => element.name == value,
-        ) ==
-        -1;
-
-    if (initialCheck == null && isUnique) {
-      return null;
-    } else if (!isUnique) {
-      return "Category already exists";
-    } else {
-      return initialCheck;
-    }
-  }
-
   Category getCategory() {
     return Category(
       id: widget.category?.id,
@@ -114,8 +91,8 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
 
         try {
           if (widget.mode == ObjectManageMode.edit) {
-            provider.updateCategory(widget.category!);
             savedCategory = getCategory();
+            provider.updateCategory(savedCategory);
           } else {
             savedCategory = await provider.addCategory(getCategory());
           }
@@ -211,7 +188,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                     controller: nameController,
                     decoration: InputDecoration(
                         labelText: "Category Name", hintText: categoryHint),
-                    validator: validateCategoryTitle,
+                    validator: validateTitle,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(

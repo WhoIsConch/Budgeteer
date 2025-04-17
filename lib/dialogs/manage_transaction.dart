@@ -28,6 +28,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
   final TextEditingController categoryController = TextEditingController();
   Category? selectedCategory;
   double? selectedCategoryTotal;
+  bool isLoading = true;
 
   DateTime selectedDate = DateTime.now();
   TransactionType selectedType = TransactionType.expense;
@@ -126,6 +127,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
       selectedCategory = category;
       categoryController.text = catText;
       selectedCategoryTotal = catTotal;
+      isLoading = false;
     });
   }
 
@@ -244,19 +246,19 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
                 categories: transactionProvider.categories,
                 transactionDate: selectedDate,
                 onChanged: (category) {
+                  // TODO: Make category info update when the category is edited
                   setState(() {
                     selectedCategory =
                         transactionProvider.categories.firstWhere(
-                      (e) => e.name == category?.name,
+                      (e) => e.id == category?.id,
                       orElse: () => Category(name: ""),
                     );
 
-                    if (selectedCategory == null ||
-                        (selectedCategory != null &&
-                            selectedCategory!.name.isEmpty)) {
-                      _setCategoryInfo(null);
-                    } else {
+                    if (selectedCategory?.id != null &&
+                        selectedCategory!.id!.isNotEmpty) {
                       _setCategoryInfo(selectedCategory);
+                    } else {
+                      _setCategoryInfo(null);
                     }
                   });
                 },
@@ -273,6 +275,34 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
 
     if (widget.mode == ObjectManageMode.edit) {
       title = const Text("Edit Transaction");
+    }
+
+    Widget body =
+        StatefulBuilder(builder: (BuildContext context, StateSetter setState) {
+      return SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            spacing: 24,
+            children: formFields,
+          ),
+        ),
+      );
+    });
+
+    if (isLoading) {
+      body = Stack(children: [
+        body,
+        Container(
+          width: double.infinity,
+          height: double.infinity,
+          color: Colors.black.withAlpha(160),
+          child: const Center(
+            child: SizedBox(
+                width: 32, height: 32, child: CircularProgressIndicator()),
+          ),
+        ),
+      ]);
     }
 
     return Scaffold(
@@ -307,18 +337,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
       body: Form(
         key: _formKey,
         // title: title,
-        child: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-          return SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                spacing: 24,
-                children: formFields,
-              ),
-            ),
-          );
-        }),
+        child: body,
       ),
     );
   }

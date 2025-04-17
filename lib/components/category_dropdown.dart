@@ -54,14 +54,14 @@ class CategoryDropdown extends StatelessWidget {
       requestFocusOnTap: true,
       label: const Text('Category'),
       expandedInsets: EdgeInsets.zero,
-      onSelected: (String? categoryName) {
-        if (categoryName == null || categoryName.isEmpty) {
+      onSelected: (String? categoryId) {
+        if (categoryId == null || categoryId.isEmpty) {
           onChanged(null);
           return;
         }
 
         // This should usually be either a list of 1 or 0, so we use firstOrNull
-        onChanged(categories.where((e) => e.name == categoryName).firstOrNull);
+        onChanged(categories.where((e) => e.id == categoryId).firstOrNull);
       },
       dropdownMenuEntries: dropdownEntries,
     );

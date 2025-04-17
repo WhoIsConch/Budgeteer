@@ -541,11 +541,11 @@ class TransactionProvider extends ChangeNotifier {
     return await _helper.createCategory(category);
   }
 
-  void updateCategory(Category category) async {
+  Future<void> updateCategory(Category category) async {
     await _helper.updateCategory(category);
   }
 
-  void deleteCategory(Category category) async {
+  Future<void> deleteCategory(Category category) async {
     await _helper.deleteCategory(category);
   }
 
