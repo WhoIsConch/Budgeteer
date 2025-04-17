@@ -1,39 +1,294 @@
 import 'package:auto_size_text/auto_size_text.dart';
-import 'package:budget/components/category_dropdown.dart';
 import 'package:budget/components/hybrid_button.dart';
 import 'package:budget/tools/api.dart';
-import 'package:budget/tools/validators.dart';
-import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'package:provider/provider.dart';
 import 'package:budget/tools/enums.dart';
+import 'package:budget/tools/validators.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:collection/collection.dart';
 
-class BudgetPage extends StatefulWidget {
-  const BudgetPage({super.key});
+class StatisticsPage extends StatefulWidget {
+  const StatisticsPage({super.key});
 
   @override
-  State<BudgetPage> createState() => _BudgetPageState();
+  State<StatisticsPage> createState() => _StatisticsPageState();
 }
 
-class _BudgetPageState extends State<BudgetPage> {
+class _StatisticsPageState extends State<StatisticsPage> {
+  // In this case, filters should include a DateRangeFilter, CategoryFilter,
+  // and/or TypeFilter
+  List<TransactionFilter> filters = [];
+  int typeIndex = 0;
+  List<Transaction> transactions = [];
+
+  final List<Icon> typesIcons = [
+    const Icon(Icons.all_inclusive),
+    const Icon(Icons.remove),
+    const Icon(Icons.add),
+  ];
+
+  final List<TransactionType?> types = [null, ...TransactionType.values];
+
+  dynamic getFilterValue(FilterType type) {
+    return filters.firstWhereOrNull((e) => e.filterType == type)?.value;
+  }
+
+  dynamic updateFilter(TransactionFilter filter) {
+    filters.removeWhere((e) => e.filterType == filter.filterType);
+    filters.add(filter);
+  }
+
+  void removeFilter(FilterType type) {
+    filters.removeWhere((e) => e.filterType == type);
+  }
+
+  RelativeDateRange dateRange() {
+    RelativeDateRange? value = getFilterValue(FilterType.dateRange);
+
+    if (value == null) {
+      updateFilter(const TransactionFilter(
+          FilterType.dateRange, RelativeDateRange.today));
+
+      return RelativeDateRange.today;
+    }
+
+    return value;
+  }
+
+  DropdownMenu getDateRangeDropdown() => DropdownMenu(
+        expandedInsets: EdgeInsets.zero,
+        initialSelection: dateRange(),
+        onSelected: (value) => setState(
+            () => updateFilter(TransactionFilter(FilterType.dateRange, value))),
+        dropdownMenuEntries: RelativeDateRange.values
+            .map(
+              (e) => DropdownMenuEntry(
+                label: e.name,
+                value: e,
+              ),
+            )
+            .toList(),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<TransactionProvider>(
+      builder:
+          (BuildContext context, TransactionProvider provider, Widget? child) =>
+              Column(
+        children: [
+          Row(spacing: 8.0, children: [
+            Expanded(child: getDateRangeDropdown()),
+            HybridButton(
+                isEnabled: typeIndex % typesIcons.length != 0,
+                icon: typesIcons[typeIndex % typesIcons.length],
+                buttonType: HybridButtonType.toggle,
+                onTap: () {
+                  setState(() {
+                    typeIndex += 1;
+                    TransactionType? type = types[typeIndex % types.length];
+                    if (type == null) {
+                      setState(() => removeFilter(FilterType.type));
+                    } else {
+                      setState(() => updateFilter(
+                          TransactionFilter(FilterType.type, type)));
+                    }
+                  });
+                })
+          ]),
+          const SizedBox(height: 16),
+          CategoryPieChart(
+            availableCategories: provider.categories,
+            filters: filters,
+          ),
+          const SizedBox(height: 32),
+          StreamBuilder<List<Transaction>>(
+            stream:
+                provider.getQueryStream(provider.getQuery(filters: filters)),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (snapshot.hasError) {
+                return Text("Error: ${snapshot.error}");
+              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Text("No transactions found.");
+              } else {
+                return CategoryBarChart(
+                  transactions: snapshot.data!,
+                  dateRange: dateRange(),
+                );
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class CategoryBarChart extends StatelessWidget {
+  final List<Transaction> transactions;
+  final RelativeDateRange dateRange;
+
+  const CategoryBarChart(
+      {super.key, required this.dateRange, required this.transactions});
+
+  BarTouchData barTouchData(BuildContext context) => BarTouchData(
+      enabled: false,
+      touchTooltipData: BarTouchTooltipData(
+          getTooltipColor: (group) => Colors.transparent,
+          tooltipPadding: EdgeInsets.zero,
+          tooltipMargin: 8,
+          getTooltipItem: (
+            BarChartGroupData group,
+            int groupIndex,
+            BarChartRodData rod,
+            int rodIndex,
+          ) =>
+              BarTooltipItem(
+                  "\$${formatAmount(rod.toY, round: true)}",
+                  TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    fontSize: 24,
+                  ))));
+
+  FlTitlesData get titlesData => FlTitlesData(
+        bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+          showTitles: true,
+          reservedSize: 30,
+          getTitlesWidget: getTitles,
+        )),
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles:
+            const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      );
+
+  SideTitleWidget getTitles(double value, TitleMeta meta) {
+    String text = switch (dateRange) {
+      RelativeDateRange.today || RelativeDateRange.yesterday => switch (value) {
+          0 => "Spent",
+          1 => "Earned",
+          _ => "!!!"
+        },
+      RelativeDateRange.thisWeek => switch (value) {
+          1 => "Mn",
+          2 => "Tu",
+          3 => "Wd",
+          4 => "Th",
+          5 => "Fr",
+          6 => "St",
+          7 => "Sn",
+          _ => "!!"
+        },
+      RelativeDateRange.thisMonth => value.toStringAsFixed(0),
+      RelativeDateRange.thisYear => switch (value) {
+          1 => "Jan",
+          2 => "Feb",
+          3 => "Mar",
+          4 => "Apr",
+          5 => "May",
+          6 => "Jun",
+          7 => "Jul",
+          8 => "Aug",
+          9 => "Sep",
+          10 => "Oct",
+          11 => "Nov",
+          12 => "Dec",
+          _ => "!!!"
+        }
+    };
+
+    return SideTitleWidget(
+      axisSide: AxisSide.bottom,
+      child: Text(text),
+    );
+  }
+
+  BarChart _buildBarChart(BuildContext context) {
+    Map<int, double> valuePairs = {};
+
+    // Used reversed because the resultant is usually in descending order
+    // which is not preferred
+
+    for (Transaction e in transactions.reversed) {
+      int xValue = switch (dateRange) {
+        RelativeDateRange.today ||
+        RelativeDateRange.yesterday =>
+          e.type == TransactionType.expense ? 0 : 1,
+        RelativeDateRange.thisWeek => e.date.weekday,
+        RelativeDateRange.thisMonth => e.date.day,
+        RelativeDateRange.thisYear => e.date.month,
+      };
+
+      // Either adds a new key or updates the existing key to ensure
+      // the data is represented in the table in the same groups
+      valuePairs.update(xValue, (value) => value + e.amount,
+          ifAbsent: () => e.amount);
+    }
+
+    List<BarChartGroupData> bars = [];
+    valuePairs.forEach(
+      (key, value) => bars.add(BarChartGroupData(
+        barsSpace: 10,
+        showingTooltipIndicators: [0],
+        x: key,
+        barRods: [
+          BarChartRodData(
+              width: 16,
+              color: Theme.of(context).colorScheme.primary,
+              toY: value)
+        ],
+      )),
+    );
+
+    return BarChart(BarChartData(
+        maxY: valuePairs.values.reduce(
+          (value, element) => value > element ? value : element,
+        ),
+        barTouchData: barTouchData(context),
+        gridData: const FlGridData(show: false),
+        borderData: FlBorderData(show: false),
+        barGroups: bars,
+        alignment: BarChartAlignment.spaceAround,
+        titlesData: titlesData));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(aspectRatio: 1.6, child: _buildBarChart(context));
+  }
+}
+
+class CategoryPieChart extends StatefulWidget {
+  final List<Category> availableCategories;
+  final List<TransactionFilter> filters;
+
+  const CategoryPieChart(
+      {super.key, required this.availableCategories, required this.filters});
+
+  @override
+  State<CategoryPieChart> createState() => _CategoryPieChartState();
+}
+
+class _CategoryPieChartState extends State<CategoryPieChart> {
   List<PieChartSectionData>? pieChartSectionData;
   List<ChartKeyItem>? chartKeyItems;
-  RelativeDateRange selectedDateRange = RelativeDateRange.today;
-  bool chartIsLoading = true;
-  double cashFlow = 0;
-  int typeIndex = 0;
-  List<TransactionType?> transactionTypes = [null, ...TransactionType.values];
+  bool isLoading = true;
+  double totalAmount = 0;
 
-  TransactionType? get currentTransactionType =>
-      transactionTypes[typeIndex % transactionTypes.length];
+  PieChart get pieChart => PieChart(PieChartData(
+      centerSpaceRadius: 56, sectionsSpace: 2, sections: pieChartSectionData));
 
-  Future<void> _prepareData() async {
+  Future<void> _prepareData(BuildContext context) async {
     final provider = Provider.of<TransactionProvider>(context, listen: false);
     final List<Category> categories = [
       Category(name: ""),
       ...provider.categories,
     ];
-    cashFlow = 0;
+    double absTotal = 0;
 
     List<PieChartSectionData> sectionData = [];
     List<ChartKeyItem> keyItems = [];
@@ -42,8 +297,10 @@ class _BudgetPageState extends State<BudgetPage> {
     double otherSectionTotal = 0;
 
     for (int i = 0; i < categories.length; i++) {
-      TransactionType? type =
-          transactionTypes[typeIndex % transactionTypes.length];
+      TransactionType? type = widget.filters
+          .firstWhereOrNull((e) => e.filterType == FilterType.type)
+          ?.value;
+
       double total = switch (type) {
         null => (await provider.getTotalAmount(category: categories[i])),
         _ => await provider.getTotalAmount(type: type, category: categories[i])
@@ -56,14 +313,14 @@ class _BudgetPageState extends State<BudgetPage> {
 
       totals.add(total);
 
-      cashFlow += total.abs();
+      absTotal += total.abs();
     }
 
     for (int i = 0; i < categories.length; i++) {
       if (totals[i] == 0) continue;
 
       double total = totals[i];
-      double percentage = (total.abs() / cashFlow) * 100;
+      double percentage = (total.abs() / absTotal) * 100;
 
       if (percentage < 2) {
         otherSectionTotal += total.abs();
@@ -97,7 +354,7 @@ class _BudgetPageState extends State<BudgetPage> {
     }
 
     if (otherSectionTotal != 0) {
-      if ((otherSectionTotal.abs() / cashFlow) * 100 >= 1) {
+      if ((otherSectionTotal.abs() / absTotal) * 100 >= 1) {
         sectionData.add(PieChartSectionData(
           value: otherSectionTotal,
           radius: 32,
@@ -112,7 +369,8 @@ class _BudgetPageState extends State<BudgetPage> {
     setState(() {
       pieChartSectionData = sectionData;
       chartKeyItems = keyItems;
-      chartIsLoading = false;
+      isLoading = false;
+      totalAmount = absTotal;
     });
   }
 
@@ -120,50 +378,19 @@ class _BudgetPageState extends State<BudgetPage> {
   void initState() {
     super.initState();
 
-    _prepareData();
+    _prepareData(context);
   }
-
-  PieChart getPieChart() {
-    return PieChart(PieChartData(
-        centerSpaceRadius: 56,
-        sectionsSpace: 2,
-        sections: pieChartSectionData));
-  }
-
-  DropdownMenu getDateRangeDropdown() => DropdownMenu(
-        expandedInsets: EdgeInsets.zero,
-        initialSelection: selectedDateRange,
-        onSelected: (value) {
-          selectedDateRange = value;
-          _prepareData();
-        },
-        dropdownMenuEntries: RelativeDateRange.values
-            .map(
-              (e) => DropdownMenuEntry(
-                label: e.name,
-                value: e,
-              ),
-            )
-            .toList(),
-      );
 
   @override
   Widget build(BuildContext context) {
-    Widget pieChartArea;
-    List<Icon> typesIcons = [
-      const Icon(Icons.all_inclusive),
-      const Icon(Icons.remove),
-      const Icon(Icons.add),
-    ];
-
-    if (chartIsLoading) {
-      pieChartArea = const Expanded(
+    if (isLoading) {
+      return const Expanded(
         child: Center(
             child: SizedBox(
                 width: 24, height: 24, child: CircularProgressIndicator())),
       );
     } else if (pieChartSectionData!.isEmpty) {
-      pieChartArea = const Expanded(
+      return const Expanded(
         child: SizedBox(
             width: 300,
             child: Column(
@@ -183,7 +410,7 @@ class _BudgetPageState extends State<BudgetPage> {
             )),
       );
     } else {
-      pieChartArea = Row(
+      return Row(
         // Contains the Pie Chart and the Legend
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -202,7 +429,7 @@ class _BudgetPageState extends State<BudgetPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       AutoSizeText(
-                        "\$${formatAmount(cashFlow.round())}",
+                        "\$${formatAmount(totalAmount.round())}",
                         style: const TextStyle(fontSize: 48),
                         maxLines: 1,
                       ),
@@ -210,7 +437,7 @@ class _BudgetPageState extends State<BudgetPage> {
                   ),
                 )),
               ),
-              AspectRatio(aspectRatio: 1.0, child: getPieChart())
+              AspectRatio(aspectRatio: 1.0, child: pieChart)
             ]),
           ),
           Expanded(
@@ -224,35 +451,6 @@ class _BudgetPageState extends State<BudgetPage> {
         ],
       );
     }
-
-    return Column(
-      // Contains the pie chart and all of its associated data
-      children: [
-        Row(
-          spacing: 8.0,
-          children: [
-            Expanded(child: getDateRangeDropdown()),
-            HybridButton(
-                isEnabled: typeIndex % typesIcons.length != 0,
-                buttonType: HybridButtonType.toggle,
-                onTap: () {
-                  setState(() {
-                    typeIndex += 1;
-                  });
-                  _prepareData();
-                },
-                icon: typesIcons[typeIndex % typesIcons.length])
-          ],
-        ),
-        // Decide which time period to visit
-        const SizedBox(height: 16),
-        pieChartArea,
-        const SizedBox(height: 32),
-        CategoryBarChart(
-            dateRange: selectedDateRange,
-            transactionType: currentTransactionType)
-      ],
-    );
   }
 }
 
@@ -294,198 +492,5 @@ class ChartKeyItem extends StatelessWidget {
             : Icon(icon, color: color),
       ],
     );
-  }
-}
-
-class CategoryBarChart extends StatefulWidget {
-  const CategoryBarChart(
-      {super.key, required this.dateRange, this.transactionType});
-
-  final RelativeDateRange dateRange;
-  final TransactionType? transactionType;
-
-  @override
-  State<CategoryBarChart> createState() => _CategoryBarChartState();
-}
-
-class _CategoryBarChartState extends State<CategoryBarChart> {
-  Category? selectedCategory;
-
-  Stream<List<Transaction>> _getTransactionsStream() {
-    final provider = Provider.of<TransactionProvider>(context, listen: false);
-    final dateRange = widget.dateRange.getRange();
-
-    var filters = [
-      TransactionFilter(FilterType.category, selectedCategory?.id ?? ""),
-      TransactionFilter(FilterType.dateRange, dateRange),
-    ];
-    return provider.getQueryStream(provider.getQuery(filters: filters));
-  }
-
-  BarTouchData get barTouchData => BarTouchData(
-      enabled: false,
-      touchTooltipData: BarTouchTooltipData(
-          getTooltipColor: (group) => Colors.transparent,
-          tooltipPadding: EdgeInsets.zero,
-          tooltipMargin: 8,
-          getTooltipItem: (
-            BarChartGroupData group,
-            int groupIndex,
-            BarChartRodData rod,
-            int rodIndex,
-          ) =>
-              BarTooltipItem(
-                  "\$${formatAmount(rod.toY, round: true)}",
-                  TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    fontSize: 24,
-                  ))));
-
-  FlTitlesData get titlesData => FlTitlesData(
-        bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-          showTitles: true,
-          reservedSize: 30,
-          getTitlesWidget: getTitles,
-        )),
-        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        rightTitles:
-            const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-      );
-
-  SideTitleWidget getTitles(double value, TitleMeta meta) {
-    String text = switch (widget.dateRange) {
-      RelativeDateRange.today || RelativeDateRange.yesterday => switch (value) {
-          0 => "Spent",
-          1 => "Earned",
-          _ => "!!!"
-        },
-      RelativeDateRange.thisWeek => switch (value) {
-          1 => "Mn",
-          2 => "Tu",
-          3 => "Wd",
-          4 => "Th",
-          5 => "Fr",
-          6 => "St",
-          7 => "Sn",
-          _ => "!!"
-        },
-      RelativeDateRange.thisMonth => value.toStringAsFixed(0),
-      RelativeDateRange.thisYear => switch (value) {
-          1 => "Jan",
-          2 => "Feb",
-          3 => "Mar",
-          4 => "Apr",
-          5 => "May",
-          6 => "Jun",
-          7 => "Jul",
-          8 => "Aug",
-          9 => "Sep",
-          10 => "Oct",
-          11 => "Nov",
-          12 => "Dec",
-          _ => "!!!"
-        }
-    };
-
-    return SideTitleWidget(
-      axisSide: AxisSide.bottom,
-      child: Text(text),
-    );
-  }
-
-  BarChart _buildBarChart(List<Transaction> transactions) {
-    Map<int, double> valuePairs = {};
-
-    // Used reversed because the resultant is usually in descending order
-    // which is not preferred
-    for (Transaction e in transactions.reversed) {
-      int xValue = switch (widget.dateRange) {
-        RelativeDateRange.today ||
-        RelativeDateRange.yesterday =>
-          e.type == TransactionType.expense ? 0 : 1,
-        RelativeDateRange.thisWeek => e.date.weekday,
-        RelativeDateRange.thisMonth => e.date.day,
-        RelativeDateRange.thisYear => e.date.month,
-      };
-
-      // Either adds a new key or updates the existing key to ensure
-      // the data is represented in the table in the same groups
-      valuePairs.update(xValue, (value) => value + e.amount,
-          ifAbsent: () => e.amount);
-    }
-
-    List<BarChartGroupData> bars = [];
-    valuePairs.forEach(
-      (key, value) => bars.add(BarChartGroupData(
-        barsSpace: 10,
-        showingTooltipIndicators: [0],
-        x: key,
-        barRods: [
-          BarChartRodData(
-              width: 16,
-              color: Theme.of(context).colorScheme.primary,
-              toY: value)
-        ],
-      )),
-    );
-
-    return BarChart(BarChartData(
-        maxY: valuePairs.values.reduce(
-          (value, element) => value > element ? value : element,
-        ),
-        barTouchData: barTouchData,
-        gridData: const FlGridData(show: false),
-        borderData: FlBorderData(show: false),
-        barGroups: bars,
-        alignment: BarChartAlignment.spaceAround,
-        titlesData: titlesData));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<TransactionProvider>(builder: (context, provider, child) {
-      return StreamBuilder<List<Transaction>>(
-        stream: _getTransactionsStream(),
-        builder: (context, snapshot) {
-          List<Widget> children = [
-            CategoryDropdown(
-                showExpanded: false,
-                categories: provider.categories,
-                onChanged: (category) =>
-                    setState(() => selectedCategory = category),
-                selectedCategory: selectedCategory),
-          ];
-          if (!snapshot.hasData) {
-            children.add(const Expanded(
-                child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  "Nothing to show.",
-                  style: TextStyle(fontSize: 24),
-                  textAlign: TextAlign.center,
-                ),
-                Text(
-                  "Try changing the category or date range.",
-                  style: TextStyle(fontSize: 18),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            )));
-          } else {
-            children.add(AspectRatio(
-                aspectRatio: 1.6, child: _buildBarChart(snapshot.data!)));
-          }
-
-          return Expanded(
-              flex: 2,
-              child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: children));
-        },
-      );
-    });
   }
 }

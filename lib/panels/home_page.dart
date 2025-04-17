@@ -78,7 +78,7 @@ class _HomePageState extends State<HomePage> {
               const SafeArea(
                   key: ValueKey('budget'),
                   child: Padding(
-                      padding: EdgeInsets.all(16), child: BudgetPage())),
+                      padding: EdgeInsets.all(16), child: StatisticsPage())),
               const SafeArea(
                   key: ValueKey('account'),
                   child: Padding(

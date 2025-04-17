@@ -686,8 +686,8 @@ class FirestoreDatabaseHelper {
             ));
             break;
           case FilterType.dateRange:
-            // filter.value should be of type DateTimeRange
-            DateTimeRange value = filter.value;
+            // filter.value should be of type RelativeTimeRange
+            DateTimeRange value = filter.value.getRange();
 
             query = query.where(Filter.and(
                 Filter("date",
