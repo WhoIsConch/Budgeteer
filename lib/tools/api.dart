@@ -283,6 +283,7 @@ class TransactionProvider extends ChangeNotifier {
   final FirestoreDatabaseHelper _helper = FirestoreDatabaseHelper();
   bool isLoading = false;
   List<Category> _categoriesPendingRemoval = [];
+  List<Transaction> _transactionsPendingRemoval = [];
   List<Category> _categories = [];
 
   List<Category> get categories => _categoriesPendingRemoval.isEmpty
@@ -290,6 +291,9 @@ class TransactionProvider extends ChangeNotifier {
       : _categories
           .where((e) => !_categoriesPendingRemoval.contains(e))
           .toList();
+
+  List<Transaction> get transactionsPendingRemoval =>
+      _transactionsPendingRemoval;
 
   TransactionProvider() {
     _listenToCategories();
@@ -588,6 +592,28 @@ class TransactionProvider extends ChangeNotifier {
     bool didRemove = _categoriesPendingRemoval.remove(category);
 
     if (didRemove) notifyListeners();
+  }
+
+  void stageTransactionsForRemoval(List<Transaction> transactions) {
+    _transactionsPendingRemoval.addAll(transactions);
+    notifyListeners();
+  }
+
+  void removeStagedTransactions(List<Transaction> transactions) {
+    for (Transaction t in transactions) {
+      _transactionsPendingRemoval.remove(t);
+    }
+
+    notifyListeners();
+  }
+
+  void deleteStagedTransactions() {
+    for (Transaction t in _transactionsPendingRemoval) {
+      _helper.deleteTransaction(t);
+    }
+
+    _transactionsPendingRemoval = [];
+    notifyListeners();
   }
 }
 

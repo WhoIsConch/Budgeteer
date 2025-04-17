@@ -43,7 +43,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
       date: selectedDate,
       notes: notesController.text,
       type: selectedType,
-      category: selectedCategory?.name ?? "",
+      category: selectedCategory?.id ?? "",
     );
 
     return transaction;
@@ -70,9 +70,13 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
   }
 
   Future<void> _loadSelectedCategory(String id) async {
-    final provider = Provider.of<TransactionProvider>(context, listen: false);
+    Category? category;
 
-    Category? category = await provider.getCategory(id);
+    if (id.isNotEmpty) {
+      final provider = Provider.of<TransactionProvider>(context, listen: false);
+
+      category = await provider.getCategory(id);
+    }
 
     _setCategoryInfo(category);
   }
