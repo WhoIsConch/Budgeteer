@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:budget/tools/api.dart';
+import 'package:budget/tools/filters.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:firebase_pagination/firebase_pagination.dart';
 import 'package:flutter/material.dart';
@@ -16,7 +17,7 @@ class TransactionsList extends StatefulWidget {
       this.showActionButton = true,
       this.showBackground = true});
 
-  final Set<TransactionFilter>? filters;
+  final List<TransactionFilter>? filters;
   final Sort? sort;
   final bool showActionButton;
   final bool showBackground;
@@ -144,8 +145,7 @@ class _TransactionsListState extends State<TransactionsList> {
       // action button at the bottom right
       List<Widget> stackChildren = [
         FirestorePagination(
-          query: provider.getQuery(
-              filters: widget.filters?.toList(), sort: widget.sort),
+          query: provider.getQuery(filters: widget.filters, sort: widget.sort),
           limit: 20,
           isLive: true,
           bottomLoader: const Center(

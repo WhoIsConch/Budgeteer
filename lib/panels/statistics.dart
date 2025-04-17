@@ -3,6 +3,7 @@ import 'package:budget/components/category_dropdown.dart';
 import 'package:budget/components/hybrid_button.dart';
 import 'package:budget/tools/api.dart';
 import 'package:budget/tools/enums.dart';
+import 'package:budget/tools/filters.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -31,27 +32,15 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
   final List<TransactionType?> types = [null, ...TransactionType.values];
 
-  Category? get selectedCategory => getFilterValue(FilterType.category);
+  List<Category> get selectedCategories =>
+      getFilterValue<List<Category>>(filters) ?? [];
 
-  dynamic getFilterValue(FilterType type) {
-    return filters.firstWhereOrNull((e) => e.filterType == type)?.value;
-  }
-
-  dynamic updateFilter(TransactionFilter filter) {
-    filters.removeWhere((e) => e.filterType == filter.filterType);
-    filters.add(filter);
-  }
-
-  void removeFilter(FilterType type) {
-    filters.removeWhere((e) => e.filterType == type);
-  }
-
-  RelativeDateRange dateRange() {
-    RelativeDateRange? value = getFilterValue(FilterType.dateRange);
+  // TODO: Make sure RelativeDateRange is never passed to the filters in api.dart
+  RelativeDateRange getDateRange() {
+    RelativeDateRange? value = getFilterValue<RelativeDateRange>(filters);
 
     if (value == null) {
-      updateFilter(const TransactionFilter(
-          FilterType.dateRange, RelativeDateRange.today));
+      updateFilter(const TransactionFilter(RelativeDateRange.today), filters);
 
       return RelativeDateRange.today;
     }
@@ -61,9 +50,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
   DropdownMenu getDateRangeDropdown() => DropdownMenu(
         expandedInsets: EdgeInsets.zero,
-        initialSelection: dateRange(),
-        onSelected: (value) => setState(
-            () => updateFilter(TransactionFilter(FilterType.dateRange, value))),
+        initialSelection: getDateRange(),
+        onSelected: (value) => setState(() => updateFilter(
+            TransactionFilter(value as RelativeDateRange), filters)),
         dropdownMenuEntries: RelativeDateRange.values
             .map(
               (e) => DropdownMenuEntry(
@@ -92,10 +81,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
                     typeIndex += 1;
                     TransactionType? type = types[typeIndex % types.length];
                     if (type == null) {
-                      setState(() => removeFilter(FilterType.type));
+                      setState(() => removeFilter<TransactionType>(filters));
                     } else {
-                      setState(() => updateFilter(
-                          TransactionFilter(FilterType.type, type)));
+                      setState(
+                          () => updateFilter(TransactionFilter(type), filters));
                     }
                   });
                 })
@@ -111,15 +100,14 @@ class _StatisticsPageState extends State<StatisticsPage> {
               showExpanded: false,
               onChanged: (Category? category) => setState(() {
                     if (category?.id == null || category!.id!.isEmpty) {
-                      removeFilter(FilterType.category);
+                      removeFilter<List<Category>>(filters);
                       return;
                     }
 
-                    updateFilter(
-                        TransactionFilter(FilterType.category, category));
+                    updateFilter(TransactionFilter([category]), filters);
                   }),
-              selectedCategory: selectedCategory),
-          Spacer(),
+              selectedCategory: selectedCategories.first),
+          const Spacer(),
           StreamBuilder<List<Transaction>>(
             stream:
                 provider.getQueryStream(provider.getQuery(filters: filters)),
@@ -133,7 +121,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
               } else {
                 return CategoryBarChart(
                   transactions: snapshot.data!,
-                  dateRange: dateRange(),
+                  dateRange: getDateRange(),
                 );
               }
             },
@@ -315,7 +303,7 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
 
     for (int i = 0; i < categories.length; i++) {
       TransactionType? type = widget.filters
-          .firstWhereOrNull((e) => e.filterType == FilterType.type)
+          .firstWhereOrNull((e) => e.value.runtimeType == TransactionType)
           ?.value;
 
       double total = switch (type) {

@@ -1,4 +1,5 @@
 import 'package:budget/panels/transaction_search.dart';
+import 'package:budget/tools/filters.dart';
 import 'package:flutter/material.dart';
 import 'package:budget/components/transactions_list.dart';
 import 'package:provider/provider.dart';
@@ -160,9 +161,8 @@ class _SpendingHeaderState extends State<SpendingHeader> {
                 MaterialPageRoute(
                     builder: (context) => TransactionSearch(
                           initialFilters: {
-                            TransactionFilter(
-                                FilterType.dateRange, config.dateRange),
-                            TransactionFilter(FilterType.type, config.type)
+                            TransactionFilter(config.dateRange),
+                            TransactionFilter(config.type)
                           },
                         )));
           },

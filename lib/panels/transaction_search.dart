@@ -1,6 +1,7 @@
 import 'package:budget/components/transactions_list.dart';
 import 'package:budget/tools/api.dart';
 import 'package:budget/tools/enums.dart';
+import 'package:budget/tools/filters.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -20,44 +21,34 @@ class TransactionSearch extends StatefulWidget {
 class _TransactionSearchState extends State<TransactionSearch> {
   // Making filters a Set ensures that all items are unique and there is not
   // a multiple of a filter in there
-  late Set<TransactionFilter> filters;
+  late List<TransactionFilter> filters;
   late Sort sort;
   bool isSearching = false; // Is the title bar a search field?
   TextEditingController searchController = TextEditingController();
-
-  dynamic getFilterValue(FilterType filterType) {
-    try {
-      return filters.singleWhere((e) => e.filterType == filterType).value;
-    } on StateError {
-      return null;
-    }
-  }
-
-  void updateFilter(TransactionFilter newFilter) {
-    filters.removeWhere((e) => e.filterType == newFilter.filterType);
-    filters.add(newFilter);
-  }
 
   List<Widget> getFilterChips() {
     List<Widget> chips = [];
     DateFormat dateFormat = DateFormat('MM/dd');
 
     for (TransactionFilter filter in filters) {
-      String label = switch (filter.filterType) {
-        FilterType.string => "\"${filter.value}\"", // "Value"
-        FilterType.amount =>
-          "${filter.value.type.symbol} \$${formatAmount(filter.value, exact: true)}", // > $Value
-        FilterType.category => filter.value.length > 3
-            ? "${filter.value.length} categories"
-            : filter.value.map((e) => e.name).join(", "),
-        FilterType.dateRange =>
-          "${dateFormat.format(filter.value.start)}–${dateFormat.format(filter.value.end)}",
-        FilterType.type =>
-          filter.value == TransactionType.expense ? "Expense" : "Income"
+      String label = switch (filter) {
+        TransactionFilter<String> t => "\"${t.value}\"", // "Value"
+        TransactionFilter<AmountFilter> t =>
+          "${t.value.type} \$${formatAmount(t.value.amount ?? 0, exact: true)}", // > $Value
+        TransactionFilter<List<Category>> t => t.value.length > 3
+            ? "${t.value.length} categories"
+            : t.value.map((e) => e.name).join(", "),
+        TransactionFilter<DateTimeRange> t =>
+          "${dateFormat.format(t.value.start)}–${dateFormat.format(t.value.end)}",
+        TransactionFilter<RelativeDateRange> t =>
+          "${dateFormat.format(t.value.getRange().start)}–${dateFormat.format(t.value.getRange().end)}",
+        TransactionFilter<TransactionType> t =>
+          t.value == TransactionType.expense ? "Expense" : "Income",
+        _ => "ERR ${filter.value}"
       };
 
       chips.add(GestureDetector(
-        onTap: () => _activateFilter(filter.filterType),
+        onTap: () => _activateFilter(filter.value.runtimeType),
         child: Chip(
           label: Text(label),
           deleteIcon: const Icon(Icons.close),
@@ -347,47 +338,38 @@ class _TransactionSearchState extends State<TransactionSearch> {
                     }),
       );
 
-  void _activateFilter(FilterType filterType) => switch (filterType) {
-        FilterType.dateRange => showDateRangePicker(
+  void _activateFilter(Type type) => switch (type) {
+        DateTimeRange => showDateRangePicker(
                   context: context,
-                  initialDateRange: getFilterValue(
-                      filterType), // Should be null or a date range
+                  initialDateRange: getFilterValue<DateTimeRange>(filters),
                   firstDate:
                       DateTime.now().subtract(const Duration(days: 365 * 10)),
                   lastDate: DateTime.now().add(const Duration(days: 365 * 10)))
               .then((DateTimeRange? value) {
-            if (value == getFilterValue(filterType) || value == null) return;
+            if (value == null) return;
 
-            setState(() {
-              filters.removeWhere((e) => e.filterType == filterType);
-              filters.add(TransactionFilter(
-                  FilterType.dateRange, value.makeInclusive()));
-            });
+            setState(() => updateFilter(TransactionFilter(value), filters));
           }),
-        FilterType.string => setState(() => isSearching = true),
-        FilterType.amount => _showAmountFilterDialog(context).then((value) {
+        String => setState(() => isSearching = true),
+        AmountFilter => _showAmountFilterDialog(context).then((value) {
             if (value == null) {
               return;
             }
-            setState(() {
-              filters.removeWhere((e) => e.filterType == filterType);
-              filters.add(value);
-            });
+            setState(() => updateFilter(TransactionFilter(value), filters));
           }),
-        FilterType.type => toggleTransactionType(),
-        FilterType.category => _showCategoryInputDialog(context).then((value) {
+        TransactionType => toggleTransactionType(),
+        List<Category>() => _showCategoryInputDialog(context).then((value) {
             if (value == null) {
               return;
             } else if (value.isEmpty) {
               setState(
-                () => filters
-                    .removeWhere((e) => e.filterType == FilterType.category),
+                () => removeFilter<List<Category>>(filters),
               );
             } else {
-              setState(() =>
-                  updateFilter(TransactionFilter(FilterType.category, value)));
+              setState(() => updateFilter(TransactionFilter(value), filters));
             }
-          })
+          }),
+        _ => throw FilterTypeException(type)
       };
 
   @override
