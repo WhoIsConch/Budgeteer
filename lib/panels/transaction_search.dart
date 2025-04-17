@@ -8,7 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class TransactionSearch extends StatefulWidget {
-  final Set<TransactionFilter>? initialFilters;
+  final List<TransactionFilter>? initialFilters;
   final Sort? initialSortType;
 
   const TransactionSearch(
@@ -80,20 +80,16 @@ class _TransactionSearchState extends State<TransactionSearch> {
     // then the amount as an input.
     TextEditingController controller = TextEditingController();
     // Either get the current amountFilter or create a new one
-    TransactionFilter amountFilter = filters.firstWhere(
-        (e) => e.filterType == FilterType.amount,
-        orElse: () => TransactionFilter(FilterType.amount,
-            AmountFilter(type: AmountFilterType.exactly, amount: null)));
+    AmountFilter amountFilter =
+        getFilterValue<AmountFilter>(filters) ?? AmountFilter();
     // Update the text to match
-    controller.text = amountFilter.value?.toStringAsFixed(2) ?? "";
+    controller.text = amountFilter.amount?.toStringAsFixed(2) ?? "";
 
     // Listen for changes on the controller since it's easier and better-looking
     // than redoing it in the end, though probably less performant
-    controller.addListener(() => amountFilter = TransactionFilter(
-        FilterType.amount,
-        AmountFilter(
-            type: amountFilter.value.type,
-            amount: double.tryParse(controller.text) ?? amountFilter.value)));
+    controller.addListener(() => amountFilter = AmountFilter(
+        type: amountFilter.type,
+        amount: double.tryParse(controller.text) ?? amountFilter.amount));
 
     return showDialog<TransactionFilter>(
         context: context,
@@ -107,16 +103,11 @@ class _TransactionSearchState extends State<TransactionSearch> {
                   children: [
                     SegmentedButton(
                       onSelectionChanged: (type) => setState(() {
-                        amountFilter = TransactionFilter(
-                            FilterType.amount,
-                            AmountFilter(
-                                type: type.first,
-                                amount: amountFilter.value.amount));
+                        amountFilter = AmountFilter(
+                            type: type.first, amount: amountFilter.amount);
                       }),
                       showSelectedIcon: false,
-                      selected: {
-                        amountFilter.value.type ?? AmountFilterType.exactly
-                      },
+                      selected: {amountFilter.type ?? AmountFilterType.exactly},
                       segments: AmountFilterType.values
                           .map((value) => ButtonSegment(
                               value: value,
@@ -169,7 +160,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
 
     List<Category> categories = provider.categories;
     List<Category> selectedCategories =
-        getFilterValue(FilterType.category) ?? [];
+        getFilterValue<List<Category>>(filters) ?? [];
 
     if (!context.mounted) {
       return [];
@@ -240,46 +231,44 @@ class _TransactionSearchState extends State<TransactionSearch> {
   }
 
   void toggleTransactionType() {
-    TransactionType? typeFilterValue = getFilterValue(FilterType.type);
+    TransactionType? typeFilterValue = getFilterValue<TransactionType>(filters);
     TransactionFilter? filter;
 
     if (typeFilterValue == null || typeFilterValue == TransactionType.income) {
-      filter =
-          const TransactionFilter(FilterType.type, TransactionType.expense);
+      filter = const TransactionFilter(TransactionType.expense);
     } else if (typeFilterValue == TransactionType.expense) {
       filter = const TransactionFilter(
-        FilterType.type,
         TransactionType.income,
       );
     }
 
     setState(() {
-      filters.removeWhere((e) => e.filterType == FilterType.type);
+      removeFilter<TransactionType>(filters);
 
       if (filter == null) {
         return;
       }
 
-      filters.add(filter);
+      updateFilter(filter, filters);
     });
   }
 
   List<Widget> get filterMenuButtons => [
         MenuItemButton(
           child: const Text("Date"),
-          onPressed: () => _activateFilter(FilterType.dateRange),
+          onPressed: () => _activateFilter(DateTimeRange),
         ),
         MenuItemButton(
           child: const Text("Amount"),
-          onPressed: () => _activateFilter(FilterType.amount),
+          onPressed: () => _activateFilter(AmountFilter),
         ),
         MenuItemButton(
           child: const Text("Type"),
-          onPressed: () => _activateFilter(FilterType.type),
+          onPressed: () => _activateFilter(TransactionType),
         ),
         MenuItemButton(
           child: const Text("Category"),
-          onPressed: () => _activateFilter(FilterType.category),
+          onPressed: () => _activateFilter(List<Category>),
         ),
       ];
 
@@ -377,7 +366,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
     super.initState();
 
     // Initialize these filters to easily use and edit inside of the menus
-    filters = widget.initialFilters ?? {};
+    filters = widget.initialFilters ?? [];
     sort = widget.initialSortType ??
         const Sort(SortType.date, SortOrder.descending);
   }
@@ -414,8 +403,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
               text = "${text.substring(0, 27)}...";
             }
 
-            TransactionFilter filter =
-                TransactionFilter(FilterType.string, text);
+            TransactionFilter filter = TransactionFilter(text);
 
             if (filters.contains(filter) || filter.value.isEmpty) {
               // The list of filters already has the exact same filter,
@@ -426,8 +414,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
 
             setState(() {
               isSearching = false;
-              filters.removeWhere((e) => e.filterType == filter.filterType);
-              filters.add(filter);
+              updateFilter(filter, filters);
             });
           },
         )

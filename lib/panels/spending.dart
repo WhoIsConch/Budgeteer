@@ -160,10 +160,10 @@ class _SpendingHeaderState extends State<SpendingHeader> {
                 context,
                 MaterialPageRoute(
                     builder: (context) => TransactionSearch(
-                          initialFilters: {
+                          initialFilters: [
                             TransactionFilter(config.dateRange),
                             TransactionFilter(config.type)
-                          },
+                          ],
                         )));
           },
           onContentUpdated: (newContent) =>
