@@ -67,6 +67,8 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
 
     if (widget.transaction?.category != null) {
       _loadSelectedCategory(widget.transaction!.category);
+    } else {
+      isLoading = false;
     }
   }
 

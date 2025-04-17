@@ -195,6 +195,12 @@ class Transaction {
     return 'Transaction{id: $id, title: $title, amount: $amount, date: $date}';
   }
 
+  @override
+  bool operator ==(Object other) => other is Transaction && other.id == id;
+
+  @override
+  int get hashCode => id.hashCode;
+
   String formatDate() {
     return DateFormat('MM/dd/yyyy').format(date);
   }

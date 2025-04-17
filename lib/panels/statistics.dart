@@ -1,4 +1,5 @@
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:budget/components/category_dropdown.dart';
 import 'package:budget/components/hybrid_button.dart';
 import 'package:budget/tools/api.dart';
 import 'package:budget/tools/enums.dart';
@@ -29,6 +30,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
   ];
 
   final List<TransactionType?> types = [null, ...TransactionType.values];
+
+  Category? get selectedCategory => getFilterValue(FilterType.category);
 
   dynamic getFilterValue(FilterType type) {
     return filters.firstWhereOrNull((e) => e.filterType == type)?.value;
@@ -102,7 +105,21 @@ class _StatisticsPageState extends State<StatisticsPage> {
             availableCategories: provider.categories,
             filters: filters,
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 16),
+          CategoryDropdown(
+              categories: provider.categories,
+              showExpanded: false,
+              onChanged: (Category? category) => setState(() {
+                    if (category?.id == null || category!.id!.isEmpty) {
+                      removeFilter(FilterType.category);
+                      return;
+                    }
+
+                    updateFilter(
+                        TransactionFilter(FilterType.category, category));
+                  }),
+              selectedCategory: selectedCategory),
+          Spacer(),
           StreamBuilder<List<Transaction>>(
             stream:
                 provider.getQueryStream(provider.getQuery(filters: filters)),

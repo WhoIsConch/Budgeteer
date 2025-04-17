@@ -50,6 +50,7 @@ dependencies:
   google_sign_in: ^6.3.0
   cloud_firestore: ^5.6.6
   firebase_pagination: ^4.1.0
+  collection: ^1.19.1
 
 dev_dependencies:
   flutter_test:
