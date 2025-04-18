@@ -32,6 +32,33 @@ class _TransactionsListState extends State<TransactionsList> {
 
   bool get isFiltered => widget.filters != null || widget.sort != null;
 
+  String _computeKey() {
+    String filtersStr = widget.filters?.map((f) {
+          if (f.value is String) return 's:${f.value}';
+          if (f.value is AmountFilter) {
+            AmountFilter af = f.value as AmountFilter;
+            return 'a:${af.type?.index ?? ''}:${af.amount ?? ''}';
+          }
+          if (f.value is DateTimeRange) {
+            DateTimeRange dr = f.value as DateTimeRange;
+            return 'd:${dr.start.millisecondsSinceEpoch}-${dr.end.millisecondsSinceEpoch}';
+          }
+          if (f.value is TransactionType) {
+            return 't:${(f.value as TransactionType).index}';
+          }
+          if (f.value is List<Category>) {
+            List<Category> cats = f.value as List<Category>;
+            return 'c:${cats.map((c) => c.id).join(',')}';
+          }
+          return '';
+        }).join(';') ??
+        '';
+    String sortStr = widget.sort != null
+        ? '${widget.sort!.sortType.index}-${widget.sort!.sortOrder.index}'
+        : '';
+    return '$filtersStr-$sortStr';
+  }
+
   void showOptionsDialog(
       Transaction transaction, TransactionProvider transactionProvider) {
     showModalBottomSheet(
@@ -145,6 +172,7 @@ class _TransactionsListState extends State<TransactionsList> {
       // action button at the bottom right
       List<Widget> stackChildren = [
         FirestorePagination(
+          key: ValueKey(_computeKey()),
           query: provider.getQuery(filters: widget.filters, sort: widget.sort),
           limit: 20,
           isLive: true,

@@ -53,7 +53,7 @@ T? getFilterValue<T>(List<TransactionFilter> filters) {
 
 void updateFilter<T>(
     TransactionFilter<T> filter, List<TransactionFilter> filters) {
-  filters.removeWhere((e) => e.value.runtimeType == T);
+  filters.removeWhere((e) => e.value.runtimeType == filter.value.runtimeType);
   filters.add(filter);
 }
 

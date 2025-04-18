@@ -756,9 +756,13 @@ class FirestoreDatabaseHelper {
       query = query.startAfterDocument(startAfter);
     }
 
-    return query.withConverter<Transaction>(
+    var newQuery = query.withConverter<Transaction>(
         fromFirestore: Transaction.fromFirestore,
         toFirestore: (Transaction transaction, _) => transaction.toFirestore());
+
+    newQuery.get().then((e) => print("Length: ${e.docs.length}"));
+
+    return newQuery;
   }
 
   Future<int?> getTransactionsAmount() async {

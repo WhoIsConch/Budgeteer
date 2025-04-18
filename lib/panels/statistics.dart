@@ -40,7 +40,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
     RelativeDateRange? value = getFilterValue<RelativeDateRange>(filters);
 
     if (value == null) {
-      updateFilter(const TransactionFilter(RelativeDateRange.today), filters);
+      updateFilter(
+          const TransactionFilter<RelativeDateRange>(RelativeDateRange.today),
+          filters);
 
       return RelativeDateRange.today;
     }
@@ -52,7 +54,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
         expandedInsets: EdgeInsets.zero,
         initialSelection: getDateRange(),
         onSelected: (value) => setState(() => updateFilter(
-            TransactionFilter(value as RelativeDateRange), filters)),
+            TransactionFilter<RelativeDateRange>(value as RelativeDateRange),
+            filters)),
         dropdownMenuEntries: RelativeDateRange.values
             .map(
               (e) => DropdownMenuEntry(
@@ -83,8 +86,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
                     if (type == null) {
                       setState(() => removeFilter<TransactionType>(filters));
                     } else {
-                      setState(
-                          () => updateFilter(TransactionFilter(type), filters));
+                      setState(() => updateFilter(
+                          TransactionFilter<TransactionType>(type), filters));
                     }
                   });
                 })
@@ -104,7 +107,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
                       return;
                     }
 
-                    updateFilter(TransactionFilter([category]), filters);
+                    updateFilter(
+                        TransactionFilter<List<Category>>([category]), filters);
                   }),
               selectedCategory: selectedCategories.first),
           const Spacer(),

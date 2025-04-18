@@ -54,8 +54,10 @@ class Account extends StatelessWidget {
             TextButton(
               onPressed: () async {
                 var db = FirestoreDatabaseHelper();
-                var tran = await db.getCategoryById("1j3pJ5ENuYKiPnaT6mEq");
-                print(tran);
+                db.transactions
+                    .where('type', isEqualTo: TransactionType.expense.value)
+                    .get()
+                    .then((res) => print(res.docs.length));
               },
               child: Text("Send Firestore Data"),
             )

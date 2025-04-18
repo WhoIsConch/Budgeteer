@@ -34,7 +34,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
       String label = switch (filter) {
         TransactionFilter<String> t => "\"${t.value}\"", // "Value"
         TransactionFilter<AmountFilter> t =>
-          "${t.value.type} \$${formatAmount(t.value.amount ?? 0, exact: true)}", // > $Value
+          "${t.value.type!.symbol} \$${formatAmount(t.value.amount ?? 0, exact: true)}", // > $Value
         TransactionFilter<List<Category>> t => t.value.length > 3
             ? "${t.value.length} categories"
             : t.value.map((e) => e.name).join(", "),
@@ -142,7 +142,8 @@ class _TransactionSearchState extends State<TransactionSearch> {
                         return Navigator.pop(context);
                       }
 
-                      return Navigator.pop(context, amountFilter);
+                      return Navigator.pop(context,
+                          TransactionFilter<AmountFilter>(amountFilter));
                     },
                     child: const Text("OK"),
                   )
@@ -234,22 +235,19 @@ class _TransactionSearchState extends State<TransactionSearch> {
     TransactionType? typeFilterValue = getFilterValue<TransactionType>(filters);
     TransactionFilter? filter;
 
-    if (typeFilterValue == null || typeFilterValue == TransactionType.income) {
-      filter = const TransactionFilter(TransactionType.expense);
-    } else if (typeFilterValue == TransactionType.expense) {
-      filter = const TransactionFilter(
-        TransactionType.income,
-      );
+    if (typeFilterValue == null || typeFilterValue == TransactionType.expense) {
+      filter = const TransactionFilter<TransactionType>(TransactionType.income);
+    } else if (typeFilterValue == TransactionType.income) {
+      filter =
+          const TransactionFilter<TransactionType>(TransactionType.expense);
     }
 
     setState(() {
-      removeFilter<TransactionType>(filters);
-
       if (filter == null) {
-        return;
+        removeFilter<TransactionType>(filters);
+      } else {
+        updateFilter(filter, filters);
       }
-
-      updateFilter(filter, filters);
     });
   }
 
@@ -337,14 +335,16 @@ class _TransactionSearchState extends State<TransactionSearch> {
               .then((DateTimeRange? value) {
             if (value == null) return;
 
-            setState(() => updateFilter(TransactionFilter(value), filters));
+            setState(() =>
+                updateFilter(TransactionFilter<DateTimeRange>(value), filters));
           }),
         String => setState(() => isSearching = true),
         AmountFilter => _showAmountFilterDialog(context).then((value) {
             if (value == null) {
               return;
             }
-            setState(() => updateFilter(TransactionFilter(value), filters));
+            setState(() => updateFilter(
+                value as TransactionFilter<AmountFilter>, filters));
           }),
         TransactionType => toggleTransactionType(),
         List<Category>() => _showCategoryInputDialog(context).then((value) {
@@ -355,7 +355,8 @@ class _TransactionSearchState extends State<TransactionSearch> {
                 () => removeFilter<List<Category>>(filters),
               );
             } else {
-              setState(() => updateFilter(TransactionFilter(value), filters));
+              setState(() => updateFilter(
+                  TransactionFilter<List<Category>>(value), filters));
             }
           }),
         _ => throw FilterTypeException(type)
@@ -403,7 +404,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
               text = "${text.substring(0, 27)}...";
             }
 
-            TransactionFilter filter = TransactionFilter(text);
+            TransactionFilter filter = TransactionFilter<String>(text);
 
             if (filters.contains(filter) || filter.value.isEmpty) {
               // The list of filters already has the exact same filter,
