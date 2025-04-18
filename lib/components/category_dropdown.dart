@@ -13,9 +13,11 @@ class CategoryDropdown extends StatelessWidget {
     this.selectedCategoryTotal,
     this.showExpanded = true,
     this.transactionDate,
+    this.isLoading = false,
   });
 
   final List<Category> categories;
+  final bool isLoading;
   final Function(Category?) onChanged;
   final Category? selectedCategory;
   final double? selectedCategoryTotal;
@@ -47,6 +49,7 @@ class CategoryDropdown extends StatelessWidget {
         .add(const DropdownMenuEntry<String>(value: "", label: "No Category"));
 
     DropdownMenu menu = DropdownMenu<String>(
+      enabled: !isLoading,
       inputDecorationTheme:
           const InputDecorationTheme(border: InputBorder.none),
       initialSelection: selectedCategory?.name ?? "",
@@ -90,9 +93,11 @@ class CategoryDropdown extends StatelessWidget {
         Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
             child: IconButton(
-              icon: selectedCategory == null
-                  ? const Icon(Icons.add)
-                  : const Icon(Icons.edit),
+              icon: isLoading
+                  ? const CircularProgressIndicator()
+                  : selectedCategory == null
+                      ? const Icon(Icons.add)
+                      : const Icon(Icons.edit),
               onPressed: () async {
                 final result = await showDialog(
                     context: context,

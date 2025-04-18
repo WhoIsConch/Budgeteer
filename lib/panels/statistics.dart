@@ -110,7 +110,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                     updateFilter(
                         TransactionFilter<List<Category>>([category]), filters);
                   }),
-              selectedCategory: selectedCategories.first),
+              selectedCategory: selectedCategories.firstOrNull),
           const Spacer(),
           StreamBuilder<List<Transaction>>(
             stream:

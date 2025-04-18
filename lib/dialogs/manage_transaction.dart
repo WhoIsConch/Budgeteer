@@ -245,6 +245,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
       ),
       Consumer<TransactionProvider>(
           builder: (context, transactionProvider, child) => CategoryDropdown(
+                isLoading: isLoading,
                 categories: transactionProvider.categories,
                 transactionDate: selectedDate,
                 onChanged: (category) {
@@ -291,21 +292,6 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
         ),
       );
     });
-
-    if (isLoading) {
-      body = Stack(children: [
-        body,
-        Container(
-          width: double.infinity,
-          height: double.infinity,
-          color: Colors.black.withAlpha(160),
-          child: const Center(
-            child: SizedBox(
-                width: 32, height: 32, child: CircularProgressIndicator()),
-          ),
-        ),
-      ]);
-    }
 
     return Scaffold(
       appBar: AppBar(title: title, actions: [
