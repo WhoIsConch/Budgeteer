@@ -710,6 +710,13 @@ class FirestoreDatabaseHelper {
                 query = query.where("amount", isEqualTo: filter.value.amount);
                 break;
             }
+            // According to this convenient Github issue, if a field is being
+            // filtered by < <= > or >= it also needs to have an "orderBy"
+            // associated with that field in the same query. I guess the ultimate
+            // sort doesn't need to be that field, though, so I'm not sure why
+            // this exists. But it errors out otherwise
+            // https://github.com/firebase/flutterfire/issues/13478
+            query = query.orderBy("amount");
             break;
           case TransactionFilter<String> f:
             // filter.value should be of type String
@@ -720,11 +727,14 @@ class FirestoreDatabaseHelper {
             break;
           case TransactionFilter<DateTimeRange> f:
             // filter.value should be of type DateTimeRange
-            query = query.where(Filter.and(
-                Filter("date",
-                    isGreaterThanOrEqualTo: Timestamp.fromDate(f.value.start)),
-                Filter("date",
-                    isLessThanOrEqualTo: Timestamp.fromDate(f.value.end))));
+            query = query
+                .where(Filter.and(
+                    Filter("date",
+                        isGreaterThanOrEqualTo:
+                            Timestamp.fromDate(f.value.start)),
+                    Filter("date",
+                        isLessThanOrEqualTo: Timestamp.fromDate(f.value.end))))
+                .orderBy("date");
             // .where("date", isGreaterThanOrEqualTo: filter.value.start)
             // .where("date", isLessThanOrEqualTo: filter.value.end);
             break;
@@ -756,13 +766,9 @@ class FirestoreDatabaseHelper {
       query = query.startAfterDocument(startAfter);
     }
 
-    var newQuery = query.withConverter<Transaction>(
+    return query.withConverter<Transaction>(
         fromFirestore: Transaction.fromFirestore,
         toFirestore: (Transaction transaction, _) => transaction.toFirestore());
-
-    newQuery.get().then((e) => print("Length: ${e.docs.length}"));
-
-    return newQuery;
   }
 
   Future<int?> getTransactionsAmount() async {

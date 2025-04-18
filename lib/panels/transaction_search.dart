@@ -325,42 +325,52 @@ class _TransactionSearchState extends State<TransactionSearch> {
                     }),
       );
 
-  void _activateFilter(Type type) => switch (type) {
-        DateTimeRange => showDateRangePicker(
-                  context: context,
-                  initialDateRange: getFilterValue<DateTimeRange>(filters),
-                  firstDate:
-                      DateTime.now().subtract(const Duration(days: 365 * 10)),
-                  lastDate: DateTime.now().add(const Duration(days: 365 * 10)))
-              .then((DateTimeRange? value) {
-            if (value == null) return;
+  Map<Type, Function> get _filterActions => {
+        DateTimeRange: () => showDateRangePicker(
+                    context: context,
+                    initialDateRange: getFilterValue<DateTimeRange>(filters),
+                    firstDate:
+                        DateTime.now().subtract(const Duration(days: 365 * 10)),
+                    lastDate:
+                        DateTime.now().add(const Duration(days: 365 * 10)))
+                .then((DateTimeRange? value) {
+              if (value == null) return;
 
-            setState(() =>
-                updateFilter(TransactionFilter<DateTimeRange>(value), filters));
-          }),
-        String => setState(() => isSearching = true),
-        AmountFilter => _showAmountFilterDialog(context).then((value) {
-            if (value == null) {
-              return;
-            }
-            setState(() => updateFilter(
-                value as TransactionFilter<AmountFilter>, filters));
-          }),
-        TransactionType => toggleTransactionType(),
-        List<Category>() => _showCategoryInputDialog(context).then((value) {
-            if (value == null) {
-              return;
-            } else if (value.isEmpty) {
-              setState(
-                () => removeFilter<List<Category>>(filters),
-              );
-            } else {
               setState(() => updateFilter(
-                  TransactionFilter<List<Category>>(value), filters));
-            }
-          }),
-        _ => throw FilterTypeException(type)
+                  TransactionFilter<DateTimeRange>(value), filters));
+            }),
+        String: () => setState(() => isSearching = true),
+        AmountFilter: () => _showAmountFilterDialog(context).then((value) {
+              if (value == null) {
+                return;
+              }
+              setState(() => updateFilter(
+                  value as TransactionFilter<AmountFilter>, filters));
+            }),
+        TransactionType: () => toggleTransactionType(),
+        List<Category>: () => _showCategoryInputDialog(context).then((value) {
+              if (value == null) {
+                return;
+              } else if (value.isEmpty) {
+                setState(
+                  () => removeFilter<List<Category>>(filters),
+                );
+              } else {
+                setState(() => updateFilter(
+                    TransactionFilter<List<Category>>(value), filters));
+              }
+            }),
       };
+
+  void _activateFilter(Type type) {
+    final action = _filterActions[type];
+
+    if (action != null) {
+      action();
+    } else {
+      throw FilterTypeException(type);
+    }
+  }
 
   @override
   void initState() {
