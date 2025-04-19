@@ -1,4 +1,5 @@
 import 'package:budget/panels/home_page.dart';
+import 'package:budget/powersync.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dynamic_color/dynamic_color.dart';
@@ -6,8 +7,6 @@ import 'package:provider/provider.dart';
 import 'package:budget/tools/enums.dart';
 import 'package:budget/tools/api.dart';
 import 'package:budget/tools/settings.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
 
 ThemeMode? theme;
 
@@ -27,7 +26,7 @@ Future<void> setup() async {
       theme = ThemeMode.system;
   }
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await openDatabase();
 }
 
 void main() {
