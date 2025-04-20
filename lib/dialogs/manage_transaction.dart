@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:budget/components/category_dropdown.dart';
+import 'package:budget/database/app_database.dart';
+import 'package:collection/collection.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:budget/tools/transaction_provider.dart';
 import 'package:budget/tools/enums.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:intl/intl.dart';
@@ -29,22 +31,23 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
   Category? selectedCategory;
   double? selectedCategoryTotal;
   bool isLoading = true;
+  late final Stream<List<Category>> allCategories;
 
   DateTime selectedDate = DateTime.now();
   TransactionType selectedType = TransactionType.expense;
 
   final _formKey = GlobalKey<FormState>();
 
-  Transaction getTransaction() {
+  TransactionsCompanion getTransaction() {
     // Create a transaction based on the data in the form
-    Transaction transaction = Transaction(
-      id: widget.transaction?.id,
-      title: titleController.text,
-      amount: double.parse(amountController.text),
-      date: selectedDate,
-      notes: notesController.text,
-      type: selectedType,
-      category: selectedCategory?.id ?? "",
+    TransactionsCompanion transaction = TransactionsCompanion(
+      id: Value.absentIfNull(widget.transaction?.id),
+      title: Value(titleController.text),
+      amount: Value(double.parse(amountController.text)),
+      date: Value(selectedDate),
+      notes: Value(notesController.text),
+      type: Value(selectedType),
+      category: Value.absentIfNull(selectedCategory?.id),
     );
 
     return transaction;
@@ -66,7 +69,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
     }
 
     if (widget.transaction?.category != null) {
-      _loadSelectedCategory(widget.transaction!.category);
+      _loadSelectedCategory(widget.transaction!.category!);
     } else {
       isLoading = false;
     }
@@ -76,9 +79,9 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
     Category? category;
 
     if (id.isNotEmpty) {
-      final provider = Provider.of<TransactionProvider>(context, listen: false);
+      final provider = Provider.of<AppDatabase>(context, listen: false);
 
-      category = await provider.getCategory(id);
+      category = await provider.getCategoryById(id);
     }
 
     _setCategoryInfo(category);
@@ -91,19 +94,20 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
     if (category == null) {
       catText = "No Category";
     } else {
-      final provider = Provider.of<TransactionProvider>(context, listen: false);
+      final provider = Provider.of<TransactionDao>(context, listen: false);
 
       catText = category.name;
 
       // Get the transaction that's currently represented in the form
-      Transaction currentTransaction = getTransaction();
+      TransactionsCompanion currentTransaction = getTransaction();
 
       RelativeDateRange? categoryRelRange =
           category.resetIncrement.relativeDateRange;
 
       catTotal = await provider.getTotalAmount(
           dateRange: categoryRelRange
-              ?.getRange(fullRange: true, fromDate: currentTransaction.date)
+              ?.getRange(
+                  fullRange: true, fromDate: currentTransaction.date.value)
               .makeInclusive(),
           category: category);
 
@@ -116,13 +120,13 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
         catTotal -= widget.transaction!.amount;
       }
 
-      if (currentTransaction.type == TransactionType.expense) {
-        catTotal -= currentTransaction.amount;
+      if (currentTransaction.type.value == TransactionType.expense) {
+        catTotal -= currentTransaction.amount.value;
       } else {
-        catTotal += currentTransaction.amount;
+        catTotal += currentTransaction.amount.value;
       }
 
-      catTotal = category.balance + catTotal;
+      catTotal = category.balance ?? 0 + catTotal;
     }
 
     setState(() {
@@ -162,6 +166,8 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
 
   @override
   Widget build(BuildContext context) {
+    allCategories = context.watch<AppDatabase>().watchCategories();
+
     TextStyle fieldTextStyle = const TextStyle(fontSize: 24, height: 2);
     TextStyle labelStyle = const TextStyle(fontSize: 24);
 
@@ -243,22 +249,19 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
               }),
         ),
       ),
-      Consumer<TransactionProvider>(
-          builder: (context, transactionProvider, child) => CategoryDropdown(
+      StreamBuilder(
+          stream: allCategories,
+          builder: (context, snapshot) => CategoryDropdown(
                 isLoading: isLoading,
-                categories: transactionProvider.categories,
+                categories: snapshot.data!,
                 transactionDate: selectedDate,
                 onChanged: (category) {
                   // TODO: Make category info update when the category is edited
                   setState(() {
-                    selectedCategory =
-                        transactionProvider.categories.firstWhere(
-                      (e) => e.id == category?.id,
-                      orElse: () => Category(name: ""),
-                    );
+                    selectedCategory = snapshot.data!
+                        .firstWhereOrNull((e) => e.id == category?.id);
 
-                    if (selectedCategory?.id != null &&
-                        selectedCategory!.id!.isNotEmpty) {
+                    if (selectedCategory != null) {
                       _setCategoryInfo(selectedCategory);
                     } else {
                       _setCategoryInfo(null);
@@ -295,16 +298,18 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
 
     return Scaffold(
       appBar: AppBar(title: title, actions: [
-        Consumer<TransactionProvider>(
+        Consumer<AppDatabase>(
           builder: (context, transactionProvider, child) => IconButton(
             icon: const Icon(Icons.check),
             onPressed: () async {
               if (_formKey.currentState!.validate()) {
                 try {
                   if (widget.mode == ObjectManageMode.edit) {
-                    transactionProvider.updateTransaction(getTransaction());
+                    transactionProvider
+                        .updatePartialTransaction(getTransaction());
                   } else {
-                    await transactionProvider.addTransaction(getTransaction());
+                    await transactionProvider
+                        .createTransaction(getTransaction());
                   }
 
                   if (context.mounted) {

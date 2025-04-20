@@ -13,18 +13,6 @@ part 'app_database.g.dart';
 int genColor() =>
     Color((Random().nextDouble() * 0xFFFFFF).toInt()).withAlpha(255).toARGB32();
 
-class EnumIndexConverter<T extends Enum> extends TypeConverter<T, int> {
-  final List<T> values;
-
-  const EnumIndexConverter(this.values);
-
-  @override
-  T fromSql(int fromDb) => values[fromDb];
-
-  @override
-  int toSql(T value) => value.index;
-}
-
 class Transactions extends Table {
   @override
   String get tableName => "transactions";
@@ -33,11 +21,12 @@ class Transactions extends Table {
   TextColumn get title => text()();
   RealColumn get amount => real()();
   DateTimeColumn get date => dateTime()();
-  IntColumn get type =>
-      integer().map(const EnumIndexConverter(TransactionType.values))();
+  IntColumn get type => intEnum<TransactionType>()();
 
-  TextColumn get category =>
-      text().nullable().named('category_id').references(Categories, #id)();
+  TextColumn get category => text()
+      .nullable()
+      .named('category_id')
+      .references(Categories, #id, onDelete: KeyAction.setNull)();
   TextColumn get notes => text().nullable()();
 }
 
@@ -64,15 +53,65 @@ class Categories extends Table {
   TextColumn get id => text().clientDefault(() => uuid.v4())();
   TextColumn get name => text()();
 
-  IntColumn get resetIncrement => integer()
+  IntColumn get resetIncrement => intEnum<CategoryResetIncrement>()
       .withDefault(const Constant(0))
-      .named('reset_increment')
-      .map(const EnumIndexConverter(CategoryResetIncrement.values))();
+      .named('reset_increment')();
   BoolColumn get allowNegatives =>
       boolean().withDefault(const Constant(false)).named('allow_negatives')();
   IntColumn get color =>
       integer().clientDefault(genColor).map(const ColorConverter())();
   RealColumn get balance => real().nullable()();
+}
+
+extension CategoriesExtension on Category {
+  String getTimeUntilNextReset({DateTime? fromDate}) {
+    DateTime now = fromDate ?? DateTime.now();
+    DateTime nextReset;
+
+    switch (resetIncrement) {
+      case CategoryResetIncrement.daily:
+        // Next day at midnight
+        nextReset = DateTime(now.year, now.month, now.day + 1);
+        break;
+      case CategoryResetIncrement.weekly:
+        // Next Monday at midnight
+        nextReset = DateTime(now.year, now.month, now.day + (8 - now.weekday));
+        break;
+      case CategoryResetIncrement.monthly:
+        // First day of next month
+        if (now.month == 12) {
+          nextReset = DateTime(now.year + 1, 1, 1);
+        } else {
+          nextReset = DateTime(now.year, now.month + 1, 1);
+        }
+        break;
+      case CategoryResetIncrement.yearly:
+        // First day of next year
+        nextReset = DateTime(now.year + 1, 1, 1);
+        break;
+      default:
+        return "";
+    }
+
+    Duration timeLeft = nextReset.difference(now);
+    int days = timeLeft.inDays;
+    int hours = timeLeft.inHours % 24;
+    int minutes = timeLeft.inMinutes % 60;
+
+    if (days > 30) {
+      int months = days ~/ 30;
+      return months == 1 ? "a month" : "$months months";
+    } else if (days >= 7) {
+      int weeks = days ~/ 7;
+      return weeks == 1 ? "a week" : "$weeks weeks";
+    } else if (days > 0) {
+      return days == 1 ? "a day" : "$days days";
+    } else if (hours > 0) {
+      return hours == 1 ? "an hour" : "$hours hours";
+    } else {
+      return minutes == 1 ? "a minute" : "$minutes minutes";
+    }
+  }
 }
 
 @DriftAccessor(tables: [Transactions])
@@ -153,6 +192,33 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
 
     return query.watch();
   }
+
+  Future<double> getTotalAmount({
+    TransactionType? type,
+    DateTimeRange? dateRange,
+    Category? category,
+  }) async {
+    var query = select(transactions);
+
+    if (type != null) {
+      query = query..where((t) => t.type.equalsValue(type));
+    }
+
+    if (category != null) {
+      query = query..where((t) => t.category.equals(category.id));
+    }
+
+    if (dateRange != null) {
+      query = query
+        ..where((t) => t.date.isBetweenValues(dateRange.start, dateRange.end));
+    }
+
+    return await query
+            .addColumns([transactions.amount])
+            .map((row) => row.read(transactions.amount))
+            .getSingle() ??
+        0;
+  }
 }
 
 @DriftDatabase(tables: [Categories, Transactions], daos: [TransactionDao])
@@ -171,8 +237,25 @@ class AppDatabase extends _$AppDatabase {
   Future<bool> updateTransaction(Transaction entry) =>
       update(transactions).replace(entry);
 
+  Future<bool> updatePartialTransaction(TransactionsCompanion entry) async {
+    int value = await (update(transactions)
+          ..where((t) => t.id.equals(entry.id.value)))
+        .write(entry);
+
+    return value != 0;
+  }
+
   Future<int> deleteTransaction(Transaction entry) =>
       delete(transactions).delete(entry);
+
+  Future<Transaction> getTransactionById(String id) => (select(transactions)
+        ..where(
+          (tbl) => tbl.id.equals(id),
+        ))
+      .getSingle();
+
+  Future<Category> getCategoryById(String id) =>
+      (select(categories)..where((tbl) => tbl.id.equals(id))).getSingle();
 
   // Category methods
   Future<Category> createCategory(CategoriesCompanion entry) =>
@@ -180,6 +263,20 @@ class AppDatabase extends _$AppDatabase {
 
   Future<bool> updateCategory(Category entry) =>
       update(categories).replace(entry);
+
+  Future<Category?> updatePartialCategory(CategoriesCompanion entry) async {
+    int value = await (update(categories)
+          ..where((c) => c.id.equals(entry.id.value)))
+        .write(entry);
+
+    if (value != 1) {
+      // TODO: LOG THIS
+      return null;
+    }
+
+    return (select(categories)..where((c) => c.id.equals(entry.id.value)))
+        .getSingle();
+  }
 
   Future<int> deleteCategory(Category entry) =>
       delete(categories).delete(entry);

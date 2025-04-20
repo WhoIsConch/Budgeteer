@@ -1,6 +1,5 @@
 import 'package:budget/tools/transaction_provider.dart';
 import 'package:budget/tools/enums.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -27,40 +26,40 @@ class Account extends StatelessWidget {
             //         ));
             //   },
             // ),
-            TextButton(
-                onPressed: () async {
-                  scaffoldMessengerKey.currentState!
-                      .showSnackBar(const SnackBar(
-                    duration: Duration(days: 1),
-                    content: Text("Generating dummy data..."),
-                  ));
-                  await Provider.of<TransactionProvider>(context, listen: false)
-                      .createDummyData();
-                  scaffoldMessengerKey.currentState!.hideCurrentSnackBar();
-                  scaffoldMessengerKey.currentState!
-                      .showSnackBar(const SnackBar(
-                    duration: Duration(seconds: 3),
-                    content: Text("Generated!"),
-                  ));
-                },
-                child: const Text("Create Dummy Data")),
+            // TextButton(
+            //     onPressed: () async {
+            //       scaffoldMessengerKey.currentState!
+            //           .showSnackBar(const SnackBar(
+            //         duration: Duration(days: 1),
+            //         content: Text("Generating dummy data..."),
+            //       ));
+            //       await Provider.of<TransactionProvider>(context, listen: false)
+            //           .createDummyData();
+            //       scaffoldMessengerKey.currentState!.hideCurrentSnackBar();
+            //       scaffoldMessengerKey.currentState!
+            //           .showSnackBar(const SnackBar(
+            //         duration: Duration(seconds: 3),
+            //         content: Text("Generated!"),
+            //       ));
+            //     },
+            //     child: const Text("Create Dummy Data")),
 
-            TextButton(
-                onPressed: () async {
-                  await FirebaseAuth.instance.signOut();
-                },
-                child: Text("Log out with Firebase Auth")),
+            // TextButton(
+            //     onPressed: () async {
+            //       await FirebaseAuth.instance.signOut();
+            //     },
+            //     child: Text("Log out with Firebase Auth")),
 
-            TextButton(
-              onPressed: () async {
-                var db = FirestoreDatabaseHelper();
-                db.transactions
-                    .where('type', isEqualTo: TransactionType.expense.value)
-                    .get()
-                    .then((res) => print(res.docs.length));
-              },
-              child: Text("Send Firestore Data"),
-            )
+            // TextButton(
+            //   onPressed: () async {
+            //     var db = FirestoreDatabaseHelper();
+            //     db.transactions
+            //         .where('type', isEqualTo: TransactionType.expense.value)
+            //         .get()
+            //         .then((res) => print(res.docs.length));
+            //   },
+            //   child: Text("Send Firestore Data"),
+            // )
           ],
         ),
         const Divider(),

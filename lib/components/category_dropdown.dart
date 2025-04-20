@@ -40,7 +40,7 @@ class CategoryDropdown extends StatelessWidget {
 
     List<DropdownMenuEntry<String>> dropdownEntries = categories
         .map<DropdownMenuEntry<String>>((Category cat) => DropdownMenuEntry(
-              value: cat.id!,
+              value: cat.id,
               label: cat.name,
             ))
         .toList();

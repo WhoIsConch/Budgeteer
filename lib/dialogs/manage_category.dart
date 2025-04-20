@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:budget/database/app_database.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:provider/provider.dart';
@@ -29,14 +31,14 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
   CategoryResetIncrement resetIncrement = CategoryResetIncrement.never;
   Color? selectedColor;
 
-  Category getCategory() {
-    return Category(
-      id: widget.category?.id,
-      name: nameController.text,
-      balance: double.parse(amountController.text),
-      resetIncrement: resetIncrement,
-      allowNegatives: allowNegatives,
-      color: selectedColor,
+  CategoriesCompanion getCategory() {
+    return CategoriesCompanion(
+      id: Value.absentIfNull(widget.category?.id),
+      name: Value(nameController.text),
+      balance: Value.absentIfNull(double.tryParse(amountController.text)),
+      resetIncrement: Value(resetIncrement),
+      allowNegatives: Value(allowNegatives),
+      color: Value.absentIfNull(selectedColor),
     );
   }
 
@@ -46,10 +48,11 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
 
     if (widget.mode == ObjectManageMode.edit) {
       nameController.text = widget.category!.name;
-      amountController.text = widget.category!.balance.toStringAsFixed(2);
+      amountController.text =
+          widget.category!.balance?.toStringAsFixed(2) ?? "0";
       allowNegatives = widget.category!.allowNegatives;
       resetIncrement = widget.category!.resetIncrement;
-      selectedColor = widget.category!.color!;
+      selectedColor = widget.category!.color;
     }
   }
 
@@ -85,16 +88,18 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
           return;
         }
 
-        final provider =
-            Provider.of<TransactionProvider>(context, listen: false);
+        final provider = Provider.of<AppDatabase>(context, listen: false);
         Category savedCategory;
 
         try {
           if (widget.mode == ObjectManageMode.edit) {
-            savedCategory = getCategory();
-            provider.updateCategory(savedCategory);
+            // There is no way this shouldn't be a valid category with a valid
+            // ID. If it isn't, I'll let the try-catch handle it for now.
+            // I'll think of something else if it becomes a problem.
+            savedCategory =
+                await provider.updatePartialCategory(getCategory()) as Category;
           } else {
-            savedCategory = await provider.addCategory(getCategory());
+            savedCategory = await provider.createCategory(getCategory());
           }
 
           if (context.mounted) {

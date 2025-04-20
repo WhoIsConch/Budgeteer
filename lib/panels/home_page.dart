@@ -1,11 +1,12 @@
 import 'package:budget/panels/login.dart';
 import 'package:budget/tools/enums.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:flutter/material.dart';
 import 'package:budget/panels/home.dart';
 import 'package:budget/panels/spending.dart';
 import 'package:budget/panels/account.dart';
 import 'package:budget/panels/statistics.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -94,16 +95,17 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
+    return StreamBuilder<AuthState>(
+        stream: Supabase.instance.client.auth.onAuthStateChange,
         builder: (BuildContext context, AsyncSnapshot snapshot) {
           Widget body;
+          final AuthChangeEvent event = snapshot.data;
 
           if (snapshot.connectionState == ConnectionState.waiting) {
             body = const Scaffold(
                 key: ValueKey('loading'),
                 body: Center(child: CircularProgressIndicator()));
-          } else if (snapshot.hasData) {
+          } else if (event == AuthChangeEvent.signedIn) {
             body = const HomePage(key: ValueKey('home'));
           } else {
             body = const LoginPage(key: ValueKey('login'));

@@ -1,9 +1,9 @@
 import 'package:budget/tools/enums.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum SignInType { signIn, signUp, google }
 
@@ -28,6 +28,8 @@ class _LoginPageState extends State<LoginPage> {
   String? usernameError;
   String? passwordError;
 
+  SupabaseClient get supabase => Supabase.instance.client;
+
   void submitForm(SignInType type) async {
     setState(() {
       usernameError = null;
@@ -46,10 +48,10 @@ class _LoginPageState extends State<LoginPage> {
 
     if (type == SignInType.signIn) {
       try {
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
+        await supabase.auth.signInWithPassword(
             email: usernameController.text, password: passwordController.text);
         canFinish = true;
-      } on FirebaseAuthException catch (e) {
+      } catch (e) {
         if (e.code == 'user-not-found') {
           setState(() => usernameError = "Account doesn't exist");
         } else if (e.code == 'wrong-password') {
