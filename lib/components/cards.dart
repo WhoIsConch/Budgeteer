@@ -1,7 +1,7 @@
 import 'package:budget/tools/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
-import 'package:budget/tools/api.dart';
+import 'package:budget/tools/transaction_provider.dart';
 import 'package:provider/provider.dart';
 
 enum CardTextStyle { major, cluster }

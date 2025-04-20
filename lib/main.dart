@@ -1,3 +1,4 @@
+import 'package:budget/database/app_database.dart';
 import 'package:budget/panels/home_page.dart';
 import 'package:budget/powersync.dart';
 import 'package:flutter/material.dart';
@@ -5,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/tools/enums.dart';
-import 'package:budget/tools/api.dart';
+import 'package:budget/tools/transaction_provider.dart';
 import 'package:budget/tools/settings.dart';
 
 ThemeMode? theme;
@@ -32,9 +33,28 @@ Future<void> setup() async {
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Define the providers
+  final dbProvider = Provider<AppDatabase>(
+    create: (_) => appDb,
+    dispose: (_, db) => db.close(),
+  );
+
+  // 2️⃣ TransactionDao
+  final daoProvider = ProxyProvider<AppDatabase, TransactionDao>(
+    update: (_, db, __) => TransactionDao(db),
+  );
+
+  final transactionProvider = ChangeNotifierProvider<TransactionProvider>(
+      create: (context) => TransactionProvider());
+
   setup().then(((value) {
-    runApp(ChangeNotifierProvider(
-        create: (context) => TransactionProvider(), child: const BudgetApp()));
+    runApp(
+      MultiProvider(providers: [
+        dbProvider,
+        daoProvider,
+        transactionProvider,
+      ], child: const BudgetApp()),
+    );
   }));
 }
 

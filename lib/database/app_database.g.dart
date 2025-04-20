@@ -3,6 +3,11 @@
 part of 'app_database.dart';
 
 // ignore_for_file: type=lint
+mixin _$TransactionDaoMixin on DatabaseAccessor<AppDatabase> {
+  $CategoriesTable get categories => attachedDatabase.categories;
+  $TransactionsTable get transactions => attachedDatabase.transactions;
+}
+
 class $CategoriesTable extends Categories
     with TableInfo<$CategoriesTable, Category> {
   @override
@@ -21,14 +26,15 @@ class $CategoriesTable extends Categories
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
       'name', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _resetIncrementMeta =
-      const VerificationMeta('resetIncrement');
   @override
-  late final GeneratedColumn<int> resetIncrement = GeneratedColumn<int>(
-      'reset_increment', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultValue: const Constant(0));
+  late final GeneratedColumnWithTypeConverter<CategoryResetIncrement, int>
+      resetIncrement = GeneratedColumn<int>(
+              'reset_increment', aliasedName, false,
+              type: DriftSqlType.int,
+              requiredDuringInsert: false,
+              defaultValue: const Constant(0))
+          .withConverter<CategoryResetIncrement>(
+              $CategoriesTable.$converterresetIncrement);
   static const VerificationMeta _allowNegativesMeta =
       const VerificationMeta('allowNegatives');
   @override
@@ -39,13 +45,13 @@ class $CategoriesTable extends Categories
       defaultConstraints: GeneratedColumn.constraintIsAlways(
           'CHECK ("allow_negatives" IN (0, 1))'),
       defaultValue: const Constant(false));
-  static const VerificationMeta _colorMeta = const VerificationMeta('color');
   @override
-  late final GeneratedColumn<int> color = GeneratedColumn<int>(
-      'color', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      clientDefault: genColor);
+  late final GeneratedColumnWithTypeConverter<Color, int> color =
+      GeneratedColumn<int>('color', aliasedName, false,
+              type: DriftSqlType.int,
+              requiredDuringInsert: false,
+              clientDefault: genColor)
+          .withConverter<Color>($CategoriesTable.$convertercolor);
   static const VerificationMeta _balanceMeta =
       const VerificationMeta('balance');
   @override
@@ -74,21 +80,11 @@ class $CategoriesTable extends Categories
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
-    if (data.containsKey('reset_increment')) {
-      context.handle(
-          _resetIncrementMeta,
-          resetIncrement.isAcceptableOrUnknown(
-              data['reset_increment']!, _resetIncrementMeta));
-    }
     if (data.containsKey('allow_negatives')) {
       context.handle(
           _allowNegativesMeta,
           allowNegatives.isAcceptableOrUnknown(
               data['allow_negatives']!, _allowNegativesMeta));
-    }
-    if (data.containsKey('color')) {
-      context.handle(
-          _colorMeta, color.isAcceptableOrUnknown(data['color']!, _colorMeta));
     }
     if (data.containsKey('balance')) {
       context.handle(_balanceMeta,
@@ -107,12 +103,14 @@ class $CategoriesTable extends Categories
           .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
       name: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
-      resetIncrement: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}reset_increment'])!,
+      resetIncrement: $CategoriesTable.$converterresetIncrement.fromSql(
+          attachedDatabase.typeMapping.read(
+              DriftSqlType.int, data['${effectivePrefix}reset_increment'])!),
       allowNegatives: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}allow_negatives'])!,
-      color: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}color'])!,
+      color: $CategoriesTable.$convertercolor.fromSql(attachedDatabase
+          .typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}color'])!),
       balance: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}balance']),
     );
@@ -122,14 +120,18 @@ class $CategoriesTable extends Categories
   $CategoriesTable createAlias(String alias) {
     return $CategoriesTable(attachedDatabase, alias);
   }
+
+  static TypeConverter<CategoryResetIncrement, int> $converterresetIncrement =
+      const EnumIndexConverter(CategoryResetIncrement.values);
+  static TypeConverter<Color, int> $convertercolor = const ColorConverter();
 }
 
 class Category extends DataClass implements Insertable<Category> {
   final String id;
   final String name;
-  final int resetIncrement;
+  final CategoryResetIncrement resetIncrement;
   final bool allowNegatives;
-  final int color;
+  final Color color;
   final double? balance;
   const Category(
       {required this.id,
@@ -143,9 +145,15 @@ class Category extends DataClass implements Insertable<Category> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
-    map['reset_increment'] = Variable<int>(resetIncrement);
+    {
+      map['reset_increment'] = Variable<int>(
+          $CategoriesTable.$converterresetIncrement.toSql(resetIncrement));
+    }
     map['allow_negatives'] = Variable<bool>(allowNegatives);
-    map['color'] = Variable<int>(color);
+    {
+      map['color'] =
+          Variable<int>($CategoriesTable.$convertercolor.toSql(color));
+    }
     if (!nullToAbsent || balance != null) {
       map['balance'] = Variable<double>(balance);
     }
@@ -171,9 +179,10 @@ class Category extends DataClass implements Insertable<Category> {
     return Category(
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
-      resetIncrement: serializer.fromJson<int>(json['resetIncrement']),
+      resetIncrement:
+          serializer.fromJson<CategoryResetIncrement>(json['resetIncrement']),
       allowNegatives: serializer.fromJson<bool>(json['allowNegatives']),
-      color: serializer.fromJson<int>(json['color']),
+      color: serializer.fromJson<Color>(json['color']),
       balance: serializer.fromJson<double?>(json['balance']),
     );
   }
@@ -183,9 +192,10 @@ class Category extends DataClass implements Insertable<Category> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
-      'resetIncrement': serializer.toJson<int>(resetIncrement),
+      'resetIncrement':
+          serializer.toJson<CategoryResetIncrement>(resetIncrement),
       'allowNegatives': serializer.toJson<bool>(allowNegatives),
-      'color': serializer.toJson<int>(color),
+      'color': serializer.toJson<Color>(color),
       'balance': serializer.toJson<double?>(balance),
     };
   }
@@ -193,9 +203,9 @@ class Category extends DataClass implements Insertable<Category> {
   Category copyWith(
           {String? id,
           String? name,
-          int? resetIncrement,
+          CategoryResetIncrement? resetIncrement,
           bool? allowNegatives,
-          int? color,
+          Color? color,
           Value<double?> balance = const Value.absent()}) =>
       Category(
         id: id ?? this.id,
@@ -251,9 +261,9 @@ class Category extends DataClass implements Insertable<Category> {
 class CategoriesCompanion extends UpdateCompanion<Category> {
   final Value<String> id;
   final Value<String> name;
-  final Value<int> resetIncrement;
+  final Value<CategoryResetIncrement> resetIncrement;
   final Value<bool> allowNegatives;
-  final Value<int> color;
+  final Value<Color> color;
   final Value<double?> balance;
   final Value<int> rowid;
   const CategoriesCompanion({
@@ -297,9 +307,9 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
   CategoriesCompanion copyWith(
       {Value<String>? id,
       Value<String>? name,
-      Value<int>? resetIncrement,
+      Value<CategoryResetIncrement>? resetIncrement,
       Value<bool>? allowNegatives,
-      Value<int>? color,
+      Value<Color>? color,
       Value<double?>? balance,
       Value<int>? rowid}) {
     return CategoriesCompanion(
@@ -323,13 +333,16 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
       map['name'] = Variable<String>(name.value);
     }
     if (resetIncrement.present) {
-      map['reset_increment'] = Variable<int>(resetIncrement.value);
+      map['reset_increment'] = Variable<int>($CategoriesTable
+          .$converterresetIncrement
+          .toSql(resetIncrement.value));
     }
     if (allowNegatives.present) {
       map['allow_negatives'] = Variable<bool>(allowNegatives.value);
     }
     if (color.present) {
-      map['color'] = Variable<int>(color.value);
+      map['color'] =
+          Variable<int>($CategoriesTable.$convertercolor.toSql(color.value));
     }
     if (balance.present) {
       map['balance'] = Variable<double>(balance.value);
@@ -383,11 +396,11 @@ class $TransactionsTable extends Transactions
   late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
       'date', aliasedName, false,
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
-  static const VerificationMeta _typeMeta = const VerificationMeta('type');
   @override
-  late final GeneratedColumn<int> type = GeneratedColumn<int>(
-      'type', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
+  late final GeneratedColumnWithTypeConverter<TransactionType, int> type =
+      GeneratedColumn<int>('type', aliasedName, false,
+              type: DriftSqlType.int, requiredDuringInsert: true)
+          .withConverter<TransactionType>($TransactionsTable.$convertertype);
   static const VerificationMeta _categoryMeta =
       const VerificationMeta('category');
   @override
@@ -436,12 +449,6 @@ class $TransactionsTable extends Transactions
     } else if (isInserting) {
       context.missing(_dateMeta);
     }
-    if (data.containsKey('type')) {
-      context.handle(
-          _typeMeta, type.isAcceptableOrUnknown(data['type']!, _typeMeta));
-    } else if (isInserting) {
-      context.missing(_typeMeta);
-    }
     if (data.containsKey('category_id')) {
       context.handle(_categoryMeta,
           category.isAcceptableOrUnknown(data['category_id']!, _categoryMeta));
@@ -467,8 +474,9 @@ class $TransactionsTable extends Transactions
           .read(DriftSqlType.double, data['${effectivePrefix}amount'])!,
       date: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}date'])!,
-      type: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}type'])!,
+      type: $TransactionsTable.$convertertype.fromSql(attachedDatabase
+          .typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}type'])!),
       category: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}category_id']),
       notes: attachedDatabase.typeMapping
@@ -480,6 +488,9 @@ class $TransactionsTable extends Transactions
   $TransactionsTable createAlias(String alias) {
     return $TransactionsTable(attachedDatabase, alias);
   }
+
+  static TypeConverter<TransactionType, int> $convertertype =
+      const EnumIndexConverter(TransactionType.values);
 }
 
 class Transaction extends DataClass implements Insertable<Transaction> {
@@ -487,7 +498,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   final String title;
   final double amount;
   final DateTime date;
-  final int type;
+  final TransactionType type;
   final String? category;
   final String? notes;
   const Transaction(
@@ -505,7 +516,10 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     map['title'] = Variable<String>(title);
     map['amount'] = Variable<double>(amount);
     map['date'] = Variable<DateTime>(date);
-    map['type'] = Variable<int>(type);
+    {
+      map['type'] =
+          Variable<int>($TransactionsTable.$convertertype.toSql(type));
+    }
     if (!nullToAbsent || category != null) {
       map['category_id'] = Variable<String>(category);
     }
@@ -538,7 +552,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       title: serializer.fromJson<String>(json['title']),
       amount: serializer.fromJson<double>(json['amount']),
       date: serializer.fromJson<DateTime>(json['date']),
-      type: serializer.fromJson<int>(json['type']),
+      type: serializer.fromJson<TransactionType>(json['type']),
       category: serializer.fromJson<String?>(json['category']),
       notes: serializer.fromJson<String?>(json['notes']),
     );
@@ -551,7 +565,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       'title': serializer.toJson<String>(title),
       'amount': serializer.toJson<double>(amount),
       'date': serializer.toJson<DateTime>(date),
-      'type': serializer.toJson<int>(type),
+      'type': serializer.toJson<TransactionType>(type),
       'category': serializer.toJson<String?>(category),
       'notes': serializer.toJson<String?>(notes),
     };
@@ -562,7 +576,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           String? title,
           double? amount,
           DateTime? date,
-          int? type,
+          TransactionType? type,
           Value<String?> category = const Value.absent(),
           Value<String?> notes = const Value.absent()}) =>
       Transaction(
@@ -621,7 +635,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   final Value<String> title;
   final Value<double> amount;
   final Value<DateTime> date;
-  final Value<int> type;
+  final Value<TransactionType> type;
   final Value<String?> category;
   final Value<String?> notes;
   final Value<int> rowid;
@@ -640,7 +654,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     required String title,
     required double amount,
     required DateTime date,
-    required int type,
+    required TransactionType type,
     this.category = const Value.absent(),
     this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -675,7 +689,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       Value<String>? title,
       Value<double>? amount,
       Value<DateTime>? date,
-      Value<int>? type,
+      Value<TransactionType>? type,
       Value<String?>? category,
       Value<String?>? notes,
       Value<int>? rowid}) {
@@ -707,7 +721,8 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       map['date'] = Variable<DateTime>(date.value);
     }
     if (type.present) {
-      map['type'] = Variable<int>(type.value);
+      map['type'] =
+          Variable<int>($TransactionsTable.$convertertype.toSql(type.value));
     }
     if (category.present) {
       map['category_id'] = Variable<String>(category.value);
@@ -742,6 +757,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $CategoriesTable categories = $CategoriesTable(this);
   late final $TransactionsTable transactions = $TransactionsTable(this);
+  late final TransactionDao transactionDao =
+      TransactionDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -753,18 +770,18 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 typedef $$CategoriesTableCreateCompanionBuilder = CategoriesCompanion Function({
   Value<String> id,
   required String name,
-  Value<int> resetIncrement,
+  Value<CategoryResetIncrement> resetIncrement,
   Value<bool> allowNegatives,
-  Value<int> color,
+  Value<Color> color,
   Value<double?> balance,
   Value<int> rowid,
 });
 typedef $$CategoriesTableUpdateCompanionBuilder = CategoriesCompanion Function({
   Value<String> id,
   Value<String> name,
-  Value<int> resetIncrement,
+  Value<CategoryResetIncrement> resetIncrement,
   Value<bool> allowNegatives,
-  Value<int> color,
+  Value<Color> color,
   Value<double?> balance,
   Value<int> rowid,
 });
@@ -804,16 +821,20 @@ class $$CategoriesTableFilterComposer
   ColumnFilters<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<int> get resetIncrement => $composableBuilder(
-      column: $table.resetIncrement,
-      builder: (column) => ColumnFilters(column));
+  ColumnWithTypeConverterFilters<CategoryResetIncrement, CategoryResetIncrement,
+          int>
+      get resetIncrement => $composableBuilder(
+          column: $table.resetIncrement,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
 
   ColumnFilters<bool> get allowNegatives => $composableBuilder(
       column: $table.allowNegatives,
       builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<int> get color => $composableBuilder(
-      column: $table.color, builder: (column) => ColumnFilters(column));
+  ColumnWithTypeConverterFilters<Color, Color, int> get color =>
+      $composableBuilder(
+          column: $table.color,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
 
   ColumnFilters<double> get balance => $composableBuilder(
       column: $table.balance, builder: (column) => ColumnFilters(column));
@@ -885,13 +906,14 @@ class $$CategoriesTableAnnotationComposer
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
 
-  GeneratedColumn<int> get resetIncrement => $composableBuilder(
-      column: $table.resetIncrement, builder: (column) => column);
+  GeneratedColumnWithTypeConverter<CategoryResetIncrement, int>
+      get resetIncrement => $composableBuilder(
+          column: $table.resetIncrement, builder: (column) => column);
 
   GeneratedColumn<bool> get allowNegatives => $composableBuilder(
       column: $table.allowNegatives, builder: (column) => column);
 
-  GeneratedColumn<int> get color =>
+  GeneratedColumnWithTypeConverter<Color, int> get color =>
       $composableBuilder(column: $table.color, builder: (column) => column);
 
   GeneratedColumn<double> get balance =>
@@ -944,9 +966,9 @@ class $$CategoriesTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> name = const Value.absent(),
-            Value<int> resetIncrement = const Value.absent(),
+            Value<CategoryResetIncrement> resetIncrement = const Value.absent(),
             Value<bool> allowNegatives = const Value.absent(),
-            Value<int> color = const Value.absent(),
+            Value<Color> color = const Value.absent(),
             Value<double?> balance = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -962,9 +984,9 @@ class $$CategoriesTableTableManager extends RootTableManager<
           createCompanionCallback: ({
             Value<String> id = const Value.absent(),
             required String name,
-            Value<int> resetIncrement = const Value.absent(),
+            Value<CategoryResetIncrement> resetIncrement = const Value.absent(),
             Value<bool> allowNegatives = const Value.absent(),
-            Value<int> color = const Value.absent(),
+            Value<Color> color = const Value.absent(),
             Value<double?> balance = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -1028,7 +1050,7 @@ typedef $$TransactionsTableCreateCompanionBuilder = TransactionsCompanion
   required String title,
   required double amount,
   required DateTime date,
-  required int type,
+  required TransactionType type,
   Value<String?> category,
   Value<String?> notes,
   Value<int> rowid,
@@ -1039,7 +1061,7 @@ typedef $$TransactionsTableUpdateCompanionBuilder = TransactionsCompanion
   Value<String> title,
   Value<double> amount,
   Value<DateTime> date,
-  Value<int> type,
+  Value<TransactionType> type,
   Value<String?> category,
   Value<String?> notes,
   Value<int> rowid,
@@ -1086,8 +1108,10 @@ class $$TransactionsTableFilterComposer
   ColumnFilters<DateTime> get date => $composableBuilder(
       column: $table.date, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<int> get type => $composableBuilder(
-      column: $table.type, builder: (column) => ColumnFilters(column));
+  ColumnWithTypeConverterFilters<TransactionType, TransactionType, int>
+      get type => $composableBuilder(
+          column: $table.type,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
 
   ColumnFilters<String> get notes => $composableBuilder(
       column: $table.notes, builder: (column) => ColumnFilters(column));
@@ -1182,7 +1206,7 @@ class $$TransactionsTableAnnotationComposer
   GeneratedColumn<DateTime> get date =>
       $composableBuilder(column: $table.date, builder: (column) => column);
 
-  GeneratedColumn<int> get type =>
+  GeneratedColumnWithTypeConverter<TransactionType, int> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
 
   GeneratedColumn<String> get notes =>
@@ -1236,7 +1260,7 @@ class $$TransactionsTableTableManager extends RootTableManager<
             Value<String> title = const Value.absent(),
             Value<double> amount = const Value.absent(),
             Value<DateTime> date = const Value.absent(),
-            Value<int> type = const Value.absent(),
+            Value<TransactionType> type = const Value.absent(),
             Value<String?> category = const Value.absent(),
             Value<String?> notes = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -1256,7 +1280,7 @@ class $$TransactionsTableTableManager extends RootTableManager<
             required String title,
             required double amount,
             required DateTime date,
-            required int type,
+            required TransactionType type,
             Value<String?> category = const Value.absent(),
             Value<String?> notes = const Value.absent(),
             Value<int> rowid = const Value.absent(),

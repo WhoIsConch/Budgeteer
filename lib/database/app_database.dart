@@ -4,6 +4,7 @@ import 'package:budget/tools/enums.dart';
 import 'package:budget/tools/filters.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart' show Color, DateTimeRange;
+import 'package:intl/intl.dart';
 import 'package:powersync/powersync.dart' show PowerSyncDatabase, uuid;
 import 'package:drift_sqlite_async/drift_sqlite_async.dart';
 
@@ -11,6 +12,18 @@ part 'app_database.g.dart';
 
 int genColor() =>
     Color((Random().nextDouble() * 0xFFFFFF).toInt()).withAlpha(255).toARGB32();
+
+class EnumIndexConverter<T extends Enum> extends TypeConverter<T, int> {
+  final List<T> values;
+
+  const EnumIndexConverter(this.values);
+
+  @override
+  T fromSql(int fromDb) => values[fromDb];
+
+  @override
+  int toSql(T value) => value.index;
+}
 
 class Transactions extends Table {
   @override
@@ -20,11 +33,28 @@ class Transactions extends Table {
   TextColumn get title => text()();
   RealColumn get amount => real()();
   DateTimeColumn get date => dateTime()();
-  IntColumn get type => integer()();
+  IntColumn get type =>
+      integer().map(const EnumIndexConverter(TransactionType.values))();
 
   TextColumn get category =>
       text().nullable().named('category_id').references(Categories, #id)();
   TextColumn get notes => text().nullable()();
+}
+
+extension TransactionExtensions on Transaction {
+  String formatDate() {
+    return DateFormat('MM/dd/yyyy').format(date);
+  }
+}
+
+class ColorConverter extends TypeConverter<Color, int> {
+  const ColorConverter();
+
+  @override
+  Color fromSql(int fromDb) => Color(fromDb);
+
+  @override
+  int toSql(Color value) => value.toARGB32();
 }
 
 class Categories extends Table {
@@ -34,36 +64,29 @@ class Categories extends Table {
   TextColumn get id => text().clientDefault(() => uuid.v4())();
   TextColumn get name => text()();
 
-  IntColumn get resetIncrement =>
-      integer().withDefault(const Constant(0)).named('reset_increment')();
+  IntColumn get resetIncrement => integer()
+      .withDefault(const Constant(0))
+      .named('reset_increment')
+      .map(const EnumIndexConverter(CategoryResetIncrement.values))();
   BoolColumn get allowNegatives =>
       boolean().withDefault(const Constant(false)).named('allow_negatives')();
-  IntColumn get color => integer().clientDefault(genColor)();
+  IntColumn get color =>
+      integer().clientDefault(genColor).map(const ColorConverter())();
   RealColumn get balance => real().nullable()();
 }
 
-@DriftDatabase(tables: [Categories, Transactions])
-class AppDatabase extends _$AppDatabase {
-  AppDatabase(PowerSyncDatabase db) : super(SqliteAsyncDriftConnection(db));
+@DriftAccessor(tables: [Transactions])
+class TransactionDao extends DatabaseAccessor<AppDatabase>
+    with _$TransactionDaoMixin {
+  TransactionDao(AppDatabase db) : super(db);
 
-  @override
-  int get schemaVersion => 1;
-
-  Stream<List<Category>> watchCategories() => select(categories).watch();
-
-  // Transaction methods
-  Future<Transaction> createTransaction(TransactionsCompanion entry) =>
-      into(transactions).insertReturning(entry);
-
-  Future<bool> updateTransaction(Transaction entry) =>
-      update(transactions).replace(entry);
-
-  Future<int> deleteTransaction(Transaction entry) =>
-      delete(transactions).delete(entry);
-
-  Stream<List<Transaction>> watchTransactions(
-      {List<TransactionFilter>? filters, Sort? sort, int? limit, int? offset}) {
-    var query = select(transactions);
+  Stream<List<Transaction>> watchTransactionsPage({
+    List<TransactionFilter>? filters,
+    Sort? sort,
+    int limit = 20,
+    int? offset,
+  }) {
+    var query = db.select(db.transactions);
 
     filters ??= [];
 
@@ -126,12 +149,30 @@ class AppDatabase extends _$AppDatabase {
       query = query..orderBy([(t) => OrderingTerm.desc(t.date)]);
     }
 
-    if (limit != null) {
-      query = query..limit(limit, offset: offset);
-    }
+    query = query..limit(limit, offset: offset);
 
     return query.watch();
   }
+}
+
+@DriftDatabase(tables: [Categories, Transactions], daos: [TransactionDao])
+class AppDatabase extends _$AppDatabase {
+  AppDatabase(PowerSyncDatabase db) : super(SqliteAsyncDriftConnection(db));
+
+  @override
+  int get schemaVersion => 1;
+
+  Stream<List<Category>> watchCategories() => select(categories).watch();
+
+  // Transaction methods
+  Future<Transaction> createTransaction(TransactionsCompanion entry) =>
+      into(transactions).insertReturning(entry);
+
+  Future<bool> updateTransaction(Transaction entry) =>
+      update(transactions).replace(entry);
+
+  Future<int> deleteTransaction(Transaction entry) =>
+      delete(transactions).delete(entry);
 
   // Category methods
   Future<Category> createCategory(CategoriesCompanion entry) =>

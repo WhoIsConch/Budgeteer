@@ -4,7 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:provider/provider.dart';
-import 'package:budget/tools/api.dart';
+import 'package:budget/tools/transaction_provider.dart';
 import 'package:budget/tools/enums.dart';
 import 'package:budget/tools/validators.dart';
 

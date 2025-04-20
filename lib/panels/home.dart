@@ -3,7 +3,7 @@ import 'package:budget/dialogs/manage_transaction.dart';
 import 'package:budget/tools/enums.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:budget/tools/api.dart';
+import 'package:budget/tools/transaction_provider.dart';
 
 class Overview extends StatelessWidget {
   const Overview({super.key, required this.swapCallback});

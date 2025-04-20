@@ -35,7 +35,6 @@ class TransactionFilter<T> {
   int get hashCode => value.hashCode;
 }
 
-// Not by definition an enum but it works nonetheless
 class AmountFilter {
   final AmountFilterType? type;
   final double? amount;
@@ -47,18 +46,26 @@ class AmountFilter {
   }
 }
 
-T? getFilterValue<T>(List<TransactionFilter> filters) {
-  return filters.firstWhereOrNull((e) => e.value.runtimeType == T)?.value;
-}
+class TransactionsRequest {
+  final List<TransactionFilter>? filters;
+  final Sort? sort;
+  final int? pageKey;
+  final int? pageSize;
 
-void updateFilter<T>(
-    TransactionFilter<T> filter, List<TransactionFilter> filters) {
-  filters.removeWhere((e) => e.value.runtimeType == filter.value.runtimeType);
-  filters.add(filter);
-}
+  const TransactionsRequest(
+      {this.filters, this.sort, this.pageKey, this.pageSize});
 
-void removeFilter<T>(List<TransactionFilter> filters) {
-  filters.removeWhere((e) => e.value.runtimeType == T);
+  @override
+  bool operator ==(other) {
+    return other is TransactionsRequest &&
+        filters == other.filters &&
+        sort == other.sort &&
+        pageKey == other.pageKey &&
+        pageSize == other.pageSize;
+  }
+
+  @override
+  int get hashCode => Object.hash(filters, sort, pageKey, pageSize);
 }
 
 class FilterTypeException implements Exception {

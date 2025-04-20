@@ -1,7 +1,8 @@
 import 'package:budget/components/transactions_list.dart';
-import 'package:budget/tools/api.dart';
+import 'package:budget/database/app_database.dart';
 import 'package:budget/tools/enums.dart';
 import 'package:budget/tools/filters.dart';
+import 'package:budget/tools/transaction_provider.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -21,10 +22,12 @@ class TransactionSearch extends StatefulWidget {
 class _TransactionSearchState extends State<TransactionSearch> {
   // Making filters a Set ensures that all items are unique and there is not
   // a multiple of a filter in there
-  late List<TransactionFilter> filters;
-  late Sort sort;
   bool isSearching = false; // Is the title bar a search field?
   TextEditingController searchController = TextEditingController();
+  late final TransactionProvider provider;
+
+  Sort get sort => provider.sort;
+  List<TransactionFilter> get filters => provider.filters;
 
   List<Widget> getFilterChips() {
     List<Widget> chips = [];
@@ -81,7 +84,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
     TextEditingController controller = TextEditingController();
     // Either get the current amountFilter or create a new one
     AmountFilter amountFilter =
-        getFilterValue<AmountFilter>(filters) ?? AmountFilter();
+        provider.getFilterValue<AmountFilter>() ?? AmountFilter();
     // Update the text to match
     controller.text = amountFilter.amount?.toStringAsFixed(2) ?? "";
 
@@ -157,11 +160,11 @@ class _TransactionSearchState extends State<TransactionSearch> {
     // Returns a list of selected categories.
     // This shows an AlertDialog with nothing in it other than a dropdown
     // which a user can select multiple categories from.
-    final provider = Provider.of<TransactionProvider>(context, listen: false);
+    final dbProvider = context.read<AppDatabase>();
 
-    List<Category> categories = provider.categories;
+    Stream<List<Category>> categories = dbProvider.watchCategories();
     List<Category> selectedCategories =
-        getFilterValue<List<Category>>(filters) ?? [];
+        provider.getFilterValue<List<Category>>() ?? [];
 
     if (!context.mounted) {
       return [];
@@ -177,32 +180,36 @@ class _TransactionSearchState extends State<TransactionSearch> {
               title: const Text("Select Categories"),
               content: SizedBox(
                 width: double.maxFinite,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: categories.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    final category = categories[index];
-                    return CheckboxListTile(
-                      title: Text(category.name),
-                      value: selectedCategories
-                          .where(
-                            (e) => e.id == category.id,
-                          )
-                          .isNotEmpty,
-                      onChanged: (bool? value) {
-                        setState(() {
-                          if (value != null) {
-                            if (value) {
-                              selectedCategories.add(category);
-                            } else {
-                              selectedCategories
-                                  .removeWhere((e) => e.id == category.id);
+                child: StreamBuilder(
+                  initialData: const [],
+                  stream: categories,
+                  builder: (context, snapshot) => ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: snapshot.data!.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      final category = snapshot.data![index] as Category;
+                      return CheckboxListTile(
+                        title: Text(category.name),
+                        value: selectedCategories
+                            .where(
+                              (e) => e.id == category.id,
+                            )
+                            .isNotEmpty,
+                        onChanged: (bool? value) {
+                          setState(() {
+                            if (value != null) {
+                              if (value) {
+                                selectedCategories.add(category);
+                              } else {
+                                selectedCategories
+                                    .removeWhere((e) => e.id == category.id);
+                              }
                             }
-                          }
-                        });
-                      },
-                    );
-                  },
+                          });
+                        },
+                      );
+                    },
+                  ),
                 ),
               ),
               actions: [
@@ -232,7 +239,8 @@ class _TransactionSearchState extends State<TransactionSearch> {
   }
 
   void toggleTransactionType() {
-    TransactionType? typeFilterValue = getFilterValue<TransactionType>(filters);
+    TransactionType? typeFilterValue =
+        provider.getFilterValue<TransactionType>();
     TransactionFilter? filter;
 
     if (typeFilterValue == null || typeFilterValue == TransactionType.expense) {
@@ -244,9 +252,9 @@ class _TransactionSearchState extends State<TransactionSearch> {
 
     setState(() {
       if (filter == null) {
-        removeFilter<TransactionType>(filters);
+        provider.removeFilter<TransactionType>();
       } else {
-        updateFilter(filter, filters);
+        provider.updateFilter(filter);
       }
     });
   }
@@ -280,20 +288,22 @@ class _TransactionSearchState extends State<TransactionSearch> {
                 }
               : null,
           onPressed: () {
+            Sort newSort;
+
             if (sort.sortType == type) {
-              sort = Sort(
+              newSort = Sort(
                   type,
                   sort.sortOrder == SortOrder.descending
                       ? SortOrder.ascending
                       : SortOrder.descending);
             } else {
-              sort = Sort(
+              newSort = Sort(
                 type,
                 SortOrder.descending,
               );
             }
 
-            setState(() => sort = sort);
+            provider.update(sort: newSort);
           },
           child: Text(toTitleCase(type.name))))
       .toList();
@@ -328,7 +338,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
   Map<Type, Function> get _filterActions => {
         DateTimeRange: () => showDateRangePicker(
                     context: context,
-                    initialDateRange: getFilterValue<DateTimeRange>(filters),
+                    initialDateRange: provider.getFilterValue<DateTimeRange>(),
                     firstDate:
                         DateTime.now().subtract(const Duration(days: 365 * 10)),
                     lastDate:
@@ -336,16 +346,16 @@ class _TransactionSearchState extends State<TransactionSearch> {
                 .then((DateTimeRange? value) {
               if (value == null) return;
 
-              setState(() => updateFilter(
-                  TransactionFilter<DateTimeRange>(value), filters));
+              setState(() => provider
+                  .updateFilter(TransactionFilter<DateTimeRange>(value)));
             }),
         String: () => setState(() => isSearching = true),
         AmountFilter: () => _showAmountFilterDialog(context).then((value) {
               if (value == null) {
                 return;
               }
-              setState(() => updateFilter(
-                  value as TransactionFilter<AmountFilter>, filters));
+              setState(() => provider
+                  .updateFilter(value as TransactionFilter<AmountFilter>));
             }),
         TransactionType: () => toggleTransactionType(),
         List<Category>: () => _showCategoryInputDialog(context).then((value) {
@@ -353,11 +363,11 @@ class _TransactionSearchState extends State<TransactionSearch> {
                 return;
               } else if (value.isEmpty) {
                 setState(
-                  () => removeFilter<List<Category>>(filters),
+                  () => provider.removeFilter<List<Category>>(),
                 );
               } else {
-                setState(() => updateFilter(
-                    TransactionFilter<List<Category>>(value), filters));
+                setState(() => provider
+                    .updateFilter(TransactionFilter<List<Category>>(value)));
               }
             }),
       };
@@ -373,16 +383,6 @@ class _TransactionSearchState extends State<TransactionSearch> {
   }
 
   @override
-  void initState() {
-    super.initState();
-
-    // Initialize these filters to easily use and edit inside of the menus
-    filters = widget.initialFilters ?? [];
-    sort = widget.initialSortType ??
-        const Sort(SortType.date, SortOrder.descending);
-  }
-
-  @override
   void dispose() {
     searchController.dispose();
     super.dispose();
@@ -390,6 +390,8 @@ class _TransactionSearchState extends State<TransactionSearch> {
 
   @override
   Widget build(BuildContext context) {
+    provider = context.watch<TransactionProvider>();
+
     List<Widget> appBarActions = [];
     Widget body;
     Widget? leading;
@@ -414,7 +416,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
               text = "${text.substring(0, 27)}...";
             }
 
-            TransactionFilter filter = TransactionFilter<String>(text);
+            TransactionFilter<String> filter = TransactionFilter(text);
 
             if (filters.contains(filter) || filter.value.isEmpty) {
               // The list of filters already has the exact same filter,
@@ -425,7 +427,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
 
             setState(() {
               isSearching = false;
-              updateFilter(filter, filters);
+              provider.updateFilter(filter);
             });
           },
         )
@@ -448,17 +450,11 @@ class _TransactionSearchState extends State<TransactionSearch> {
               children: getFilterChips(),
             ),
           ),
-          Expanded(
-              child: TransactionsList(
-            filters: filters,
-            sort: sort,
-          ))
+          const Expanded(child: TransactionsList())
         ],
       );
     } else {
-      body = TransactionsList(
-        sort: sort,
-      );
+      body = const TransactionsList();
     }
 
     return Scaffold(
