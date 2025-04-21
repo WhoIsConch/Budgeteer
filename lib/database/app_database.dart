@@ -217,6 +217,7 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     TransactionType? type,
     DateTimeRange? dateRange,
     Category? category,
+    bool nullCategory = false,
   }) async {
     var query = select(transactions);
 
@@ -226,6 +227,8 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
 
     if (category != null) {
       query = query..where((t) => t.category.equals(category.id));
+    } else if (nullCategory) {
+      query = query..where((t) => t.category.isNull());
     }
 
     if (dateRange != null) {
@@ -236,8 +239,8 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     }
 
     return await query
-            .addColumns([transactions.amount])
-            .map((row) => row.read(transactions.amount))
+            .addColumns([transactions.amount.sum()])
+            .map((row) => row.read(transactions.amount.sum()))
             .getSingleOrNull() ??
         0;
   }

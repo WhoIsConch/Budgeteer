@@ -21,9 +21,10 @@ class StatisticsPage extends StatefulWidget {
 class _StatisticsPageState extends State<StatisticsPage> {
   // In this case, filters should include a DateRangeFilter, CategoryFilter,
   // and/or TypeFilter
-  late final TransactionProvider filterProvider;
-  late final AppDatabase dbProvider;
-  late final TransactionDao daoProvider;
+  late TransactionProvider filterProvider;
+  late AppDatabase dbProvider;
+  late TransactionDao daoProvider;
+
   int typeIndex = 0;
   List<Transaction> transactions = [];
 
@@ -39,30 +40,22 @@ class _StatisticsPageState extends State<StatisticsPage> {
       filterProvider.getFilterValue<List<Category>>() ?? [];
 
   // TODO: Make sure RelativeDateRange is never passed to the filters in api.dart
-  RelativeDateRange getDateRange() {
-    RelativeDateRange? value =
-        filterProvider.getFilterValue<RelativeDateRange>();
-
-    if (value == null) {
-      filterProvider.updateFilter(
-        const TransactionFilter<RelativeDateRange>(RelativeDateRange.today),
-      );
-
-      return RelativeDateRange.today;
-    }
-
-    return value;
-  }
+  RelativeDateRange get dateRange =>
+      filterProvider.getFilterValue<RelativeDateRange>() ??
+      RelativeDateRange.today;
 
   @override
-  void initState() {
-    super.initState();
-    context.read<TransactionProvider>().update(filters: []);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    filterProvider = context.watch<TransactionProvider>();
+    dbProvider = context.read<AppDatabase>();
+    daoProvider = context.read<TransactionDao>();
   }
 
   DropdownMenu getDateRangeDropdown() => DropdownMenu(
         expandedInsets: EdgeInsets.zero,
-        initialSelection: getDateRange(),
+        initialSelection: dateRange,
         onSelected: (value) => setState(() => filterProvider.updateFilter(
             TransactionFilter<RelativeDateRange>(value as RelativeDateRange))),
         dropdownMenuEntries: RelativeDateRange.values
@@ -77,10 +70,6 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
   @override
   Widget build(BuildContext context) {
-    filterProvider = context.watch<TransactionProvider>();
-    dbProvider = context.read<AppDatabase>();
-    daoProvider = context.read<TransactionDao>();
-
     return Column(
       children: [
         Row(spacing: 8.0, children: [
@@ -90,33 +79,26 @@ class _StatisticsPageState extends State<StatisticsPage> {
               icon: typesIcons[typeIndex % typesIcons.length],
               buttonType: HybridButtonType.toggle,
               onTap: () {
-                setState(() {
-                  typeIndex += 1;
-                  TransactionType? type = types[typeIndex % types.length];
-                  if (type == null) {
-                    setState(
-                        () => filterProvider.removeFilter<TransactionType>());
-                  } else {
-                    setState(() => filterProvider.updateFilter<TransactionType>(
-                        TransactionFilter<TransactionType>(type)));
-                  }
-                });
+                typeIndex += 1;
+                TransactionType? type = types[typeIndex % types.length];
+                if (type == null) {
+                  filterProvider.removeFilter<TransactionType>();
+                } else {
+                  filterProvider.updateFilter<TransactionType>(
+                      TransactionFilter<TransactionType>(type));
+                }
               })
         ]),
         const SizedBox(height: 16),
-        StreamBuilder(
-          stream: dbProvider.watchCategories(),
-          builder: (context, snapshot) => CategoryPieChart(
-            availableCategories: snapshot.data!,
-            filters: filterProvider.filters,
-          ),
+        CategoryPieChart(
+          categoriesStream: dbProvider.watchCategories(),
         ),
         const SizedBox(height: 16),
         StreamBuilder(
             stream: dbProvider.watchCategories(),
             builder: (context, snapshot) {
               return CategoryDropdown(
-                  categories: snapshot.data!,
+                  categories: snapshot.data ?? [],
                   showExpanded: false,
                   onChanged: (Category? category) => setState(() {
                         if (category?.id == null || category!.id.isEmpty) {
@@ -143,7 +125,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
             } else {
               return CategoryBarChart(
                 transactions: snapshot.data!,
-                dateRange: getDateRange(),
+                dateRange: dateRange,
               );
             }
           },
@@ -288,194 +270,248 @@ class CategoryBarChart extends StatelessWidget {
   }
 }
 
-class CategoryPieChart extends StatefulWidget {
-  final List<Category> availableCategories;
-  final List<TransactionFilter> filters;
+class ChartCalculationResult {
+  final List<PieChartSectionData> sectionData;
+  final List<ChartKeyItem> keyItems;
+  final double totalAmount;
+  final bool isEmpty;
 
-  const CategoryPieChart(
-      {super.key, required this.availableCategories, required this.filters});
+  ChartCalculationResult({
+    required this.sectionData,
+    required this.keyItems,
+    required this.totalAmount,
+    required this.isEmpty,
+  });
+}
+
+class CategoryPieChart extends StatefulWidget {
+  final Stream<List<Category>> categoriesStream;
+
+  const CategoryPieChart({super.key, required this.categoriesStream});
 
   @override
   State<CategoryPieChart> createState() => _CategoryPieChartState();
 }
 
 class _CategoryPieChartState extends State<CategoryPieChart> {
-  List<PieChartSectionData>? pieChartSectionData;
-  List<ChartKeyItem>? chartKeyItems;
-  late final TransactionDao daoProvider;
-  bool isLoading = true;
-  double totalAmount = 0;
-  late List<Category?> categories;
+  late final TransactionDao _daoProvider;
 
-  PieChart get pieChart => PieChart(PieChartData(
-      centerSpaceRadius: 56, sectionsSpace: 2, sections: pieChartSectionData));
-
-  Future<void> _prepareData() async {
+  Future<ChartCalculationResult> _calculateChartData({
+    required List<Category?> categories,
+    required List<TransactionFilter> filters,
+  }) async {
     double absTotal = 0;
-
     List<PieChartSectionData> sectionData = [];
     List<ChartKeyItem> keyItems = [];
-
     List<double> totals = [];
     double otherSectionTotal = 0;
 
-    for (int i = 0; i < categories.length; i++) {
-      TransactionType? type = widget.filters
-          .firstWhereOrNull((e) => e.value.runtimeType == TransactionType)
-          ?.value;
+    TransactionType? typeFilter = filters
+        .firstWhereOrNull((e) => e.value.runtimeType == TransactionType)
+        ?.value;
+    RelativeDateRange? dateFilter = filters
+        .firstWhereOrNull((e) => e.value.runtimeType == RelativeDateRange)
+        ?.value;
 
-      double total = switch (type) {
-        null => (await daoProvider.getTotalAmount(category: categories[i])),
-        _ =>
-          await daoProvider.getTotalAmount(type: type, category: categories[i])
-      };
+    List<Future<double>> futures = [];
+    for (final category in categories) {
+      futures.add(_daoProvider.getTotalAmount(
+          nullCategory: category == null,
+          category: category,
+          type: typeFilter,
+          dateRange: dateFilter?.getRange(fullRange: true)));
+    }
+    totals = await Future.wait(futures);
 
-      if (total == 0) {
-        totals.add(0); // Add a zero to keep indexes aligned
-        continue;
-      }
-
-      totals.add(total);
-
+    for (final total in totals) {
       absTotal += total.abs();
     }
 
-    for (int i = 0; i < categories.length; i++) {
-      if (totals[i] == 0) continue;
+    if (absTotal == 0) {
+      return ChartCalculationResult(
+          sectionData: [], keyItems: [], totalAmount: 0, isEmpty: true);
+    }
 
-      double total = totals[i];
+    for (int i = 0; i < categories.length; i++) {
+      final category = categories[i];
+      final total = totals[i];
+
+      if (total == 0) continue;
+
       double percentage = (total.abs() / absTotal) * 100;
+
+      final color = category?.color ?? Colors.grey[400]!;
+      final name = category?.name ?? "Uncategorized";
 
       if (percentage < 2) {
         otherSectionTotal += total.abs();
-        continue;
-      }
-
-      sectionData.add(PieChartSectionData(
-        value: total.abs(),
-        radius: 32,
-        showTitle: false,
-        color: categories[i]?.color ?? Colors.white,
-      ));
-
-      // This sorts the data to ensure any income stays on top to
-      // organize the legend
-      if (total > 0) {
-        keyItems.insert(
-            0,
-            ChartKeyItem(
-                color: categories[i]?.color ?? Colors.white,
-                name: categories[i] != null
-                    ? categories[i]!.name
-                    : "Uncategorized"));
       } else {
-        keyItems.add(ChartKeyItem(
-            color: categories[i]?.color ?? Colors.white,
-            name:
-                categories[i] != null ? categories[i]!.name : "Uncategorized"));
+        sectionData.add(PieChartSectionData(
+          value: total.abs(),
+          radius: 32,
+          showTitle: false,
+          color: color,
+        ));
+
+        final keyItem = ChartKeyItem(color: color, name: name);
+        if (total > 0) {
+          keyItems.insert(0, keyItem);
+        } else {
+          keyItems.add(keyItem);
+        }
       }
     }
 
-    if (otherSectionTotal != 0) {
-      if ((otherSectionTotal.abs() / absTotal) * 100 >= 1) {
-        sectionData.add(PieChartSectionData(
-          value: otherSectionTotal,
-          radius: 32,
-          showTitle: false,
-          color: Colors.grey,
-        ));
-      }
-
+    if (otherSectionTotal != 0 && (otherSectionTotal / absTotal) * 100 >= 1) {
+      sectionData.add(PieChartSectionData(
+        value: otherSectionTotal,
+        radius: 32,
+        showTitle: false,
+        color: Colors.grey,
+      ));
       keyItems.add(const ChartKeyItem(color: Colors.grey, name: "Other"));
     }
 
-    setState(() {
-      pieChartSectionData = sectionData;
-      chartKeyItems = keyItems;
-      isLoading = false;
-      totalAmount = absTotal;
-    });
+    return ChartCalculationResult(
+      sectionData: sectionData,
+      keyItems: keyItems,
+      totalAmount: absTotal,
+      isEmpty: sectionData.isEmpty,
+    );
   }
 
   @override
   void initState() {
     super.initState();
 
-    daoProvider = context.read<TransactionDao>();
-    categories = [...widget.availableCategories, null];
-    _prepareData();
+    _daoProvider = context.read<TransactionDao>();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Expanded(
-        child: Center(
-            child: SizedBox(
-                width: 24, height: 24, child: CircularProgressIndicator())),
-      );
-    } else if (pieChartSectionData!.isEmpty) {
-      return const Expanded(
-        child: SizedBox(
-            width: 300,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  "Nothing to show.",
-                  style: TextStyle(fontSize: 24),
-                  textAlign: TextAlign.center,
-                ),
-                Text(
-                  "Try changing the date range or adding some transactions.",
-                  style: TextStyle(fontSize: 18),
-                  textAlign: TextAlign.center,
-                )
-              ],
-            )),
-      );
-    } else {
-      return Row(
-        // Contains the Pie Chart and the Legend
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          SizedBox(
-            // Pie Chart and its total amount stack
-            width: 180, // Same width as the pie chart
-            child: Stack(alignment: Alignment.center, children: [
-              SizedBox(
-                width: 112,
-                height: 112,
-                child: Center(
-                    child: Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      AutoSizeText(
-                        "\$${formatAmount(totalAmount.round())}",
-                        style: const TextStyle(fontSize: 48),
-                        maxLines: 1,
+    final filters = context.watch<TransactionProvider>().filters;
+
+    return StreamBuilder<List<Category>>(
+      stream: widget.categoriesStream,
+      builder: (context, categorySnapshot) {
+        if (categorySnapshot.connectionState == ConnectionState.waiting) {
+          return const Expanded(
+              child: Center(child: CircularProgressIndicator()));
+        }
+        if (categorySnapshot.hasError) {
+          return Expanded(
+              child: Center(
+                  child: Text(
+                      'Error loading categories: ${categorySnapshot.error}')));
+        }
+        if (!categorySnapshot.hasData || categorySnapshot.data!.isEmpty) {
+          return const Expanded(
+              child: Center(child: Text("No categories available.")));
+        }
+
+        final availableCategories = categorySnapshot.data!;
+        final categoriesWithNull = [...availableCategories, null];
+
+        return FutureBuilder<ChartCalculationResult>(
+          future: _calculateChartData(
+            categories: categoriesWithNull,
+            filters: filters,
+          ),
+          key: ValueKey(Object.hash(categoriesWithNull, filters)),
+          builder: (context, calculationSnapshot) {
+            if (calculationSnapshot.connectionState ==
+                ConnectionState.waiting) {
+              return const Expanded(
+                  child: Center(child: CircularProgressIndicator()));
+            }
+            if (calculationSnapshot.hasError) {
+              print(
+                  "Error calculating chart data: ${calculationSnapshot.error}");
+              print("Stack trace: ${calculationSnapshot.stackTrace}");
+              return Expanded(
+                  child: Center(
+                      child: Text(
+                          'Error calculating chart: ${calculationSnapshot.error}')));
+            }
+            if (!calculationSnapshot.hasData) {
+              return const Expanded(
+                  child:
+                      Center(child: Text("Could not calculate chart data.")));
+            }
+
+            final result = calculationSnapshot.data!;
+
+            if (result.isEmpty) {
+              return const Expanded(
+                child: SizedBox(
+                    width: 300,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Nothing to show.",
+                          style: TextStyle(fontSize: 24),
+                          textAlign: TextAlign.center,
+                        ),
+                        Text(
+                          "Try changing the date range or adding some transactions.",
+                          style: TextStyle(fontSize: 18),
+                          textAlign: TextAlign.center,
+                        )
+                      ],
+                    )),
+              );
+            } else {
+              final pieChartData = PieChartData(
+                centerSpaceRadius: 56,
+                sectionsSpace: 2,
+                sections: result.sectionData,
+              );
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  SizedBox(
+                    width: 180,
+                    child: Stack(alignment: Alignment.center, children: [
+                      SizedBox(
+                        width: 112,
+                        height: 112,
+                        child: Center(
+                            child: Padding(
+                          padding: const EdgeInsets.all(4.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              AutoSizeText(
+                                "\$${formatAmount(result.totalAmount.round())}",
+                                style: const TextStyle(fontSize: 48),
+                                maxLines: 1,
+                              ),
+                            ],
+                          ),
+                        )),
                       ),
-                    ],
+                      AspectRatio(
+                          aspectRatio: 1.0, child: PieChart(pieChartData))
+                    ]),
                   ),
-                )),
-              ),
-              AspectRatio(aspectRatio: 1.0, child: pieChart)
-            ]),
-          ),
-          Expanded(
-            child: SizedBox(
-              height: 180,
-              child: Padding(
-                  padding: const EdgeInsets.only(left: 8.0),
-                  child: ListView(children: chartKeyItems!)),
-            ),
-          ),
-        ],
-      );
-    }
+                  Expanded(
+                    child: SizedBox(
+                      height: 180,
+                      child: Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: ListView(children: result.keyItems)),
+                    ),
+                  ),
+                ],
+              );
+            }
+          },
+        );
+      },
+    );
   }
 }
 

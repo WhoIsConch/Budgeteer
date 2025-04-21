@@ -11,14 +11,15 @@ class TransactionProvider extends ChangeNotifier {
   List<TransactionFilter> get filters => _filters;
   Sort get sort => _sort;
 
-  void update({List<TransactionFilter>? filters, Sort? sort}) {
+  void update(
+      {List<TransactionFilter>? filters, Sort? sort, bool notify = true}) {
     bool hasFiltersChanged = filters != null && filters != _filters;
     bool hasSortChanged = sort != null && sort != _sort;
 
     if (hasFiltersChanged || hasSortChanged) {
       if (hasFiltersChanged) _filters = filters;
       if (hasSortChanged) _sort = sort;
-      notifyListeners();
+      if (notify) notifyListeners();
     }
   }
 
