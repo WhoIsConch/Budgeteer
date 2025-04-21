@@ -17,6 +17,9 @@ class Sort {
   final SortOrder sortOrder;
 
   const Sort(this.sortType, this.sortOrder);
+
+  static Sort get defaultSort =>
+      const Sort(SortType.date, SortOrder.descending);
 }
 
 class TransactionFilter<T> {

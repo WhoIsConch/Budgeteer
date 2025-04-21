@@ -61,8 +61,8 @@ class _SpendingOverviewState extends State<SpendingOverview> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(2, 16, 2, 4),
                 child: TextButton(
-                  onPressed: () {
-                    Navigator.push(
+                  onPressed: () async {
+                    await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const TransactionSearch(),

@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:budget/database/app_database.dart';
-import 'package:budget/tools/transaction_provider.dart';
+import 'package:budget/tools/filters.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -10,10 +10,16 @@ import 'package:budget/tools/enums.dart';
 
 class TransactionsList extends StatefulWidget {
   const TransactionsList(
-      {super.key, this.showActionButton = true, this.showBackground = true});
+      {super.key,
+      this.filters,
+      this.sort,
+      this.showActionButton = true,
+      this.showBackground = true});
 
   final bool showActionButton;
   final bool showBackground;
+  final List<TransactionFilter>? filters;
+  final Sort? sort;
 
   @override
   State<TransactionsList> createState() => _TransactionsListState();
@@ -140,7 +146,6 @@ class _TransactionsListState extends State<TransactionsList> {
 
   Widget getList() {
     final dao = context.read<TransactionDao>();
-    final provider = context.watch<TransactionProvider>();
 
     // Return a stack with a listview in it so we can put that floating
     // action button at the bottom right
@@ -150,20 +155,24 @@ class _TransactionsListState extends State<TransactionsList> {
       StreamBuilder(
           initialData: const [],
           stream: dao.watchTransactionsPage(
-            filters: provider.filters,
-            sort: provider.sort,
+            filters: widget.filters,
+            sort: widget.sort,
           ),
           builder: (context, snapshot) {
             final transactions = snapshot.data!;
 
             if (transactions.isEmpty) {
-              return Center(child: const Text("No transactions found"));
+              return Center(
+                  child: Text("No transactions found.",
+                      style: Theme.of(context).textTheme.headlineSmall));
             }
 
             return ListView.builder(
                 itemCount: transactions.length,
-                itemBuilder: (context, index) => tileFromTransaction(
-                    transactions[index], Theme.of(context)));
+                itemBuilder: (context, index) => Card(
+                      child: tileFromTransaction(
+                          transactions[index], Theme.of(context)),
+                    ));
           }),
     ];
 

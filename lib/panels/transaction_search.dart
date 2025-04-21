@@ -24,7 +24,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
   // a multiple of a filter in there
   bool isSearching = false; // Is the title bar a search field?
   TextEditingController searchController = TextEditingController();
-  late final TransactionProvider provider;
+  late TransactionProvider provider;
 
   Sort get sort => provider.sort;
   List<TransactionFilter> get filters => provider.filters;
@@ -383,15 +383,19 @@ class _TransactionSearchState extends State<TransactionSearch> {
   }
 
   @override
-  void dispose() {
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    provider = context.watch<TransactionProvider>();
+  }
+
+  @override
+  void dispose() async {
     searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    provider = context.watch<TransactionProvider>();
-
     List<Widget> appBarActions = [];
     Widget body;
     Widget? leading;
@@ -450,7 +454,11 @@ class _TransactionSearchState extends State<TransactionSearch> {
               children: getFilterChips(),
             ),
           ),
-          const Expanded(child: TransactionsList())
+          Expanded(
+              child: TransactionsList(
+            filters: provider.filters,
+            sort: provider.sort,
+          ))
         ],
       );
     } else {
