@@ -58,9 +58,19 @@ class $CategoriesTable extends Categories
   late final GeneratedColumn<double> balance = GeneratedColumn<double>(
       'balance', aliasedName, true,
       type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _isDeletedMeta =
+      const VerificationMeta('isDeleted');
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+      'is_deleted', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_deleted" IN (0, 1))'),
+      defaultValue: const Constant(false));
   @override
   List<GeneratedColumn> get $columns =>
-      [id, name, resetIncrement, allowNegatives, color, balance];
+      [id, name, resetIncrement, allowNegatives, color, balance, isDeleted];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -90,6 +100,10 @@ class $CategoriesTable extends Categories
       context.handle(_balanceMeta,
           balance.isAcceptableOrUnknown(data['balance']!, _balanceMeta));
     }
+    if (data.containsKey('is_deleted')) {
+      context.handle(_isDeletedMeta,
+          isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
+    }
     return context;
   }
 
@@ -113,6 +127,8 @@ class $CategoriesTable extends Categories
           .read(DriftSqlType.int, data['${effectivePrefix}color'])!),
       balance: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}balance']),
+      isDeleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
     );
   }
 
@@ -135,13 +151,15 @@ class Category extends DataClass implements Insertable<Category> {
   final bool allowNegatives;
   final Color color;
   final double? balance;
+  final bool isDeleted;
   const Category(
       {required this.id,
       required this.name,
       required this.resetIncrement,
       required this.allowNegatives,
       required this.color,
-      this.balance});
+      this.balance,
+      required this.isDeleted});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -159,6 +177,7 @@ class Category extends DataClass implements Insertable<Category> {
     if (!nullToAbsent || balance != null) {
       map['balance'] = Variable<double>(balance);
     }
+    map['is_deleted'] = Variable<bool>(isDeleted);
     return map;
   }
 
@@ -172,6 +191,7 @@ class Category extends DataClass implements Insertable<Category> {
       balance: balance == null && nullToAbsent
           ? const Value.absent()
           : Value(balance),
+      isDeleted: Value(isDeleted),
     );
   }
 
@@ -186,6 +206,7 @@ class Category extends DataClass implements Insertable<Category> {
       allowNegatives: serializer.fromJson<bool>(json['allowNegatives']),
       color: serializer.fromJson<Color>(json['color']),
       balance: serializer.fromJson<double?>(json['balance']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
     );
   }
   @override
@@ -199,6 +220,7 @@ class Category extends DataClass implements Insertable<Category> {
       'allowNegatives': serializer.toJson<bool>(allowNegatives),
       'color': serializer.toJson<Color>(color),
       'balance': serializer.toJson<double?>(balance),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
     };
   }
 
@@ -208,7 +230,8 @@ class Category extends DataClass implements Insertable<Category> {
           CategoryResetIncrement? resetIncrement,
           bool? allowNegatives,
           Color? color,
-          Value<double?> balance = const Value.absent()}) =>
+          Value<double?> balance = const Value.absent(),
+          bool? isDeleted}) =>
       Category(
         id: id ?? this.id,
         name: name ?? this.name,
@@ -216,6 +239,7 @@ class Category extends DataClass implements Insertable<Category> {
         allowNegatives: allowNegatives ?? this.allowNegatives,
         color: color ?? this.color,
         balance: balance.present ? balance.value : this.balance,
+        isDeleted: isDeleted ?? this.isDeleted,
       );
   Category copyWithCompanion(CategoriesCompanion data) {
     return Category(
@@ -229,6 +253,7 @@ class Category extends DataClass implements Insertable<Category> {
           : this.allowNegatives,
       color: data.color.present ? data.color.value : this.color,
       balance: data.balance.present ? data.balance.value : this.balance,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
     );
   }
 
@@ -240,14 +265,15 @@ class Category extends DataClass implements Insertable<Category> {
           ..write('resetIncrement: $resetIncrement, ')
           ..write('allowNegatives: $allowNegatives, ')
           ..write('color: $color, ')
-          ..write('balance: $balance')
+          ..write('balance: $balance, ')
+          ..write('isDeleted: $isDeleted')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, resetIncrement, allowNegatives, color, balance);
+  int get hashCode => Object.hash(
+      id, name, resetIncrement, allowNegatives, color, balance, isDeleted);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -257,7 +283,8 @@ class Category extends DataClass implements Insertable<Category> {
           other.resetIncrement == this.resetIncrement &&
           other.allowNegatives == this.allowNegatives &&
           other.color == this.color &&
-          other.balance == this.balance);
+          other.balance == this.balance &&
+          other.isDeleted == this.isDeleted);
 }
 
 class CategoriesCompanion extends UpdateCompanion<Category> {
@@ -267,6 +294,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
   final Value<bool> allowNegatives;
   final Value<Color> color;
   final Value<double?> balance;
+  final Value<bool> isDeleted;
   final Value<int> rowid;
   const CategoriesCompanion({
     this.id = const Value.absent(),
@@ -275,6 +303,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     this.allowNegatives = const Value.absent(),
     this.color = const Value.absent(),
     this.balance = const Value.absent(),
+    this.isDeleted = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CategoriesCompanion.insert({
@@ -284,6 +313,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     this.allowNegatives = const Value.absent(),
     this.color = const Value.absent(),
     this.balance = const Value.absent(),
+    this.isDeleted = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : name = Value(name);
   static Insertable<Category> custom({
@@ -293,6 +323,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     Expression<bool>? allowNegatives,
     Expression<int>? color,
     Expression<double>? balance,
+    Expression<bool>? isDeleted,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -302,6 +333,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
       if (allowNegatives != null) 'allow_negatives': allowNegatives,
       if (color != null) 'color': color,
       if (balance != null) 'balance': balance,
+      if (isDeleted != null) 'is_deleted': isDeleted,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -313,6 +345,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
       Value<bool>? allowNegatives,
       Value<Color>? color,
       Value<double?>? balance,
+      Value<bool>? isDeleted,
       Value<int>? rowid}) {
     return CategoriesCompanion(
       id: id ?? this.id,
@@ -321,6 +354,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
       allowNegatives: allowNegatives ?? this.allowNegatives,
       color: color ?? this.color,
       balance: balance ?? this.balance,
+      isDeleted: isDeleted ?? this.isDeleted,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -349,6 +383,9 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     if (balance.present) {
       map['balance'] = Variable<double>(balance.value);
     }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -364,6 +401,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
           ..write('allowNegatives: $allowNegatives, ')
           ..write('color: $color, ')
           ..write('balance: $balance, ')
+          ..write('isDeleted: $isDeleted, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -403,6 +441,16 @@ class $TransactionsTable extends Transactions
       GeneratedColumn<int>('type', aliasedName, false,
               type: DriftSqlType.int, requiredDuringInsert: true)
           .withConverter<TransactionType>($TransactionsTable.$convertertype);
+  static const VerificationMeta _isDeletedMeta =
+      const VerificationMeta('isDeleted');
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+      'is_deleted', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_deleted" IN (0, 1))'),
+      defaultValue: const Constant(false));
   static const VerificationMeta _categoryMeta =
       const VerificationMeta('category');
   @override
@@ -419,7 +467,7 @@ class $TransactionsTable extends Transactions
       type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns =>
-      [id, title, amount, date, type, category, notes];
+      [id, title, amount, date, type, isDeleted, category, notes];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -444,6 +492,10 @@ class $TransactionsTable extends Transactions
           amount.isAcceptableOrUnknown(data['amount']!, _amountMeta));
     } else if (isInserting) {
       context.missing(_amountMeta);
+    }
+    if (data.containsKey('is_deleted')) {
+      context.handle(_isDeletedMeta,
+          isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
     }
     if (data.containsKey('category_id')) {
       context.handle(_categoryMeta,
@@ -474,6 +526,8 @@ class $TransactionsTable extends Transactions
       type: $TransactionsTable.$convertertype.fromSql(attachedDatabase
           .typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}type'])!),
+      isDeleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
       category: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}category_id']),
       notes: attachedDatabase.typeMapping
@@ -498,6 +552,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   final double amount;
   final DateTime date;
   final TransactionType type;
+  final bool isDeleted;
   final String? category;
   final String? notes;
   const Transaction(
@@ -506,6 +561,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       required this.amount,
       required this.date,
       required this.type,
+      required this.isDeleted,
       this.category,
       this.notes});
   @override
@@ -522,6 +578,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       map['type'] =
           Variable<int>($TransactionsTable.$convertertype.toSql(type));
     }
+    map['is_deleted'] = Variable<bool>(isDeleted);
     if (!nullToAbsent || category != null) {
       map['category_id'] = Variable<String>(category);
     }
@@ -538,6 +595,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       amount: Value(amount),
       date: Value(date),
       type: Value(type),
+      isDeleted: Value(isDeleted),
       category: category == null && nullToAbsent
           ? const Value.absent()
           : Value(category),
@@ -556,6 +614,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       date: serializer.fromJson<DateTime>(json['date']),
       type: $TransactionsTable.$convertertype
           .fromJson(serializer.fromJson<int>(json['type'])),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
       category: serializer.fromJson<String?>(json['category']),
       notes: serializer.fromJson<String?>(json['notes']),
     );
@@ -570,6 +629,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       'date': serializer.toJson<DateTime>(date),
       'type': serializer
           .toJson<int>($TransactionsTable.$convertertype.toJson(type)),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
       'category': serializer.toJson<String?>(category),
       'notes': serializer.toJson<String?>(notes),
     };
@@ -581,6 +641,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           double? amount,
           DateTime? date,
           TransactionType? type,
+          bool? isDeleted,
           Value<String?> category = const Value.absent(),
           Value<String?> notes = const Value.absent()}) =>
       Transaction(
@@ -589,6 +650,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
         amount: amount ?? this.amount,
         date: date ?? this.date,
         type: type ?? this.type,
+        isDeleted: isDeleted ?? this.isDeleted,
         category: category.present ? category.value : this.category,
         notes: notes.present ? notes.value : this.notes,
       );
@@ -599,6 +661,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       amount: data.amount.present ? data.amount.value : this.amount,
       date: data.date.present ? data.date.value : this.date,
       type: data.type.present ? data.type.value : this.type,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
       category: data.category.present ? data.category.value : this.category,
       notes: data.notes.present ? data.notes.value : this.notes,
     );
@@ -612,6 +675,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           ..write('amount: $amount, ')
           ..write('date: $date, ')
           ..write('type: $type, ')
+          ..write('isDeleted: $isDeleted, ')
           ..write('category: $category, ')
           ..write('notes: $notes')
           ..write(')'))
@@ -620,7 +684,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
 
   @override
   int get hashCode =>
-      Object.hash(id, title, amount, date, type, category, notes);
+      Object.hash(id, title, amount, date, type, isDeleted, category, notes);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -630,6 +694,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           other.amount == this.amount &&
           other.date == this.date &&
           other.type == this.type &&
+          other.isDeleted == this.isDeleted &&
           other.category == this.category &&
           other.notes == this.notes);
 }
@@ -640,6 +705,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   final Value<double> amount;
   final Value<DateTime> date;
   final Value<TransactionType> type;
+  final Value<bool> isDeleted;
   final Value<String?> category;
   final Value<String?> notes;
   final Value<int> rowid;
@@ -649,6 +715,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.amount = const Value.absent(),
     this.date = const Value.absent(),
     this.type = const Value.absent(),
+    this.isDeleted = const Value.absent(),
     this.category = const Value.absent(),
     this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -659,6 +726,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     required double amount,
     required DateTime date,
     required TransactionType type,
+    this.isDeleted = const Value.absent(),
     this.category = const Value.absent(),
     this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -672,6 +740,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Expression<double>? amount,
     Expression<String>? date,
     Expression<int>? type,
+    Expression<bool>? isDeleted,
     Expression<String>? category,
     Expression<String>? notes,
     Expression<int>? rowid,
@@ -682,6 +751,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       if (amount != null) 'amount': amount,
       if (date != null) 'date': date,
       if (type != null) 'type': type,
+      if (isDeleted != null) 'is_deleted': isDeleted,
       if (category != null) 'category_id': category,
       if (notes != null) 'notes': notes,
       if (rowid != null) 'rowid': rowid,
@@ -694,6 +764,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       Value<double>? amount,
       Value<DateTime>? date,
       Value<TransactionType>? type,
+      Value<bool>? isDeleted,
       Value<String?>? category,
       Value<String?>? notes,
       Value<int>? rowid}) {
@@ -703,6 +774,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       amount: amount ?? this.amount,
       date: date ?? this.date,
       type: type ?? this.type,
+      isDeleted: isDeleted ?? this.isDeleted,
       category: category ?? this.category,
       notes: notes ?? this.notes,
       rowid: rowid ?? this.rowid,
@@ -729,6 +801,9 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       map['type'] =
           Variable<int>($TransactionsTable.$convertertype.toSql(type.value));
     }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
     if (category.present) {
       map['category_id'] = Variable<String>(category.value);
     }
@@ -749,6 +824,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
           ..write('amount: $amount, ')
           ..write('date: $date, ')
           ..write('type: $type, ')
+          ..write('isDeleted: $isDeleted, ')
           ..write('category: $category, ')
           ..write('notes: $notes, ')
           ..write('rowid: $rowid')
@@ -791,6 +867,7 @@ typedef $$CategoriesTableCreateCompanionBuilder = CategoriesCompanion Function({
   Value<bool> allowNegatives,
   Value<Color> color,
   Value<double?> balance,
+  Value<bool> isDeleted,
   Value<int> rowid,
 });
 typedef $$CategoriesTableUpdateCompanionBuilder = CategoriesCompanion Function({
@@ -800,6 +877,7 @@ typedef $$CategoriesTableUpdateCompanionBuilder = CategoriesCompanion Function({
   Value<bool> allowNegatives,
   Value<Color> color,
   Value<double?> balance,
+  Value<bool> isDeleted,
   Value<int> rowid,
 });
 
@@ -856,6 +934,9 @@ class $$CategoriesTableFilterComposer
   ColumnFilters<double> get balance => $composableBuilder(
       column: $table.balance, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+      column: $table.isDeleted, builder: (column) => ColumnFilters(column));
+
   Expression<bool> transactionsRefs(
       Expression<bool> Function($$TransactionsTableFilterComposer f) f) {
     final $$TransactionsTableFilterComposer composer = $composerBuilder(
@@ -906,6 +987,9 @@ class $$CategoriesTableOrderingComposer
 
   ColumnOrderings<double> get balance => $composableBuilder(
       column: $table.balance, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+      column: $table.isDeleted, builder: (column) => ColumnOrderings(column));
 }
 
 class $$CategoriesTableAnnotationComposer
@@ -935,6 +1019,9 @@ class $$CategoriesTableAnnotationComposer
 
   GeneratedColumn<double> get balance =>
       $composableBuilder(column: $table.balance, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
 
   Expression<T> transactionsRefs<T extends Object>(
       Expression<T> Function($$TransactionsTableAnnotationComposer a) f) {
@@ -987,6 +1074,7 @@ class $$CategoriesTableTableManager extends RootTableManager<
             Value<bool> allowNegatives = const Value.absent(),
             Value<Color> color = const Value.absent(),
             Value<double?> balance = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               CategoriesCompanion(
@@ -996,6 +1084,7 @@ class $$CategoriesTableTableManager extends RootTableManager<
             allowNegatives: allowNegatives,
             color: color,
             balance: balance,
+            isDeleted: isDeleted,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -1005,6 +1094,7 @@ class $$CategoriesTableTableManager extends RootTableManager<
             Value<bool> allowNegatives = const Value.absent(),
             Value<Color> color = const Value.absent(),
             Value<double?> balance = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               CategoriesCompanion.insert(
@@ -1014,6 +1104,7 @@ class $$CategoriesTableTableManager extends RootTableManager<
             allowNegatives: allowNegatives,
             color: color,
             balance: balance,
+            isDeleted: isDeleted,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
@@ -1068,6 +1159,7 @@ typedef $$TransactionsTableCreateCompanionBuilder = TransactionsCompanion
   required double amount,
   required DateTime date,
   required TransactionType type,
+  Value<bool> isDeleted,
   Value<String?> category,
   Value<String?> notes,
   Value<int> rowid,
@@ -1079,6 +1171,7 @@ typedef $$TransactionsTableUpdateCompanionBuilder = TransactionsCompanion
   Value<double> amount,
   Value<DateTime> date,
   Value<TransactionType> type,
+  Value<bool> isDeleted,
   Value<String?> category,
   Value<String?> notes,
   Value<int> rowid,
@@ -1132,6 +1225,9 @@ class $$TransactionsTableFilterComposer
           column: $table.type,
           builder: (column) => ColumnWithTypeConverterFilters(column));
 
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+      column: $table.isDeleted, builder: (column) => ColumnFilters(column));
+
   ColumnFilters<String> get notes => $composableBuilder(
       column: $table.notes, builder: (column) => ColumnFilters(column));
 
@@ -1180,6 +1276,9 @@ class $$TransactionsTableOrderingComposer
   ColumnOrderings<int> get type => $composableBuilder(
       column: $table.type, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+      column: $table.isDeleted, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get notes => $composableBuilder(
       column: $table.notes, builder: (column) => ColumnOrderings(column));
 
@@ -1227,6 +1326,9 @@ class $$TransactionsTableAnnotationComposer
 
   GeneratedColumnWithTypeConverter<TransactionType, int> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
@@ -1280,6 +1382,7 @@ class $$TransactionsTableTableManager extends RootTableManager<
             Value<double> amount = const Value.absent(),
             Value<DateTime> date = const Value.absent(),
             Value<TransactionType> type = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
             Value<String?> category = const Value.absent(),
             Value<String?> notes = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -1290,6 +1393,7 @@ class $$TransactionsTableTableManager extends RootTableManager<
             amount: amount,
             date: date,
             type: type,
+            isDeleted: isDeleted,
             category: category,
             notes: notes,
             rowid: rowid,
@@ -1300,6 +1404,7 @@ class $$TransactionsTableTableManager extends RootTableManager<
             required double amount,
             required DateTime date,
             required TransactionType type,
+            Value<bool> isDeleted = const Value.absent(),
             Value<String?> category = const Value.absent(),
             Value<String?> notes = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -1310,6 +1415,7 @@ class $$TransactionsTableTableManager extends RootTableManager<
             amount: amount,
             date: date,
             type: type,
+            isDeleted: isDeleted,
             category: category,
             notes: notes,
             rowid: rowid,

@@ -8,7 +8,8 @@ const powersyncAppSchema = Schema([
     Column.real('amount'),
     Column.text('date'),
     Column.integer('type'),
-    Column.text('category_id')
+    Column.text('category_id'),
+    Column.integer('is_deleted'),
   ]),
   Table('categories', [
     Column.text('user_id'),
@@ -16,6 +17,7 @@ const powersyncAppSchema = Schema([
     Column.real('balance'),
     Column.integer('reset_increment'),
     Column.integer('allow_negatives'),
-    Column.integer('color')
+    Column.integer('color'),
+    Column.integer('is_deleted'),
   ])
 ]);

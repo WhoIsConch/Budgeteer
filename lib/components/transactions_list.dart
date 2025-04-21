@@ -159,7 +159,7 @@ class _TransactionsListState extends State<TransactionsList> {
             sort: widget.sort,
           ),
           builder: (context, snapshot) {
-            final transactions = snapshot.data!;
+            final transactions = snapshot.data ?? [];
 
             if (transactions.isEmpty) {
               return Center(
