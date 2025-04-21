@@ -47,7 +47,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
       date: Value(selectedDate),
       notes: Value(notesController.text),
       type: Value(selectedType),
-      category: Value.absentIfNull(selectedCategory?.id),
+      category: Value(selectedCategory?.id),
     );
 
     return transaction;
@@ -118,8 +118,6 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
               .makeInclusive(),
           category: category);
 
-      catTotal = 0;
-
       if (widget.transaction != null) {
         // This means we're editing.
         // For accurate results, we subtract the original transaction amount from
@@ -133,7 +131,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
         catTotal += currentTransaction.amount.value;
       }
 
-      catTotal = category.balance ?? 0 + catTotal;
+      catTotal = (category.balance ?? 0) + catTotal;
     }
 
     setState(() {
@@ -265,10 +263,8 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
                   setState(() {
                     if (category != null) {
                       selectedCategory = category;
-                      _setCategoryInfo(category);
-                    } else {
-                      _setCategoryInfo(null);
                     }
+                    _setCategoryInfo(category);
                   });
                 },
                 selectedCategory: selectedCategory,
