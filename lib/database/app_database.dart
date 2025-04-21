@@ -10,8 +10,20 @@ import 'package:drift_sqlite_async/drift_sqlite_async.dart';
 
 part 'app_database.g.dart';
 
+final _formatter = DateFormat("yyyy-MM-dd");
+
 int genColor() =>
     Color((Random().nextDouble() * 0xFFFFFF).toInt()).withAlpha(255).toARGB32();
+
+class DateTextConverter extends TypeConverter<DateTime, String> {
+  const DateTextConverter();
+
+  @override
+  DateTime fromSql(String fromDb) => _formatter.parseStrict(fromDb);
+
+  @override
+  String toSql(DateTime value) => _formatter.format(value);
+}
 
 class Transactions extends Table {
   @override
@@ -20,7 +32,7 @@ class Transactions extends Table {
   TextColumn get id => text().clientDefault(() => uuid.v4())();
   TextColumn get title => text()();
   RealColumn get amount => real()();
-  DateTimeColumn get date => dateTime()();
+  TextColumn get date => text().map(const DateTextConverter())();
   IntColumn get type => intEnum<TransactionType>()();
 
   TextColumn get category => text()
@@ -28,6 +40,9 @@ class Transactions extends Table {
       .named('category_id')
       .references(Categories, #id, onDelete: KeyAction.setNull)();
   TextColumn get notes => text().nullable()();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {id};
 }
 
 extension TransactionExtensions on Transaction {
@@ -61,6 +76,9 @@ class Categories extends Table {
   IntColumn get color =>
       integer().clientDefault(genColor).map(const ColorConverter())();
   RealColumn get balance => real().nullable()();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {id};
 }
 
 extension CategoriesExtension on Category {
@@ -156,8 +174,8 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
         case TransactionFilter<DateTimeRange> f:
           query = query
             ..where((t) =>
-                t.date.isBiggerOrEqualValue(f.value.start) &
-                t.date.isSmallerOrEqualValue(f.value.end));
+                t.date.isBiggerOrEqualValue(_formatter.format(f.value.start)) &
+                t.date.isSmallerOrEqualValue(_formatter.format(f.value.end)));
           break;
         case TransactionFilter<TransactionType> f:
           query = query..where((t) => t.type.equals(f.value.value));
@@ -182,7 +200,7 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
                 SortType.amount => t.amount,
                 SortType.date => t.date,
                 SortType.title => t.title
-              })
+              } as Expression<Object>)
         ]);
     } else {
       query = query..orderBy([(t) => OrderingTerm.desc(t.date)]);
@@ -212,13 +230,15 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
 
     if (dateRange != null) {
       query = query
-        ..where((t) => t.date.isBetweenValues(dateRange.start, dateRange.end));
+        ..where((t) => t.date.isBetweenValues(
+            _formatter.format(dateRange.start),
+            _formatter.format(dateRange.end)));
     }
 
     return await query
             .addColumns([transactions.amount])
             .map((row) => row.read(transactions.amount))
-            .getSingle() ??
+            .getSingleOrNull() ??
         0;
   }
 }
@@ -246,16 +266,18 @@ class AppDatabase extends _$AppDatabase {
   // Transaction methods
   Future<Transaction> createTransaction(TransactionsCompanion entry) async {
     // Generate the SQL with Drift, then write the SQL to the database.
-    final statement =
-        into(transactions).createContext(entry, InsertMode.insert);
+    final id = entry.id.present ? entry.id.value : uuid.v4();
+    // 2. Create a companion that definitely includes the ID
+    final entryWithId = entry.copyWith(id: Value(id));
 
-    final id = await db.writeTransaction((tx) async {
+    final statement =
+        into(transactions).createContext(entryWithId, InsertMode.insert);
+
+    await db.writeTransaction((tx) async {
       await tx.execute(statement.sql, statement.boundVariables);
-      final result = await tx.execute('SELECT last_insert_rowid()');
-      return result.first.values.first;
     });
 
-    return await getTransactionById(id as String);
+    return await getTransactionById(id);
   }
 
   Future<void> updateTransaction(Transaction entry) async {

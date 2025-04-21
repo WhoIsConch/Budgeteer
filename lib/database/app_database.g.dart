@@ -94,7 +94,7 @@ class $CategoriesTable extends Categories
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => const {};
+  Set<GeneratedColumn> get $primaryKey => {id};
   @override
   Category map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -393,11 +393,11 @@ class $TransactionsTable extends Transactions
   late final GeneratedColumn<double> amount = GeneratedColumn<double>(
       'amount', aliasedName, false,
       type: DriftSqlType.double, requiredDuringInsert: true);
-  static const VerificationMeta _dateMeta = const VerificationMeta('date');
   @override
-  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
-      'date', aliasedName, false,
-      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  late final GeneratedColumnWithTypeConverter<DateTime, String> date =
+      GeneratedColumn<String>('date', aliasedName, false,
+              type: DriftSqlType.string, requiredDuringInsert: true)
+          .withConverter<DateTime>($TransactionsTable.$converterdate);
   @override
   late final GeneratedColumnWithTypeConverter<TransactionType, int> type =
       GeneratedColumn<int>('type', aliasedName, false,
@@ -445,12 +445,6 @@ class $TransactionsTable extends Transactions
     } else if (isInserting) {
       context.missing(_amountMeta);
     }
-    if (data.containsKey('date')) {
-      context.handle(
-          _dateMeta, date.isAcceptableOrUnknown(data['date']!, _dateMeta));
-    } else if (isInserting) {
-      context.missing(_dateMeta);
-    }
     if (data.containsKey('category_id')) {
       context.handle(_categoryMeta,
           category.isAcceptableOrUnknown(data['category_id']!, _categoryMeta));
@@ -463,7 +457,7 @@ class $TransactionsTable extends Transactions
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => const {};
+  Set<GeneratedColumn> get $primaryKey => {id};
   @override
   Transaction map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -474,8 +468,9 @@ class $TransactionsTable extends Transactions
           .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
       amount: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}amount'])!,
-      date: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}date'])!,
+      date: $TransactionsTable.$converterdate.fromSql(attachedDatabase
+          .typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}date'])!),
       type: $TransactionsTable.$convertertype.fromSql(attachedDatabase
           .typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}type'])!),
@@ -491,6 +486,8 @@ class $TransactionsTable extends Transactions
     return $TransactionsTable(attachedDatabase, alias);
   }
 
+  static TypeConverter<DateTime, String> $converterdate =
+      const DateTextConverter();
   static JsonTypeConverter2<TransactionType, int, int> $convertertype =
       const EnumIndexConverter<TransactionType>(TransactionType.values);
 }
@@ -517,7 +514,10 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     map['id'] = Variable<String>(id);
     map['title'] = Variable<String>(title);
     map['amount'] = Variable<double>(amount);
-    map['date'] = Variable<DateTime>(date);
+    {
+      map['date'] =
+          Variable<String>($TransactionsTable.$converterdate.toSql(date));
+    }
     {
       map['type'] =
           Variable<int>($TransactionsTable.$convertertype.toSql(type));
@@ -670,7 +670,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Expression<String>? id,
     Expression<String>? title,
     Expression<double>? amount,
-    Expression<DateTime>? date,
+    Expression<String>? date,
     Expression<int>? type,
     Expression<String>? category,
     Expression<String>? notes,
@@ -722,7 +722,8 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       map['amount'] = Variable<double>(amount.value);
     }
     if (date.present) {
-      map['date'] = Variable<DateTime>(date.value);
+      map['date'] =
+          Variable<String>($TransactionsTable.$converterdate.toSql(date.value));
     }
     if (type.present) {
       map['type'] =
@@ -1121,8 +1122,10 @@ class $$TransactionsTableFilterComposer
   ColumnFilters<double> get amount => $composableBuilder(
       column: $table.amount, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<DateTime> get date => $composableBuilder(
-      column: $table.date, builder: (column) => ColumnFilters(column));
+  ColumnWithTypeConverterFilters<DateTime, DateTime, String> get date =>
+      $composableBuilder(
+          column: $table.date,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
 
   ColumnWithTypeConverterFilters<TransactionType, TransactionType, int>
       get type => $composableBuilder(
@@ -1171,7 +1174,7 @@ class $$TransactionsTableOrderingComposer
   ColumnOrderings<double> get amount => $composableBuilder(
       column: $table.amount, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<DateTime> get date => $composableBuilder(
+  ColumnOrderings<String> get date => $composableBuilder(
       column: $table.date, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<int> get type => $composableBuilder(
@@ -1219,7 +1222,7 @@ class $$TransactionsTableAnnotationComposer
   GeneratedColumn<double> get amount =>
       $composableBuilder(column: $table.amount, builder: (column) => column);
 
-  GeneratedColumn<DateTime> get date =>
+  GeneratedColumnWithTypeConverter<DateTime, String> get date =>
       $composableBuilder(column: $table.date, builder: (column) => column);
 
   GeneratedColumnWithTypeConverter<TransactionType, int> get type =>

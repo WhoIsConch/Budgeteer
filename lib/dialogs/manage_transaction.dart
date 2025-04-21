@@ -43,7 +43,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
     TransactionsCompanion transaction = TransactionsCompanion(
       id: Value.absentIfNull(widget.transaction?.id),
       title: Value(titleController.text),
-      amount: Value.absentIfNull(double.tryParse(amountController.text)),
+      amount: Value(double.tryParse(amountController.text) ?? 0),
       date: Value(selectedDate),
       notes: Value(notesController.text),
       type: Value(selectedType),
@@ -257,17 +257,15 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
       StreamBuilder(
           stream: allCategories,
           builder: (context, snapshot) => CategoryDropdown(
-                isLoading: isLoading,
+                isLoading: snapshot.connectionState == ConnectionState.waiting,
                 categories: snapshot.data ?? [],
                 transactionDate: selectedDate,
                 onChanged: (category) {
                   // TODO: Make category info update when the category is edited
                   setState(() {
-                    selectedCategory = snapshot.data!
-                        .firstWhereOrNull((e) => e.id == category?.id);
-
-                    if (selectedCategory != null) {
-                      _setCategoryInfo(selectedCategory);
+                    if (category != null) {
+                      selectedCategory = category;
+                      _setCategoryInfo(category);
                     } else {
                       _setCategoryInfo(null);
                     }

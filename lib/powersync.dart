@@ -90,13 +90,14 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         // TODO: Logging to ensure the bug is logged.
         // Usually this is a bug in the application
 
-        print(e);
+        print("ERR IN UPLOADDATA: $e");
 
         await transaction.complete();
       } else {
         rethrow;
       }
     }
+    print("ANOTHER WIN FOR THE OGS");
   }
 }
 
