@@ -1,9 +1,9 @@
+import 'package:budget/database/app_database.dart';
 import 'package:budget/panels/transaction_search.dart';
 import 'package:budget/tools/filters.dart';
 import 'package:flutter/material.dart';
 import 'package:budget/components/transactions_list.dart';
 import 'package:provider/provider.dart';
-import 'package:budget/tools/transaction_provider.dart';
 import 'package:budget/tools/enums.dart';
 import 'package:budget/components/cards.dart';
 
@@ -101,6 +101,7 @@ class SpendingHeader extends StatefulWidget {
 class _SpendingHeaderState extends State<SpendingHeader> {
   bool isMinimized = true;
   final List<String> _previousContents = List.filled(8, '\$0.00');
+  late final TransactionDao provider;
 
   void _updatePreviousContent(int index, String newContent) {
     _previousContents[index] = newContent;
@@ -144,7 +145,7 @@ class _SpendingHeaderState extends State<SpendingHeader> {
     ];
   }
 
-  List<Widget> getAvailableCards(TransactionProvider transactionProvider) {
+  List<Widget> getAvailableCards() {
     return List.generate(cardConfigs.length, (index) {
       final config = cardConfigs[index];
 
@@ -153,8 +154,7 @@ class _SpendingHeaderState extends State<SpendingHeader> {
         child: AsyncOverviewCard(
           title: config.title,
           previousContent: _previousContents[index],
-          amountCalculator: (provider) =>
-              provider.getTotalAmount(type: config.type),
+          amountCalculator: () => provider.getTotalAmount(type: config.type),
           onPressed: () {
             Navigator.push(
                 context,
@@ -173,9 +173,8 @@ class _SpendingHeaderState extends State<SpendingHeader> {
     });
   }
 
-  Widget getMinimized(TransactionProvider transactionProvider) {
-    List<Widget> availableCards =
-        getAvailableCards(transactionProvider).sublist(0, 4);
+  Widget getMinimized() {
+    List<Widget> availableCards = getAvailableCards().sublist(0, 4);
     return Column(children: [
       Expanded(
         child: Row(
@@ -196,8 +195,8 @@ class _SpendingHeaderState extends State<SpendingHeader> {
     ]);
   }
 
-  Widget getMaximized(TransactionProvider transactionProvider) {
-    List<Widget> availableCards = getAvailableCards(transactionProvider);
+  Widget getMaximized() {
+    List<Widget> availableCards = getAvailableCards();
 
     return GridView.count(
       crossAxisCount: 2,
@@ -208,40 +207,43 @@ class _SpendingHeaderState extends State<SpendingHeader> {
   }
 
   @override
+  void initState() {
+    super.initState();
+
+    provider = context.read<TransactionDao>();
+  }
+
+  @override
   Widget build(BuildContext context) {
     // When making this stateful, make sure the numbers update when the user
     // adds a new transaction. Also make sure the numbers do not overflow,
     // possibly replace some if they get too big (eg. $1000.00 > $1.0k)
-    return Consumer<TransactionProvider>(
-      builder: (context, transactionProvider, child) {
-        Widget child = getMinimized(transactionProvider);
+    Widget child = getMinimized();
 
-        if (!isMinimized) {
-          child = getMaximized(transactionProvider);
+    if (!isMinimized) {
+      child = getMaximized();
+    }
+
+    return GestureDetector(
+      onPanUpdate: (details) {
+        if (details.delta.dy + 5 < 0) {
+          isMinimized = true;
+        } else if (details.delta.dy - 5 > 0) {
+          isMinimized = false;
         }
-
-        return GestureDetector(
-          onPanUpdate: (details) {
-            if (details.delta.dy + 5 < 0) {
-              isMinimized = true;
-            } else if (details.delta.dy - 5 > 0) {
-              isMinimized = false;
-            }
-          },
-          onPanEnd: (details) => {
-            setState(() {
-              isMinimized = isMinimized;
-              widget.changeParentState(isMinimized);
-            })
-          },
-          child: Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16.0),
-            ),
-            child: child,
-          ),
-        );
       },
+      onPanEnd: (details) => {
+        setState(() {
+          isMinimized = isMinimized;
+          widget.changeParentState(isMinimized);
+        })
+      },
+      child: Card(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+        child: child,
+      ),
     );
   }
 }

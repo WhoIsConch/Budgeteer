@@ -147,23 +147,24 @@ class _TransactionsListState extends State<TransactionsList> {
     List<Widget> stackChildren = [
       // TODO: Not sure if Streams are lazy by default, but if they aren't
       // or this setup isn't, we should make it lazy.
-      StreamProvider.value(
+      StreamBuilder(
           initialData: const [],
-          value: dao.watchTransactionsPage(
+          stream: dao.watchTransactionsPage(
             filters: provider.filters,
             sort: provider.sort,
           ),
-          child:
-              Consumer<List<Transaction>>(builder: (context, transactions, _) {
+          builder: (context, snapshot) {
+            final transactions = snapshot.data!;
+
             if (transactions.isEmpty) {
-              return const Text("No transactions found");
+              return Center(child: const Text("No transactions found"));
             }
 
             return ListView.builder(
                 itemCount: transactions.length,
                 itemBuilder: (context, index) => tileFromTransaction(
                     transactions[index], Theme.of(context)));
-          })),
+          }),
     ];
 
     FloatingActionButton? actionButton;
@@ -181,7 +182,7 @@ class _TransactionsListState extends State<TransactionsList> {
               isMultiselect = false;
             });
 
-            provider.stageTransactionsForRemoval(removedTransactions);
+            // provider.stageTransactionsForRemoval(removedTransactions);
 
             bool undoPressed = false;
 
@@ -194,9 +195,9 @@ class _TransactionsListState extends State<TransactionsList> {
                     onPressed: () {
                       undoPressed = true;
 
-                      setState(() {
-                        provider.removeStagedTransactions(removedTransactions);
-                      });
+                      // setState(() {
+                      //   provider.removeStagedTransactions(removedTransactions);
+                      // });
                     }),
                 content: Text(
                     "${removedTransactions.length} ${removedTransactions.length == 1 ? "item" : "items"} deleted")));
@@ -210,7 +211,7 @@ class _TransactionsListState extends State<TransactionsList> {
                 scaffoldMessengerKey.currentState!
                     .hideCurrentSnackBar(); // This doesn't work if you move screens
 
-                provider.deleteStagedTransactions();
+                // provider.deleteStagedTransactions();
               }
             });
           });

@@ -122,7 +122,7 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
   Stream<List<Transaction>> watchTransactionsPage({
     List<TransactionFilter>? filters,
     Sort? sort,
-    int limit = 20,
+    int? limit,
     int? offset,
   }) {
     var query = db.select(db.transactions);
@@ -188,7 +188,9 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
       query = query..orderBy([(t) => OrderingTerm.desc(t.date)]);
     }
 
-    query = query..limit(limit, offset: offset);
+    if (limit != null) {
+      query = query..limit(limit, offset: offset);
+    }
 
     return query.watch();
   }
@@ -223,30 +225,62 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
 
 @DriftDatabase(tables: [Categories, Transactions], daos: [TransactionDao])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase(PowerSyncDatabase db) : super(SqliteAsyncDriftConnection(db));
+  PowerSyncDatabase db;
+
+  AppDatabase(this.db) : super(SqliteAsyncDriftConnection(db));
 
   @override
   int get schemaVersion => 1;
 
   Stream<List<Category>> watchCategories() => select(categories).watch();
 
-  // Transaction methods
-  Future<Transaction> createTransaction(TransactionsCompanion entry) =>
-      into(transactions).insertReturning(entry);
+  List<dynamic> convertVariables(List<dynamic> variables) =>
+      variables.map((v) => v.value).toList();
 
-  Future<bool> updateTransaction(Transaction entry) =>
-      update(transactions).replace(entry);
+  Future<void> executeQuery(GenerationContext query) async {
+    final args = convertVariables(query.introducedVariables);
 
-  Future<bool> updatePartialTransaction(TransactionsCompanion entry) async {
-    int value = await (update(transactions)
-          ..where((t) => t.id.equals(entry.id.value)))
-        .write(entry);
-
-    return value != 0;
+    await db.writeTransaction((tx) => tx.execute(query.sql, args));
   }
 
-  Future<int> deleteTransaction(Transaction entry) =>
-      delete(transactions).delete(entry);
+  // Transaction methods
+  Future<Transaction> createTransaction(TransactionsCompanion entry) async {
+    // Generate the SQL with Drift, then write the SQL to the database.
+    final statement =
+        into(transactions).createContext(entry, InsertMode.insert);
+
+    final id = await db.writeTransaction((tx) async {
+      await tx.execute(statement.sql, statement.boundVariables);
+      final result = await tx.execute('SELECT last_insert_rowid()');
+      return result.first.values.first;
+    });
+
+    return await getTransactionById(id as String);
+  }
+
+  Future<void> updateTransaction(Transaction entry) async {
+    final query = (update(transactions)..replace(entry)).constructQuery();
+
+    await executeQuery(query);
+  }
+
+  Future<Transaction> updatePartialTransaction(
+      TransactionsCompanion entry) async {
+    final query = (update(transactions)
+          ..where((t) => t.id.equals(entry.id.value))
+          ..write(entry))
+        .constructQuery();
+
+    await executeQuery(query);
+
+    return await getTransactionById(entry.id.value);
+  }
+
+  Future<void> deleteTransaction(Transaction entry) async {
+    final query = (delete(transactions)..delete(entry)).constructQuery();
+
+    await executeQuery(query);
+  }
 
   Future<Transaction> getTransactionById(String id) => (select(transactions)
         ..where(
@@ -258,26 +292,43 @@ class AppDatabase extends _$AppDatabase {
       (select(categories)..where((tbl) => tbl.id.equals(id))).getSingle();
 
   // Category methods
-  Future<Category> createCategory(CategoriesCompanion entry) =>
-      into(categories).insertReturning(entry);
+  Future<Category> createCategory(CategoriesCompanion entry) async {
+    final id = entry.id.present ? entry.id.value : uuid.v4();
+    // 2. Create a companion that definitely includes the ID
+    final entryWithId = entry.copyWith(id: Value(id));
 
-  Future<bool> updateCategory(Category entry) =>
-      update(categories).replace(entry);
+    final statement =
+        into(categories).createContext(entryWithId, InsertMode.insert);
 
-  Future<Category?> updatePartialCategory(CategoriesCompanion entry) async {
-    int value = await (update(categories)
-          ..where((c) => c.id.equals(entry.id.value)))
-        .write(entry);
+    await db.writeTransaction((tx) async {
+      await tx.execute(statement.sql, statement.boundVariables);
+    });
 
-    if (value != 1) {
-      // TODO: LOG THIS
-      return null;
-    }
+    var category = await getCategoryById(id);
 
-    return (select(categories)..where((c) => c.id.equals(entry.id.value)))
-        .getSingle();
+    return category;
   }
 
-  Future<int> deleteCategory(Category entry) =>
-      delete(categories).delete(entry);
+  Future<void> updateCategory(Category entry) async {
+    final query = (update(categories)..replace(entry)).constructQuery();
+
+    await executeQuery(query);
+  }
+
+  Future<Category> updatePartialCategory(CategoriesCompanion entry) async {
+    final query = (update(categories)
+          ..where((t) => t.id.equals(entry.id.value))
+          ..write(entry))
+        .constructQuery();
+
+    await executeQuery(query);
+
+    return await getCategoryById(entry.id.value);
+  }
+
+  Future<void> deleteCategory(Category entry) async {
+    final query = (delete(categories)..delete(entry)).constructQuery();
+
+    await executeQuery(query);
+  }
 }

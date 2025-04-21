@@ -1,5 +1,3 @@
-import 'package:collection/collection.dart';
-
 enum SortType { title, date, amount }
 
 enum SortOrder { ascending, descending }

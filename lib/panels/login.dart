@@ -1,4 +1,3 @@
-import 'package:budget/tools/enums.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
@@ -52,31 +51,34 @@ class _LoginPageState extends State<LoginPage> {
             email: usernameController.text, password: passwordController.text);
         canFinish = true;
       } catch (e) {
-        if (e.code == 'user-not-found') {
-          setState(() => usernameError = "Account doesn't exist");
-        } else if (e.code == 'wrong-password') {
-          setState(() => passwordError = "Incorrect password");
-        } else if (e.code == 'invalid-email') {
-          setState(() => usernameError = "Invalid email address");
-        } else {
-          scaffoldMessengerKey.currentState!.showSnackBar(SnackBar(
-              content: Text("An unknown error occurred: ${e.message}")));
-        }
+        // if (e.code == 'user-not-found') {
+        //   setState(() => usernameError = "Account doesn't exist");
+        // } else if (e.code == 'wrong-password') {
+        //   setState(() => passwordError = "Incorrect password");
+        // } else if (e.code == 'invalid-email') {
+        //   setState(() => usernameError = "Invalid email address");
+        // } else {
+        //   scaffoldMessengerKey.currentState!.showSnackBar(SnackBar(
+        //       content: Text("An unknown error occurred: ${e.message}")));
+        // }
+        // TODO: Find out what exceptions come from Supabase auth
+        rethrow;
       }
     } else if (type == SignInType.signUp) {
       try {
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        await supabase.auth.signUp(
             email: usernameController.text, password: passwordController.text);
         canFinish = true;
-      } on FirebaseAuthException catch (e) {
-        if (e.code == 'weak-password') {
-          setState(() => passwordError = "Too weak");
-        } else if (e.code == 'email-already-in-use') {
-          setState(() => usernameError = "Email already in use");
-        } else {
-          scaffoldMessengerKey.currentState!.showSnackBar(SnackBar(
-              content: Text("An unknown error occurred: ${e.message}")));
-        }
+      } catch (e) {
+        // if (e.code == 'weak-password') {
+        //   setState(() => passwordError = "Too weak");
+        // } else if (e.code == 'email-already-in-use') {
+        //   setState(() => usernameError = "Email already in use");
+        // } else {
+        //   scaffoldMessengerKey.currentState!.showSnackBar(SnackBar(
+        //       content: Text("An unknown error occurred: ${e.message}")));
+        // }
+        rethrow;
       }
     } else if (type == SignInType.google) {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
@@ -86,14 +88,9 @@ class _LoginPageState extends State<LoginPage> {
           await googleUser?.authentication;
 
       if (googleAuth != null) {
-        // Create a new credential
-        final credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken: googleAuth.idToken,
-        );
-
         // Once signed in, return the UserCredential
-        await FirebaseAuth.instance.signInWithCredential(credential);
+        await supabase.auth.signInWithIdToken(
+            provider: OAuthProvider.google, idToken: googleAuth.idToken!);
         canFinish = true;
       }
     }

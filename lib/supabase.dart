@@ -1,8 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_config/flutter_config.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 loadSupabase() async {
   await Supabase.initialize(
-      url: FlutterConfig.get("SUPABASE_URL"),
-      anonKey: FlutterConfig.get("SUPABASE_KEY"));
+      url: dotenv.env["SUPABASE_URL"]!, anonKey: dotenv.env["SUPABASE_KEY"]!);
 }

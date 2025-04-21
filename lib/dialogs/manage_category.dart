@@ -96,8 +96,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
             // There is no way this shouldn't be a valid category with a valid
             // ID. If it isn't, I'll let the try-catch handle it for now.
             // I'll think of something else if it becomes a problem.
-            savedCategory =
-                await provider.updatePartialCategory(getCategory()) as Category;
+            savedCategory = await provider.updatePartialCategory(getCategory());
           } else {
             savedCategory = await provider.createCategory(getCategory());
           }
@@ -131,14 +130,14 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                 onPressed: () {
                   final provider =
                       Provider.of<TransactionProvider>(context, listen: false);
-                  Category removedCategory = getCategory();
+                  // Category removedCategory = getCategory();
 
                   bool undoPressed = false;
 
                   Navigator.of(context).pop("");
 
                   // TODO: Make sure this works
-                  provider.addPendingCategory(removedCategory);
+                  // provider.addPendingCategory(removedCategory);
 
                   scaffoldMessengerKey.currentState!.hideCurrentSnackBar();
                   scaffoldMessengerKey.currentState!.showSnackBar(SnackBar(
@@ -148,16 +147,16 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                           label: "Undo",
                           onPressed: () {
                             undoPressed = true;
-                            provider.removePendingCategory(removedCategory);
+                            // provider.removePendingCategory(removedCategory);
                           }),
-                      content: Text(
-                          "Category \"${removedCategory.name}\" deleted")));
+                      content: Text(// ${removedCategory.name}
+                          "Category \"temp\" deleted")));
 
                   Timer(const Duration(seconds: 3, milliseconds: 250), () {
                     scaffoldMessengerKey.currentState!.hideCurrentSnackBar();
 
                     if (!undoPressed) {
-                      provider.deleteCategory(removedCategory);
+                      // provider.deleteCategory(removedCategory);
                       print("Removed");
                     }
                   });

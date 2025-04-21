@@ -31,7 +31,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
   Category? selectedCategory;
   double? selectedCategoryTotal;
   bool isLoading = true;
-  late final Stream<List<Category>> allCategories;
+  late Stream<List<Category>> allCategories;
 
   DateTime selectedDate = DateTime.now();
   TransactionType selectedType = TransactionType.expense;
@@ -43,7 +43,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
     TransactionsCompanion transaction = TransactionsCompanion(
       id: Value.absentIfNull(widget.transaction?.id),
       title: Value(titleController.text),
-      amount: Value(double.parse(amountController.text)),
+      amount: Value.absentIfNull(double.tryParse(amountController.text)),
       date: Value(selectedDate),
       notes: Value(notesController.text),
       type: Value(selectedType),
@@ -51,6 +51,13 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
     );
 
     return transaction;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    allCategories = context.watch<AppDatabase>().watchCategories();
   }
 
   @override
@@ -166,8 +173,6 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
 
   @override
   Widget build(BuildContext context) {
-    allCategories = context.watch<AppDatabase>().watchCategories();
-
     TextStyle fieldTextStyle = const TextStyle(fontSize: 24, height: 2);
     TextStyle labelStyle = const TextStyle(fontSize: 24);
 
@@ -253,7 +258,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
           stream: allCategories,
           builder: (context, snapshot) => CategoryDropdown(
                 isLoading: isLoading,
-                categories: snapshot.data!,
+                categories: snapshot.data ?? [],
                 transactionDate: selectedDate,
                 onChanged: (category) {
                   // TODO: Make category info update when the category is edited

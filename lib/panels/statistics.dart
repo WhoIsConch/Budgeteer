@@ -1,6 +1,7 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:budget/components/category_dropdown.dart';
 import 'package:budget/components/hybrid_button.dart';
+import 'package:budget/database/app_database.dart';
 import 'package:budget/tools/transaction_provider.dart';
 import 'package:budget/tools/enums.dart';
 import 'package:budget/tools/filters.dart';
@@ -20,7 +21,9 @@ class StatisticsPage extends StatefulWidget {
 class _StatisticsPageState extends State<StatisticsPage> {
   // In this case, filters should include a DateRangeFilter, CategoryFilter,
   // and/or TypeFilter
-  List<TransactionFilter> filters = [];
+  late final TransactionProvider filterProvider;
+  late final AppDatabase dbProvider;
+  late final TransactionDao daoProvider;
   int typeIndex = 0;
   List<Transaction> transactions = [];
 
@@ -33,16 +36,17 @@ class _StatisticsPageState extends State<StatisticsPage> {
   final List<TransactionType?> types = [null, ...TransactionType.values];
 
   List<Category> get selectedCategories =>
-      getFilterValue<List<Category>>(filters) ?? [];
+      filterProvider.getFilterValue<List<Category>>() ?? [];
 
   // TODO: Make sure RelativeDateRange is never passed to the filters in api.dart
   RelativeDateRange getDateRange() {
-    RelativeDateRange? value = getFilterValue<RelativeDateRange>(filters);
+    RelativeDateRange? value =
+        filterProvider.getFilterValue<RelativeDateRange>();
 
     if (value == null) {
-      updateFilter(
-          const TransactionFilter<RelativeDateRange>(RelativeDateRange.today),
-          filters);
+      filterProvider.updateFilter(
+        const TransactionFilter<RelativeDateRange>(RelativeDateRange.today),
+      );
 
       return RelativeDateRange.today;
     }
@@ -50,12 +54,17 @@ class _StatisticsPageState extends State<StatisticsPage> {
     return value;
   }
 
+  @override
+  void initState() {
+    super.initState();
+    context.read<TransactionProvider>().update(filters: []);
+  }
+
   DropdownMenu getDateRangeDropdown() => DropdownMenu(
         expandedInsets: EdgeInsets.zero,
         initialSelection: getDateRange(),
-        onSelected: (value) => setState(() => updateFilter(
-            TransactionFilter<RelativeDateRange>(value as RelativeDateRange),
-            filters)),
+        onSelected: (value) => setState(() => filterProvider.updateFilter(
+            TransactionFilter<RelativeDateRange>(value as RelativeDateRange))),
         dropdownMenuEntries: RelativeDateRange.values
             .map(
               (e) => DropdownMenuEntry(
@@ -68,70 +77,78 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<TransactionProvider>(
-      builder:
-          (BuildContext context, TransactionProvider provider, Widget? child) =>
-              Column(
-        children: [
-          Row(spacing: 8.0, children: [
-            Expanded(child: getDateRangeDropdown()),
-            HybridButton(
-                isEnabled: typeIndex % typesIcons.length != 0,
-                icon: typesIcons[typeIndex % typesIcons.length],
-                buttonType: HybridButtonType.toggle,
-                onTap: () {
-                  setState(() {
-                    typeIndex += 1;
-                    TransactionType? type = types[typeIndex % types.length];
-                    if (type == null) {
-                      setState(() => removeFilter<TransactionType>(filters));
-                    } else {
-                      setState(() => updateFilter(
-                          TransactionFilter<TransactionType>(type), filters));
-                    }
-                  });
-                })
-          ]),
-          const SizedBox(height: 16),
-          CategoryPieChart(
-            availableCategories: provider.categories,
-            filters: filters,
-          ),
-          const SizedBox(height: 16),
-          CategoryDropdown(
-              categories: provider.categories,
-              showExpanded: false,
-              onChanged: (Category? category) => setState(() {
-                    if (category?.id == null || category!.id!.isEmpty) {
-                      removeFilter<List<Category>>(filters);
-                      return;
-                    }
+    filterProvider = context.watch<TransactionProvider>();
+    dbProvider = context.read<AppDatabase>();
+    daoProvider = context.read<TransactionDao>();
 
-                    updateFilter(
-                        TransactionFilter<List<Category>>([category]), filters);
-                  }),
-              selectedCategory: selectedCategories.firstOrNull),
-          const Spacer(),
-          StreamBuilder<List<Transaction>>(
-            stream:
-                provider.getQueryStream(provider.getQuery(filters: filters)),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError) {
-                return Text("Error: ${snapshot.error}");
-              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return const Text("No transactions found.");
-              } else {
-                return CategoryBarChart(
-                  transactions: snapshot.data!,
-                  dateRange: getDateRange(),
-                );
-              }
-            },
+    return Column(
+      children: [
+        Row(spacing: 8.0, children: [
+          Expanded(child: getDateRangeDropdown()),
+          HybridButton(
+              isEnabled: typeIndex % typesIcons.length != 0,
+              icon: typesIcons[typeIndex % typesIcons.length],
+              buttonType: HybridButtonType.toggle,
+              onTap: () {
+                setState(() {
+                  typeIndex += 1;
+                  TransactionType? type = types[typeIndex % types.length];
+                  if (type == null) {
+                    setState(
+                        () => filterProvider.removeFilter<TransactionType>());
+                  } else {
+                    setState(() => filterProvider.updateFilter<TransactionType>(
+                        TransactionFilter<TransactionType>(type)));
+                  }
+                });
+              })
+        ]),
+        const SizedBox(height: 16),
+        StreamBuilder(
+          stream: dbProvider.watchCategories(),
+          builder: (context, snapshot) => CategoryPieChart(
+            availableCategories: snapshot.data!,
+            filters: filterProvider.filters,
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 16),
+        StreamBuilder(
+            stream: dbProvider.watchCategories(),
+            builder: (context, snapshot) {
+              return CategoryDropdown(
+                  categories: snapshot.data!,
+                  showExpanded: false,
+                  onChanged: (Category? category) => setState(() {
+                        if (category?.id == null || category!.id.isEmpty) {
+                          filterProvider.removeFilter<List<Category>>();
+                          return;
+                        }
+
+                        filterProvider.updateFilter<List<Category>>(
+                            TransactionFilter<List<Category>>([category]));
+                      }),
+                  selectedCategory: selectedCategories.firstOrNull);
+            }),
+        const Spacer(),
+        StreamBuilder<List<Transaction>>(
+          stream: daoProvider.watchTransactionsPage(
+              filters: filterProvider.filters, sort: filterProvider.sort),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Text("Error: ${snapshot.error}");
+            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Text("No transactions found.");
+            } else {
+              return CategoryBarChart(
+                transactions: snapshot.data!,
+                dateRange: getDateRange(),
+              );
+            }
+          },
+        ),
+      ],
     );
   }
 }
@@ -285,18 +302,15 @@ class CategoryPieChart extends StatefulWidget {
 class _CategoryPieChartState extends State<CategoryPieChart> {
   List<PieChartSectionData>? pieChartSectionData;
   List<ChartKeyItem>? chartKeyItems;
+  late final TransactionDao daoProvider;
   bool isLoading = true;
   double totalAmount = 0;
+  late List<Category?> categories;
 
   PieChart get pieChart => PieChart(PieChartData(
       centerSpaceRadius: 56, sectionsSpace: 2, sections: pieChartSectionData));
 
-  Future<void> _prepareData(BuildContext context) async {
-    final provider = Provider.of<TransactionProvider>(context, listen: false);
-    final List<Category> categories = [
-      Category(name: ""),
-      ...provider.categories,
-    ];
+  Future<void> _prepareData() async {
     double absTotal = 0;
 
     List<PieChartSectionData> sectionData = [];
@@ -311,8 +325,9 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
           ?.value;
 
       double total = switch (type) {
-        null => (await provider.getTotalAmount(category: categories[i])),
-        _ => await provider.getTotalAmount(type: type, category: categories[i])
+        null => (await daoProvider.getTotalAmount(category: categories[i])),
+        _ =>
+          await daoProvider.getTotalAmount(type: type, category: categories[i])
       };
 
       if (total == 0) {
@@ -340,7 +355,7 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
         value: total.abs(),
         radius: 32,
         showTitle: false,
-        color: categories[i].color ?? Colors.white,
+        color: categories[i]?.color ?? Colors.white,
       ));
 
       // This sorts the data to ensure any income stays on top to
@@ -349,16 +364,15 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
         keyItems.insert(
             0,
             ChartKeyItem(
-                color: categories[i].color ?? Colors.white,
-                name: categories[i].name.isNotEmpty
-                    ? categories[i].name
+                color: categories[i]?.color ?? Colors.white,
+                name: categories[i] != null
+                    ? categories[i]!.name
                     : "Uncategorized"));
       } else {
         keyItems.add(ChartKeyItem(
-            color: categories[i].color ?? Colors.white,
-            name: categories[i].name.isNotEmpty
-                ? categories[i].name
-                : "Uncategorized"));
+            color: categories[i]?.color ?? Colors.white,
+            name:
+                categories[i] != null ? categories[i]!.name : "Uncategorized"));
       }
     }
 
@@ -387,7 +401,9 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
   void initState() {
     super.initState();
 
-    _prepareData(context);
+    daoProvider = context.read<TransactionDao>();
+    categories = [...widget.availableCategories, null];
+    _prepareData();
   }
 
   @override

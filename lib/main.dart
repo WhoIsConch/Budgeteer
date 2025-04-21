@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:budget/tools/enums.dart';
 import 'package:budget/tools/transaction_provider.dart';
 import 'package:budget/tools/settings.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 ThemeMode? theme;
 
@@ -26,12 +27,13 @@ Future<void> setup() async {
     default:
       theme = ThemeMode.system;
   }
-
-  await openDatabase();
 }
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await dotenv.load();
+  await openDatabase();
 
   // Define the providers
   final dbProvider = Provider<AppDatabase>(
@@ -47,15 +49,15 @@ void main() {
   final transactionProvider = ChangeNotifierProvider<TransactionProvider>(
       create: (context) => TransactionProvider());
 
-  setup().then(((value) {
-    runApp(
-      MultiProvider(providers: [
-        dbProvider,
-        daoProvider,
-        transactionProvider,
-      ], child: const BudgetApp()),
-    );
-  }));
+  await setup();
+
+  runApp(
+    MultiProvider(providers: [
+      dbProvider,
+      daoProvider,
+      transactionProvider,
+    ], child: const BudgetApp()),
+  );
 }
 
 class BudgetApp extends StatefulWidget {

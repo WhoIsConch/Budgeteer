@@ -1,8 +1,6 @@
 import 'package:budget/tools/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
-import 'package:budget/tools/transaction_provider.dart';
-import 'package:provider/provider.dart';
 
 enum CardTextStyle { major, cluster }
 
@@ -78,7 +76,7 @@ class AsyncOverviewCard extends StatelessWidget {
   // Make the color of the text change to slight red based on whether the text
   // color is dark or bright if the balance is negative
   final String title;
-  final Future<double> Function(TransactionProvider) amountCalculator;
+  final Future<double> Function() amountCalculator;
   final VoidCallback? onPressed;
   final String previousContent;
   final CardTextStyle textStyle;
@@ -95,36 +93,31 @@ class AsyncOverviewCard extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return Consumer<TransactionProvider>(
-        builder: (context, transactionProvider, child) {
-      return FutureBuilder<double>(
-          future: amountCalculator(transactionProvider),
-          builder: (context, snapshot) {
-            String displayAmount = previousContent;
+  Widget build(BuildContext context) => FutureBuilder<double>(
+      future: amountCalculator(),
+      builder: (context, snapshot) {
+        String displayAmount = previousContent;
 
-            if (snapshot.connectionState == ConnectionState.done) {
-              if (snapshot.hasError) {
-                displayAmount = "Error";
-              } else if (snapshot.hasData) {
-                if (snapshot.data! < 0) {
-                  displayAmount = '-\$${formatAmount(snapshot.data!.abs())}';
-                } else {
-                  displayAmount = '\$${formatAmount(snapshot.data!.abs())}';
-                }
-                onContentUpdated?.call(displayAmount);
-              }
+        if (snapshot.connectionState == ConnectionState.done) {
+          if (snapshot.hasError) {
+            displayAmount = "Error";
+          } else if (snapshot.hasData) {
+            if (snapshot.data! < 0) {
+              displayAmount = '-\$${formatAmount(snapshot.data!.abs())}';
+            } else {
+              displayAmount = '\$${formatAmount(snapshot.data!.abs())}';
             }
+            onContentUpdated?.call(displayAmount);
+          }
+        }
 
-            return OverviewCard(
-              title: title,
-              content: displayAmount,
-              onPressed: onPressed,
-              textStyle: textStyle,
-            );
-          });
-    });
-  }
+        return OverviewCard(
+          title: title,
+          content: displayAmount,
+          onPressed: onPressed,
+          textStyle: textStyle,
+        );
+      });
 }
 
 class CardButton extends StatefulWidget {

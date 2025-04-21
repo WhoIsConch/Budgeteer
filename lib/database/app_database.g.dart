@@ -121,8 +121,10 @@ class $CategoriesTable extends Categories
     return $CategoriesTable(attachedDatabase, alias);
   }
 
-  static TypeConverter<CategoryResetIncrement, int> $converterresetIncrement =
-      const EnumIndexConverter(CategoryResetIncrement.values);
+  static JsonTypeConverter2<CategoryResetIncrement, int, int>
+      $converterresetIncrement =
+      const EnumIndexConverter<CategoryResetIncrement>(
+          CategoryResetIncrement.values);
   static TypeConverter<Color, int> $convertercolor = const ColorConverter();
 }
 
@@ -179,8 +181,8 @@ class Category extends DataClass implements Insertable<Category> {
     return Category(
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
-      resetIncrement:
-          serializer.fromJson<CategoryResetIncrement>(json['resetIncrement']),
+      resetIncrement: $CategoriesTable.$converterresetIncrement
+          .fromJson(serializer.fromJson<int>(json['resetIncrement'])),
       allowNegatives: serializer.fromJson<bool>(json['allowNegatives']),
       color: serializer.fromJson<Color>(json['color']),
       balance: serializer.fromJson<double?>(json['balance']),
@@ -192,8 +194,8 @@ class Category extends DataClass implements Insertable<Category> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
-      'resetIncrement':
-          serializer.toJson<CategoryResetIncrement>(resetIncrement),
+      'resetIncrement': serializer.toJson<int>(
+          $CategoriesTable.$converterresetIncrement.toJson(resetIncrement)),
       'allowNegatives': serializer.toJson<bool>(allowNegatives),
       'color': serializer.toJson<Color>(color),
       'balance': serializer.toJson<double?>(balance),
@@ -408,8 +410,8 @@ class $TransactionsTable extends Transactions
       'category_id', aliasedName, true,
       type: DriftSqlType.string,
       requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES categories (id)'));
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES categories (id) ON DELETE SET NULL'));
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -489,8 +491,8 @@ class $TransactionsTable extends Transactions
     return $TransactionsTable(attachedDatabase, alias);
   }
 
-  static TypeConverter<TransactionType, int> $convertertype =
-      const EnumIndexConverter(TransactionType.values);
+  static JsonTypeConverter2<TransactionType, int, int> $convertertype =
+      const EnumIndexConverter<TransactionType>(TransactionType.values);
 }
 
 class Transaction extends DataClass implements Insertable<Transaction> {
@@ -552,7 +554,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       title: serializer.fromJson<String>(json['title']),
       amount: serializer.fromJson<double>(json['amount']),
       date: serializer.fromJson<DateTime>(json['date']),
-      type: serializer.fromJson<TransactionType>(json['type']),
+      type: $TransactionsTable.$convertertype
+          .fromJson(serializer.fromJson<int>(json['type'])),
       category: serializer.fromJson<String?>(json['category']),
       notes: serializer.fromJson<String?>(json['notes']),
     );
@@ -565,7 +568,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       'title': serializer.toJson<String>(title),
       'amount': serializer.toJson<double>(amount),
       'date': serializer.toJson<DateTime>(date),
-      'type': serializer.toJson<TransactionType>(type),
+      'type': serializer
+          .toJson<int>($TransactionsTable.$convertertype.toJson(type)),
       'category': serializer.toJson<String?>(category),
       'notes': serializer.toJson<String?>(notes),
     };
@@ -765,6 +769,18 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities =>
       [categories, transactions];
+  @override
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
+        [
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('categories',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('transactions', kind: UpdateKind.update),
+            ],
+          ),
+        ],
+      );
 }
 
 typedef $$CategoriesTableCreateCompanionBuilder = CategoriesCompanion Function({

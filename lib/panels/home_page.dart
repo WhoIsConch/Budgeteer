@@ -99,13 +99,12 @@ class AuthWrapper extends StatelessWidget {
         stream: Supabase.instance.client.auth.onAuthStateChange,
         builder: (BuildContext context, AsyncSnapshot snapshot) {
           Widget body;
-          final AuthChangeEvent event = snapshot.data;
 
           if (snapshot.connectionState == ConnectionState.waiting) {
             body = const Scaffold(
                 key: ValueKey('loading'),
                 body: Center(child: CircularProgressIndicator()));
-          } else if (event == AuthChangeEvent.signedIn) {
+          } else if (Supabase.instance.client.auth.currentUser != null) {
             body = const HomePage(key: ValueKey('home'));
           } else {
             body = const LoginPage(key: ValueKey('login'));
