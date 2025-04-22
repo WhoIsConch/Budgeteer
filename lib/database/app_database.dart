@@ -34,8 +34,10 @@ class Transactions extends Table {
   RealColumn get amount => real()();
   TextColumn get date => text().map(const DateTextConverter())();
   IntColumn get type => intEnum<TransactionType>()();
-  BoolColumn get isDeleted =>
-      boolean().withDefault(const Constant(false)).named('is_deleted')();
+  BoolColumn get isDeleted => boolean()
+      .nullable()
+      .withDefault(const Constant(false))
+      .named('is_deleted')();
 
   TextColumn get category => text()
       .nullable()
@@ -78,8 +80,10 @@ class Categories extends Table {
   IntColumn get color =>
       integer().clientDefault(genColor).map(const ColorConverter())();
   RealColumn get balance => real().nullable()();
-  BoolColumn get isDeleted =>
-      boolean().withDefault(const Constant(false)).named('is_deleted')();
+  BoolColumn get isDeleted => boolean()
+      .nullable()
+      .withDefault(const Constant(false))
+      .named('is_deleted')();
 
   @override
   Set<Column<Object>>? get primaryKey => {id};
