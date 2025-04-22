@@ -41,7 +41,11 @@ void main() async {
     dispose: (_, db) => db.close(),
   );
 
-  // 2️⃣ TransactionDao
+  final deletionManagerProvider = Provider<DeletionManager>(
+    create: (context) => DeletionManager(context.read<TransactionDao>()),
+    dispose: (_, value) => value.dispose(),
+  );
+
   final daoProvider = ProxyProvider<AppDatabase, TransactionDao>(
     update: (_, db, __) => TransactionDao(db),
   );
@@ -55,6 +59,7 @@ void main() async {
     MultiProvider(providers: [
       dbProvider,
       daoProvider,
+      deletionManagerProvider,
       transactionProvider,
     ], child: const BudgetApp()),
   );

@@ -10,6 +10,7 @@ class CategoryDropdown extends StatelessWidget {
     required this.categories,
     required this.onChanged,
     required this.selectedCategory,
+    this.onDeleted,
     this.selectedCategoryTotal,
     this.showExpanded = true,
     this.transactionDate,
@@ -19,6 +20,7 @@ class CategoryDropdown extends StatelessWidget {
   final List<Category> categories;
   final bool isLoading;
   final Function(Category?) onChanged;
+  final Function? onDeleted;
   final Category? selectedCategory;
   final double? selectedCategoryTotal;
   final DateTime? transactionDate;
@@ -106,7 +108,10 @@ class CategoryDropdown extends StatelessWidget {
                           mode: selectedCategory == null
                               ? ObjectManageMode.add
                               : ObjectManageMode.edit,
-                        ));
+                        )).then(
+                  (value) =>
+                      value == true && onDeleted != null ? onDeleted!() : null,
+                );
 
                 if (result is String && result.isEmpty) {
                   onChanged(null);

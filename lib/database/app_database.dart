@@ -151,7 +151,8 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     int? limit,
     int? offset,
   }) {
-    var query = db.select(db.transactions);
+    var query = db.select(db.transactions)
+      ..where((t) => t.isDeleted.equals(true).not());
 
     filters ??= [];
 
@@ -227,7 +228,8 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     Category? category,
     bool nullCategory = false,
   }) async {
-    var query = select(transactions);
+    var query = select(transactions)
+      ..where((t) => t.isDeleted.equals(true).not());
 
     if (type != null) {
       query = query..where((t) => t.type.equalsValue(type));
@@ -252,6 +254,39 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
             .getSingleOrNull() ??
         0;
   }
+
+  // Handle it through updatePartialTransaction so it can work the correct way
+  // with PowerSync
+  Future<void> markTransactionsAsDeleted(List<String> ids) async {
+    var query = update(transactions)
+      ..where((t) => t.id.isIn(ids))
+      ..write(const TransactionsCompanion(isDeleted: Value(true)));
+
+    await db.executeQuery(query.constructQuery());
+  }
+
+  Future<void> markCategoryAsDeleted(String id) => db.updatePartialCategory(
+      CategoriesCompanion(id: Value(id), isDeleted: const Value(true)));
+
+  Future<void> unmarkTransactionsAsDeleted(List<String> ids) async {
+    var query = update(transactions)
+      ..where((t) => t.id.isIn(ids))
+      ..write(const TransactionsCompanion(isDeleted: Value(false)));
+
+    await db.executeQuery(query.constructQuery());
+  }
+
+  Future<void> unmarkCategoryAsDeleted(String id) => db.updatePartialCategory(
+      CategoriesCompanion(id: Value(id), isDeleted: const Value(false)));
+
+  Future<void> permanentlyDeleteTransactions(List<String> ids) async {
+    var query = delete(transactions)..where((t) => t.id.isIn(ids));
+
+    await db.executeQuery(query.constructQuery());
+  }
+
+  Future<void> permanentlyDeleteCategory(String id) =>
+      db.deleteCategoryById(id);
 }
 
 @DriftDatabase(tables: [Categories, Transactions], daos: [TransactionDao])
@@ -263,7 +298,11 @@ class AppDatabase extends _$AppDatabase {
   @override
   int get schemaVersion => 1;
 
-  Stream<List<Category>> watchCategories() => select(categories).watch();
+  Stream<List<Category>> watchCategories() => (select(categories)
+        ..where(
+          (tbl) => tbl.isDeleted.isNotValue(true),
+        ))
+      .watch();
 
   List<dynamic> convertVariables(List<dynamic> variables) =>
       variables.map((v) => v.value).toList();
@@ -315,6 +354,13 @@ class AppDatabase extends _$AppDatabase {
     await executeQuery(query);
   }
 
+  Future<void> deleteTransactionById(String id) async {
+    final query =
+        (delete(transactions)..where((t) => t.id.equals(id))).constructQuery();
+
+    await executeQuery(query);
+  }
+
   Future<Transaction> getTransactionById(String id) => (select(transactions)
         ..where(
           (tbl) => tbl.id.equals(id),
@@ -361,6 +407,13 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deleteCategory(Category entry) async {
     final query = (delete(categories)..delete(entry)).constructQuery();
+
+    await executeQuery(query);
+  }
+
+  Future<void> deleteCategoryById(String id) async {
+    final query =
+        (delete(categories)..where((c) => c.id.equals(id))).constructQuery();
 
     await executeQuery(query);
   }

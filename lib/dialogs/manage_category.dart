@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 
 import 'package:budget/database/app_database.dart';
@@ -128,38 +127,11 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                     style:
                         TextStyle(color: Theme.of(context).colorScheme.error)),
                 onPressed: () {
-                  final provider =
-                      Provider.of<TransactionProvider>(context, listen: false);
-                  // Category removedCategory = getCategory();
+                  final deletionManager = context.read<DeletionManager>();
 
-                  bool undoPressed = false;
-
-                  Navigator.of(context).pop("");
-
-                  // TODO: Make sure this works
-                  // provider.addPendingCategory(removedCategory);
-
-                  scaffoldMessengerKey.currentState!.hideCurrentSnackBar();
-                  scaffoldMessengerKey.currentState!.showSnackBar(SnackBar(
-                      behavior: SnackBarBehavior.floating,
-                      duration: const Duration(seconds: 3),
-                      action: SnackBarAction(
-                          label: "Undo",
-                          onPressed: () {
-                            undoPressed = true;
-                            // provider.removePendingCategory(removedCategory);
-                          }),
-                      content: Text(// ${removedCategory.name}
-                          "Category \"temp\" deleted")));
-
-                  Timer(const Duration(seconds: 3, milliseconds: 250), () {
-                    scaffoldMessengerKey.currentState!.hideCurrentSnackBar();
-
-                    if (!undoPressed) {
-                      // provider.deleteCategory(removedCategory);
-                      print("Removed");
-                    }
-                  });
+                  deletionManager
+                      .stageObjectsForDeletion<Category>([widget.category!.id]);
+                  Navigator.of(context).pop(true);
                 }),
             Row(
               children: [okButton],

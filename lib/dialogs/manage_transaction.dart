@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:budget/components/category_dropdown.dart';
 import 'package:budget/database/app_database.dart';
-import 'package:collection/collection.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -261,12 +260,10 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
                 onChanged: (category) {
                   // TODO: Make category info update when the category is edited
                   setState(() {
-                    if (category != null) {
-                      selectedCategory = category;
-                    }
                     _setCategoryInfo(category);
                   });
                 },
+                onDeleted: () => _setCategoryInfo(null),
                 selectedCategory: selectedCategory,
                 selectedCategoryTotal: selectedCategoryTotal,
               )),

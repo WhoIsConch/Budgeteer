@@ -1,7 +1,6 @@
-import 'dart:async';
-
 import 'package:budget/database/app_database.dart';
 import 'package:budget/tools/filters.dart';
+import 'package:budget/tools/transaction_provider.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -28,6 +27,7 @@ class TransactionsList extends StatefulWidget {
 class _TransactionsListState extends State<TransactionsList> {
   bool isMultiselect = false;
   List<Transaction> selectedTransactions = [];
+  late final DeletionManager deletionManager;
 
   // Just in case I need this in the future
   Widget get bottomLoader => const Center(
@@ -37,8 +37,6 @@ class _TransactionsListState extends State<TransactionsList> {
       ));
 
   void showOptionsDialog(Transaction transaction) {
-    final db = context.read<AppDatabase>();
-
     showModalBottomSheet(
       context: context,
       builder: (context) {
@@ -62,10 +60,8 @@ class _TransactionsListState extends State<TransactionsList> {
               leading: const Icon(Icons.delete),
               title: const Text("Delete"),
               onTap: () {
-                // TODO: Make this buffer with snackbar
-                setState(() {
-                  db.deleteTransaction(transaction);
-                });
+                deletionManager
+                    .stageObjectsForDeletion<Transaction>([transaction.id]);
                 Navigator.pop(context);
               },
             ),
@@ -180,48 +176,17 @@ class _TransactionsListState extends State<TransactionsList> {
 
     if (isMultiselect) {
       actionButton = FloatingActionButton(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8.0),
+          ),
           child: const Icon(Icons.delete),
           onPressed: () {
-            // Create a copy of the list, not a reference
-
-            List<Transaction> removedTransactions = [...selectedTransactions];
+            deletionManager.stageObjectsForDeletion<Transaction>(
+                selectedTransactions.map((t) => t.id).toList());
 
             setState(() {
               selectedTransactions.clear();
               isMultiselect = false;
-            });
-
-            // provider.stageTransactionsForRemoval(removedTransactions);
-
-            bool undoPressed = false;
-
-            scaffoldMessengerKey.currentState!.hideCurrentSnackBar();
-            scaffoldMessengerKey.currentState!.showSnackBar(SnackBar(
-                behavior: SnackBarBehavior.floating,
-                duration: const Duration(seconds: 3),
-                action: SnackBarAction(
-                    label: "Undo",
-                    onPressed: () {
-                      undoPressed = true;
-
-                      // setState(() {
-                      //   provider.removeStagedTransactions(removedTransactions);
-                      // });
-                    }),
-                content: Text(
-                    "${removedTransactions.length} ${removedTransactions.length == 1 ? "item" : "items"} deleted")));
-
-            Timer.periodic(const Duration(seconds: 3, milliseconds: 250),
-                (timer) async {
-              if (undoPressed) {
-                timer.cancel();
-              } else {
-                timer.cancel();
-                scaffoldMessengerKey.currentState!
-                    .hideCurrentSnackBar(); // This doesn't work if you move screens
-
-                // provider.deleteStagedTransactions();
-              }
             });
           });
     } else if (widget.showActionButton) {
@@ -251,6 +216,13 @@ class _TransactionsListState extends State<TransactionsList> {
     }
 
     return Stack(children: stackChildren);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    deletionManager = context.read<DeletionManager>();
   }
 
   @override
