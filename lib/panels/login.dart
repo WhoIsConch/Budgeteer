@@ -1,6 +1,8 @@
+import 'package:budget/tools/enums.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -50,19 +52,14 @@ class _LoginPageState extends State<LoginPage> {
         await supabase.auth.signInWithPassword(
             email: usernameController.text, password: passwordController.text);
         canFinish = true;
-      } catch (e) {
-        // if (e.code == 'user-not-found') {
-        //   setState(() => usernameError = "Account doesn't exist");
-        // } else if (e.code == 'wrong-password') {
-        //   setState(() => passwordError = "Incorrect password");
-        // } else if (e.code == 'invalid-email') {
-        //   setState(() => usernameError = "Invalid email address");
-        // } else {
-        //   scaffoldMessengerKey.currentState!.showSnackBar(SnackBar(
-        //       content: Text("An unknown error occurred: ${e.message}")));
-        // }
-        // TODO: Find out what exceptions come from Supabase auth
-        rethrow;
+      } on AuthException catch (e) {
+        if (e.code == 'invalid_credentials') {
+          setState(() => passwordError = "Invalid username or password");
+        } else {
+          scaffoldMessengerKey.currentState!.showSnackBar(SnackBar(
+              content: Text("An unknown error occurred: ${e.message}")));
+        }
+        print(e.code);
       }
     } else if (type == SignInType.signUp) {
       try {
@@ -81,16 +78,29 @@ class _LoginPageState extends State<LoginPage> {
         rethrow;
       }
     } else if (type == SignInType.google) {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      final GoogleSignInAccount? googleUser = await GoogleSignIn(
+              scopes: ['email', 'profile', 'openid'],
+              serverClientId: dotenv.env['GOOGLE_WEB_CLIENT_ID'])
+          .signIn();
 
       // Obtain the auth details from the request
       final GoogleSignInAuthentication? googleAuth =
           await googleUser?.authentication;
 
+      if (googleAuth?.idToken == null) {
+        scaffoldMessengerKey.currentState!
+            .showSnackBar(const SnackBar(content: Text("Error: No Client ID")));
+      } else if (googleAuth?.accessToken == null) {
+        scaffoldMessengerKey.currentState!.showSnackBar(
+            const SnackBar(content: Text("Error: No Access Token")));
+      }
+
       if (googleAuth != null) {
         // Once signed in, return the UserCredential
         await supabase.auth.signInWithIdToken(
-            provider: OAuthProvider.google, idToken: googleAuth.idToken!);
+            provider: OAuthProvider.google,
+            idToken: googleAuth.idToken!,
+            accessToken: googleAuth.accessToken);
         canFinish = true;
       }
     }
