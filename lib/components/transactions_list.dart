@@ -29,6 +29,8 @@ class _TransactionsListState extends State<TransactionsList> {
   List<Transaction> selectedTransactions = [];
   late final DeletionManager deletionManager;
 
+  List<Transaction>? _lastSuccessfulData;
+
   // Just in case I need this in the future
   Widget get bottomLoader => const Center(
           child: Padding(
@@ -141,34 +143,65 @@ class _TransactionsListState extends State<TransactionsList> {
   }
 
   Widget getList() {
-    final dao = context.read<TransactionDao>();
-
     // Return a stack with a listview in it so we can put that floating
     // action button at the bottom right
+    final dao = context.read<TransactionDao>();
     List<Widget> stackChildren = [
       // TODO: Not sure if Streams are lazy by default, but if they aren't
       // or this setup isn't, we should make it lazy.
       StreamBuilder(
+          // key: ValueKey(
+          //     'tx_stream_${widget.filters.hashCode}_${widget.sort.hashCode}'),
           initialData: const [],
           stream: dao.watchTransactionsPage(
             filters: widget.filters,
             sort: widget.sort,
           ),
           builder: (context, snapshot) {
-            final transactions = snapshot.data ?? [];
+            List<Transaction>? transactionsToDisplay;
+            bool showLoadingIndicator = false;
 
-            if (transactions.isEmpty) {
+            if (snapshot.hasError) {
               return Center(
-                  child: Text("No transactions found.",
-                      style: Theme.of(context).textTheme.headlineSmall));
+                  child: Text("Something went wrong. Please try again"));
             }
 
-            return ListView.builder(
-                itemCount: transactions.length,
-                itemBuilder: (context, index) => Card(
-                      child: tileFromTransaction(
-                          transactions[index], Theme.of(context)),
-                    ));
+            switch (snapshot.connectionState) {
+              case ConnectionState.none:
+              case ConnectionState.waiting:
+                if (_lastSuccessfulData != null) {
+                  transactionsToDisplay = _lastSuccessfulData;
+                  showLoadingIndicator = true;
+                } else {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                break;
+              case ConnectionState.active:
+              case ConnectionState.done:
+                _lastSuccessfulData = snapshot.data as List<Transaction>? ?? [];
+                transactionsToDisplay = _lastSuccessfulData;
+
+                showLoadingIndicator = false;
+                break;
+            }
+
+            final currentList = transactionsToDisplay ?? [];
+
+            Widget listContent;
+            if (currentList.isEmpty && !showLoadingIndicator) {
+              listContent = Center(
+                  child: Text("No transactions found.",
+                      style: Theme.of(context).textTheme.headlineSmall));
+            } else {
+              listContent = ListView.builder(
+                  itemCount: currentList.length,
+                  itemBuilder: (context, index) => Card(
+                        child: tileFromTransaction(
+                            currentList[index], Theme.of(context)),
+                      ));
+            }
+
+            return listContent;
           }),
     ];
 

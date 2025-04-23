@@ -53,13 +53,12 @@ class _TransactionSearchState extends State<TransactionSearch> {
       chips.add(GestureDetector(
         onTap: () => _activateFilter(filter.value.runtimeType),
         child: Chip(
-          label: Text(label),
-          deleteIcon: const Icon(Icons.close),
-          onDeleted: () => setState(() {
-            filters.remove(filter);
-            searchController.clear();
-          }),
-        ),
+            label: Text(label),
+            deleteIcon: const Icon(Icons.close),
+            onDeleted: () {
+              searchController.clear();
+              provider.removeFilter(filterType: filter.value.runtimeType);
+            }),
       ));
     }
 
@@ -346,28 +345,23 @@ class _TransactionSearchState extends State<TransactionSearch> {
                 .then((DateTimeRange? value) {
               if (value == null) return;
 
-              setState(() => provider
-                  .updateFilter(TransactionFilter<DateTimeRange>(value)));
+              provider.updateFilter(TransactionFilter<DateTimeRange>(value));
             }),
         String: () => setState(() => isSearching = true),
         AmountFilter: () => _showAmountFilterDialog(context).then((value) {
               if (value == null) {
                 return;
               }
-              setState(() => provider
-                  .updateFilter(value as TransactionFilter<AmountFilter>));
+              provider.updateFilter(value as TransactionFilter<AmountFilter>);
             }),
         TransactionType: () => toggleTransactionType(),
         List<Category>: () => _showCategoryInputDialog(context).then((value) {
               if (value == null) {
                 return;
               } else if (value.isEmpty) {
-                setState(
-                  () => provider.removeFilter<List<Category>>(),
-                );
+                provider.removeFilter<List<Category>>();
               } else {
-                setState(() => provider
-                    .updateFilter(TransactionFilter<List<Category>>(value)));
+                provider.updateFilter(TransactionFilter<List<Category>>(value));
               }
             }),
       };
@@ -385,6 +379,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    print("Dependencies");
     provider = context.watch<TransactionProvider>();
   }
 
@@ -429,10 +424,8 @@ class _TransactionSearchState extends State<TransactionSearch> {
               return;
             }
 
-            setState(() {
-              isSearching = false;
-              provider.updateFilter(filter);
-            });
+            isSearching = false;
+            provider.updateFilter(filter);
           },
         )
       ];
@@ -443,10 +436,10 @@ class _TransactionSearchState extends State<TransactionSearch> {
       );
     }
 
-    if (filters.isNotEmpty) {
-      body = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    body = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (filters.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Wrap(
@@ -454,16 +447,11 @@ class _TransactionSearchState extends State<TransactionSearch> {
               children: getFilterChips(),
             ),
           ),
-          Expanded(
-              child: TransactionsList(
-            filters: provider.filters,
-            sort: provider.sort,
-          ))
-        ],
-      );
-    } else {
-      body = const TransactionsList();
-    }
+        Expanded(
+            child: TransactionsList(
+                filters: provider.filters, sort: provider.sort))
+      ],
+    );
 
     return Scaffold(
         appBar: AppBar(

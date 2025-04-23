@@ -36,8 +36,8 @@ class TransactionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void removeFilter<T>() {
-    filters.removeWhere((e) => e.value.runtimeType == T);
+  void removeFilter<T>({Type? filterType}) {
+    filters.removeWhere((e) => e.value.runtimeType == (filterType ?? T));
     notifyListeners();
   }
 }
