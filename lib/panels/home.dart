@@ -43,24 +43,26 @@ class GoalPreviewButton extends StatelessWidget {
             strokeCap: StrokeCap.round,
           ),
           SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                  overflow: TextOverflow.fade,
-                  title,
-                  style: Theme.of(context).textTheme.headlineMedium!.copyWith(
-                      color:
-                          Theme.of(context).colorScheme.onSecondaryContainer)),
-              Text("\$$amount of \$$maxAmount",
-                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSecondaryContainer
-                          .withAlpha(150)))
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                    overflow: TextOverflow.ellipsis,
+                    title,
+                    style: Theme.of(context).textTheme.headlineMedium!.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSecondaryContainer)),
+                Text("\$$amount of \$$maxAmount",
+                    style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSecondaryContainer
+                            .withAlpha(150)))
+              ],
+            ),
           ),
-          Spacer(),
           IconButton(
             iconSize: 32,
             icon: Icon(Icons.keyboard_arrow_right),
