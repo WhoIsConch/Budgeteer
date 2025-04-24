@@ -1,21 +1,187 @@
+import 'package:budget/database/app_database.dart';
+import 'package:budget/dialogs/manage_transaction.dart';
+import 'package:budget/tools/enums.dart';
+import 'package:budget/tools/validators.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class GoalPreviewButton extends StatelessWidget {
+  final String title;
+  final String content;
+
+  const GoalPreviewButton(
+      {super.key, required this.title, required this.content});
+
+  @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        AccountsCarousel(items: [
-          CarouselCardPair(context, "Total Balance", "\$4,312.83"),
-          CarouselCardPair(context, "Checking", "\$4,182.33"),
-          CarouselCardPair(context, "Cash", "\$130.50"),
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () {},
+      child: Padding(
+        padding: const EdgeInsets.all(4.0),
+        child:
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title,
+                  style: Theme.of(context).textTheme.headlineMedium!.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer)),
+              Text(content,
+                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onPrimaryContainer
+                          .withAlpha(150)))
+            ],
+          ),
+          IconButton(
+            iconSize: 32,
+            icon: Icon(Icons.keyboard_arrow_right),
+            onPressed: () {},
+          )
         ]),
-      ],
+      ),
+    );
+  }
+}
+
+class _HomePageState extends State<HomePage> {
+  // Goal Card is used when the user has goals. If the user has no goals,
+  // this panel will not show up.
+  // TODO: Sort goals by how close they are to being completed
+  // Paginate the goals view to show all of the user's goals
+  Widget get goalCard => Card(
+      color: Theme.of(context).colorScheme.primaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Padding(
+          // The icon has 8 extra padding from the mandated tap area
+          padding: const EdgeInsets.only(left: 8),
+          child: Column(
+            spacing: 4,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("Your Goals",
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineMedium!
+                          .copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onPrimaryContainer)),
+                  IconButton(
+                    iconSize: 32,
+                    icon: Icon(Icons.settings),
+                    onPressed: () {},
+                  )
+                ],
+              ),
+              Divider(color: Theme.of(context).colorScheme.outline),
+              GoalPreviewButton(title: "A Puppy", content: "\$120/\$200"),
+              GoalPreviewButton(
+                  title: "Baseball Tickets", content: "\$200/\$450"),
+            ],
+          ),
+        ),
+      ));
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<TransactionDao>();
+
+    final totalBalance = provider.getTotalAmount();
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      WelcomeHeader(),
+      FutureBuilder(
+        future: totalBalance,
+        initialData: 0.0,
+        builder: (context, snapshot) => AccountsCarousel(items: [
+          CarouselCardPair(
+              "Total Balance", "\$${formatAmount(snapshot.data as double)}"),
+          CarouselCardPair("Checking", "\$4,182.33"),
+          CarouselCardPair("Cash", "\$130.50"),
+        ]),
+      ),
+      QuickActions(),
+      goalCard,
+    ]);
+  }
+}
+
+class QuickActions extends StatelessWidget {
+  const QuickActions({super.key});
+
+  TextButton textButton(
+          BuildContext context, String text, void Function() callback) =>
+      TextButton(
+        style: TextButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.secondary),
+        onPressed: callback,
+        child: Text(text,
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium!
+                .copyWith(color: Theme.of(context).colorScheme.onSecondary)),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(4.0),
+      child: Row(spacing: 12, children: [
+        Expanded(
+          child: textButton(
+            context,
+            "Manage Accounts ",
+            () {},
+          ),
+        ),
+        Expanded(
+          child: textButton(
+            context,
+            "Add Transaction",
+            () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) =>
+                    const ManageTransactionDialog(mode: ObjectManageMode.add))),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+class WelcomeHeader extends StatelessWidget {
+  const WelcomeHeader({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Text("Welcome, Noah.",
+            softWrap: true,
+            style: Theme.of(context)
+                .textTheme
+                .headlineMedium!
+                .copyWith(color: Theme.of(context).colorScheme.onSurface)),
+        IconButton(
+          icon: Icon(Icons.person),
+          onPressed: () {},
+        )
+      ]),
     );
   }
 }
@@ -23,26 +189,8 @@ class HomePage extends StatelessWidget {
 class CarouselCardPair {
   final String title;
   final String content;
-  final BuildContext context;
 
-  const CarouselCardPair(this.context, this.title, this.content);
-
-  Widget get stack => Stack(
-        children: [
-          Align(
-            alignment: Alignment.topLeft,
-            child: Text(title,
-                style: Theme.of(context).textTheme.headlineMedium!.copyWith(
-                    color: Theme.of(context).colorScheme.onPrimaryContainer)),
-          ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(content,
-                style: Theme.of(context).textTheme.displayLarge!.copyWith(
-                    color: Theme.of(context).colorScheme.onPrimaryContainer)),
-          ),
-        ],
-      );
+  const CarouselCardPair(this.title, this.content);
 }
 
 class AccountsCarousel extends StatefulWidget {
@@ -58,12 +206,27 @@ class _AccountsCarouselState extends State<AccountsCarousel> {
   int index = 0;
   final _carouselController = CarouselSliderController();
 
+  Widget getCardStack(CarouselCardPair data) => Stack(
+        children: [
+          Align(
+            alignment: Alignment.topLeft,
+            child: Text(data.title,
+                style: Theme.of(context).textTheme.headlineMedium!.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer)),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(data.content,
+                style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer)),
+          ),
+        ],
+      );
+
   @override
   Widget build(BuildContext context) {
     return Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.0),
-        ),
+        margin: EdgeInsets.all(4),
         color: Theme.of(context).colorScheme.primaryContainer,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -78,7 +241,7 @@ class _AccountsCarouselState extends State<AccountsCarousel> {
                 ),
                 items: widget.items
                     .map(
-                      (e) => e.stack,
+                      (e) => getCardStack(e),
                     )
                     .toList()),
             Positioned(
