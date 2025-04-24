@@ -63,10 +63,12 @@ class GoalPreviewButton extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            iconSize: 32,
-            icon: Icon(Icons.keyboard_arrow_right),
-            onPressed: () {},
+          Padding(
+            padding: const EdgeInsets.all(2.0),
+            child: Icon(
+                size: 32,
+                Icons.keyboard_arrow_right,
+                color: Theme.of(context).colorScheme.outline),
           )
         ]),
       ),
@@ -79,60 +81,24 @@ class _HomePageState extends State<HomePage> {
   // this panel will not show up.
   // TODO: Sort goals by how close they are to being completed
   // Paginate the goals view to show all of the user's goals
-  Widget get goalCard => Card(
-      color: Theme.of(context).colorScheme.secondaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          spacing: 4,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Your Goals",
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineMedium!
-                          .copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onPrimaryContainer)),
-                  IconButton(
-                    iconSize: 32,
-                    icon: Icon(Icons.settings),
-                    onPressed: () {},
-                  )
-                ],
-              ),
-            ),
-            Divider(color: Theme.of(context).colorScheme.outline),
-            GoalPreviewButton(
-              title: "A Puppy",
-              amount: 120,
-              maxAmount: 200,
-            ),
-            GoalPreviewButton(
-                title: "Baseball Tickets", amount: 200, maxAmount: 450),
-            GoalPreviewButton(
-                title: "Spongebob Toybobson", amount: 13, maxAmount: 15),
-          ],
-        ),
-      ));
+  late TransactionDao dao;
+
+  Future<double> getTotal() async {
+    final spent = await dao.getTotalAmount(type: TransactionType.expense);
+    final earned = await dao.getTotalAmount(type: TransactionType.income);
+
+    return earned - spent;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<TransactionDao>();
-
-    final totalBalance = provider.getTotalAmount();
+    dao = context.watch<TransactionDao>();
 
     return SingleChildScrollView(
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         WelcomeHeader(),
         FutureBuilder(
-          future: totalBalance,
+          future: getTotal(),
           initialData: 0.0,
           builder: (context, snapshot) => AccountsCarousel(items: [
             CarouselCardPair("Total Balance",
@@ -142,9 +108,61 @@ class _HomePageState extends State<HomePage> {
           ]),
         ),
         QuickActions(),
-        goalCard,
+        GoalPreviewCard(),
       ]),
     );
+  }
+}
+
+class GoalPreviewCard extends StatelessWidget {
+  const GoalPreviewCard({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+        color: Theme.of(context).colorScheme.secondaryContainer,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: 4,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("Your Goals",
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineMedium!
+                            .copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onPrimaryContainer)),
+                    IconButton(
+                      iconSize: 32,
+                      icon: Icon(Icons.settings),
+                      onPressed: () {},
+                    )
+                  ],
+                ),
+              ),
+              Divider(color: Theme.of(context).colorScheme.outline),
+              GoalPreviewButton(
+                title: "A Puppy",
+                amount: 120,
+                maxAmount: 200,
+              ),
+              GoalPreviewButton(
+                  title: "Baseball Tickets", amount: 200, maxAmount: 450),
+              GoalPreviewButton(
+                  title: "Spongebob Toybobson", amount: 13, maxAmount: 15),
+            ],
+          ),
+        ));
   }
 }
 
