@@ -8,14 +8,14 @@ import 'package:budget/panels/account.dart';
 import 'package:budget/panels/statistics.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class NavManager extends StatefulWidget {
+  const NavManager({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<NavManager> createState() => _NavManagerState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _NavManagerState extends State<NavManager> {
   int selectedIndex = 0;
 
   void indexCallback(PageType page) {
@@ -66,8 +66,8 @@ class _HomePageState extends State<HomePage> {
               SafeArea(
                 key: const ValueKey('overview'),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Overview(swapCallback: indexCallback),
+                  padding: const EdgeInsets.all(8),
+                  child: HomePage(),
                 ),
               ),
               const SafeArea(
@@ -105,7 +105,7 @@ class AuthWrapper extends StatelessWidget {
                 key: ValueKey('loading'),
                 body: Center(child: CircularProgressIndicator()));
           } else if (Supabase.instance.client.auth.currentUser != null) {
-            body = const HomePage(key: ValueKey('home'));
+            body = const NavManager(key: ValueKey('home'));
           } else {
             body = const LoginPage(key: ValueKey('login'));
           }

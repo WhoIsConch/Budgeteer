@@ -1,5 +1,5 @@
 import 'package:budget/database/app_database.dart';
-import 'package:budget/panels/home_page.dart';
+import 'package:budget/panels/nav_manager.dart';
 import 'package:budget/powersync.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

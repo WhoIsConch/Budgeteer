@@ -55,6 +55,8 @@ dependencies:
   drift_sqlite_async: ^0.2.1
   powersync_flutter_libs: ^0.4.7
   flutter_dotenv: ^5.2.1
+  carousel_slider: ^5.0.0
+  smooth_page_indicator: ^1.2.1
 
 dev_dependencies:
   flutter_test:
