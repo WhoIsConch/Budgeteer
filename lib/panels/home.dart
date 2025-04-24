@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:budget/database/app_database.dart';
 import 'package:budget/dialogs/manage_transaction.dart';
 import 'package:budget/tools/enums.dart';
@@ -16,10 +17,14 @@ class HomePage extends StatefulWidget {
 
 class GoalPreviewButton extends StatelessWidget {
   final String title;
-  final String content;
+  final int amount;
+  final int maxAmount;
 
   const GoalPreviewButton(
-      {super.key, required this.title, required this.content});
+      {super.key,
+      required this.title,
+      required this.amount,
+      required this.maxAmount});
 
   @override
   Widget build(BuildContext context) {
@@ -28,22 +33,34 @@ class GoalPreviewButton extends StatelessWidget {
       onTap: () {},
       child: Padding(
         padding: const EdgeInsets.all(4.0),
-        child:
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        child: Row(mainAxisAlignment: MainAxisAlignment.start, children: [
+          CircularProgressIndicator(
+            value: amount / maxAmount,
+            backgroundColor: Theme.of(context)
+                .colorScheme
+                .onSecondaryContainer
+                .withAlpha(68),
+            strokeCap: StrokeCap.round,
+          ),
+          SizedBox(width: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title,
+              Text(
+                  overflow: TextOverflow.fade,
+                  title,
                   style: Theme.of(context).textTheme.headlineMedium!.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer)),
-              Text(content,
+                      color:
+                          Theme.of(context).colorScheme.onSecondaryContainer)),
+              Text("\$$amount of \$$maxAmount",
                   style: Theme.of(context).textTheme.titleMedium!.copyWith(
                       color: Theme.of(context)
                           .colorScheme
-                          .onPrimaryContainer
+                          .onSecondaryContainer
                           .withAlpha(150)))
             ],
           ),
+          Spacer(),
           IconButton(
             iconSize: 32,
             icon: Icon(Icons.keyboard_arrow_right),
@@ -61,16 +78,16 @@ class _HomePageState extends State<HomePage> {
   // TODO: Sort goals by how close they are to being completed
   // Paginate the goals view to show all of the user's goals
   Widget get goalCard => Card(
-      color: Theme.of(context).colorScheme.primaryContainer,
+      color: Theme.of(context).colorScheme.secondaryContainer,
       child: Padding(
         padding: const EdgeInsets.all(8.0),
-        child: Padding(
-          // The icon has 8 extra padding from the mandated tap area
-          padding: const EdgeInsets.only(left: 8),
-          child: Column(
-            spacing: 4,
-            children: [
-              Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: 4,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text("Your Goals",
@@ -88,12 +105,18 @@ class _HomePageState extends State<HomePage> {
                   )
                 ],
               ),
-              Divider(color: Theme.of(context).colorScheme.outline),
-              GoalPreviewButton(title: "A Puppy", content: "\$120/\$200"),
-              GoalPreviewButton(
-                  title: "Baseball Tickets", content: "\$200/\$450"),
-            ],
-          ),
+            ),
+            Divider(color: Theme.of(context).colorScheme.outline),
+            GoalPreviewButton(
+              title: "A Puppy",
+              amount: 120,
+              maxAmount: 200,
+            ),
+            GoalPreviewButton(
+                title: "Baseball Tickets", amount: 200, maxAmount: 450),
+            GoalPreviewButton(
+                title: "Spongebob Toybobson", amount: 13, maxAmount: 15),
+          ],
         ),
       ));
 
@@ -103,21 +126,23 @@ class _HomePageState extends State<HomePage> {
 
     final totalBalance = provider.getTotalAmount();
 
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      WelcomeHeader(),
-      FutureBuilder(
-        future: totalBalance,
-        initialData: 0.0,
-        builder: (context, snapshot) => AccountsCarousel(items: [
-          CarouselCardPair(
-              "Total Balance", "\$${formatAmount(snapshot.data as double)}"),
-          CarouselCardPair("Checking", "\$4,182.33"),
-          CarouselCardPair("Cash", "\$130.50"),
-        ]),
-      ),
-      QuickActions(),
-      goalCard,
-    ]);
+    return SingleChildScrollView(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        WelcomeHeader(),
+        FutureBuilder(
+          future: totalBalance,
+          initialData: 0.0,
+          builder: (context, snapshot) => AccountsCarousel(items: [
+            CarouselCardPair("Total Balance",
+                "\$${formatAmount(snapshot.data as double, exact: true)}"),
+            CarouselCardPair("Checking", "\$4,182.33"),
+            CarouselCardPair("Cash", "\$130.50"),
+          ]),
+        ),
+        QuickActions(),
+        goalCard,
+      ]),
+    );
   }
 }
 
@@ -216,7 +241,9 @@ class _AccountsCarouselState extends State<AccountsCarousel> {
           ),
           Align(
             alignment: Alignment.centerLeft,
-            child: Text(data.content,
+            child: AutoSizeText(
+                maxLines: 1,
+                data.content,
                 style: Theme.of(context).textTheme.displayLarge!.copyWith(
                     color: Theme.of(context).colorScheme.onPrimaryContainer)),
           ),
