@@ -109,8 +109,11 @@ class CategoryDropdown extends StatelessWidget {
                               ? ObjectManageMode.add
                               : ObjectManageMode.edit,
                         )).then(
-                  (value) =>
-                      value == true && onDeleted != null ? onDeleted!() : null,
+                  (value) => value == true && onDeleted != null
+                      ? onDeleted!()
+                      : value is Category
+                          ? onChanged(value)
+                          : null,
                 );
 
                 if (result is String && result.isEmpty) {
