@@ -117,8 +117,9 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
               .makeInclusive(),
           category: category);
 
-      if (widget.transaction != null) {
-        // This means we're editing.
+      if (widget.transaction != null &&
+          widget.transaction!.category == category.id) {
+        // This means we're editing a transaction has its amount logged in the selected category.
         // For accurate results, we subtract the original transaction amount from
         // catTotal, then add the current transaction amount.
         catTotal -= widget.transaction!.amount;
@@ -214,9 +215,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
                   value: TransactionType.income, label: Text("Income"))
             ],
             onSelectionChanged: (Set<TransactionType> value) {
-              setState(() {
-                selectedType = value.first;
-              });
+              selectedType = value.first;
               _setCategoryInfo(selectedCategory);
             },
           ),
@@ -240,12 +239,10 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
                   lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
                 ).then((value) {
                   if (value != null) {
-                    setState(() {
-                      selectedDate = value;
-                      dateController.text =
-                          DateFormat('MM/dd/yyyy').format(selectedDate);
-                      _setCategoryInfo(selectedCategory);
-                    });
+                    selectedDate = value;
+                    dateController.text =
+                        DateFormat('MM/dd/yyyy').format(selectedDate);
+                    _setCategoryInfo(selectedCategory);
                   }
                 });
               }),
@@ -258,10 +255,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
                 categories: snapshot.data ?? [],
                 transactionDate: selectedDate,
                 onChanged: (category) {
-                  // TODO: Make category info update when the category is edited
-                  setState(() {
-                    _setCategoryInfo(category);
-                  });
+                  _setCategoryInfo(category);
                 },
                 onDeleted: () => _setCategoryInfo(null),
                 selectedCategory: selectedCategory,
@@ -312,7 +306,6 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
                     Navigator.of(context).pop();
                   }
                 } catch (e) {
-                  rethrow;
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Failed to save transaction: $e')),
