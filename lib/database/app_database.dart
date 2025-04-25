@@ -34,16 +34,24 @@ class Transactions extends Table {
   RealColumn get amount => real()();
   TextColumn get date => text().map(const DateTextConverter())();
   IntColumn get type => intEnum<TransactionType>()();
-  BoolColumn get isDeleted => boolean()
-      .nullable()
-      .withDefault(const Constant(false))
-      .named('is_deleted')();
+  BoolColumn get isDeleted =>
+      boolean().withDefault(const Constant(false)).named('is_deleted')();
+  TextColumn get notes => text().nullable()();
 
   TextColumn get category => text()
       .nullable()
       .named('category_id')
       .references(Categories, #id, onDelete: KeyAction.setNull)();
-  TextColumn get notes => text().nullable()();
+
+  TextColumn get accountId => text()
+      .nullable()
+      .named('account_id')
+      .references(Accounts, #id, onDelete: KeyAction.setNull)();
+
+  TextColumn get goalId => text()
+      .nullable()
+      .named('goal_id')
+      .references(Goals, #id, onDelete: KeyAction.setNull)();
 
   @override
   Set<Column<Object>>? get primaryKey => {id};
@@ -80,10 +88,8 @@ class Categories extends Table {
   IntColumn get color =>
       integer().clientDefault(genColor).map(const ColorConverter())();
   RealColumn get balance => real().nullable()();
-  BoolColumn get isDeleted => boolean()
-      .nullable()
-      .withDefault(const Constant(false))
-      .named('is_deleted')();
+  BoolColumn get isDeleted =>
+      boolean().withDefault(const Constant(false)).named('is_deleted')();
 
   @override
   Set<Column<Object>>? get primaryKey => {id};
@@ -138,6 +144,34 @@ extension CategoriesExtension on Category {
       return minutes == 1 ? "a minute" : "$minutes minutes";
     }
   }
+}
+
+class Accounts extends Table {
+  @override
+  get tableName => 'accounts';
+
+  TextColumn get id => text().clientDefault(() => uuid.v4())();
+  TextColumn get name => text()();
+
+  BoolColumn get isDeleted =>
+      boolean().withDefault(const Constant(false)).named('is_deleted')();
+  BoolColumn get isArchived =>
+      boolean().withDefault(const Constant(false)).named('is_archived')();
+}
+
+class Goals extends Table {
+  @override
+  get tableName => 'goals';
+
+  TextColumn get id => text().clientDefault(() => uuid.v4())();
+  TextColumn get name => text()();
+  RealColumn get cost => real()();
+  TextColumn get dueDate =>
+      text().nullable().named('due_date').map(const DateTextConverter())();
+  BoolColumn get isFinished =>
+      boolean().withDefault(const Constant(false)).named('is_finished')();
+  BoolColumn get isDeleted =>
+      boolean().withDefault(const Constant(false)).named('is_deleted')();
 }
 
 @DriftAccessor(tables: [Transactions])
@@ -289,7 +323,8 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
       db.deleteCategoryById(id);
 }
 
-@DriftDatabase(tables: [Categories, Transactions], daos: [TransactionDao])
+@DriftDatabase(
+    tables: [Categories, Transactions, Goals, Accounts], daos: [TransactionDao])
 class AppDatabase extends _$AppDatabase {
   PowerSyncDatabase db;
 

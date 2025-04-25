@@ -10,6 +10,8 @@ const powersyncAppSchema = Schema([
     Column.integer('type'),
     Column.text('category_id'),
     Column.integer('is_deleted'),
+    Column.text('account_id'),
+    Column.text('goal_id')
   ]),
   Table('categories', [
     Column.text('user_id'),
@@ -18,6 +20,20 @@ const powersyncAppSchema = Schema([
     Column.integer('reset_increment'),
     Column.integer('allow_negatives'),
     Column.integer('color'),
+    Column.integer('is_deleted')
+  ]),
+  Table('accounts', [
+    Column.text('user_id'),
+    Column.text('name'),
     Column.integer('is_deleted'),
+    Column.integer('is_archived')
+  ]),
+  Table('goals', [
+    Column.text('user_id'),
+    Column.text('name'),
+    Column.real('cost'),
+    Column.text('due_date'),
+    Column.integer('is_finished'),
+    Column.integer('is_deleted')
   ])
 ]);
