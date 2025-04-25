@@ -312,6 +312,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
                     Navigator.of(context).pop();
                   }
                 } catch (e) {
+                  rethrow;
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Failed to save transaction: $e')),
