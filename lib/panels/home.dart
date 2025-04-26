@@ -53,9 +53,8 @@ class _HomePageState extends State<HomePage> {
               ]);
             },
           ),
-          SizedBox(height: 4),
           Padding(
-            padding: const EdgeInsets.only(left: 8),
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
             child: Row(
               children: [
                 Text("Recent activity",
@@ -101,24 +100,30 @@ class TransactionPreviewCard extends StatelessWidget {
     var theme = Theme.of(context);
     return Card(
       color: Theme.of(context).colorScheme.tertiaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text("+\$500",
-                  style: theme.textTheme.headlineLarge!.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onTertiaryContainer)),
-              Text("Paycheck",
-                  style: theme.textTheme.titleMedium!
-                      .copyWith(color: theme.colorScheme.onTertiaryContainer)),
-              Text("4/25/25",
-                  style: theme.textTheme.bodyLarge!.copyWith(
-                      color:
-                          theme.colorScheme.onTertiaryContainer.withAlpha(150)))
-            ]),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12), // To match the card's radius
+        onTap:
+            () {}, // TODO: Make the tap action open the transaction in editor
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                    "+\$500", // Will be "${transaction.type == TransactionType.expense ? '-' : '+'}\$${formatAmount(transaction.amount)}"
+                    style: theme.textTheme.headlineLarge!.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onTertiaryContainer)),
+                Text("Paycheck",
+                    style: theme.textTheme.titleMedium!.copyWith(
+                        color: theme.colorScheme.onTertiaryContainer)),
+                Text("4/25/25",
+                    style: theme.textTheme.bodyLarge!.copyWith(
+                        color: theme.colorScheme.onTertiaryContainer
+                            .withAlpha(150)))
+              ]),
+        ),
       ),
     );
   }
@@ -201,27 +206,12 @@ class GoalPreviewCard extends StatelessWidget {
             spacing: 4,
             children: [
               Padding(
-                padding: const EdgeInsets.only(left: 8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text("Your goals",
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineMedium!
-                            .copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onPrimaryContainer)),
-                    IconButton(
-                      iconSize: 32,
-                      icon: Icon(Icons.settings),
-                      onPressed: () {},
-                    )
-                  ],
-                ),
+                padding: const EdgeInsets.all(8.0),
+                child: Text("Your goals",
+                    style: Theme.of(context).textTheme.headlineMedium!.copyWith(
+                        color:
+                            Theme.of(context).colorScheme.onPrimaryContainer)),
               ),
-              Divider(color: Theme.of(context).colorScheme.outline),
               GoalPreviewButton(
                 title: "A Puppy",
                 amount: 120,
