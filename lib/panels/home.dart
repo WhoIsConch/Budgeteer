@@ -1,6 +1,5 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:budget/database/app_database.dart';
-import 'package:budget/dialogs/manage_transaction.dart';
 import 'package:budget/tools/enums.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -54,9 +53,72 @@ class _HomePageState extends State<HomePage> {
               ]);
             },
           ),
-          QuickActions(),
+          SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Row(
+              children: [
+                Text("Recent activity",
+                    style: Theme.of(context).textTheme.headlineMedium!.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface)),
+                Spacer(),
+                IconButton(
+                  icon: Icon(Icons.arrow_forward),
+                  onPressed: () {},
+                )
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 130,
+            child: ListView(
+              shrinkWrap: true,
+              scrollDirection: Axis.horizontal,
+              children: [
+                TransactionPreviewCard(),
+                TransactionPreviewCard(),
+                TransactionPreviewCard(),
+                TransactionPreviewCard(),
+                TransactionPreviewCard(),
+              ],
+            ),
+          ),
+          SizedBox(height: 8),
           GoalPreviewCard(),
         ]),
+      ),
+    );
+  }
+}
+
+class TransactionPreviewCard extends StatelessWidget {
+  final Transaction? transaction;
+
+  const TransactionPreviewCard({super.key, this.transaction});
+
+  @override
+  Widget build(BuildContext context) {
+    var theme = Theme.of(context);
+    return Card(
+      color: Theme.of(context).colorScheme.tertiaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text("+\$500",
+                  style: theme.textTheme.headlineLarge!.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onTertiaryContainer)),
+              Text("Paycheck",
+                  style: theme.textTheme.titleMedium!
+                      .copyWith(color: theme.colorScheme.onTertiaryContainer)),
+              Text("4/25/25",
+                  style: theme.textTheme.bodyLarge!.copyWith(
+                      color:
+                          theme.colorScheme.onTertiaryContainer.withAlpha(150)))
+            ]),
       ),
     );
   }
@@ -172,48 +234,6 @@ class GoalPreviewCard extends StatelessWidget {
             ],
           ),
         ));
-  }
-}
-
-class QuickActions extends StatelessWidget {
-  const QuickActions({super.key});
-
-  TextButton textButton(
-          BuildContext context, String text, void Function() callback) =>
-      TextButton(
-        style: TextButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.secondary),
-        onPressed: callback,
-        child: Text(text,
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium!
-                .copyWith(color: Theme.of(context).colorScheme.onSecondary)),
-      );
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(4.0),
-      child: Row(spacing: 12, children: [
-        Expanded(
-          child: textButton(
-            context,
-            "Manage accounts ",
-            () {},
-          ),
-        ),
-        Expanded(
-          child: textButton(
-            context,
-            "Add transaction",
-            () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) =>
-                    const ManageTransactionDialog(mode: ObjectManageMode.add))),
-          ),
-        ),
-      ]),
-    );
   }
 }
 
