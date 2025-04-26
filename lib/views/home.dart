@@ -1,3 +1,4 @@
+import 'package:budget/models/filters.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/views/components/accounts_carousel.dart';
 import 'package:budget/views/components/goals_preview.dart';
@@ -5,6 +6,7 @@ import 'package:budget/views/panels/manage_transaction.dart';
 import 'package:budget/utils/enums.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -68,20 +70,7 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-          SizedBox(
-            height: 130,
-            child: ListView(
-              shrinkWrap: true,
-              scrollDirection: Axis.horizontal,
-              children: [
-                TransactionPreviewCard(),
-                TransactionPreviewCard(),
-                TransactionPreviewCard(),
-                TransactionPreviewCard(),
-                TransactionPreviewCard(),
-              ],
-            ),
-          ),
+          TransactionPreviewer(),
           SizedBox(height: 8),
           GoalPreviewCard(),
         ]),
@@ -90,10 +79,42 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-class TransactionPreviewCard extends StatelessWidget {
-  final Transaction? transaction;
+class TransactionPreviewer extends StatelessWidget {
+  const TransactionPreviewer({super.key});
 
-  const TransactionPreviewCard({super.key, this.transaction});
+  @override
+  Widget build(BuildContext context) {
+    final TransactionDao dao = context.watch<TransactionDao>();
+
+    return SizedBox(
+      height: 160,
+      child: StreamBuilder(
+          stream: dao.watchTransactionsPage(filters: [
+            TransactionFilter(DateTimeRange(
+                start: DateTime.now().subtract(Duration(days: 7)),
+                end: DateTime.now()))
+          ]),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return Center(child: CircularProgressIndicator());
+            }
+
+            return ListView.builder(
+              shrinkWrap: true,
+              scrollDirection: Axis.horizontal,
+              itemCount: snapshot.data!.length,
+              itemBuilder: (context, index) =>
+                  TransactionPreviewCard(transaction: snapshot.data![index]),
+            );
+          }),
+    );
+  }
+}
+
+class TransactionPreviewCard extends StatelessWidget {
+  final Transaction transaction;
+
+  const TransactionPreviewCard({super.key, required this.transaction});
 
   @override
   Widget build(BuildContext context) {
@@ -113,15 +134,18 @@ class TransactionPreviewCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                    "+\$500", // Will be "${transaction.type == TransactionType.expense ? '-' : '+'}\$${formatAmount(transaction.amount)}"
+                Text("Expense",
+                    style: theme.textTheme.titleMedium!.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onTertiaryContainer)),
+                Text("\$${formatAmount(transaction.amount)}",
                     style: theme.textTheme.headlineLarge!.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onTertiaryContainer)),
-                Text("Paycheck",
+                Text(transaction.title,
                     style: theme.textTheme.titleMedium!.copyWith(
                         color: theme.colorScheme.onTertiaryContainer)),
-                Text("4/25/25",
+                Text(DateFormat('M/d/yy').format(transaction.date),
                     style: theme.textTheme.bodyLarge!.copyWith(
                         color: theme.colorScheme.onTertiaryContainer
                             .withAlpha(150)))

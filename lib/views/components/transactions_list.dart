@@ -213,6 +213,7 @@ class _TransactionsListState extends State<TransactionsList> {
 
     if (isMultiselect) {
       actionButton = FloatingActionButton(
+          heroTag: "list_fab",
           child: const Icon(size: 28, Icons.delete),
           onPressed: () {
             deletionManager.stageObjectsForDeletion<Transaction>(
@@ -225,6 +226,7 @@ class _TransactionsListState extends State<TransactionsList> {
           });
     } else if (widget.showActionButton) {
       actionButton = FloatingActionButton(
+        heroTag: "list_fab",
         child: const Icon(size: 28, Icons.add),
         onPressed: () => Navigator.push(
             context,

@@ -223,11 +223,12 @@ class SpeedDialExpandedButton extends StatelessWidget {
                 Text(data.text, style: Theme.of(context).textTheme.titleMedium),
           ),
           FloatingActionButton.small(
+              heroTag: "${data.text.toLowerCase()}_fab",
               backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
               foregroundColor:
                   Theme.of(context).colorScheme.onTertiaryContainer,
-              child: data.icon,
-              onPressed: data.onPressed)
+              onPressed: data.onPressed,
+              child: data.icon)
         ],
       ),
     );
