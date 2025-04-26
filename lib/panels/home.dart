@@ -15,6 +15,53 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
+class _HomePageState extends State<HomePage> {
+  late TransactionDao dao;
+
+  Future<double> getTotal() async {
+    final spent = await dao.getTotalAmount(type: TransactionType.expense);
+    final earned = await dao.getTotalAmount(type: TransactionType.income);
+
+    return earned - spent;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    dao = context.watch<TransactionDao>();
+
+    return Scaffold(
+      body: SingleChildScrollView(
+        // The main content
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          WelcomeHeader(),
+          FutureBuilder(
+            future: getTotal(),
+            initialData: 0.0,
+            builder: (context, snapshot) {
+              bool isNegative = snapshot.data as double < 0;
+              String formattedAmount =
+                  formatAmount((snapshot.data as double).abs(), exact: true);
+
+              return AccountsCarousel(items: [
+                CarouselCardPair(
+                  "Total balance",
+                  "${isNegative ? '-' : ''}\$$formattedAmount",
+                  isNegative: true,
+                ),
+                CarouselCardPair("Checking", "\$4,182.33"),
+                CarouselCardPair("Cash", "\$130.50"),
+              ]);
+            },
+          ),
+          QuickActions(),
+          GoalPreviewCard(),
+        ]),
+      ),
+    );
+  }
+}
+
 class GoalPreviewButton extends StatelessWidget {
   final String title;
   final int amount;
@@ -76,44 +123,6 @@ class GoalPreviewButton extends StatelessWidget {
   }
 }
 
-class _HomePageState extends State<HomePage> {
-  // Goal Card is used when the user has goals. If the user has no goals,
-  // this panel will not show up.
-  // TODO: Sort goals by how close they are to being completed
-  // Paginate the goals view to show all of the user's goals
-  late TransactionDao dao;
-
-  Future<double> getTotal() async {
-    final spent = await dao.getTotalAmount(type: TransactionType.expense);
-    final earned = await dao.getTotalAmount(type: TransactionType.income);
-
-    return earned - spent;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    dao = context.watch<TransactionDao>();
-
-    return SingleChildScrollView(
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        WelcomeHeader(),
-        FutureBuilder(
-          future: getTotal(),
-          initialData: 0.0,
-          builder: (context, snapshot) => AccountsCarousel(items: [
-            CarouselCardPair("Total Balance",
-                "\$${formatAmount(snapshot.data as double, exact: true)}"),
-            CarouselCardPair("Checking", "\$4,182.33"),
-            CarouselCardPair("Cash", "\$130.50"),
-          ]),
-        ),
-        QuickActions(),
-        GoalPreviewCard(),
-      ]),
-    );
-  }
-}
-
 class GoalPreviewCard extends StatelessWidget {
   const GoalPreviewCard({
     super.key,
@@ -134,7 +143,7 @@ class GoalPreviewCard extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("Your Goals",
+                    Text("Your goals",
                         style: Theme.of(context)
                             .textTheme
                             .headlineMedium!
@@ -190,14 +199,14 @@ class QuickActions extends StatelessWidget {
         Expanded(
           child: textButton(
             context,
-            "Manage Accounts ",
+            "Manage accounts ",
             () {},
           ),
         ),
         Expanded(
           child: textButton(
             context,
-            "Add Transaction",
+            "Add transaction",
             () => Navigator.of(context).push(MaterialPageRoute(
                 builder: (_) =>
                     const ManageTransactionDialog(mode: ObjectManageMode.add))),
@@ -216,7 +225,7 @@ class WelcomeHeader extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(8),
       child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Text("Welcome, Noah.",
+        Text("Welcome, Noah",
             softWrap: true,
             style: Theme.of(context)
                 .textTheme
@@ -234,8 +243,9 @@ class WelcomeHeader extends StatelessWidget {
 class CarouselCardPair {
   final String title;
   final String content;
+  final bool isNegative;
 
-  const CarouselCardPair(this.title, this.content);
+  const CarouselCardPair(this.title, this.content, {this.isNegative = false});
 }
 
 class AccountsCarousel extends StatefulWidget {
@@ -265,7 +275,9 @@ class _AccountsCarouselState extends State<AccountsCarousel> {
                 maxLines: 1,
                 data.content,
                 style: Theme.of(context).textTheme.displayLarge!.copyWith(
-                    color: Theme.of(context).colorScheme.onPrimaryContainer)),
+                    color: data.isNegative
+                        ? Theme.of(context).colorScheme.error
+                        : Theme.of(context).colorScheme.onPrimaryContainer)),
           ),
         ],
       );
