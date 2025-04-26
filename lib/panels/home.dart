@@ -1,5 +1,6 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:budget/database/app_database.dart';
+import 'package:budget/dialogs/manage_transaction.dart';
 import 'package:budget/tools/enums.dart';
 import 'package:budget/tools/validators.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -102,8 +103,11 @@ class TransactionPreviewCard extends StatelessWidget {
       color: Theme.of(context).colorScheme.tertiaryContainer,
       child: InkWell(
         borderRadius: BorderRadius.circular(12), // To match the card's radius
-        onTap:
-            () {}, // TODO: Make the tap action open the transaction in editor
+        onTap: () {
+          Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => ManageTransactionDialog(
+                  mode: ObjectManageMode.edit, transaction: transaction)));
+        },
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
