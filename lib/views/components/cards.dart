@@ -1,4 +1,4 @@
-import 'package:budget/tools/validators.dart';
+import 'package:budget/utils/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 

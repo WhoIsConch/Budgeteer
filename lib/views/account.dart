@@ -1,5 +1,5 @@
-import 'package:budget/tools/transaction_provider.dart';
-import 'package:budget/tools/enums.dart';
+import 'package:budget/providers/transaction_provider.dart';
+import 'package:budget/utils/enums.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

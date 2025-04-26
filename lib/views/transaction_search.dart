@@ -1,9 +1,9 @@
-import 'package:budget/components/transactions_list.dart';
-import 'package:budget/database/app_database.dart';
-import 'package:budget/tools/enums.dart';
-import 'package:budget/tools/filters.dart';
-import 'package:budget/tools/transaction_provider.dart';
-import 'package:budget/tools/validators.dart';
+import 'package:budget/views/components/transactions_list.dart';
+import 'package:budget/services/app_database.dart';
+import 'package:budget/utils/enums.dart';
+import 'package:budget/models/filters.dart';
+import 'package:budget/providers/transaction_provider.dart';
+import 'package:budget/utils/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';

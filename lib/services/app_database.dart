@@ -1,7 +1,7 @@
 import 'dart:math';
 
-import 'package:budget/tools/enums.dart';
-import 'package:budget/tools/filters.dart';
+import 'package:budget/utils/enums.dart';
+import 'package:budget/models/filters.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart' show Color, DateTimeRange;
 import 'package:intl/intl.dart';

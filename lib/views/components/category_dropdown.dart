@@ -1,7 +1,7 @@
-import 'package:budget/database/app_database.dart';
-import 'package:budget/dialogs/manage_category.dart';
-import 'package:budget/tools/enums.dart';
-import 'package:budget/tools/validators.dart';
+import 'package:budget/services/app_database.dart';
+import 'package:budget/views/panels/manage_category.dart';
+import 'package:budget/utils/enums.dart';
+import 'package:budget/utils/validators.dart';
 import 'package:flutter/material.dart';
 
 class CategoryDropdown extends StatelessWidget {

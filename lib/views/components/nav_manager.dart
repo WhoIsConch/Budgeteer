@@ -1,11 +1,11 @@
-import 'package:budget/panels/login.dart';
-import 'package:budget/tools/enums.dart';
+import 'package:budget/views/login.dart';
+import 'package:budget/utils/enums.dart';
 
 import 'package:flutter/material.dart';
-import 'package:budget/panels/home.dart';
-import 'package:budget/panels/spending.dart';
-import 'package:budget/panels/account.dart';
-import 'package:budget/panels/statistics.dart';
+import 'package:budget/views/home.dart';
+import 'package:budget/views/spending.dart';
+import 'package:budget/views/account.dart';
+import 'package:budget/views/statistics.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class NavManager extends StatefulWidget {

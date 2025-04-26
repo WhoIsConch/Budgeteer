@@ -1,5 +1,5 @@
-import 'package:budget/tools/enums.dart';
-import 'package:budget/tools/validators.dart';
+import 'package:budget/utils/enums.dart';
+import 'package:budget/utils/validators.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';

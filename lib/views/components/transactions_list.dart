@@ -1,11 +1,11 @@
-import 'package:budget/database/app_database.dart';
-import 'package:budget/tools/filters.dart';
-import 'package:budget/tools/transaction_provider.dart';
-import 'package:budget/tools/validators.dart';
+import 'package:budget/services/app_database.dart';
+import 'package:budget/models/filters.dart';
+import 'package:budget/providers/transaction_provider.dart';
+import 'package:budget/utils/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:budget/dialogs/manage_transaction.dart';
-import 'package:budget/tools/enums.dart';
+import 'package:budget/views/panels/manage_transaction.dart';
+import 'package:budget/utils/enums.dart';
 
 class TransactionsList extends StatefulWidget {
   const TransactionsList(

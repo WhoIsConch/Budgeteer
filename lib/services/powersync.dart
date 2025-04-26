@@ -1,5 +1,5 @@
-import 'package:budget/database/app_database.dart';
-import 'package:budget/supabase.dart';
+import 'package:budget/services/app_database.dart';
+import 'package:budget/services/supabase.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:path/path.dart';
@@ -7,7 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:powersync/powersync.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:budget/database/powersync_schema.dart';
+import 'package:budget/services/powersync_schema.dart';
 
 // Contents of this powersync.dart file are largely borrowed from Powersync's
 // supabase-todolist-drift example project found here:

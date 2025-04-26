@@ -1,11 +1,11 @@
-import 'package:budget/database/app_database.dart';
-import 'package:budget/panels/transaction_search.dart';
-import 'package:budget/tools/filters.dart';
+import 'package:budget/services/app_database.dart';
+import 'package:budget/views/transaction_search.dart';
+import 'package:budget/models/filters.dart';
 import 'package:flutter/material.dart';
-import 'package:budget/components/transactions_list.dart';
+import 'package:budget/views/components/transactions_list.dart';
 import 'package:provider/provider.dart';
-import 'package:budget/tools/enums.dart';
-import 'package:budget/components/cards.dart';
+import 'package:budget/utils/enums.dart';
+import 'package:budget/views/components/cards.dart';
 
 class CardConfig {
   final String title;

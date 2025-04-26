@@ -1,13 +1,13 @@
 import 'dart:math';
 
-import 'package:budget/database/app_database.dart';
+import 'package:budget/services/app_database.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:provider/provider.dart';
-import 'package:budget/tools/transaction_provider.dart';
-import 'package:budget/tools/enums.dart';
-import 'package:budget/tools/validators.dart';
+import 'package:budget/providers/transaction_provider.dart';
+import 'package:budget/utils/enums.dart';
+import 'package:budget/utils/validators.dart';
 
 class ManageCategoryDialog extends StatefulWidget {
   const ManageCategoryDialog(
