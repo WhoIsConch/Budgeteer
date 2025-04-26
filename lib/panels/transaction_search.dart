@@ -449,7 +449,9 @@ class _TransactionSearchState extends State<TransactionSearch> {
           ),
         Expanded(
             child: TransactionsList(
-                filters: provider.filters, sort: provider.sort))
+                showActionButton: true,
+                filters: provider.filters,
+                sort: provider.sort))
       ],
     );
 

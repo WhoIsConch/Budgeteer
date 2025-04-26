@@ -12,7 +12,7 @@ class TransactionsList extends StatefulWidget {
       {super.key,
       this.filters,
       this.sort,
-      this.showActionButton = true,
+      this.showActionButton = false,
       this.showBackground = true});
 
   final bool showActionButton;
@@ -103,10 +103,14 @@ class _TransactionsListState extends State<TransactionsList> {
                   Icons.remove_circle,
                 )
               : const Icon(Icons.add_circle),
-          onPressed: () => setState(() {
-                isMultiselect = true;
-                selectedTransactions.add(transaction);
-              }));
+          onPressed: () {
+            if (!widget.showActionButton) return;
+
+            setState(() {
+              isMultiselect = true;
+              selectedTransactions.add(transaction);
+            });
+          });
     }
 
     return ListTile(
@@ -209,10 +213,7 @@ class _TransactionsListState extends State<TransactionsList> {
 
     if (isMultiselect) {
       actionButton = FloatingActionButton(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8.0),
-          ),
-          child: const Icon(Icons.delete),
+          child: const Icon(size: 28, Icons.delete),
           onPressed: () {
             deletionManager.stageObjectsForDeletion<Transaction>(
                 selectedTransactions.map((t) => t.id).toList());
@@ -224,10 +225,7 @@ class _TransactionsListState extends State<TransactionsList> {
           });
     } else if (widget.showActionButton) {
       actionButton = FloatingActionButton(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8.0),
-        ),
-        child: const Icon(Icons.add),
+        child: const Icon(size: 28, Icons.add),
         onPressed: () => Navigator.push(
             context,
             MaterialPageRoute(

@@ -212,7 +212,11 @@ class SpeedDialExpandedButton extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          Text(data.text, style: Theme.of(context).textTheme.titleMedium),
+          Padding(
+            padding: const EdgeInsets.only(right: 4.0),
+            child:
+                Text(data.text, style: Theme.of(context).textTheme.titleMedium),
+          ),
           FloatingActionButton.small(
               child: data.icon, onPressed: data.onPressed)
         ],
