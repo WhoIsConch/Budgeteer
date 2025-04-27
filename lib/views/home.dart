@@ -42,7 +42,7 @@ class _HomePageState extends State<HomePage> {
                 CarouselCardPair(
                   "Total balance",
                   "${isNegative ? '-' : ''}\$$formattedAmount",
-                  isNegative: true,
+                  isNegative: isNegative,
                 ),
                 CarouselCardPair("Checking", "\$4,182.33"),
                 CarouselCardPair("Cash", "\$130.50"),
@@ -135,7 +135,7 @@ class TransactionPreviewCard extends StatelessWidget {
                   Text(
                       transaction.type == TransactionType.expense
                           ? "Expense"
-                          : "Category",
+                          : "Income",
                       style: theme.textTheme.titleMedium!.copyWith(
                           fontWeight: FontWeight.bold,
                           color: theme.colorScheme.onTertiaryContainer)),

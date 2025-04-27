@@ -1,5 +1,7 @@
 import 'package:budget/views/login.dart';
 import 'package:budget/utils/enums.dart';
+import 'package:budget/views/panels/manage_category.dart';
+import 'package:budget/views/panels/manage_transaction.dart';
 
 import 'package:flutter/material.dart';
 import 'package:budget/views/home.dart';
@@ -40,7 +42,11 @@ class _NavManagerState extends State<NavManager>
         ExpandedButtonData(
             icon: Icon(Icons.account_balance_wallet_outlined),
             text: "Category",
-            onPressed: () {}),
+            onPressed: () {
+              Navigator.of(context).push(DialogRoute(
+                  context: context, builder: (_) => ManageCategoryDialog()));
+              _toggleFabMenu();
+            }),
         ExpandedButtonData(
             text: "Account", icon: Icon(Icons.wallet), onPressed: () {}),
         ExpandedButtonData(
@@ -48,7 +54,11 @@ class _NavManagerState extends State<NavManager>
         ExpandedButtonData(
             text: "Transaction",
             icon: Icon(Icons.attach_money),
-            onPressed: () {})
+            onPressed: () {
+              Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => ManageTransactionDialog()));
+              _toggleFabMenu();
+            })
       ];
 
   List<Widget> _buildActionButtons() => List.generate(
