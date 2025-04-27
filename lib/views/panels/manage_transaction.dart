@@ -110,12 +110,16 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
       RelativeDateRange? categoryRelRange =
           category.resetIncrement.relativeDateRange;
 
-      catTotal = await provider.getTotalAmount(
-          dateRange: categoryRelRange
-              ?.getRange(
-                  fullRange: true, fromDate: currentTransaction.date.value)
-              .makeInclusive(),
-          category: category);
+      catTotal = await provider
+              .watchTotalAmount(
+                  dateRange: categoryRelRange
+                      ?.getRange(
+                          fullRange: true,
+                          fromDate: currentTransaction.date.value)
+                      .makeInclusive(),
+                  category: category)
+              .first ??
+          0;
 
       if (widget.transaction != null &&
           widget.transaction!.category == category.id) {

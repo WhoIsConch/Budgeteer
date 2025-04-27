@@ -154,7 +154,7 @@ class _SpendingHeaderState extends State<SpendingHeader> {
         child: AsyncOverviewCard(
           title: config.title,
           previousContent: _previousContents[index],
-          amountCalculator: () => provider.getTotalAmount(type: config.type),
+          amountCalculator: () => Future(() => 0), // TODO: This is temporary
           onPressed: () {
             Navigator.push(
                 context,

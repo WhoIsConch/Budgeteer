@@ -20,13 +20,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late TransactionDao dao;
 
-  Future<double> getTotal() async {
-    final spent = await dao.getTotalAmount(type: TransactionType.expense);
-    final earned = await dao.getTotalAmount(type: TransactionType.income);
-
-    return earned - spent;
-  }
-
   @override
   Widget build(BuildContext context) {
     dao = context.watch<TransactionDao>();
@@ -37,8 +30,8 @@ class _HomePageState extends State<HomePage> {
         child:
             Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           WelcomeHeader(),
-          FutureBuilder(
-            future: getTotal(),
+          StreamBuilder(
+            stream: dao.watchTotalAmount(),
             initialData: 0.0,
             builder: (context, snapshot) {
               bool isNegative = snapshot.data as double < 0;

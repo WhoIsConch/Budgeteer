@@ -303,7 +303,6 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
     double absTotal = 0;
     List<PieChartSectionData> sectionData = [];
     List<ChartKeyItem> keyItems = [];
-    List<double> totals = [];
     double otherSectionTotal = 0;
 
     TransactionType? typeFilter = filters
@@ -313,19 +312,19 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
         .firstWhereOrNull((e) => e.value.runtimeType == RelativeDateRange)
         ?.value;
 
-    List<Future<double>> futures = [];
+    List<Future<double?>> futures = [];
     for (final category in categories) {
-      futures.add(_daoProvider.getTotalAmount(
-          nullCategory: category == null,
-          category: category,
-          type: typeFilter,
-          dateRange: dateFilter?.getRange(fullRange: true)));
+      futures.add(_daoProvider
+          .watchTotalAmount(
+              nullCategory: category == null,
+              category: category,
+              type: typeFilter,
+              dateRange: dateFilter?.getRange(fullRange: true))
+          .first);
     }
-    totals = await Future.wait(futures);
+    final totals = (await Future.wait(futures)).map((e) => e ?? 0).toList();
 
-    for (final total in totals) {
-      absTotal += total.abs();
-    }
+    absTotal = totals.sum;
 
     if (absTotal == 0) {
       return ChartCalculationResult(

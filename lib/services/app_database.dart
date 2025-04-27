@@ -260,12 +260,13 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     return query.watch();
   }
 
-  Future<double> getTotalAmount({
+  Stream<double?> watchTotalAmount({
     TransactionType? type,
     DateTimeRange? dateRange,
     Category? category,
     bool nullCategory = false,
-  }) async {
+    bool net = true,
+  }) {
     var query = select(transactions)
       ..where((t) => t.isDeleted.equals(true).not());
 
@@ -286,11 +287,26 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
             _formatter.format(dateRange.end)));
     }
 
-    return await query
-            .addColumns([transactions.amount.sum()])
-            .map((row) => row.read(transactions.amount.sum()))
-            .getSingleOrNull() ??
-        0;
+    if (type == null && net) {
+      // If the type is null, we want to get the net amount
+      final signedAmount = CaseWhenExpression(cases: [
+        CaseWhen(transactions.type.equalsValue(TransactionType.income),
+            then: transactions.amount),
+        CaseWhen(transactions.type.equalsValue(TransactionType.expense),
+            then: -transactions.amount)
+      ], orElse: const Constant(0.0))
+          .sum();
+
+      return query
+          .addColumns([signedAmount])
+          .map((row) => row.read(signedAmount))
+          .watchSingle();
+    }
+
+    return query
+        .addColumns([transactions.amount.sum()])
+        .map((row) => row.read(transactions.amount.sum()))
+        .watchSingle();
   }
 
   // Handle it through updatePartialTransaction so it can work the correct way
