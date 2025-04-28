@@ -1,3 +1,4 @@
+import 'package:budget/utils/tools.dart';
 import 'package:flutter/material.dart';
 
 enum ObjectManageMode { add, edit } // Normal enum
@@ -103,24 +104,4 @@ enum PageType {
 
   const PageType(this.value);
   final int value;
-}
-
-final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
-    GlobalKey<ScaffoldMessengerState>();
-
-extension RangeModifier on DateTime {
-  // Tells us if a date is within a certain DateTimeRange
-  bool isInRange(DateTimeRange range) =>
-      (isAfter(range.start) || isAtSameMomentAs(range.start)) &&
-      (isBefore(range.end) || isAtSameMomentAs(range.end));
-}
-
-extension InclusiveModifier on DateTimeRange {
-  DateTimeRange makeInclusive() {
-    return DateTimeRange(
-      start: DateTime(start.year, start.month, start.day),
-      end: DateTime(end.year, end.month, end.day + 1)
-          .subtract(const Duration(microseconds: 1)),
-    );
-  }
 }

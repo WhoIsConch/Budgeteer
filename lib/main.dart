@@ -1,4 +1,5 @@
 import 'package:budget/services/app_database.dart';
+import 'package:budget/utils/tools.dart';
 import 'package:budget/views/components/nav_manager.dart';
 import 'package:budget/services/powersync.dart';
 import 'package:budget/views/temp.dart';
@@ -6,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:provider/provider.dart';
-import 'package:budget/utils/enums.dart';
 import 'package:budget/providers/transaction_provider.dart';
 import 'package:budget/services/settings.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
