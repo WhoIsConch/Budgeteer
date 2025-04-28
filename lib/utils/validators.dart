@@ -100,29 +100,43 @@ class DecimalTextInputFormatter extends TextInputFormatter {
   }
 }
 
-String formatAmount(num amount, {bool round = false, bool exact = false}) {
+String formatAmount(num amount,
+    {bool round = false, bool exact = false, truncateLarge = false}) {
   NumberFormat formatter;
 
-  if (round) {
+  if (round || (truncateLarge && amount >= 1000)) {
     formatter = NumberFormat("#,###");
-    amount = amount.round();
   } else {
     formatter = NumberFormat('#,##0.00');
   }
+
+  if (round) amount = amount.round();
 
   if (exact) {
     return formatter.format(amount);
   }
 
+  double amountToFormat;
+  String? character;
+
   if (amount >= 1000000000) {
-    return '${formatter.format(amount / 1000000000)}B';
+    amountToFormat = amount / 1000000000;
+    character = 'B';
   } else if (amount >= 1000000) {
-    return '${formatter.format(amount / 1000000)}M';
+    amountToFormat = amount / 1000000;
+    character = 'M';
   } else if (amount >= 1000) {
-    return '${formatter.format(amount / 1000)}K';
+    amountToFormat = amount / 1000;
+    character = 'K';
+  } else {
+    amountToFormat = amount as double;
   }
 
-  return formatter.format(amount);
+  if (truncateLarge && character != null) {
+    amount = amountToFormat.round();
+  }
+
+  return '${formatter.format(amount)}${character != null ? character : ""}';
 }
 
 String toTitleCase(String s) => s

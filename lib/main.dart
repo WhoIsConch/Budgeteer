@@ -93,8 +93,7 @@ class _BudgetAppState extends State<BudgetApp> with WidgetsBindingObserver {
       return MaterialApp(
           scaffoldMessengerKey: scaffoldMessengerKey,
           title: 'Budgeteer',
-          // home: const AuthWrapper(),
-          home: TransactionCard(),
+          home: const AuthWrapper(),
           theme: ThemeData(
             colorScheme:
                 lightDynamic?.harmonized() ?? ThemeData.light().colorScheme,

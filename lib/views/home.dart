@@ -28,6 +28,7 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       body: SingleChildScrollView(
+        clipBehavior: Clip.none,
         // The main content
         child:
             Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -36,9 +37,9 @@ class _HomePageState extends State<HomePage> {
             stream: dao.watchTotalAmount(),
             initialData: 0.0,
             builder: (context, snapshot) {
-              bool isNegative = snapshot.data as double < 0;
+              bool isNegative = (snapshot.data ?? 0) < 0;
               String formattedAmount =
-                  formatAmount((snapshot.data as double).abs(), exact: true);
+                  formatAmount((snapshot.data ?? 0).abs(), exact: true);
 
               return AccountsCarousel(items: [
                 CarouselCardPair(
@@ -52,19 +53,22 @@ class _HomePageState extends State<HomePage> {
             },
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
-            child: Row(
-              children: [
-                Text("Recent activity",
-                    style: Theme.of(context).textTheme.headlineMedium!.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface)),
-                Spacer(),
-                IconButton(
-                  icon: Icon(Icons.arrow_forward),
-                  onPressed: () {},
-                )
-              ],
-            ),
+            padding: const EdgeInsets.all(8.0),
+            child: Row(children: [
+              Text("Recent activity",
+                  style: Theme.of(context).textTheme.headlineMedium!.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface)),
+              Spacer(),
+              Text("View all",
+                  style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withAlpha(200))),
+              Icon(Icons.chevron_right,
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withAlpha(200)),
+            ]),
           ),
           TransactionPreviewer(),
           SizedBox(height: 8),
@@ -82,29 +86,29 @@ class TransactionPreviewer extends StatelessWidget {
   Widget build(BuildContext context) {
     final TransactionDao dao = context.watch<TransactionDao>();
 
-    return SizedBox(
-      height: 150,
-      child: StreamBuilder<List<Transaction>>(
-          stream: dao.watchTransactionsPage(filters: [
-            TransactionFilter(DateTimeRange(
-                    start: DateTime.now().subtract(Duration(days: 7)),
-                    end: DateTime.now())
-                .makeInclusive())
-          ]),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData ||
-                snapshot.hasData && snapshot.data!.isEmpty) {
-              return Center(child: CircularProgressIndicator());
-            }
+    return StreamBuilder<List<Transaction>>(
+        stream: dao.watchTransactionsPage(filters: [
+          TransactionFilter(DateTimeRange(
+                  start: DateTime.now().subtract(Duration(days: 7)),
+                  end: DateTime.now())
+              .makeInclusive())
+        ]),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData || snapshot.hasData && snapshot.data!.isEmpty) {
+            return Center(child: CircularProgressIndicator());
+          }
 
-            return ListView.builder(
+          return SizedBox(
+            height: 200,
+            child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: snapshot.data!.length,
+              clipBehavior: Clip.none,
               itemBuilder: (context, index) =>
                   TransactionPreviewCard(transaction: snapshot.data![index]),
-            );
-          }),
-    );
+            ),
+          );
+        });
   }
 }
 
@@ -113,84 +117,68 @@ class TransactionPreviewCard extends StatelessWidget {
 
   const TransactionPreviewCard({super.key, required this.transaction});
 
-  Color greenColor(BuildContext context) => Colors.green.harmonizeWith(Theme.of(context).colorScheme.surface);
-
   @override
   Widget build(BuildContext context) {
-    var theme = Theme.of(context);
-    return SizedBox(
-    width: 125,
-    height: 200,
-    child: Card(
-      margin: EdgeInsets.zero,
-      color: getAdjustedColor(context, Theme.of(context).colorScheme.surface),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12), // To match the card's radius
-        onTap: () {
-          Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => ManageTransactionDialog(
-                  mode: ObjectManageMode.edit, transaction: transaction)));
-        },
-        child: Padding(padding: EdgeInsets.all(16.0), child: Column(
-          spacing: 4.0,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-          Icon(Icons.shopping_bag, color: greenColor(context), size: 32), 
-          SizedBox(
-            height: 36,
-            child: AutoSizeText("\$${formatAmount(transaction.amount)}", style: Theme.of(context).textTheme.headlineSmall!.copyWith(color: greenColor(context)), maxLines: 1)
-            ), 
-          Text("Hello", style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 18), overflow: TextOverflow.ellipsis, maxLines: 2), 
-          Spacer(),
-          Text("Apr 28", style: Theme.of(context).textTheme.titleSmall!.copyWith(color: Theme.of(context).colorScheme.onSurface.withAlpha(200)))
-          ],)),
-      )
-    ),
-  );
+    Color? reactiveTextColor;
+    Color defaultTextColor = Theme.of(context).colorScheme.onSurface;
+    Color backgroundColor =
+        Theme.of(context).colorScheme.onSurface.withAlpha(150);
+
+    if (transaction.type == TransactionType.income) {
+      reactiveTextColor =
+          Colors.green.harmonizeWith(Theme.of(context).colorScheme.surface);
+    }
+
+    bool isExpense = reactiveTextColor == null;
 
     return SizedBox(
-      height: 150,
-      width: 150,
+      width: 135,
+      height: 200,
       child: Card(
-        color: Theme.of(context).colorScheme.tertiaryContainer,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12), // To match the card's radius
-          onTap: () {
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => ManageTransactionDialog(
-                    mode: ObjectManageMode.edit, transaction: transaction)));
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                      transaction.type == TransactionType.expense
-                          ? "Expense"
-                          : "Income",
-                      style: theme.textTheme.titleMedium!.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onTertiaryContainer)),
-                  AutoSizeText("\$${formatAmount(transaction.amount)}",
-                      maxLines: 1,
-                      style: theme.textTheme.headlineLarge!.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onTertiaryContainer)),
-                  Text(transaction.title,
-                      style: theme.textTheme.titleMedium!.copyWith(
-                          color: theme.colorScheme.onTertiaryContainer),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                  Text(DateFormat('M/d/yy').format(transaction.date),
-                      style: theme.textTheme.bodyLarge!.copyWith(
-                          color: theme.colorScheme.onTertiaryContainer
-                              .withAlpha(150)))
-                ]),
-          ),
-        ),
-      ),
+          color:
+              getAdjustedColor(context, Theme.of(context).colorScheme.surface),
+          child: InkWell(
+            borderRadius:
+                BorderRadius.circular(12), // To match the card's radius
+            onTap: () {
+              Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => ManageTransactionDialog(
+                      mode: ObjectManageMode.edit, transaction: transaction)));
+            },
+            child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  spacing: 4.0,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.shopping_bag,
+                        color: reactiveTextColor ?? backgroundColor, size: 32),
+                    SizedBox(
+                        height: 36,
+                        child: AutoSizeText(
+                            "${isExpense ? '-' : '+'}\$${formatAmount(transaction.amount, truncateLarge: true)}",
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall!
+                                .copyWith(
+                                    color:
+                                        reactiveTextColor ?? defaultTextColor),
+                            maxLines: 1)),
+                    Text(transaction.title,
+                        style: TextStyle(color: defaultTextColor, fontSize: 18),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2),
+                    Spacer(),
+                    Text(
+                        DateFormat(DateFormat.ABBR_MONTH_DAY)
+                            .format(transaction.date),
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium!
+                            .copyWith(color: backgroundColor))
+                  ],
+                )),
+          )),
     );
   }
 }
