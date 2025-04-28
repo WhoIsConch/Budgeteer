@@ -10,6 +10,7 @@ import 'package:budget/utils/enums.dart';
 class TransactionsList extends StatefulWidget {
   const TransactionsList(
       {super.key,
+      this.transactions,
       this.filters,
       this.sort,
       this.showActionButton = false,
@@ -18,6 +19,7 @@ class TransactionsList extends StatefulWidget {
   final bool showActionButton;
   final bool showBackground;
   final List<TransactionFilter>? filters;
+  final List<Transaction>? transactions;
   final Sort? sort;
 
   @override
@@ -146,68 +148,82 @@ class _TransactionsListState extends State<TransactionsList> {
     );
   }
 
+  Widget _getListview(List<Transaction> transactions) => ListView.builder(
+      itemCount: transactions.length,
+      itemBuilder: (context, index) => Card(
+            child: tileFromTransaction(transactions[index], Theme.of(context)),
+          ));
+
+  Widget get _noTransactions => Center(
+      child: Text("No transactions found",
+          style: Theme.of(context).textTheme.headlineSmall));
+
   Widget getList() {
     // Return a stack with a listview in it so we can put that floating
     // action button at the bottom right
     final dao = context.read<TransactionDao>();
-    List<Widget> stackChildren = [
+    List<Widget> stackChildren;
+
+    if (widget.transactions == null) {
       // TODO: Not sure if Streams are lazy by default, but if they aren't
       // or this setup isn't, we should make it lazy.
-      StreamBuilder(
-          // key: ValueKey(
-          //     'tx_stream_${widget.filters.hashCode}_${widget.sort.hashCode}'),
-          initialData: const [],
-          stream: dao.watchTransactionsPage(
-            filters: widget.filters,
-            sort: widget.sort,
-          ),
-          builder: (context, snapshot) {
-            List<Transaction>? transactionsToDisplay;
-            bool showLoadingIndicator = false;
+      stackChildren = [
+        StreamBuilder(
+            // key: ValueKey(
+            //     'tx_stream_${widget.filters.hashCode}_${widget.sort.hashCode}'),
+            initialData: const [],
+            stream: dao.watchTransactionsPage(
+              filters: widget.filters,
+              sort: widget.sort,
+            ),
+            builder: (context, snapshot) {
+              List<Transaction>? transactionsToDisplay;
+              bool showLoadingIndicator = false;
 
-            if (snapshot.hasError) {
-              return Center(
-                  child: Text("Something went wrong. Please try again"));
-            }
+              if (snapshot.hasError) {
+                return Center(
+                    child: Text("Something went wrong. Please try again"));
+              }
 
-            switch (snapshot.connectionState) {
-              case ConnectionState.none:
-              case ConnectionState.waiting:
-                if (_lastSuccessfulData != null) {
+              switch (snapshot.connectionState) {
+                case ConnectionState.none:
+                case ConnectionState.waiting:
+                  if (_lastSuccessfulData != null) {
+                    transactionsToDisplay = _lastSuccessfulData;
+                    showLoadingIndicator = true;
+                  } else {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  break;
+                case ConnectionState.active:
+                case ConnectionState.done:
+                  _lastSuccessfulData =
+                      snapshot.data as List<Transaction>? ?? [];
                   transactionsToDisplay = _lastSuccessfulData;
-                  showLoadingIndicator = true;
-                } else {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                break;
-              case ConnectionState.active:
-              case ConnectionState.done:
-                _lastSuccessfulData = snapshot.data as List<Transaction>? ?? [];
-                transactionsToDisplay = _lastSuccessfulData;
 
-                showLoadingIndicator = false;
-                break;
-            }
+                  showLoadingIndicator = false;
+                  break;
+              }
 
-            final currentList = transactionsToDisplay ?? [];
+              final currentList = transactionsToDisplay ?? [];
 
-            Widget listContent;
-            if (currentList.isEmpty && !showLoadingIndicator) {
-              listContent = Center(
-                  child: Text("No transactions found.",
-                      style: Theme.of(context).textTheme.headlineSmall));
-            } else {
-              listContent = ListView.builder(
-                  itemCount: currentList.length,
-                  itemBuilder: (context, index) => Card(
-                        child: tileFromTransaction(
-                            currentList[index], Theme.of(context)),
-                      ));
-            }
+              Widget listContent;
+              if (currentList.isEmpty && !showLoadingIndicator) {
+                listContent = _noTransactions;
+              } else {
+                listContent = _getListview(currentList);
+              }
 
-            return listContent;
-          }),
-    ];
+              return listContent;
+            })
+      ];
+    } else {
+      if (widget.transactions!.isEmpty) {
+        stackChildren = [_noTransactions];
+      } else {
+        stackChildren = [_getListview(widget.transactions!)];
+      }
+    }
 
     FloatingActionButton? actionButton;
 

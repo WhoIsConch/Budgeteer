@@ -1,3 +1,4 @@
+import 'package:budget/views/history.dart';
 import 'package:budget/views/login.dart';
 import 'package:budget/utils/enums.dart';
 import 'package:budget/views/panels/manage_category.dart';
@@ -149,7 +150,7 @@ class _NavManagerState extends State<NavManager>
                       key: ValueKey('spending'),
                       child: Padding(
                         padding: EdgeInsets.all(16),
-                        child: SpendingOverview(),
+                        child: History(),
                       )),
                   const SafeArea(
                       key: ValueKey('budget'),

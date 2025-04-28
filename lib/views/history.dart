@@ -1,0 +1,145 @@
+import 'dart:async';
+import 'dart:collection';
+
+import 'package:budget/models/filters.dart';
+import 'package:budget/services/app_database.dart';
+import 'package:budget/views/components/transactions_list.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:table_calendar/table_calendar.dart';
+
+DateTime getUtcDate(DateTime date) {
+  return DateTime.utc(date.year, date.month, date.day);
+}
+
+class History extends StatefulWidget {
+  const History({super.key});
+
+  @override
+  State<History> createState() => _HistoryState();
+}
+
+class _HistoryState extends State<History> {
+  late final TransactionDao _transactionDao;
+  late final ValueNotifier<List<Transaction>> _selectedEvents;
+
+  LinkedHashMap<DateTime, List<Transaction>> _events = LinkedHashMap(
+    equals: isSameDay,
+    hashCode: (key) => getUtcDate(key).hashCode,
+  );
+
+  StreamSubscription<List<Transaction>>? _transactionsSubscription;
+
+  DateTime _selectedDay = DateTime.now();
+  DateTime _focusedDay = DateTime.now();
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _transactionDao = context.read<TransactionDao>();
+    _selectedEvents = ValueNotifier(_getEventsForDay(_selectedDay));
+
+    _initStreamSubscription(_focusedDay);
+  }
+
+  @override
+  void dispose() {
+    _transactionsSubscription?.cancel();
+    _selectedEvents.dispose();
+    super.dispose();
+  }
+
+  void _initStreamSubscription(DateTime day) {
+    setState(() {
+      _isLoading = true;
+      _events.clear();
+      _selectedEvents.value = _getEventsForDay(_selectedDay);
+    });
+
+    _transactionsSubscription?.cancel();
+
+    final firstDayOfMonth = DateTime.utc(day.year, day.month, 1);
+    final lastDayOfMonth = DateTime.utc(day.year, day.month + 1, 0);
+    final start = firstDayOfMonth;
+    final end = lastDayOfMonth.add(const Duration(days: 1));
+
+    _transactionsSubscription = _transactionDao.watchTransactionsPage(filters: [
+      TransactionFilter<DateTimeRange>(DateTimeRange(start: start, end: end))
+    ]).listen((transactionsInRange) {
+      final newEvents = LinkedHashMap<DateTime, List<Transaction>>(
+        equals: isSameDay,
+        hashCode: (key) => getUtcDate(key).hashCode,
+      );
+      for (final transaction in transactionsInRange) {
+        final dateKey = getUtcDate(transaction.date);
+        final dayEvents = newEvents.putIfAbsent(dateKey, () => []);
+        dayEvents.add(transaction);
+      }
+
+      if (mounted) {
+        setState(() {
+          _events = newEvents;
+          _isLoading = false;
+        });
+
+        _selectedEvents.value = _getEventsForDay(_selectedDay);
+      }
+    }); // TODO: Error handler
+  }
+
+  List<Transaction> _getEventsForDay(DateTime day) =>
+      _events[getUtcDate(day)] ?? [];
+
+  void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
+    if (!isSameDay(_selectedDay, selectedDay)) {
+      setState(() {
+        _selectedDay = selectedDay;
+        _focusedDay = focusedDay;
+      });
+
+      _selectedEvents.value = _getEventsForDay(selectedDay);
+    }
+  }
+
+  void _onPageChanged(DateTime focusedDay) {
+    if (focusedDay.month == _focusedDay.month &&
+        focusedDay.year == focusedDay.year) {
+      setState(() {
+        _focusedDay = focusedDay;
+      });
+      return;
+    }
+
+    _focusedDay = focusedDay;
+
+    _initStreamSubscription(focusedDay);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        TableCalendar(
+          firstDay: DateTime.utc(2010, 10, 16),
+          lastDay: DateTime.utc(2030, 3, 14),
+          availableCalendarFormats: const {CalendarFormat.month: 'Month'},
+          focusedDay: _focusedDay,
+          selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+          onDaySelected: _onDaySelected,
+          onPageChanged: _onPageChanged,
+          eventLoader: _getEventsForDay,
+        ),
+        if (_isLoading) LinearProgressIndicator(),
+        Expanded(
+            child: ValueListenableBuilder<List<Transaction>>(
+                valueListenable: _selectedEvents,
+                builder: (context, value, _) => TransactionsList(
+                      showBackground: false,
+                      transactions: value,
+                    )))
+      ],
+    );
+  }
+}
