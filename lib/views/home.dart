@@ -96,8 +96,8 @@ class TransactionPreviewer extends StatelessWidget {
     final TransactionDao dao = context.watch<TransactionDao>();
 
     return StreamBuilder<List<Transaction>>(
-        stream: dao.watchTransactionsPage(filters: [
-          TransactionFilter(DateTimeRange(
+        stream: dao.watchTransactionsPage(limit: 10, filters: [
+          TransactionFilter<DateTimeRange>(DateTimeRange(
                   start: DateTime.now().subtract(Duration(days: 7)),
                   end: DateTime.now())
               .makeInclusive())
@@ -160,7 +160,8 @@ class TransactionPreviewCard extends StatelessWidget {
                   spacing: 4.0,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.shopping_bag,
+                    // TODO : Category Icons
+                    Icon(isExpense ? Icons.remove_circle : Icons.add_circle,
                         color: reactiveTextColor ?? backgroundColor, size: 32),
                     SizedBox(
                         height: 36,
