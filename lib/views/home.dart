@@ -7,6 +7,7 @@ import 'package:budget/views/components/goals_preview.dart';
 import 'package:budget/views/panels/manage_transaction.dart';
 import 'package:budget/utils/enums.dart';
 import 'package:budget/utils/validators.dart';
+import 'package:budget/views/transaction_search.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -59,15 +60,23 @@ class _HomePageState extends State<HomePage> {
                   style: Theme.of(context).textTheme.headlineMedium!.copyWith(
                       color: Theme.of(context).colorScheme.onSurface)),
               Spacer(),
-              Text("View all",
-                  style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withAlpha(200))),
-              Icon(Icons.chevron_right,
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withAlpha(200)),
+              TextButton(
+                  style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                  onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => TransactionSearch())),
+                  child: Row(children: [
+                    Text("View all",
+                        style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withAlpha(200))),
+                    Icon(Icons.chevron_right,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withAlpha(200)),
+                  ])),
             ]),
           ),
           TransactionPreviewer(),
