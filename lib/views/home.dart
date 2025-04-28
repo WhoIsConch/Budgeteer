@@ -1,11 +1,13 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:budget/models/filters.dart';
 import 'package:budget/services/app_database.dart';
+import 'package:budget/utils/tools.dart';
 import 'package:budget/views/components/accounts_carousel.dart';
 import 'package:budget/views/components/goals_preview.dart';
 import 'package:budget/views/panels/manage_transaction.dart';
 import 'package:budget/utils/enums.dart';
 import 'package:budget/utils/validators.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -111,9 +113,41 @@ class TransactionPreviewCard extends StatelessWidget {
 
   const TransactionPreviewCard({super.key, required this.transaction});
 
+  Color greenColor(BuildContext context) => Colors.green.harmonizeWith(Theme.of(context).colorScheme.surface);
+
   @override
   Widget build(BuildContext context) {
     var theme = Theme.of(context);
+    return SizedBox(
+    width: 125,
+    height: 200,
+    child: Card(
+      margin: EdgeInsets.zero,
+      color: getAdjustedColor(context, Theme.of(context).colorScheme.surface),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12), // To match the card's radius
+        onTap: () {
+          Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => ManageTransactionDialog(
+                  mode: ObjectManageMode.edit, transaction: transaction)));
+        },
+        child: Padding(padding: EdgeInsets.all(16.0), child: Column(
+          spacing: 4.0,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+          Icon(Icons.shopping_bag, color: greenColor(context), size: 32), 
+          SizedBox(
+            height: 36,
+            child: AutoSizeText("\$${formatAmount(transaction.amount)}", style: Theme.of(context).textTheme.headlineSmall!.copyWith(color: greenColor(context)), maxLines: 1)
+            ), 
+          Text("Hello", style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 18), overflow: TextOverflow.ellipsis, maxLines: 2), 
+          Spacer(),
+          Text("Apr 28", style: Theme.of(context).textTheme.titleSmall!.copyWith(color: Theme.of(context).colorScheme.onSurface.withAlpha(200)))
+          ],)),
+      )
+    ),
+  );
+
     return SizedBox(
       height: 150,
       width: 150,
