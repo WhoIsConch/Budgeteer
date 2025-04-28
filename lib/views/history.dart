@@ -131,7 +131,9 @@ class _HistoryState extends State<History> {
           onPageChanged: _onPageChanged,
           eventLoader: _getEventsForDay,
         ),
-        if (_isLoading) LinearProgressIndicator(),
+        SizedBox(
+          height: 12,
+        ),
         Expanded(
             child: ValueListenableBuilder<List<Transaction>>(
                 valueListenable: _selectedEvents,

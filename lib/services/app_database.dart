@@ -378,11 +378,12 @@ class AppDatabase extends _$AppDatabase {
     final statement =
         into(transactions).createContext(entryWithId, InsertMode.insert);
 
-    await db.writeTransaction((tx) async {
-      await tx.execute(statement.sql, statement.boundVariables);
-    });
+    await db.writeTransaction(
+        (tx) => tx.execute(statement.sql, statement.boundVariables));
 
-    return await getTransactionById(id);
+    var transaction = await getTransactionById(id);
+
+    return transaction;
   }
 
   Future<void> updateTransaction(Transaction entry) async {
