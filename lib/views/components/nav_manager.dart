@@ -46,7 +46,8 @@ class _NavManagerState extends State<NavManager>
             text: "Category",
             onPressed: () {
               Navigator.of(context).push(DialogRoute(
-                  context: context, builder: (_) => const ManageCategoryDialog()));
+                  context: context,
+                  builder: (_) => const ManageCategoryDialog()));
               _toggleFabMenu();
             }),
         ExpandedButtonData(
@@ -57,8 +58,8 @@ class _NavManagerState extends State<NavManager>
             text: "Transaction",
             icon: const Icon(Icons.attach_money),
             onPressed: () {
-              Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ManageTransactionDialog()));
+              Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const ManageTransactionDialog()));
               _toggleFabMenu();
             })
       ];
@@ -121,14 +122,14 @@ class _NavManagerState extends State<NavManager>
                     selectedIcon: Icon(Icons.home),
                   ),
                   NavigationDestination(
-                    icon: Icon(Icons.paid_outlined),
-                    selectedIcon: Icon(Icons.paid),
-                    label: "Spending",
+                    icon: Icon(Icons.history_outlined),
+                    selectedIcon: Icon(Icons.history),
+                    label: "History",
                   ),
                   NavigationDestination(
-                    icon: Icon(Icons.account_balance_wallet_outlined),
-                    selectedIcon: Icon(Icons.account_balance_wallet),
-                    label: "Budget",
+                    icon: Icon(Icons.bar_chart_outlined),
+                    selectedIcon: Icon(Icons.bar_chart),
+                    label: "Stats",
                   ),
                   NavigationDestination(
                     icon: Icon(Icons.code),
@@ -149,7 +150,7 @@ class _NavManagerState extends State<NavManager>
                     ),
                   ),
                   const SafeArea(
-                      key: ValueKey('spending'),
+                      key: ValueKey('history'),
                       child: Padding(
                         padding: EdgeInsets.all(16),
                         child: History(),

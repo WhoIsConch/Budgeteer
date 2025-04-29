@@ -4,6 +4,7 @@ import 'dart:collection';
 import 'package:budget/models/filters.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/views/components/transactions_list.dart';
+import 'package:budget/views/transaction_search.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -117,7 +118,24 @@ class _HistoryState extends State<History> {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+          child: Row(
+            children: [
+              Text("Your activity",
+                  textAlign: TextAlign.start,
+                  style: Theme.of(context).textTheme.headlineMedium!.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface)),
+              Spacer(),
+              IconButton(
+                  icon: Icon(Icons.search),
+                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const TransactionSearch())))
+            ],
+          ),
+        ),
         TableCalendar(
           firstDay: DateTime.utc(2010, 10, 16),
           lastDay: DateTime.utc(2030, 3, 14),
