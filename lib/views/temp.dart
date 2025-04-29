@@ -36,7 +36,7 @@ class TransactionCard extends StatelessWidget {
     child: Card(
       margin: EdgeInsets.zero,
             color: getAdjustedColor(context, Theme.of(context).colorScheme.surface),
-            child: Padding(padding: EdgeInsets.all(16.0), child: Column(
+            child: Padding(padding: const EdgeInsets.all(16.0), child: Column(
               spacing: 4.0,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -46,7 +46,7 @@ class TransactionCard extends StatelessWidget {
                 child: AutoSizeText("+\$8.00", style: Theme.of(context).textTheme.headlineSmall!.copyWith(color: greenColor(context)), maxLines: 1)
                 ), 
               Text("Hello", style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 18), overflow: TextOverflow.ellipsis, maxLines: 2), 
-              Spacer(),
+              const Spacer(),
               Text("Apr 28", style: Theme.of(context).textTheme.titleSmall!.copyWith(color: Theme.of(context).colorScheme.onSurface.withAlpha(200)))
               ],))
           ),
@@ -68,7 +68,7 @@ class TransactionCard extends StatelessWidget {
                   child: Row(
                     children: [
                     Text("Recent activity", style: Theme.of(context).textTheme.headlineMedium!.copyWith(color: Theme.of(context).colorScheme.onSurface)), 
-                    Spacer(), 
+                    const Spacer(), 
                     Text("View all", style: Theme.of(context).textTheme.bodyLarge!.copyWith(color: Theme.of(context).colorScheme.onSurface.withAlpha(200))),
                     Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withAlpha(200)),
                     ]),

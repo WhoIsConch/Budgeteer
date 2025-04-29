@@ -48,7 +48,7 @@ class _AccountsCarouselState extends State<AccountsCarousel> {
   @override
   Widget build(BuildContext context) {
     return Card(
-        margin: EdgeInsets.all(4),
+        margin: const EdgeInsets.all(4),
         color: Theme.of(context).colorScheme.primaryContainer,
         child: Padding(
           padding: const EdgeInsets.all(16.0),

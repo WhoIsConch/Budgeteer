@@ -1,14 +1,11 @@
-import 'package:budget/providers/transaction_provider.dart';
-import 'package:budget/utils/enums.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class Account extends StatelessWidget {
   const Account({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return const Column(
       children: [
         Column(
           spacing: 16,
@@ -62,7 +59,7 @@ class Account extends StatelessWidget {
             // )
           ],
         ),
-        const Divider(),
+        Divider(),
       ],
     );
   }

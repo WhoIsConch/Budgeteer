@@ -147,7 +147,7 @@ class _TransactionsListState extends State<TransactionsList> {
               bool showLoadingIndicator = false;
 
               if (snapshot.hasError) {
-                return Center(
+                return const Center(
                     child: Text("Something went wrong. Please try again"));
               }
 

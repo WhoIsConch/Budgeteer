@@ -136,7 +136,7 @@ String formatAmount(num amount,
     amount = amountToFormat.round();
   }
 
-  return '${formatter.format(amount)}${character != null ? character : ""}';
+  return '${formatter.format(amount)}${character ?? ""}';
 }
 
 String toTitleCase(String s) => s

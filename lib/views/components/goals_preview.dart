@@ -27,7 +27,7 @@ class GoalPreviewButton extends StatelessWidget {
                 .withAlpha(68),
             strokeCap: StrokeCap.round,
           ),
-          SizedBox(width: 16),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,14 +83,14 @@ class GoalPreviewCard extends StatelessWidget {
                         color:
                             Theme.of(context).colorScheme.onPrimaryContainer)),
               ),
-              GoalPreviewButton(
+              const GoalPreviewButton(
                 title: "A Puppy",
                 amount: 120,
                 maxAmount: 200,
               ),
-              GoalPreviewButton(
+              const GoalPreviewButton(
                   title: "Baseball Tickets", amount: 200, maxAmount: 450),
-              GoalPreviewButton(
+              const GoalPreviewButton(
                   title: "Spongebob Toybobson", amount: 13, maxAmount: 15),
             ],
           ),

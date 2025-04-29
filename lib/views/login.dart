@@ -131,7 +131,7 @@ class _LoginPageState extends State<LoginPage> {
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: isLoading && signInType == SignInType.google
-              ? CircularProgressIndicator()
+              ? const CircularProgressIndicator()
               : Text("Sign in with Google",
                   style: Theme.of(context)
                       .textTheme
@@ -186,7 +186,7 @@ class _LoginPageState extends State<LoginPage> {
               margin: EdgeInsets.zero,
               color: Theme.of(context).colorScheme.primaryContainer,
               child: Padding(
-                padding: EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16.0),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -202,7 +202,7 @@ class _LoginPageState extends State<LoginPage> {
                             padding: const EdgeInsets.symmetric(vertical: 8.0),
                             child: emailField),
                         Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8.0),
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
                             child: passwordField),
                       ]),
                 ),

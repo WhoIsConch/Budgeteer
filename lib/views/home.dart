@@ -34,7 +34,7 @@ class _HomePageState extends State<HomePage> {
         // The main content
         child:
             Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          WelcomeHeader(),
+          const WelcomeHeader(),
           StreamBuilder(
             stream: dao.watchTotalAmount(),
             initialData: 0.0,
@@ -49,8 +49,8 @@ class _HomePageState extends State<HomePage> {
                   "${isNegative ? '-' : ''}\$$formattedAmount",
                   isNegative: isNegative,
                 ),
-                CarouselCardPair("Checking", "\$4,182.33"),
-                CarouselCardPair("Cash", "\$130.50"),
+                const CarouselCardPair("Checking", "\$4,182.33"),
+                const CarouselCardPair("Cash", "\$130.50"),
               ]);
             },
           ),
@@ -60,11 +60,11 @@ class _HomePageState extends State<HomePage> {
               Text("Recent activity",
                   style: Theme.of(context).textTheme.headlineMedium!.copyWith(
                       color: Theme.of(context).colorScheme.onSurface)),
-              Spacer(),
+              const Spacer(),
               TextButton(
                   style: TextButton.styleFrom(padding: EdgeInsets.zero),
                   onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => TransactionSearch())),
+                      MaterialPageRoute(builder: (_) => const TransactionSearch())),
                   child: Row(children: [
                     Text("View all",
                         style: Theme.of(context).textTheme.bodyLarge!.copyWith(
@@ -80,9 +80,9 @@ class _HomePageState extends State<HomePage> {
                   ])),
             ]),
           ),
-          TransactionPreviewer(),
-          SizedBox(height: 8),
-          GoalPreviewCard(),
+          const TransactionPreviewer(),
+          const SizedBox(height: 8),
+          const GoalPreviewCard(),
         ]),
       ),
     );
@@ -99,13 +99,13 @@ class TransactionPreviewer extends StatelessWidget {
     return StreamBuilder<List<Transaction>>(
         stream: dao.watchTransactionsPage(limit: 10, filters: [
           TransactionFilter<DateTimeRange>(DateTimeRange(
-                  start: DateTime.now().subtract(Duration(days: 7)),
+                  start: DateTime.now().subtract(const Duration(days: 7)),
                   end: DateTime.now())
               .makeInclusive())
         ]),
         builder: (context, snapshot) {
           if (!snapshot.hasData || snapshot.hasData && snapshot.data!.isEmpty) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
 
           return SizedBox(
@@ -157,7 +157,7 @@ class TransactionPreviewCard extends StatelessWidget {
             },
             onLongPress: () => showOptionsDialog(context, transaction),
             child: Padding(
-                padding: EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
                   spacing: 4.0,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,7 +180,7 @@ class TransactionPreviewCard extends StatelessWidget {
                         style: TextStyle(color: defaultTextColor, fontSize: 18),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 2),
-                    Spacer(),
+                    const Spacer(),
                     Text(
                         DateFormat(DateFormat.ABBR_MONTH_DAY)
                             .format(transaction.date),
@@ -210,7 +210,7 @@ class WelcomeHeader extends StatelessWidget {
                 .headlineMedium!
                 .copyWith(color: Theme.of(context).colorScheme.onSurface)),
         IconButton(
-          icon: Icon(Icons.person),
+          icon: const Icon(Icons.person),
           onPressed: () {},
         )
       ]),

@@ -42,23 +42,23 @@ class _NavManagerState extends State<NavManager>
 
   List<ExpandedButtonData> get _expandedButtonsData => [
         ExpandedButtonData(
-            icon: Icon(Icons.account_balance_wallet_outlined),
+            icon: const Icon(Icons.account_balance_wallet_outlined),
             text: "Category",
             onPressed: () {
               Navigator.of(context).push(DialogRoute(
-                  context: context, builder: (_) => ManageCategoryDialog()));
+                  context: context, builder: (_) => const ManageCategoryDialog()));
               _toggleFabMenu();
             }),
         ExpandedButtonData(
-            text: "Account", icon: Icon(Icons.wallet), onPressed: () {}),
+            text: "Account", icon: const Icon(Icons.wallet), onPressed: () {}),
         ExpandedButtonData(
-            text: "Goal", icon: Icon(Icons.flag), onPressed: () {}),
+            text: "Goal", icon: const Icon(Icons.flag), onPressed: () {}),
         ExpandedButtonData(
             text: "Transaction",
-            icon: Icon(Icons.attach_money),
+            icon: const Icon(Icons.attach_money),
             onPressed: () {
               Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => ManageTransactionDialog()));
+                  MaterialPageRoute(builder: (_) => const ManageTransactionDialog()));
               _toggleFabMenu();
             })
       ];
@@ -190,7 +190,7 @@ class _NavManagerState extends State<NavManager>
                 children: [
                   if (!_animationController.isDismissed)
                     ..._buildActionButtons(),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   FloatingActionButton(
                       backgroundColor:
                           Theme.of(context).colorScheme.tertiaryContainer,

@@ -128,7 +128,7 @@ class _HistoryState extends State<History> {
           onPageChanged: _onPageChanged,
           eventLoader: _getEventsForDay,
         ),
-        SizedBox(
+        const SizedBox(
           height: 12,
         ),
         Expanded(
