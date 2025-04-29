@@ -32,7 +32,6 @@ class _HistoryState extends State<History> {
 
   DateTime _selectedDay = DateTime.now();
   DateTime _focusedDay = DateTime.now();
-  bool _isLoading = true;
 
   @override
   void initState() {
@@ -53,7 +52,6 @@ class _HistoryState extends State<History> {
 
   void _initStreamSubscription(DateTime day) {
     setState(() {
-      _isLoading = true;
       _events.clear();
       _selectedEvents.value = _getEventsForDay(_selectedDay);
     });
@@ -81,7 +79,6 @@ class _HistoryState extends State<History> {
       if (mounted) {
         setState(() {
           _events = newEvents;
-          _isLoading = false;
         });
 
         _selectedEvents.value = _getEventsForDay(_selectedDay);

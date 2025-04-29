@@ -1,8 +1,8 @@
 import 'dart:async';
 
+import 'package:budget/providers/snackbar_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/models/filters.dart';
-import 'package:budget/utils/tools.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
 
@@ -44,11 +44,12 @@ class TransactionProvider extends ChangeNotifier {
 
 class DeletionManager {
   final TransactionDao dao;
+  final SnackbarProvider snackbarProvider;
 
   // The int represents the list's hash code.
   final Map<List<String>, Timer> _activeDeleteTimers = {};
 
-  DeletionManager(this.dao);
+  DeletionManager(this.dao, this.snackbarProvider);
 
   void dispose() {
     for (var timer in _activeDeleteTimers.values) {
@@ -97,27 +98,23 @@ class DeletionManager {
       throw "Unexpected type $T";
     }
 
-    final messenger = scaffoldMessengerKey.currentState!;
-
     deletionFuture.then((_) {
       _cancelTimer(objectIds);
 
       final timer = Timer(const Duration(seconds: 5), () {
-        messenger.hideCurrentSnackBar();
+        snackbarProvider.hideCurrentSnackBar();
         _deletePermanently<T>(objectIds);
       });
       _activeDeleteTimers[objectIds] = timer;
 
-      messenger.hideCurrentSnackBar();
-      messenger
-          .showSnackBar(SnackBar(
+      snackbarProvider.showSnackBar(
+          SnackBar(
               content: Text(
                   "${T == Transaction ? objectIds.length == 1 ? 'Transaction' : 'Transactions' : 'Category'} deleted"),
               duration: const Duration(seconds: 3),
               action: SnackBarAction(
-                  label: "UNDO", onPressed: () => _undoDeletion<T>(objectIds))))
-          .closed
-          .then((reason) {
+                  label: "UNDO", onPressed: () => _undoDeletion<T>(objectIds))),
+          snackbarCallback: (reason) {
         if (_activeDeleteTimers.containsKey(objectIds) &&
             reason != SnackBarClosedReason.action) {
           // The snackbar was closed by the user, no reason to keep the timers going
@@ -125,9 +122,6 @@ class DeletionManager {
           _deletePermanently<T>(objectIds);
         }
       });
-    }).catchError((error) {
-      messenger.showSnackBar(
-          SnackBar(content: Text("Error deleting object: $error")));
     });
   }
 }

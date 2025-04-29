@@ -4,6 +4,7 @@ import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/tools.dart';
 import 'package:budget/views/components/accounts_carousel.dart';
 import 'package:budget/views/components/goals_preview.dart';
+import 'package:budget/views/components/misc.dart';
 import 'package:budget/views/panels/manage_transaction.dart';
 import 'package:budget/utils/enums.dart';
 import 'package:budget/utils/validators.dart';
@@ -154,6 +155,7 @@ class TransactionPreviewCard extends StatelessWidget {
                   builder: (_) => ManageTransactionDialog(
                       mode: ObjectManageMode.edit, transaction: transaction)));
             },
+            onLongPress: () => showOptionsDialog(context, transaction),
             child: Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Column(

@@ -1,3 +1,4 @@
+import 'package:budget/providers/snackbar_provider.dart';
 import 'package:budget/views/history.dart';
 import 'package:budget/views/login.dart';
 import 'package:budget/utils/enums.dart';
@@ -6,9 +7,9 @@ import 'package:budget/views/panels/manage_transaction.dart';
 
 import 'package:flutter/material.dart';
 import 'package:budget/views/home.dart';
-import 'package:budget/views/spending.dart';
 import 'package:budget/views/account.dart';
 import 'package:budget/views/statistics.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class NavManager extends StatefulWidget {
@@ -98,6 +99,7 @@ class _NavManagerState extends State<NavManager>
   @override
   Widget build(BuildContext context) {
     ThemeData theme = Theme.of(context);
+    bool snackbarPresent = context.watch<SnackbarProvider>().isSnackBarVisible;
 
     return Stack(
       children: [
@@ -181,7 +183,7 @@ class _NavManagerState extends State<NavManager>
             showWhenUnlinked: false,
             targetAnchor: Alignment.topRight,
             followerAnchor: Alignment.bottomRight,
-            offset: const Offset(-16.0, -16.0),
+            offset: Offset(-16.0, snackbarPresent ? -64.0 : -16.0),
             child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisSize: MainAxisSize.min,

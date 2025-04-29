@@ -1,3 +1,4 @@
+import 'package:budget/providers/snackbar_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/tools.dart';
 import 'package:budget/views/components/nav_manager.dart';
@@ -37,14 +38,10 @@ void main() async {
   await openDatabase();
 
   // Define the providers
+  // I have a lot of providers
   final dbProvider = Provider<AppDatabase>(
     create: (_) => appDb,
     dispose: (_, db) => db.close(),
-  );
-
-  final deletionManagerProvider = Provider<DeletionManager>(
-    create: (context) => DeletionManager(context.read<TransactionDao>()),
-    dispose: (_, value) => value.dispose(),
   );
 
   final daoProvider = ProxyProvider<AppDatabase, TransactionDao>(
@@ -54,14 +51,17 @@ void main() async {
   final transactionProvider = ChangeNotifierProvider<TransactionProvider>(
       create: (context) => TransactionProvider());
 
+  final snackBarProvider = ChangeNotifierProvider<SnackbarProvider>(
+      create: (_) => SnackbarProvider());
+
   await setup();
 
   runApp(
     MultiProvider(providers: [
       dbProvider,
       daoProvider,
-      deletionManagerProvider,
       transactionProvider,
+      snackBarProvider,
     ], child: const BudgetApp()),
   );
 }

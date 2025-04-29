@@ -2,6 +2,7 @@ import 'package:budget/services/app_database.dart';
 import 'package:budget/models/filters.dart';
 import 'package:budget/providers/transaction_provider.dart';
 import 'package:budget/utils/validators.dart';
+import 'package:budget/views/components/misc.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/views/panels/manage_transaction.dart';
@@ -39,41 +40,6 @@ class _TransactionsListState extends State<TransactionsList> {
         padding: EdgeInsets.all(8.0),
         child: LinearProgressIndicator(),
       ));
-
-  void showOptionsDialog(Transaction transaction) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit),
-              title: const Text("Edit"),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => ManageTransactionDialog(
-                            mode: ObjectManageMode.edit,
-                            transaction: transaction)));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete),
-              title: const Text("Delete"),
-              onTap: () {
-                deletionManager
-                    .stageObjectsForDeletion<Transaction>([transaction.id]);
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   ListTile tileFromTransaction(Transaction transaction, ThemeData theme) {
     // Dart formats all of this code horribly, but I can't really change it.
@@ -135,10 +101,10 @@ class _TransactionsListState extends State<TransactionsList> {
           MaterialPageRoute(
               builder: (context) => ManageTransactionDialog(
                   mode: ObjectManageMode.edit, transaction: transaction))),
-      onLongPress: () => showOptionsDialog(transaction),
+      onLongPress: () => showOptionsDialog(context, transaction),
       trailing: IconButton(
         icon: const Icon(Icons.more_vert),
-        onPressed: () => showOptionsDialog(transaction),
+        onPressed: () => showOptionsDialog(context, transaction),
       ),
       tileColor: theme.colorScheme.secondaryContainer,
       textColor: theme.colorScheme.onSecondaryContainer,
