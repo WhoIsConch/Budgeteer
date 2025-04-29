@@ -5,6 +5,7 @@ import 'package:budget/services/app_database.dart';
 import 'package:budget/models/filters.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
+import 'package:provider/provider.dart';
 
 class TransactionProvider extends ChangeNotifier {
   // Allows the rest of the app to know when transaction filters
@@ -43,13 +44,16 @@ class TransactionProvider extends ChangeNotifier {
 }
 
 class DeletionManager {
-  final TransactionDao dao;
-  final SnackbarProvider snackbarProvider;
+  late final TransactionDao dao;
+  late final SnackbarProvider snackbarProvider;
 
   // The int represents the list's hash code.
   final Map<List<String>, Timer> _activeDeleteTimers = {};
 
-  DeletionManager(this.dao, this.snackbarProvider);
+  DeletionManager(BuildContext context) {
+    dao = context.read<TransactionDao>();
+    snackbarProvider = context.read<SnackbarProvider>();
+  }
 
   void dispose() {
     for (var timer in _activeDeleteTimers.values) {

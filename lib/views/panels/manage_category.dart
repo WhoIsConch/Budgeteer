@@ -127,7 +127,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                     style:
                         TextStyle(color: Theme.of(context).colorScheme.error)),
                 onPressed: () {
-                  final deletionManager = context.read<DeletionManager>();
+                  final deletionManager = DeletionManager(context);
 
                   deletionManager
                       .stageObjectsForDeletion<Category>([widget.category!.id]);

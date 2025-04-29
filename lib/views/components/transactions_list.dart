@@ -237,7 +237,7 @@ class _TransactionsListState extends State<TransactionsList> {
   void initState() {
     super.initState();
 
-    deletionManager = context.read<DeletionManager>();
+    deletionManager = DeletionManager(context);
   }
 
   @override

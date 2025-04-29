@@ -1,10 +1,8 @@
-import 'package:budget/providers/snackbar_provider.dart';
 import 'package:budget/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/enums.dart';
 import 'package:budget/views/panels/manage_transaction.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 void showOptionsDialog(BuildContext context, Transaction transaction) {
   showModalBottomSheet(
@@ -30,8 +28,7 @@ void showOptionsDialog(BuildContext context, Transaction transaction) {
             leading: const Icon(Icons.delete),
             title: const Text("Delete"),
             onTap: () {
-              DeletionManager(context.read<TransactionDao>(),
-                      context.read<SnackbarProvider>())
+              DeletionManager(context)
                   .stageObjectsForDeletion<Transaction>([transaction.id]);
               Navigator.pop(context);
             },
