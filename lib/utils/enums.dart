@@ -27,18 +27,16 @@ enum RelativeDateRange {
     final startOfWeek = DateTime(now.year, now.month, now.day)
         .subtract(Duration(days: now.weekday - 1));
 
-    return switch (this) {
+    final range = switch (this) {
       // From the beginning of the day to right now
       // (or the end of the day)
       RelativeDateRange.today => DateTimeRange(
-              start: DateTime(now.year, now.month, now.day),
-              end: DateTime(now.year, now.month, now.day))
-          .makeInclusive(),
+          start: DateTime(now.year, now.month, now.day),
+          end: DateTime(now.year, now.month, now.day)),
       // Same thing as above, but for yesterday
       RelativeDateRange.yesterday => DateTimeRange(
-              start: DateTime(now.year, now.month, now.day - 1),
-              end: DateTime(now.year, now.month, now.day - 1))
-          .makeInclusive(),
+          start: DateTime(now.year, now.month, now.day - 1),
+          end: DateTime(now.year, now.month, now.day - 1)),
       // From the beginning of the week to right now
       // (or the end of the week)
       RelativeDateRange.thisWeek => fullRange
@@ -61,6 +59,8 @@ enum RelativeDateRange {
               start: DateTime(now.year), end: DateTime(now.year + 1))
           : DateTimeRange(start: DateTime(now.year), end: now),
     };
+
+    return range.makeInclusive();
   }
 }
 

@@ -116,7 +116,7 @@ String formatAmount(num amount,
     return formatter.format(amount);
   }
 
-  double amountToFormat;
+  num amountToFormat;
   String? character;
 
   if (amount >= 1000000000) {
@@ -129,7 +129,7 @@ String formatAmount(num amount,
     amountToFormat = amount / 1000;
     character = 'K';
   } else {
-    amountToFormat = amount as double;
+    amountToFormat = amount;
   }
 
   if (truncateLarge && character != null) {
