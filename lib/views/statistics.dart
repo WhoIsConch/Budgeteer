@@ -1,5 +1,6 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:budget/models/filters.dart';
+import 'package:budget/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/enums.dart';
 import 'package:budget/utils/tools.dart';
@@ -139,13 +140,11 @@ class _StatisticsPageState extends State<StatisticsPage> {
   // In this case, goals, categories, and accounts are containers
   int typeIndex = 0;
   int containerIndex = 0;
-  List<TransactionFilter> filters = [
-    TransactionFilter<DateTimeRange>(RelativeDateRange.thisMonth.getRange())
-  ];
   final List<String> _typeTabs = ["Income", "Expenses", "Cash Flow"];
   final List<String> _containerTabs = ["Category", "Goal", "Account"];
 
   late final TransactionDao _transactionDao;
+  late TransactionProvider _filtersProvider;
 
   final chartCenterRadius = 60.0; // Don't let the text go beyond that radius
 
@@ -293,6 +292,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
   @override
   Widget build(BuildContext context) {
+    _filtersProvider = context.watch<TransactionProvider>();
+
     String titleText = switch (typeIndex) {
       0 => "earning",
       1 => "spending",
@@ -342,7 +343,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                         return FutureBuilder<ChartCalculationResult>(
                             future: _calculateChartData(
                                 categories: categoriesWithNull,
-                                filters: filters),
+                                filters: _filtersProvider.filters),
                             builder: (context, dataSnapshot) {
                               if (dataSnapshot.hasError) {
                                 return Center(
@@ -392,7 +393,22 @@ class _StatisticsPageState extends State<StatisticsPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       ..._buildVerticalTabs(_typeTabs, typeIndex,
-                          (index) => setState(() => typeIndex = index)),
+                          (index) {
+                          setState(() =>
+                            typeIndex = index
+                            );
+                            
+                            switch (typeIndex) {
+                              case 0:
+                                _filtersProvider.updateFilter(TransactionFilter<TransactionType>(TransactionType.income));
+                                break;
+                              case 1:
+                                _filtersProvider.updateFilter(TransactionFilter<TransactionType>(TransactionType.expense));
+                                break;
+                              case _:
+                                _filtersProvider.updateFilter(TransactionFilter<TransactionType>(TransactionType.income));
+                                break;
+                            }}),
                       Divider(),
                       ..._buildVerticalTabs(_containerTabs, containerIndex,
                           (index) => setState(() => containerIndex = index)),
