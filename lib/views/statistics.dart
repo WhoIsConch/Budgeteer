@@ -40,7 +40,7 @@ class ChartKeyItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textStyle = TextStyle(
-      fontSize: 20,
+      fontSize: 18,
     );
 
     return Row(
@@ -140,7 +140,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
   // In this case, goals, categories, and accounts are containers
   int typeIndex = 0;
   int containerIndex = 0;
-  final List<String> _typeTabs = ["Income", "Expenses", "Cash Flow"];
+  final List<String> _typeTabs = ["Expenses", "Income", "Cash Flow"];
   final List<String> _containerTabs = ["Category", "Goal", "Account"];
 
   late final TransactionDao _transactionDao;
@@ -152,7 +152,22 @@ class _StatisticsPageState extends State<StatisticsPage> {
   void initState() {
     super.initState();
 
-    _transactionDao = context.read<TransactionDao>();
+    // Post-frame callback so the widget is fully built before
+    // relying on the context, which is frowned upon
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _transactionDao = context.read<TransactionDao>();
+      _filtersProvider = context.read<TransactionProvider>();
+      TransactionType? currentType =
+          _filtersProvider.getFilterValue<TransactionType>();
+
+      setState(() {
+        if (currentType != null) {
+          typeIndex = currentType.value;
+        } else {
+          typeIndex = 2; // Cash Flow
+        }
+      });
+    });
   }
 
   List<Widget> _buildVerticalTabs(List<String> tabs, int selectedIndex,
@@ -208,7 +223,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
       double percentage = (total.abs() / absTotal) * 100;
 
       final color = category?.color ?? Colors.grey[400]!;
-      final name = category?.name ?? "Uncategorized";
+      final name = category?.name ?? "No category";
 
       if (percentage < 2) {
         otherSectionTotal += total.abs();
@@ -295,9 +310,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
     _filtersProvider = context.watch<TransactionProvider>();
 
     String titleText = switch (typeIndex) {
-      0 => "earning",
-      1 => "spending",
-      2 => "cash flow",
+      0 => "spending",
+      1 => "earning",
+      2 => "net worth",
       _ => "invalid" // Shouldn't happen
     };
 
@@ -392,23 +407,17 @@ class _StatisticsPageState extends State<StatisticsPage> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      ..._buildVerticalTabs(_typeTabs, typeIndex,
-                          (index) {
-                          setState(() =>
-                            typeIndex = index
-                            );
-                            
-                            switch (typeIndex) {
-                              case 0:
-                                _filtersProvider.updateFilter(TransactionFilter<TransactionType>(TransactionType.income));
-                                break;
-                              case 1:
-                                _filtersProvider.updateFilter(TransactionFilter<TransactionType>(TransactionType.expense));
-                                break;
-                              case _:
-                                _filtersProvider.updateFilter(TransactionFilter<TransactionType>(TransactionType.income));
-                                break;
-                            }}),
+                      ..._buildVerticalTabs(_typeTabs, typeIndex, (index) {
+                        setState(() => typeIndex = index);
+
+                        if (typeIndex == 0 || typeIndex == 1) {
+                          _filtersProvider.updateFilter(
+                              TransactionFilter<TransactionType>(
+                                  TransactionType.fromValue(typeIndex)));
+                        } else {
+                          _filtersProvider.removeFilter<TransactionType>();
+                        }
+                      }),
                       Divider(),
                       ..._buildVerticalTabs(_containerTabs, containerIndex,
                           (index) => setState(() => containerIndex = index)),

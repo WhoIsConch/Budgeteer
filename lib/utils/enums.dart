@@ -10,6 +10,9 @@ enum TransactionType {
 
   const TransactionType(this.value);
   final int value;
+
+  factory TransactionType.fromValue(int value) =>
+      values.firstWhere((e) => e.value == value);
 }
 
 enum RelativeDateRange {
