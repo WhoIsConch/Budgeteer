@@ -390,6 +390,31 @@ class _PieChartCardState extends State<PieChartCard> {
     );
   }
 
+  Widget errorInset(String text) {
+    Color textColor = Theme.of(context).colorScheme.onSurface.withAlpha(150);
+
+    // Same approach for "No categories" message
+    return LayoutBuilder(builder: (context, constraints) {
+      // TODO: Estimated center; make it exact
+      final buttonsHeight = MediaQuery.of(context).size.height * 0.35;
+
+      return SizedBox(
+        height: buttonsHeight,
+        child: Center(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.warning_rounded, size: 48, color: textColor),
+            Text(text,
+                textAlign: TextAlign.center,
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineSmall!
+                    .copyWith(color: textColor))
+          ]),
+        ),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     _filtersProvider = context.watch<TransactionProvider>();
@@ -416,17 +441,13 @@ class _PieChartCardState extends State<PieChartCard> {
                     if (categorySnapshot.connectionState ==
                             ConnectionState.waiting &&
                         !categorySnapshot.hasData) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (categorySnapshot.hasError) {
-                      return Center(
-                          child: Text(
-                              'Error loading categories: ${categorySnapshot.error}'));
-                    }
-                    if (!categorySnapshot.hasData ||
+                      return const SizedBox();
+                    } else if (categorySnapshot.hasError) {
+                      return errorInset(
+                          'Error loading categories: ${categorySnapshot.error}');
+                    } else if (!categorySnapshot.hasData ||
                         categorySnapshot.data!.isEmpty) {
-                      return const Center(
-                          child: Text("No categories available."));
+                      return errorInset("No categories");
                     }
 
                     final availableCategories = categorySnapshot.data!;
@@ -437,15 +458,13 @@ class _PieChartCardState extends State<PieChartCard> {
                             categories: categoriesWithNull,
                             filters: _filtersProvider.filters),
                         builder: (context, dataSnapshot) {
+                          // These error widgets should be centered in the row vertically.
                           if (dataSnapshot.hasError) {
-                            return const Center(
-                                child:
-                                    Text("Unable to calculate chart values"));
+                            return errorInset(
+                                "Something went wrong. Try again later");
                           } else if (!dataSnapshot.hasData ||
                               dataSnapshot.data!.isEmpty) {
-                            return const Center(
-                                child:
-                                    Text("No data. Try changing your filters"));
+                            return errorInset("No data");
                           }
 
                           return Column(
