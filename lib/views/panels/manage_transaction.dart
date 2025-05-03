@@ -240,8 +240,8 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
                   context: context,
                   initialDate: selectedDate,
                   firstDate:
-                      DateTime.now().subtract(const Duration(days: 365 * 10)),
-                  lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
+                      DateTime.now().subtract(const Duration(days: 365 * 100)),
+                  lastDate: DateTime.now().add(const Duration(days: 365 * 100)),
                 ).then((value) {
                   if (value != null) {
                     selectedDate = value;

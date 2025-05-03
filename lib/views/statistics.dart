@@ -74,23 +74,6 @@ class ChartKeyItem extends StatelessWidget {
   }
 }
 
-/* 
-  DropdownMenu getDateRangeDropdown() => DropdownMenu(
-        expandedInsets: EdgeInsets.zero,
-        initialSelection: dateRange,
-        onSelected: (value) => setState(() => filterProvider.updateFilter(
-            TransactionFilter<RelativeDateRange>(value as RelativeDateRange))),
-        dropdownMenuEntries: RelativeDateRange.values
-            .map(
-              (e) => DropdownMenuEntry(
-                label: e.name,
-                value: e,
-              ),
-            )
-            .toList(),
-      );
-*/
-
 class VerticalTabButton extends StatelessWidget {
   final String text;
   final void Function() onPressed;
@@ -111,7 +94,10 @@ class VerticalTabButton extends StatelessWidget {
               isSelected ? Theme.of(context).colorScheme.surface : null,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-      onPressed: onPressed,
+      // TODO: Implement this functionality.
+      // These temporarily are disabled until goals and accounts are actually
+      // added.
+      onPressed: ["Goal", "Account"].contains(text) ? null : onPressed,
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
@@ -126,21 +112,118 @@ class VerticalTabButton extends StatelessWidget {
 class StatisticsPage extends StatefulWidget {
   const StatisticsPage({super.key});
 
-  static const estKeyItemHeight = 30;
-  static const maxItems = 5;
-
   @override
   State<StatisticsPage> createState() => _StatisticsPageState();
 }
 
 class _StatisticsPageState extends State<StatisticsPage> {
+  late TransactionProvider _filterProvider;
+  TextEditingController _rangeController = TextEditingController();
+
+  DateTimeRange? get currentDateRange =>
+      _filterProvider.getFilterValue<DateTimeRange>();
+
+  void pickDateRange({DateTimeRange? initialRange}) async {
+    DateTimeRange? newRange = await showDateRangePicker(
+        context: context,
+        initialDateRange: initialRange,
+        firstDate: DateTime.now().subtract(const Duration(days: 365 * 100)),
+        lastDate: DateTime.now().add(const Duration(days: 365 * 100)));
+
+    if (newRange == null) return;
+    _filterProvider.updateFilter<DateTimeRange>(TransactionFilter(newRange));
+  }
+
+  DropdownMenu getDateRangeDropdown() {
+    List<DropdownMenuEntry<DateTimeRange?>> entries = RelativeDateRange.values
+        .map((e) => DropdownMenuEntry<DateTimeRange?>(
+            value: e.getRange(), label: e.name))
+        .toList();
+
+    RelativeDateRange? selectedRelRange =
+        RelativeDateRange.values.firstWhereOrNull(
+      (element) =>
+          element.getRange() ==
+          (currentDateRange ?? RelativeDateRange.today.getRange()),
+    );
+
+    if (selectedRelRange != null) {
+      _rangeController.text = selectedRelRange.name;
+    } else {
+      // This means a custom range
+      _rangeController.text = currentDateRange!.asString();
+    }
+
+    return DropdownMenu(
+      controller: _rangeController,
+      expandedInsets: EdgeInsets.zero,
+      initialSelection: currentDateRange,
+      onSelected: (range) async {
+        if (range == null) {
+          pickDateRange(initialRange: currentDateRange);
+        } else {
+          setState(() => _filterProvider
+              .updateFilter(TransactionFilter<DateTimeRange>(range)));
+        }
+      },
+      dropdownMenuEntries: entries,
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    _filterProvider = context.watch<TransactionProvider>();
+
+    // This should really only be applicable at the beginning
+    // but if for any reason our datetimerange becomes null this is a nice
+    // failsafe to make sure everything doesn't break
+    // (we have some suspicious type safety usage in getDateRangeDropdown)
+    if (_filterProvider.getFilterValue<DateTimeRange>() == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) =>
+          _filterProvider.updateFilter<DateTimeRange>(
+              TransactionFilter(RelativeDateRange.today.getRange())));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      Row(
+        children: [
+          Expanded(child: getDateRangeDropdown()),
+          const SizedBox(width: 4),
+          IconButton(
+              iconSize: 32,
+              icon: Icon(Icons.date_range),
+              onPressed: () => pickDateRange(initialRange: currentDateRange))
+        ],
+      ),
+      SizedBox(height: 8.0), // Bottom padding
+      PieChartCard(),
+    ]);
+  }
+}
+
+class PieChartCard extends StatefulWidget {
+  const PieChartCard({super.key});
+
+  static const estKeyItemHeight = 30;
+  static const maxItems = 5;
+
+  @override
+  State<PieChartCard> createState() => _PieChartCardState();
+}
+
+class _PieChartCardState extends State<PieChartCard> {
   // I couldn't think of a better name for these so they are
   // typeIndex for the type of transaction and containerIndex
   // for the containers a transaction belongs to
   // In this case, goals, categories, and accounts are containers
   int typeIndex = 0;
   int containerIndex = 0;
-  final List<String> _typeTabs = ["Expenses", "Income", "Cash Flow"];
+  final List<String> _typeTabs = ["Expenses", "Income", "Net"];
   final List<String> _containerTabs = ["Category", "Goal", "Account"];
 
   late final TransactionDao _transactionDao;
@@ -220,7 +303,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
       if (total == 0) continue;
 
-      double percentage = (total.abs() / absTotal) * 100;
+      double percentage = (total.abs() / absTotal.abs()) * 100;
 
       final color = category?.color ?? Colors.grey[400]!;
       final name = category?.name ?? "No category";
@@ -294,7 +377,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 child: SizedBox(
               width: (chartCenterRadius - 12) *
                   2, // To give it some padding and account for the fact that this is a radius and the text fits within the diameter
-              child: AutoSizeText(amountString,
+              child: AutoSizeText(
+                  textAlign: TextAlign.center,
+                  amountString,
                   style: Theme.of(context).textTheme.headlineLarge,
                   maxLines: 1),
             )),
@@ -312,121 +397,108 @@ class _StatisticsPageState extends State<StatisticsPage> {
     String titleText = switch (typeIndex) {
       0 => "spending",
       1 => "earning",
-      2 => "net worth",
+      2 => "net balance",
       _ => "invalid" // Shouldn't happen
     };
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment
-          .stretch, // Just for the text. Could be start aligned
-      children: [
-        Card(
-          margin: EdgeInsets.zero,
-          color:
-              getAdjustedColor(context, Theme.of(context).colorScheme.surface),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: StreamBuilder<List<Category>>(
-                      stream: context.read<AppDatabase>().watchCategories(),
-                      builder: (context, categorySnapshot) {
-                        if (categorySnapshot.connectionState ==
-                                ConnectionState.waiting &&
-                            !categorySnapshot.hasData) {
-                          return Center(child: CircularProgressIndicator());
-                        }
-                        if (categorySnapshot.hasError) {
-                          return Center(
-                              child: Text(
-                                  'Error loading categories: ${categorySnapshot.error}'));
-                        }
-                        if (!categorySnapshot.hasData ||
-                            categorySnapshot.data!.isEmpty) {
-                          return Center(
-                              child: Text("No categories available."));
-                        }
+    return Card(
+      margin: EdgeInsets.zero,
+      color: getAdjustedColor(context, Theme.of(context).colorScheme.surface),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: StreamBuilder<List<Category>>(
+                  stream: context.read<AppDatabase>().watchCategories(),
+                  builder: (context, categorySnapshot) {
+                    if (categorySnapshot.connectionState ==
+                            ConnectionState.waiting &&
+                        !categorySnapshot.hasData) {
+                      return Center(child: CircularProgressIndicator());
+                    }
+                    if (categorySnapshot.hasError) {
+                      return Center(
+                          child: Text(
+                              'Error loading categories: ${categorySnapshot.error}'));
+                    }
+                    if (!categorySnapshot.hasData ||
+                        categorySnapshot.data!.isEmpty) {
+                      return Center(child: Text("No categories available."));
+                    }
 
-                        final availableCategories = categorySnapshot.data!;
-                        final categoriesWithNull = [
-                          ...availableCategories,
-                          null
-                        ];
+                    final availableCategories = categorySnapshot.data!;
+                    final categoriesWithNull = [...availableCategories, null];
 
-                        return FutureBuilder<ChartCalculationResult>(
-                            future: _calculateChartData(
-                                categories: categoriesWithNull,
-                                filters: _filtersProvider.filters),
-                            builder: (context, dataSnapshot) {
-                              if (dataSnapshot.hasError) {
-                                return Center(
-                                    child: Text(
-                                        "Unable to calculate chart values"));
-                              } else if (!dataSnapshot.hasData ||
-                                  dataSnapshot.data!.isEmpty) {
-                                return Center(
-                                    child: Text(
-                                        "No data. Try changing your filters"));
-                              }
+                    return FutureBuilder<ChartCalculationResult>(
+                        future: _calculateChartData(
+                            categories: categoriesWithNull,
+                            filters: _filtersProvider.filters),
+                        builder: (context, dataSnapshot) {
+                          if (dataSnapshot.hasError) {
+                            return Center(
+                                child:
+                                    Text("Unable to calculate chart values"));
+                          } else if (!dataSnapshot.hasData ||
+                              dataSnapshot.data!.isEmpty) {
+                            return Center(
+                                child:
+                                    Text("No data. Try changing your filters"));
+                          }
 
-                              return Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    "Your $titleText",
-                                    textAlign: TextAlign.left,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .headlineSmall,
-                                  ),
-                                  const SizedBox(height: 8.0),
-                                  _getPieChart(dataSnapshot.data!),
-                                  SizedBox(height: 12.0),
-                                  ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                        maxHeight:
-                                            (StatisticsPage.estKeyItemHeight *
-                                                    StatisticsPage.maxItems)
-                                                .toDouble()),
-                                    child: ListView(
-                                        shrinkWrap: true,
-                                        children: dataSnapshot.data!.keyItems),
-                                  ),
-                                ],
-                              );
-                            });
-                      }),
-                ),
-              ),
-              IntrinsicWidth(
-                  child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      ..._buildVerticalTabs(_typeTabs, typeIndex, (index) {
-                        setState(() => typeIndex = index);
-
-                        if (typeIndex == 0 || typeIndex == 1) {
-                          _filtersProvider.updateFilter(
-                              TransactionFilter<TransactionType>(
-                                  TransactionType.fromValue(typeIndex)));
-                        } else {
-                          _filtersProvider.removeFilter<TransactionType>();
-                        }
-                      }),
-                      Divider(),
-                      ..._buildVerticalTabs(_containerTabs, containerIndex,
-                          (index) => setState(() => containerIndex = index)),
-                    ]),
-              ))
-            ],
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "Your $titleText",
+                                textAlign: TextAlign.left,
+                                style:
+                                    Theme.of(context).textTheme.headlineSmall,
+                              ),
+                              const SizedBox(height: 8.0),
+                              _getPieChart(dataSnapshot.data!),
+                              SizedBox(height: 12.0),
+                              ConstrainedBox(
+                                constraints: BoxConstraints(
+                                    maxHeight: (PieChartCard.estKeyItemHeight *
+                                            PieChartCard.maxItems)
+                                        .toDouble()),
+                                child: ListView(
+                                    shrinkWrap: true,
+                                    children: dataSnapshot.data!.keyItems),
+                              ),
+                            ],
+                          );
+                        });
+                  }),
+            ),
           ),
-        ),
-      ],
+          IntrinsicWidth(
+              child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ..._buildVerticalTabs(_typeTabs, typeIndex, (index) {
+                    setState(() => typeIndex = index);
+
+                    if (typeIndex == 0 || typeIndex == 1) {
+                      _filtersProvider.updateFilter(
+                          TransactionFilter<TransactionType>(
+                              TransactionType.fromValue(typeIndex)));
+                    } else {
+                      _filtersProvider.removeFilter<TransactionType>();
+                    }
+                  }),
+                  Divider(),
+                  ..._buildVerticalTabs(_containerTabs, containerIndex,
+                      (index) => setState(() => containerIndex = index)),
+                ]),
+          ))
+        ],
+      ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 Color getAdjustedColor(BuildContext context, Color color,
     {double amount = 0.04}) {
@@ -40,5 +41,11 @@ extension InclusiveModifier on DateTimeRange {
       end: DateTime(end.year, end.month, end.day + 1)
           .subtract(const Duration(microseconds: 1)),
     );
+  }
+
+  String asString() {
+    DateFormat formatter = DateFormat(DateFormat.ABBR_MONTH_DAY);
+
+    return "${formatter.format(start)}–${formatter.format(end)}";
   }
 }
