@@ -39,7 +39,7 @@ class ChartKeyItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = TextStyle(
+    const textStyle = TextStyle(
       fontSize: 18,
     );
 
@@ -118,7 +118,7 @@ class StatisticsPage extends StatefulWidget {
 
 class _StatisticsPageState extends State<StatisticsPage> {
   late TransactionProvider _filterProvider;
-  TextEditingController _rangeController = TextEditingController();
+  final TextEditingController _rangeController = TextEditingController();
 
   DateTimeRange? get currentDateRange =>
       _filterProvider.getFilterValue<DateTimeRange>();
@@ -196,12 +196,12 @@ class _StatisticsPageState extends State<StatisticsPage> {
           const SizedBox(width: 4),
           IconButton(
               iconSize: 32,
-              icon: Icon(Icons.date_range),
+              icon: const Icon(Icons.date_range),
               onPressed: () => pickDateRange(initialRange: currentDateRange))
         ],
       ),
-      SizedBox(height: 8.0), // Bottom padding
-      PieChartCard(),
+      const SizedBox(height: 8.0), // Bottom padding
+      const PieChartCard(),
     ]);
   }
 }
@@ -416,7 +416,7 @@ class _PieChartCardState extends State<PieChartCard> {
                     if (categorySnapshot.connectionState ==
                             ConnectionState.waiting &&
                         !categorySnapshot.hasData) {
-                      return Center(child: CircularProgressIndicator());
+                      return const Center(child: CircularProgressIndicator());
                     }
                     if (categorySnapshot.hasError) {
                       return Center(
@@ -425,7 +425,8 @@ class _PieChartCardState extends State<PieChartCard> {
                     }
                     if (!categorySnapshot.hasData ||
                         categorySnapshot.data!.isEmpty) {
-                      return Center(child: Text("No categories available."));
+                      return const Center(
+                          child: Text("No categories available."));
                     }
 
                     final availableCategories = categorySnapshot.data!;
@@ -437,12 +438,12 @@ class _PieChartCardState extends State<PieChartCard> {
                             filters: _filtersProvider.filters),
                         builder: (context, dataSnapshot) {
                           if (dataSnapshot.hasError) {
-                            return Center(
+                            return const Center(
                                 child:
                                     Text("Unable to calculate chart values"));
                           } else if (!dataSnapshot.hasData ||
                               dataSnapshot.data!.isEmpty) {
-                            return Center(
+                            return const Center(
                                 child:
                                     Text("No data. Try changing your filters"));
                           }
@@ -458,7 +459,7 @@ class _PieChartCardState extends State<PieChartCard> {
                               ),
                               const SizedBox(height: 8.0),
                               _getPieChart(dataSnapshot.data!),
-                              SizedBox(height: 12.0),
+                              const SizedBox(height: 12.0),
                               ConstrainedBox(
                                 constraints: BoxConstraints(
                                     maxHeight: (PieChartCard.estKeyItemHeight *
@@ -492,7 +493,7 @@ class _PieChartCardState extends State<PieChartCard> {
                       _filtersProvider.removeFilter<TransactionType>();
                     }
                   }),
-                  Divider(),
+                  const Divider(),
                   ..._buildVerticalTabs(_containerTabs, containerIndex,
                       (index) => setState(() => containerIndex = index)),
                 ]),

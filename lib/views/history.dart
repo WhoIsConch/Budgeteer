@@ -128,9 +128,9 @@ class _HistoryState extends State<History> {
                   textAlign: TextAlign.start,
                   style: Theme.of(context).textTheme.headlineMedium!.copyWith(
                       color: Theme.of(context).colorScheme.onSurface)),
-              Spacer(),
+              const Spacer(),
               IconButton(
-                  icon: Icon(Icons.search),
+                  icon: const Icon(Icons.search),
                   onPressed: () => Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => const TransactionSearch())))
             ],
