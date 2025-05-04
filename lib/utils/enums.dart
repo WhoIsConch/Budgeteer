@@ -15,6 +15,8 @@ enum TransactionType {
       values.firstWhere((e) => e.value == value);
 }
 
+enum AggregationLevel { daily, weekly, monthly, yearly }
+
 enum RelativeDateRange {
   today("Today"),
   yesterday("Yesterday"),

@@ -1,4 +1,7 @@
+import 'dart:math';
+
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:budget/models/data.dart';
 import 'package:budget/models/filters.dart';
 import 'package:budget/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
@@ -6,8 +9,10 @@ import 'package:budget/utils/enums.dart';
 import 'package:budget/utils/tools.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:collection/collection.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class ChartCalculationResult {
@@ -189,20 +194,24 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(children: [
-      Row(
-        children: [
-          Expanded(child: getDateRangeDropdown()),
-          const SizedBox(width: 4),
-          IconButton(
-              iconSize: 32,
-              icon: const Icon(Icons.date_range),
-              onPressed: () => pickDateRange(initialRange: currentDateRange))
-        ],
-      ),
-      const SizedBox(height: 8.0), // Bottom padding
-      const PieChartCard(),
-    ]);
+    return SingleChildScrollView(
+      child: Column(children: [
+        Row(
+          children: [
+            Expanded(child: getDateRangeDropdown()),
+            const SizedBox(width: 4),
+            IconButton(
+                iconSize: 32,
+                icon: const Icon(Icons.date_range),
+                onPressed: () => pickDateRange(initialRange: currentDateRange))
+          ],
+        ),
+        const SizedBox(height: 8.0), // Bottom padding
+        const PieChartCard(),
+        const SizedBox(height: 8.0),
+        const LineChartCard()
+      ]),
+    );
   }
 }
 
@@ -215,6 +224,18 @@ class PieChartCard extends StatefulWidget {
   @override
   State<PieChartCard> createState() => _PieChartCardState();
 }
+
+Widget errorInset(BuildContext context, String text) => Center(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.warning_rounded,
+            size: 48,
+            color: Theme.of(context).colorScheme.onSurface.withAlpha(150)),
+        Text(text,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.headlineSmall!.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(150)))
+      ]),
+    );
 
 class _PieChartCardState extends State<PieChartCard> {
   // I couldn't think of a better name for these so they are
@@ -390,28 +411,13 @@ class _PieChartCardState extends State<PieChartCard> {
     );
   }
 
-  Widget errorInset(String text) {
-    Color textColor = Theme.of(context).colorScheme.onSurface.withAlpha(150);
-
+  Widget _formattedErrorInset(String text) {
     // Same approach for "No categories" message
     return LayoutBuilder(builder: (context, constraints) {
       // TODO: Estimated center; make it exact
       final buttonsHeight = MediaQuery.of(context).size.height * 0.35;
 
-      return SizedBox(
-        height: buttonsHeight,
-        child: Center(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.warning_rounded, size: 48, color: textColor),
-            Text(text,
-                textAlign: TextAlign.center,
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall!
-                    .copyWith(color: textColor))
-          ]),
-        ),
-      );
+      return SizedBox(height: buttonsHeight, child: errorInset(context, text));
     });
   }
 
@@ -443,11 +449,11 @@ class _PieChartCardState extends State<PieChartCard> {
                         !categorySnapshot.hasData) {
                       return const SizedBox();
                     } else if (categorySnapshot.hasError) {
-                      return errorInset(
+                      return _formattedErrorInset(
                           'Error loading categories: ${categorySnapshot.error}');
                     } else if (!categorySnapshot.hasData ||
                         categorySnapshot.data!.isEmpty) {
-                      return errorInset("No categories");
+                      return _formattedErrorInset("No categories");
                     }
 
                     final availableCategories = categorySnapshot.data!;
@@ -460,11 +466,11 @@ class _PieChartCardState extends State<PieChartCard> {
                         builder: (context, dataSnapshot) {
                           // These error widgets should be centered in the row vertically.
                           if (dataSnapshot.hasError) {
-                            return errorInset(
+                            return _formattedErrorInset(
                                 "Something went wrong. Try again later");
                           } else if (!dataSnapshot.hasData ||
                               dataSnapshot.data!.isEmpty) {
-                            return errorInset("No data");
+                            return _formattedErrorInset("No data");
                           }
 
                           return Column(
@@ -518,6 +524,168 @@ class _PieChartCardState extends State<PieChartCard> {
                 ]),
           ))
         ],
+      ),
+    );
+  }
+}
+
+class LineChartCard extends StatefulWidget {
+  const LineChartCard({super.key});
+
+  @override
+  State<LineChartCard> createState() => _LineChartCardState();
+}
+
+class _LineChartCardState extends State<LineChartCard> {
+  late TransactionProvider _filtersProvider;
+
+  DateTimeRange get dateRange =>
+      _filtersProvider.getFilterValue<DateTimeRange>() ??
+      RelativeDateRange.today.getRange();
+
+  Future<LineChartCalculationData> _calculateData() async {
+    // To get the necessary information for a bar chart, we need to get:
+    // A range of dates/ranges in a date range (e.g. days, weeks, months)
+    // Then, we need to get the amount of money spent and received in each
+    // date or date range. For example, if the range was set to <10 days, we
+    // can separate the chart based on days and collect transaction totals that
+    // way. If the range is 10-45 days, we show the weekly results. If the
+    // range is 45-365 days, we show a monthly breakdown. If >365, we show a
+    // yearly breakdown. Hardly ideal.
+
+    final int daysDifference = dateRange.duration.inDays;
+    final TransactionDao transactionDao = context.read<TransactionDao>();
+
+    AggregationLevel aggregationLevel = switch (daysDifference) {
+      <= 90 => AggregationLevel.daily,
+      <= 365 => AggregationLevel.weekly,
+      _ => AggregationLevel.monthly,
+    };
+
+    final List<FinancialDataPoint> points = await transactionDao
+        .getAggregatedRangeData(dateRange, aggregationLevel);
+
+    List<FlSpot> expenseSpots = [];
+    List<FlSpot> incomeSpots = [];
+    List<String> xTitles = []; // Date Ranges
+
+    for (var i = 0; i < points.length; i++) {
+      final point = points[i];
+
+      // Add the expense and income spot data
+      if (point.spending != 0) {
+        expenseSpots.add(FlSpot(i.toDouble(), point.spending));
+      }
+      if (point.income != 0) {
+        incomeSpots.add(FlSpot(i.toDouble(), point.income));
+      }
+
+      // Decide on x-axis titles for the dates
+      switch (aggregationLevel) {
+        case AggregationLevel.daily:
+          // Use dateRange.start since the start and end dates should be the same
+          xTitles.add(DateFormat.Md().format(point.dateRange.start));
+          break;
+        case AggregationLevel.weekly:
+          final String firstDate =
+              DateFormat.Md().format(point.dateRange.start);
+          final String lastDate = DateFormat.Md().format(point.dateRange.end);
+
+          xTitles.add("$firstDate–$lastDate");
+          break;
+        case _:
+          xTitles.add(DateFormat.MMM().format(point.dateRange.start));
+          break;
+      }
+    }
+
+    return LineChartCalculationData(
+        expenseSpots, incomeSpots, xTitles, xTitles.isEmpty);
+  }
+
+  LineChartBarData _getChartBarData(List<FlSpot> spots, Color color) =>
+      LineChartBarData(
+          isStrokeCapRound: true,
+          dotData: FlDotData(show: false),
+          isCurved: true,
+          curveSmoothness: 0.15,
+          barWidth: 4,
+          color: color.harmonizeWith(Theme.of(context).colorScheme.primary),
+          spots: spots);
+
+  double _calculateYAxisInterval(double minValue, double maxValue) {
+    double range = maxValue - minValue;
+
+    return range / 4;
+  }
+
+  Widget _getLineChart(LineChartCalculationData data) {
+    final maxExpense = data.expenseSpots.fold(0.0, (l, n) => max(l, n.y));
+    final maxIncome = data.incomeSpots.fold(0.0, (l, n) => max(l, n.y));
+    final minExpense = data.expenseSpots.fold(0.0, (l, n) => min(l, n.y));
+    final minIncome = data.incomeSpots.fold(0.0, (l, n) => min(l, n.y));
+
+    final maxAmount = max(maxExpense, maxIncome);
+    final minAmount = min(minExpense, minIncome);
+
+    return LineChart(LineChartData(
+        titlesData: FlTitlesData(
+            // Fucking useless and unreasonably verbose way to describe titles on a chart
+            leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                    showTitles: true,
+                    interval: _calculateYAxisInterval(minAmount, maxAmount),
+                    reservedSize: 48,
+                    getTitlesWidget: (value, meta) {
+                      return Text("\$${value.toInt()}");
+                    })),
+            bottomTitles: AxisTitles(
+                // X axis are stuck here since they use line chart calculation data
+                sideTitles: SideTitles(
+              reservedSize: 48,
+              showTitles: true,
+              getTitlesWidget: (value, meta) => Transform.rotate(
+                  angle: -45 * 3.14 / 180,
+                  child: Text(data.xTitles[value.toInt()])),
+            )),
+            topTitles: const AxisTitles(sideTitles: SideTitles()),
+            rightTitles: const AxisTitles(sideTitles: SideTitles())),
+        borderData: FlBorderData(show: false),
+        gridData: const FlGridData(show: false),
+        lineBarsData: [
+          _getChartBarData(data.expenseSpots, Colors.red),
+          _getChartBarData(data.incomeSpots, Colors.green)
+        ]));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _filtersProvider = context.watch<TransactionProvider>();
+
+    return AspectRatio(
+      aspectRatio: 3 / 2,
+      child: Card(
+        margin: EdgeInsets.zero,
+        color: getAdjustedColor(context, Theme.of(context).colorScheme.surface),
+        child: Padding(
+            padding: EdgeInsets.all(16.0),
+            child: FutureBuilder(
+              future: _calculateData(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return errorInset(context, "No data");
+                } else if ((snapshot.data!.expenseSpots.length +
+                        snapshot.data!.incomeSpots.length) <
+                    3) {
+                  // If there aren't enough spots the table will look pointless
+                  return errorInset(context, "Insufficient data");
+                } else if (snapshot.hasError) {
+                  return errorInset(context, "Something went wrong");
+                } else {
+                  return _getLineChart(snapshot.data!);
+                }
+              },
+            )),
       ),
     );
   }

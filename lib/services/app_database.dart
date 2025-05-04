@@ -1,7 +1,9 @@
 import 'dart:math';
 
+import 'package:budget/models/data.dart';
 import 'package:budget/utils/enums.dart';
 import 'package:budget/models/filters.dart';
+import 'package:budget/utils/tools.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart' show Color, DateTimeRange;
 import 'package:intl/intl.dart';
@@ -307,6 +309,64 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
         .addColumns([transactions.amount.sum()])
         .map((row) => row.read(transactions.amount.sum()))
         .watchSingle();
+  }
+
+  Future<FinancialDataPoint> getPointFromRange(DateTimeRange range) async {
+    final totalSpent =
+        await watchTotalAmount(dateRange: range, type: TransactionType.expense)
+            .first;
+    final totalEarned =
+        await watchTotalAmount(dateRange: range, type: TransactionType.income)
+            .first;
+
+    return FinancialDataPoint(
+        range, (totalSpent ?? 0).abs(), (totalEarned ?? 0).abs());
+  }
+
+  Future<List<FinancialDataPoint>> getAggregatedRangeData(
+      DateTimeRange range, AggregationLevel aggregationLevel) async {
+    List<FinancialDataPoint> points = [];
+
+    DateTime start = range.start;
+    DateTime end = range.end;
+
+    switch (aggregationLevel) {
+      case AggregationLevel.daily:
+        for (int i = 0; i < range.duration.inDays; i++) {
+          final day = range.start.add(Duration(days: i));
+
+          points.add(await getPointFromRange(
+              DateTimeRange(start: day, end: day).makeInclusive()));
+        }
+        break;
+      case AggregationLevel.weekly:
+        while (start.isBefore(end)) {
+          final DateTime chunkEnd =
+              DateTime(start.year, start.month, start.day + 6, 23, 59, 59, 999);
+
+          // To make sure the end date doesn't summarize beyond the specified
+          // date range. Though, that behavior may be preferable for data uniformity.
+          final DateTime actualEnd = chunkEnd.isAfter(end) ? end : chunkEnd;
+
+          points.add(await getPointFromRange(
+              DateTimeRange(start: start, end: actualEnd).makeInclusive()));
+          start = chunkEnd
+              .add(Duration(days: 1)); // To start the new chunk at a new spot
+        }
+      case _:
+        while (start.isBefore(end)) {
+          final DateTime chunkEnd =
+              DateTime(start.year, start.month + 1, 0, 23, 59, 59, 999);
+
+          final DateTime actualEnd = chunkEnd.isAfter(end) ? end : chunkEnd;
+          points.add(await getPointFromRange(
+              DateTimeRange(start: start, end: actualEnd).makeInclusive()));
+
+          start = chunkEnd.add(Duration(days: 1));
+        }
+    }
+
+    return points;
   }
 
   // Handle it through updatePartialTransaction so it can work the correct way
