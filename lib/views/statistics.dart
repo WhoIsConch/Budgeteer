@@ -209,7 +209,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
         const SizedBox(height: 8.0), // Bottom padding
         const PieChartCard(),
         const SizedBox(height: 8.0),
-        const LineChartCard()
+        // const LineChartCard(),
+        const SpendingBarChart(),
+        const SizedBox(height: 60) // To give the FAB somewhere to go
       ]),
     );
   }
@@ -606,7 +608,6 @@ class _LineChartCardState extends State<LineChartCard> {
   LineChartBarData _getChartBarData(List<FlSpot> spots, Color color) =>
       LineChartBarData(
           isStrokeCapRound: true,
-          dotData: FlDotData(show: false),
           isCurved: true,
           curveSmoothness: 0.15,
           barWidth: 4,
@@ -637,21 +638,26 @@ class _LineChartCardState extends State<LineChartCard> {
                     interval: _calculateYAxisInterval(minAmount, maxAmount),
                     reservedSize: 48,
                     getTitlesWidget: (value, meta) {
-                      return Text("\$${value.toInt()}");
+                      return SideTitleWidget(
+                          axisSide: meta.axisSide,
+                          child: Text("\$${value.toInt()}"));
                     })),
             bottomTitles: AxisTitles(
                 // X axis are stuck here since they use line chart calculation data
                 sideTitles: SideTitles(
-              reservedSize: 48,
+              reservedSize: 36,
               showTitles: true,
-              getTitlesWidget: (value, meta) => Transform.rotate(
-                  angle: -45 * 3.14 / 180,
-                  child: Text(data.xTitles[value.toInt()])),
+              getTitlesWidget: (value, meta) => SideTitleWidget(
+                axisSide: meta.axisSide,
+                child: Transform.rotate(
+                    angle: -45 * 3.14 / 180,
+                    child: Text(data.xTitles[value.toInt()])),
+              ),
             )),
             topTitles: const AxisTitles(sideTitles: SideTitles()),
             rightTitles: const AxisTitles(sideTitles: SideTitles())),
         borderData: FlBorderData(show: false),
-        gridData: const FlGridData(show: false),
+        // gridData: const FlGridData(show: false),
         lineBarsData: [
           _getChartBarData(data.expenseSpots, Colors.red),
           _getChartBarData(data.incomeSpots, Colors.green)
@@ -672,7 +678,7 @@ class _LineChartCardState extends State<LineChartCard> {
             child: FutureBuilder(
               future: _calculateData(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return errorInset(context, "No data");
                 } else if ((snapshot.data!.expenseSpots.length +
                         snapshot.data!.incomeSpots.length) <
@@ -687,6 +693,134 @@ class _LineChartCardState extends State<LineChartCard> {
               },
             )),
       ),
+    );
+  }
+}
+
+class SpendingBarChart extends StatefulWidget {
+  const SpendingBarChart({super.key});
+
+  @override
+  State<SpendingBarChart> createState() => _SpendingBarChartState();
+}
+
+class _SpendingBarChartState extends State<SpendingBarChart> {
+  late TransactionProvider _filterProvider;
+
+  String formatDateLabel(DateTimeRange range) {
+    final formatter = DateFormat.Md();
+
+    if (DateTime(range.start.year, range.start.month, range.start.day) ==
+        DateTime(range.end.year, range.end.month, range.end.day)) {
+      return formatter.format(range.start);
+    } else if (range.start.month == range.end.month) {
+      return '${formatter.format(range.start)}–${DateFormat('d').format(range.end)}';
+    } else {
+      // Different month range: "4/2-5/8"
+      return '${formatter.format(range.start)}–${formatter.format(range.end)}';
+    }
+  }
+
+  DateTimeRange get dateRange =>
+      _filterProvider.getFilterValue<DateTimeRange>() ??
+      RelativeDateRange.today.getRange();
+
+  AxisTitles get noTitlesWidget =>
+      const AxisTitles(sideTitles: SideTitles(showTitles: false));
+
+  Future<BarChartCalculationData> _calculateData() async {
+    final int daysDifference = dateRange.duration.inDays;
+    final TransactionDao transactionDao = context.read<TransactionDao>();
+
+    AggregationLevel aggregationLevel = switch (daysDifference) {
+      <= 90 => AggregationLevel.daily,
+      <= 365 => AggregationLevel.weekly,
+      _ => AggregationLevel.monthly,
+    };
+
+    final List<FinancialDataPoint> points = await transactionDao
+        .getAggregatedRangeData(dateRange, aggregationLevel);
+
+    final List<BarChartGroupData> data = [];
+    List<String> xTitles = [];
+    double minY = 0;
+    double maxY = 0;
+
+    for (int i = 0; i < points.length; i++) {
+      var point = points[i];
+
+      data.add(BarChartGroupData(barsSpace: 4, x: i, barRods: [
+        BarChartRodData(
+            width: 12,
+            toY: point.income,
+            color: Colors.green.harmonizeWith(Theme.of(context).primaryColor)),
+        BarChartRodData(
+            width: 12,
+            toY: point.spending,
+            color: Colors.red.harmonizeWith(Theme.of(context).primaryColor))
+      ]));
+
+      xTitles.add(formatDateLabel(point.dateRange));
+
+      if (point.spending > maxY) {
+        maxY = point.spending;
+      }
+
+      if (point.income > maxY) {
+        maxY = point.income;
+      }
+    }
+
+    return BarChartCalculationData(data, xTitles, minY, maxY, data.isEmpty);
+  }
+
+  FlTitlesData _parseTitlesData(BarChartCalculationData data) {
+    return FlTitlesData(
+        topTitles: noTitlesWidget,
+        rightTitles: noTitlesWidget,
+        leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+                interval: calculateNiceInterval(data.minY, data.maxY, 5),
+                showTitles: true,
+                reservedSize: 45,
+                getTitlesWidget: (value, meta) => SideTitleWidget(
+                    axisSide: meta.axisSide,
+                    child: Text(
+                      "\$${formatYValue(value)}",
+                    )))),
+        bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+          showTitles: true,
+          reservedSize: 45,
+          getTitlesWidget: (value, meta) => SideTitleWidget(
+              axisSide: meta.axisSide,
+              space: 4,
+              angle: -45 * 3.14 / 180,
+              child: Text(data.xTitles[value.toInt()])),
+        )));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _filterProvider = context.watch<TransactionProvider>();
+
+    return AspectRatio(
+      aspectRatio: 1,
+      child: FutureBuilder<BarChartCalculationData>(
+          future: _calculateData(),
+          builder: (context, snapshot) => BarChart(BarChartData(
+              minY: snapshot.data?.minY,
+              maxY: snapshot.data != null
+                  ? adjustMaxYToNiceInterval(
+                      snapshot.data!.maxY,
+                      calculateNiceInterval(
+                          snapshot.data!.minY, snapshot.data!.maxY, 5))
+                  : null,
+              gridData: FlGridData(show: false),
+              barGroups: snapshot.data?.groups,
+              titlesData: snapshot.data != null
+                  ? _parseTitlesData(snapshot.data!)
+                  : null))),
     );
   }
 }

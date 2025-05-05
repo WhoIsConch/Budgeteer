@@ -19,3 +19,14 @@ class LineChartCalculationData {
   LineChartCalculationData(
       this.expenseSpots, this.incomeSpots, this.xTitles, this.isEmpty);
 }
+
+class BarChartCalculationData {
+  final List<BarChartGroupData> groups;
+  final List<String> xTitles;
+  final double minY;
+  final double maxY;
+  final bool isEmpty;
+
+  BarChartCalculationData(
+      this.groups, this.xTitles, this.minY, this.maxY, this.isEmpty);
+}

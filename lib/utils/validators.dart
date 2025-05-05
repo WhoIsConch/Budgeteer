@@ -139,6 +139,27 @@ String formatAmount(num amount,
   return '${formatter.format(amount)}${character ?? ""}';
 }
 
+String formatYValue(double value) {
+  if (value.abs() >= 1000000) {
+    // Use 'M' for millions
+    return NumberFormat.compactSimpleCurrency(locale: 'en_US', decimalDigits: 1)
+        .format(value)
+        .replaceAll('\$', ''); // Remove currency symbol if not needed
+  } else if (value.abs() >= 1000) {
+    // Use 'K' for thousands
+    return NumberFormat.compactSimpleCurrency(
+            locale: 'en_US',
+            decimalDigits: value.abs() < 10000
+                ? 1
+                : 0) // More precision for lower thousands
+        .format(value)
+        .replaceAll('\$', '');
+  } else {
+    // Show regular number for smaller values
+    return NumberFormat.decimalPattern().format(value);
+  }
+}
+
 String toTitleCase(String s) => s
     .replaceAllMapped(RegExp(r'([a-z])([A-Z])'), (m) => '${m[1]} ${m[2]}')
     .replaceFirstMapped(RegExp(r'^\w'), (m) => m[0]!.toUpperCase());
