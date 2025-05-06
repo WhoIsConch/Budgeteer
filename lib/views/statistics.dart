@@ -315,10 +315,7 @@ class _PieChartCardState extends State<PieChartCard> {
     }
     final totals = (await Future.wait(futures)).map((e) => e ?? 0).toList();
 
-    absTotal = totals.fold(0, (first, next) => first.abs() + next.abs());
-
-    print(totals);
-    print(absTotal);
+    absTotal = totals.sum;
 
     if (absTotal == 0) {
       return ChartCalculationResult(
