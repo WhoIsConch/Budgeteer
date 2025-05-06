@@ -305,15 +305,20 @@ class _PieChartCardState extends State<PieChartCard> {
     for (final category in categories) {
       futures.add(_transactionDao
           .watchTotalAmount(
-              nullCategory: category == null,
-              category: category,
-              type: typeFilter,
-              dateRange: dateFilter)
+            nullCategory: category == null,
+            category: category,
+            type: typeFilter,
+            dateRange: dateFilter,
+            net: false,
+          )
           .first);
     }
     final totals = (await Future.wait(futures)).map((e) => e ?? 0).toList();
 
-    absTotal = totals.sum;
+    absTotal = totals.fold(0, (first, next) => first.abs() + next.abs());
+
+    print(totals);
+    print(absTotal);
 
     if (absTotal == 0) {
       return ChartCalculationResult(
@@ -326,7 +331,7 @@ class _PieChartCardState extends State<PieChartCard> {
 
       if (total == 0) continue;
 
-      double percentage = (total.abs() / absTotal.abs()) * 100;
+      double percentage = (total.abs() / absTotal) * 100;
 
       final color = category?.color ?? Colors.grey[400]!;
       final name = category?.name ?? "No category";
@@ -430,7 +435,7 @@ class _PieChartCardState extends State<PieChartCard> {
     String titleText = switch (typeIndex) {
       0 => "spending",
       1 => "earning",
-      2 => "net balance",
+      2 => "cash flow",
       _ => "invalid" // Shouldn't happen
     };
 
