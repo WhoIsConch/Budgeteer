@@ -730,6 +730,20 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
   AxisTitles get noTitlesWidget =>
       const AxisTitles(sideTitles: SideTitles(showTitles: false));
 
+  BarChartGroupData createGroupData(FinancialDataPoint point, int x) =>
+      BarChartGroupData(barsSpace: 4, x: x, barRods: [
+        BarChartRodData(
+            width: 12,
+            toY: point.income,
+            color: Colors.green
+                .harmonizeWith(Theme.of(context).colorScheme.primary)),
+        BarChartRodData(
+            width: 12,
+            toY: point.spending,
+            color:
+                Colors.red.harmonizeWith(Theme.of(context).colorScheme.primary))
+      ]);
+
   Future<BarChartCalculationData> _calculateData() async {
     final int daysDifference = dateRange.duration.inDays;
     final TransactionDao transactionDao = context.read<TransactionDao>();
@@ -740,27 +754,54 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
       _ => AggregationLevel.monthly,
     };
 
-    final List<FinancialDataPoint> points = await transactionDao
+    List<FinancialDataPoint> points = await transactionDao
         .getAggregatedRangeData(dateRange, aggregationLevel);
+
+    // Manage the list and filter it into data that we actually want to use
+    int firstValidIndex = points.indexWhere((point) => point.isNotEmpty);
+
+    if (firstValidIndex == -1) {
+      points = [];
+    } else {
+      int lastValidIndex = points.lastIndexWhere((point) => point.isNotEmpty);
+      points = points.sublist(firstValidIndex, lastValidIndex + 1);
+    }
 
     final List<BarChartGroupData> data = [];
     List<String> xTitles = [];
     double minY = 0;
     double maxY = 0;
+    int skipped = 0; // There's probably a better way to do this
+
+    FinancialDataPoint? currentEmptyRunStart;
 
     for (int i = 0; i < points.length; i++) {
       var point = points[i];
 
-      data.add(BarChartGroupData(barsSpace: 4, x: i, barRods: [
-        BarChartRodData(
-            width: 12,
-            toY: point.income,
-            color: Colors.green.harmonizeWith(Theme.of(context).primaryColor)),
-        BarChartRodData(
-            width: 12,
-            toY: point.spending,
-            color: Colors.red.harmonizeWith(Theme.of(context).primaryColor))
-      ]));
+      if (point.isEmpty) {
+        currentEmptyRunStart ??= point;
+        skipped += 1;
+        continue;
+      } else {
+        if (currentEmptyRunStart != null) {
+          skipped -= 1;
+          DateTimeRange skippedRange = DateTimeRange(
+            start: currentEmptyRunStart.dateRange.start,
+            end: points[i - 1].dateRange.end,
+          );
+          data.add(createGroupData(
+            FinancialDataPoint.empty(skippedRange),
+            i - skipped - 1,
+          ));
+          currentEmptyRunStart = null;
+          xTitles.add(formatDateLabel(skippedRange));
+        }
+      }
+
+      data.add(createGroupData(
+        point,
+        i - skipped,
+      ));
 
       xTitles.add(formatDateLabel(point.dateRange));
 
@@ -806,23 +847,50 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
   Widget build(BuildContext context) {
     _filterProvider = context.watch<TransactionProvider>();
 
-    return AspectRatio(
-      aspectRatio: 1,
-      child: FutureBuilder<BarChartCalculationData>(
-          future: _calculateData(),
-          builder: (context, snapshot) => BarChart(BarChartData(
-              minY: snapshot.data?.minY,
-              maxY: snapshot.data != null
-                  ? adjustMaxYToNiceInterval(
-                      snapshot.data!.maxY,
-                      calculateNiceInterval(
-                          snapshot.data!.minY, snapshot.data!.maxY, 5))
-                  : null,
-              gridData: FlGridData(show: false),
-              barGroups: snapshot.data?.groups,
-              titlesData: snapshot.data != null
-                  ? _parseTitlesData(snapshot.data!)
-                  : null))),
+    return Card(
+      margin: EdgeInsets.zero,
+      color: getAdjustedColor(context, Theme.of(context).colorScheme.surface),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            "Spending vs income",
+            style: Theme.of(context).textTheme.headlineSmall,
+            textAlign: TextAlign.left,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: AspectRatio(
+            aspectRatio: 1,
+            child: FutureBuilder<BarChartCalculationData>(
+                future: _calculateData(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return errorInset(context, "No data");
+                  }
+
+                  var interval = calculateNiceInterval(
+                      snapshot.data!.minY, snapshot.data!.maxY, 5);
+                  return BarChart(BarChartData(
+                      borderData: FlBorderData(show: false),
+                      minY: snapshot.data?.minY,
+                      maxY: adjustMaxYToNiceInterval(
+                          snapshot.data!.maxY, interval),
+                      gridData: FlGridData(
+                        drawHorizontalLine: true,
+                        drawVerticalLine: false,
+                        horizontalInterval: interval /
+                            2, // Make the lines show up 2x more often than the titles
+                        getDrawingHorizontalLine: (value) => FlLine(
+                            color: Theme.of(context).colorScheme.surface),
+                      ),
+                      barGroups: snapshot.data!.groups,
+                      titlesData: _parseTitlesData(snapshot.data!)));
+                }),
+          ),
+        ),
+      ]),
     );
   }
 }
