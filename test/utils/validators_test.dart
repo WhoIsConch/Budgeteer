@@ -265,7 +265,7 @@ void main() {
       test('value can\'t contain non-number characters other than dot', () {
         final String value = formatText("", "f");
 
-        expect(value, "0");
+        expect(value, "");
       });
     });
   });
