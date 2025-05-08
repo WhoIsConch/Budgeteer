@@ -63,8 +63,8 @@ class _HomePageState extends State<HomePage> {
               const Spacer(),
               TextButton(
                   style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                  onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const TransactionSearch())),
+                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const TransactionSearch())),
                   child: Row(children: [
                     Text("View all",
                         style: Theme.of(context).textTheme.bodyLarge!.copyWith(
@@ -168,7 +168,7 @@ class TransactionPreviewCard extends StatelessWidget {
                     SizedBox(
                         height: 36,
                         child: AutoSizeText(
-                            "${isExpense ? '-' : '+'}\$${formatAmount(transaction.amount, truncateLarge: true)}",
+                            "${isExpense ? '-' : '+'}\$${formatAmount(transaction.amount, round: transaction.amount >= 1000)}",
                             style: Theme.of(context)
                                 .textTheme
                                 .headlineSmall!

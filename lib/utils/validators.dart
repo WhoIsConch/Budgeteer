@@ -12,13 +12,18 @@ class AmountValidator {
 
   const AmountValidator({this.allowZero = false});
 
-  String? validateAmount(value) {
+  String? validateAmount(String? value) {
     /*
   Used in a TextFormField, validateAmount ensures only positive numbers can be
   input in a text field. DecimalTextInputFormatter is also typically used with
   this validator which generally makes this validator useless, but if someone
   bypasses the input formatter somehow, this is a reasonable failsafe. 
   */
+
+    if (value == null) {
+      return "Please enter an amount";
+    }
+
     double? amount = double.tryParse(value);
 
     if (amount == null || (!allowZero && amount == 0)) {
@@ -54,7 +59,7 @@ String? validateEmail(String? value) {
     return null;
   }
 
-  return "Invalid email addsress";
+  return "Invalid email address";
 }
 
 String? validateTitle(String? value) {
@@ -100,19 +105,21 @@ class DecimalTextInputFormatter extends TextInputFormatter {
   }
 }
 
-String formatAmount(num amount,
-    {bool round = false, bool exact = false, truncateLarge = false}) {
+String formatAmount(num amount, {bool round = false, bool exact = false}) {
   NumberFormat formatter;
 
-  if (round || (truncateLarge && amount >= 1000)) {
+  if (round) {
     formatter = NumberFormat("#,###");
+    amount = amount.round();
   } else {
     formatter = NumberFormat('#,##0.00');
   }
 
-  if (round) amount = amount.round();
-
   if (exact) {
+    // Exact doesn't truncate large numbers with letters
+    // Used for showing account balance cards
+    // non exact: 5000 -> 5k
+    // exact: 5000 -> 5,000.00
     return formatter.format(amount);
   }
 
@@ -132,11 +139,7 @@ String formatAmount(num amount,
     amountToFormat = amount;
   }
 
-  if (truncateLarge && character != null) {
-    amount = amountToFormat.round();
-  }
-
-  return '${formatter.format(amount)}${character ?? ""}';
+  return '${formatter.format(amountToFormat)}${character ?? ""}';
 }
 
 String formatYValue(double value) {
