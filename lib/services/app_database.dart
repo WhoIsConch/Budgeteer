@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:budget/models/data.dart';
+import 'package:budget/models/database_extensions.dart';
 import 'package:budget/utils/enums.dart';
 import 'package:budget/models/filters.dart';
 import 'package:budget/utils/tools.dart';
@@ -178,6 +179,39 @@ class Goals extends Table {
       boolean().withDefault(const Constant(false)).named('is_finished')();
   BoolColumn get isDeleted =>
       boolean().withDefault(const Constant(false)).named('is_deleted')();
+}
+
+@DriftAccessor(tables: [Goals])
+class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
+  GoalDao(AppDatabase db) : super(db);
+
+  Stream<List<GoalWithAchievedAmount>> watchGoals() {
+    // View all of the goals in the database
+    final query = select(goals).join([
+      leftOuterJoin(db.transactions, db.transactions.goalId.equalsExp(goals.id))
+    ]);
+
+    return query.watch().map((rows) {
+      return rows.map((row) {
+        final goal = row.readTable(goals);
+        final achievedAmount =
+            row.read<double>(db.transactions.amount.sum()) ?? 0.0;
+
+        return GoalWithAchievedAmount(
+            goal: goal, achievedAmount: achievedAmount);
+      }).toList();
+    });
+  }
+
+  Stream<double?> getGoalFulfillmentAmount(Goal goal) {
+    var query = db.select(db.transactions)
+      ..where((t) => t.goalId.equals(goal.id));
+
+    return query
+        .addColumns([db.transactions.amount.sum()])
+        .map((row) => row.read(db.transactions.amount.sum()))
+        .watchSingle();
+  }
 }
 
 @DriftAccessor(tables: [Transactions])

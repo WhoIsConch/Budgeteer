@@ -1,9 +1,11 @@
+import 'package:budget/services/app_database.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class GoalPreviewButton extends StatelessWidget {
   final String title;
-  final int amount;
-  final int maxAmount;
+  final double amount;
+  final double maxAmount;
 
   const GoalPreviewButton(
       {super.key,
@@ -61,13 +63,20 @@ class GoalPreviewButton extends StatelessWidget {
   }
 }
 
-class GoalPreviewCard extends StatelessWidget {
+class GoalPreviewCard extends StatefulWidget {
   const GoalPreviewCard({
     super.key,
   });
 
   @override
+  State<GoalPreviewCard> createState() => _GoalPreviewCardState();
+}
+
+class _GoalPreviewCardState extends State<GoalPreviewCard> {
+  @override
   Widget build(BuildContext context) {
+    final goalDao = context.read<GoalDao>();
+
     return Card(
         color: Theme.of(context).colorScheme.secondaryContainer,
         child: Padding(
@@ -83,15 +92,21 @@ class GoalPreviewCard extends StatelessWidget {
                         color:
                             Theme.of(context).colorScheme.onPrimaryContainer)),
               ),
-              const GoalPreviewButton(
-                title: "A Puppy",
-                amount: 120,
-                maxAmount: 200,
-              ),
-              const GoalPreviewButton(
-                  title: "Baseball Tickets", amount: 200, maxAmount: 450),
-              const GoalPreviewButton(
-                  title: "Spongebob Toybobson", amount: 13, maxAmount: 15),
+              StreamBuilder(
+                  stream: goalDao.watchGoals(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return Text("Loading");
+                    }
+
+                    return ListView.builder(
+                      itemCount: snapshot.data!.length,
+                      itemBuilder: (context, index) => GoalPreviewButton(
+                          title: snapshot.data![index].goal.name,
+                          amount: snapshot.data![index].achievedAmount ?? 0,
+                          maxAmount: snapshot.data![index].goal.cost),
+                    );
+                  })
             ],
           ),
         ));

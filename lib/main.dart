@@ -47,6 +47,10 @@ void main() async {
     update: (_, db, __) => TransactionDao(db),
   );
 
+  final goalDaoProvider = ProxyProvider<AppDatabase, GoalDao>(
+    update: (_, db, __) => GoalDao(db),
+  );
+
   final transactionProvider = ChangeNotifierProvider<TransactionProvider>(
       create: (context) => TransactionProvider());
 
@@ -59,6 +63,7 @@ void main() async {
     MultiProvider(providers: [
       dbProvider,
       daoProvider,
+      goalDaoProvider,
       transactionProvider,
       snackBarProvider,
     ], child: const BudgetApp()),

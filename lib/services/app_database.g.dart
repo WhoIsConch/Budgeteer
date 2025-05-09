@@ -3,6 +3,9 @@
 part of 'app_database.dart';
 
 // ignore_for_file: type=lint
+mixin _$GoalDaoMixin on DatabaseAccessor<AppDatabase> {
+  $GoalsTable get goals => attachedDatabase.goals;
+}
 mixin _$TransactionDaoMixin on DatabaseAccessor<AppDatabase> {
   $CategoriesTable get categories => attachedDatabase.categories;
   $AccountsTable get accounts => attachedDatabase.accounts;
