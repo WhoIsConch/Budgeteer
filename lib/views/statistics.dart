@@ -730,6 +730,16 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
   AxisTitles get noTitlesWidget =>
       const AxisTitles(sideTitles: SideTitles(showTitles: false));
 
+  FlBorderData get chartBorderData {
+    var borderSide = BorderSide(
+      color: Theme.of(context).colorScheme.outlineVariant,
+      width: 2.0,
+    );
+
+    return FlBorderData(
+        show: true, border: Border(bottom: borderSide, top: borderSide));
+  }
+
   BarChartGroupData createGroupData(FinancialDataPoint point, int x) =>
       BarChartGroupData(barsSpace: 4, x: x, barRods: [
         BarChartRodData(
@@ -872,8 +882,9 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
 
                   var interval = calculateNiceInterval(
                       snapshot.data!.minY, snapshot.data!.maxY, 5);
+
                   return BarChart(BarChartData(
-                      borderData: FlBorderData(show: false),
+                      borderData: chartBorderData,
                       minY: snapshot.data?.minY,
                       maxY: adjustMaxYToNiceInterval(
                           snapshot.data!.maxY, interval),
@@ -883,7 +894,8 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
                         horizontalInterval: interval /
                             2, // Make the lines show up 2x more often than the titles
                         getDrawingHorizontalLine: (value) => FlLine(
-                            color: Theme.of(context).colorScheme.surface),
+                            color:
+                                Theme.of(context).colorScheme.outlineVariant),
                       ),
                       barGroups: snapshot.data!.groups,
                       titlesData: _parseTitlesData(snapshot.data!)));
