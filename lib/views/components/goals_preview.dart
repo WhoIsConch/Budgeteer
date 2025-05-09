@@ -33,6 +33,7 @@ class GoalPreviewButton extends StatelessWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                     overflow: TextOverflow.ellipsis,
@@ -73,6 +74,8 @@ class GoalPreviewCard extends StatefulWidget {
 }
 
 class _GoalPreviewCardState extends State<GoalPreviewCard> {
+  bool hasGoals = true;
+
   @override
   Widget build(BuildContext context) {
     final goalDao = context.read<GoalDao>();
@@ -83,11 +86,12 @@ class _GoalPreviewCardState extends State<GoalPreviewCard> {
           padding: const EdgeInsets.all(8.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
             spacing: 4,
             children: [
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Text("Your goals",
+                child: Text(hasGoals ? "Your goals" : "No goals",
                     style: Theme.of(context).textTheme.headlineMedium!.copyWith(
                         color:
                             Theme.of(context).colorScheme.onPrimaryContainer)),
@@ -97,14 +101,24 @@ class _GoalPreviewCardState extends State<GoalPreviewCard> {
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
                       return Text("Loading");
+                    } else if (snapshot.hasData && snapshot.data!.isEmpty) {
+                      hasGoals = false;
+                      return SizedBox.shrink();
                     }
 
-                    return ListView.builder(
-                      itemCount: snapshot.data!.length,
-                      itemBuilder: (context, index) => GoalPreviewButton(
-                          title: snapshot.data![index].goal.name,
-                          amount: snapshot.data![index].achievedAmount ?? 0,
-                          maxAmount: snapshot.data![index].goal.cost),
+                    hasGoals = true;
+
+                    return SizedBox(
+                      height: 300,
+                      child: SingleChildScrollView(
+                        child: ListView.builder(
+                          itemCount: snapshot.data!.length,
+                          itemBuilder: (context, index) => GoalPreviewButton(
+                              title: snapshot.data![index].goal.name,
+                              amount: snapshot.data![index].achievedAmount ?? 0,
+                              maxAmount: snapshot.data![index].goal.cost),
+                        ),
+                      ),
                     );
                   })
             ],
