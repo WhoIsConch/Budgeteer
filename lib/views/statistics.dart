@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:budget/models/data.dart';
+import 'package:budget/models/database_extensions.dart';
 import 'package:budget/models/filters.dart';
 import 'package:budget/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
@@ -445,7 +446,7 @@ class _PieChartCardState extends State<PieChartCard> {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(12.0),
-              child: StreamBuilder<List<Category>>(
+              child: StreamBuilder<List<CategoryWithAmount>>(
                   stream: context.read<AppDatabase>().watchCategories(),
                   builder: (context, categorySnapshot) {
                     if (categorySnapshot.connectionState ==
@@ -453,6 +454,8 @@ class _PieChartCardState extends State<PieChartCard> {
                         !categorySnapshot.hasData) {
                       return const SizedBox();
                     } else if (categorySnapshot.hasError) {
+                      AppLogger().logger.e(
+                          "Error loading categories: ${categorySnapshot.error}");
                       return _formattedErrorInset(
                           'Error loading categories: ${categorySnapshot.error}');
                     } else if (!categorySnapshot.hasData ||
@@ -460,7 +463,8 @@ class _PieChartCardState extends State<PieChartCard> {
                       return _formattedErrorInset("No categories");
                     }
 
-                    final availableCategories = categorySnapshot.data!;
+                    final availableCategories =
+                        categorySnapshot.data!.map((ca) => ca.category);
                     final categoriesWithNull = [...availableCategories, null];
 
                     return FutureBuilder<ChartCalculationResult>(

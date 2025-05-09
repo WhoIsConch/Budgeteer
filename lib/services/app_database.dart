@@ -268,9 +268,9 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
         case TransactionFilter<TransactionType> f:
           query = query..where((t) => t.type.equals(f.value.value));
           break;
-        case TransactionFilter<List<Category>> f:
+        case TransactionFilter<List<CategoryWithAmount>> f:
           query = query
-            ..where((t) => t.category.isIn(f.value.map((e) => e.id)));
+            ..where((t) => t.category.isIn(f.value.map((e) => e.category.id)));
           break;
       }
     }
@@ -452,11 +452,69 @@ class AppDatabase extends _$AppDatabase {
   @override
   int get schemaVersion => 1;
 
-  Stream<List<Category>> watchCategories() => (select(categories)
-        ..where(
-          (tbl) => tbl.isDeleted.isNotValue(true),
-        ))
-      .watch();
+  CaseWhen<bool, String> getCaseWhen(
+      CategoryResetIncrement increment, bool isStart) {
+    DateTimeRange timeRange = increment.relativeDateRange?.getRange() ??
+        RelativeDateRange.today.getRange();
+
+    return CaseWhen(categories.resetIncrement.equalsValue(increment),
+        then: Constant<String>(
+            _formatter.format(isStart ? timeRange.start : timeRange.end)));
+  }
+
+  Stream<List<CategoryWithAmount>> watchCategories() {
+    // Get the start and end date to look for the values
+    Expression<String> startDate = CaseWhenExpression<String>(
+        cases: CategoryResetIncrement.values
+            .map((increment) => getCaseWhen(increment, true))
+            .toList());
+    Expression<String> endDate = CaseWhenExpression<String>(
+        cases: CategoryResetIncrement.values
+            .map((increment) => getCaseWhen(increment, false))
+            .toList());
+
+    // A filter to check if the date is between these ranges.
+    final dateInRangeCondition =
+        transactions.date.isBetween(startDate, endDate);
+
+    // A filter to sign the amount, since we always want the total amount in
+    // a category to be the net value
+    final signedAmount = CaseWhenExpression(cases: [
+      CaseWhen(transactions.type.equalsValue(TransactionType.income),
+          then: transactions.amount),
+      CaseWhen(transactions.type.equalsValue(TransactionType.expense),
+          then: -transactions.amount)
+    ], orElse: const Constant(0.0));
+
+    // The actual condition we're going to filter by. If the reset increment is
+    // never, we can't filter by dates so we ensure the filter is always true,
+    // or accepts all transactions that fulfill the rest of the conditions
+    final sumFilterCondition = CaseWhenExpression(cases: [
+      CaseWhen(
+          categories.resetIncrement.equalsValue(CategoryResetIncrement.never),
+          then: const Constant(true))
+    ], orElse: dateInRangeCondition);
+
+    // Construct the actual expression to put in the query, used in case the
+    // signed amount's sum returns null for some reason (which it never should)
+    final conditionalSum = coalesce(
+        [signedAmount.sum(filter: sumFilterCondition), const Constant(0.0)]);
+
+    var query = select(categories).join([
+      leftOuterJoin(
+          transactions, transactions.category.equalsExp(categories.id))
+    ]);
+
+    final queryWithSum = query
+      ..addColumns([conditionalSum])
+      ..groupBy([categories.id]);
+
+    return queryWithSum.watch().map((rows) => rows
+        .map((row) => CategoryWithAmount(
+            category: row.readTable(categories),
+            amount: row.read<double>(conditionalSum)))
+        .toList());
+  }
 
   List<dynamic> convertVariables(List<dynamic> variables) =>
       variables.map((v) => v.value).toList();

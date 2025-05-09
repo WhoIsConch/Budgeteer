@@ -9,3 +9,10 @@ class GoalWithAchievedAmount {
     this.achievedAmount,
   });
 }
+
+class CategoryWithAmount {
+  final Category category;
+  final double? amount;
+
+  CategoryWithAmount({required this.category, this.amount});
+}

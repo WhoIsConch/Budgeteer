@@ -1,3 +1,5 @@
+import 'package:budget/models/database_extensions.dart';
+import 'package:budget/utils/tools.dart';
 import 'package:budget/views/components/transactions_list.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/enums.dart';
@@ -38,17 +40,22 @@ class _TransactionSearchState extends State<TransactionSearch> {
         TransactionFilter<String> t => "\"${t.value}\"", // "Value"
         TransactionFilter<AmountFilter> t =>
           "${t.value.type!.symbol} \$${formatAmount(t.value.amount ?? 0, exact: true)}", // > $Value
-        TransactionFilter<List<Category>> t => t.value.length > 3
+        TransactionFilter<List<CategoryWithAmount>> t => t.value.length > 3
             ? "${t.value.length} categories"
-            : t.value.map((e) => e.name).join(", "),
+            : t.value.map((e) => e.category.name).join(", "),
         TransactionFilter<DateTimeRange> t =>
           "${dateFormat.format(t.value.start)}–${dateFormat.format(t.value.end)}",
         TransactionFilter<RelativeDateRange> t =>
           "${dateFormat.format(t.value.getRange().start)}–${dateFormat.format(t.value.getRange().end)}",
         TransactionFilter<TransactionType> t =>
           t.value == TransactionType.expense ? "Expense" : "Income",
-        _ => "ERR ${filter.value}"
+        _ => "ERR"
       };
+
+      if (label.startsWith("ERR")) {
+        AppLogger().logger.e(
+            "Failed to filter transactions: Unexpected value:\n${filter.value}");
+      }
 
       chips.add(GestureDetector(
         onTap: () => _activateFilter(filter.value.runtimeType),
@@ -154,22 +161,22 @@ class _TransactionSearchState extends State<TransactionSearch> {
         });
   }
 
-  Future<List<Category>?> _showCategoryInputDialog(BuildContext context) async {
+  Future<List<CategoryWithAmount>?> _showCategoryInputDialog(
+      BuildContext context) async {
     // Shows a dropdown of all available categories.
     // Returns a list of selected categories.
     // This shows an AlertDialog with nothing in it other than a dropdown
     // which a user can select multiple categories from.
     final dbProvider = context.read<AppDatabase>();
 
-    Stream<List<Category>> categories = dbProvider.watchCategories();
-    List<Category> selectedCategories =
-        provider.getFilterValue<List<Category>>() ?? [];
+    List<CategoryWithAmount> selectedCategories =
+        provider.getFilterValue<List<CategoryWithAmount>>() ?? [];
 
     if (!context.mounted) {
       return [];
     }
 
-    return showDialog<List<Category>>(
+    return showDialog<List<CategoryWithAmount>>(
       context: context,
       builder: (context) {
         return StatefulBuilder(
@@ -179,29 +186,30 @@ class _TransactionSearchState extends State<TransactionSearch> {
               title: const Text("Select Categories"),
               content: SizedBox(
                 width: double.maxFinite,
-                child: StreamBuilder(
+                child: StreamBuilder<List<CategoryWithAmount>>(
                   initialData: const [],
-                  stream: categories,
+                  stream: dbProvider.watchCategories(),
                   builder: (context, snapshot) => ListView.builder(
                     shrinkWrap: true,
                     itemCount: snapshot.data!.length,
                     itemBuilder: (BuildContext context, int index) {
-                      final category = snapshot.data![index] as Category;
+                      final pair = snapshot.data![index];
+
                       return CheckboxListTile(
-                        title: Text(category.name),
+                        title: Text(pair.category.name),
                         value: selectedCategories
                             .where(
-                              (e) => e.id == category.id,
+                              (e) => e.category.id == pair.category.id,
                             )
                             .isNotEmpty,
                         onChanged: (bool? value) {
                           setState(() {
                             if (value != null) {
                               if (value) {
-                                selectedCategories.add(category);
+                                selectedCategories.add(pair);
                               } else {
-                                selectedCategories
-                                    .removeWhere((e) => e.id == category.id);
+                                selectedCategories.removeWhere(
+                                    (e) => e.category.id == pair.category.id);
                               }
                             }
                           });
@@ -273,7 +281,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
         ),
         MenuItemButton(
           child: const Text("Category"),
-          onPressed: () => _activateFilter(List<Category>),
+          onPressed: () => _activateFilter(List<CategoryWithAmount>),
         ),
       ];
 
@@ -355,13 +363,15 @@ class _TransactionSearchState extends State<TransactionSearch> {
               provider.updateFilter(value as TransactionFilter<AmountFilter>);
             }),
         TransactionType: () => toggleTransactionType(),
-        List<Category>: () => _showCategoryInputDialog(context).then((value) {
+        List<CategoryWithAmount>: () =>
+            _showCategoryInputDialog(context).then((value) {
               if (value == null) {
                 return;
               } else if (value.isEmpty) {
-                provider.removeFilter<List<Category>>();
+                provider.removeFilter<List<CategoryWithAmount>>();
               } else {
-                provider.updateFilter(TransactionFilter<List<Category>>(value));
+                provider.updateFilter(
+                    TransactionFilter<List<CategoryWithAmount>>(value));
               }
             }),
       };

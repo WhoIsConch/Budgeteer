@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:budget/providers/snackbar_provider.dart';
 import 'package:budget/utils/tools.dart';
 import 'package:budget/views/components/category_dropdown.dart';
 import 'package:budget/services/app_database.dart';
@@ -57,7 +58,10 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    allCategories = context.watch<AppDatabase>().watchCategories();
+    allCategories = context
+        .watch<AppDatabase>()
+        .watchCategories()
+        .map((ca) => ca.map((c) => c.category).toList());
   }
 
   @override
@@ -327,6 +331,85 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
         // title: title,
         child: body,
       ),
+    );
+  }
+}
+
+class TransactionManageScreen extends StatefulWidget {
+  final Transaction? transaction;
+
+  const TransactionManageScreen({super.key, this.transaction});
+
+  @override
+  State<TransactionManageScreen> createState() =>
+      _TransactionManageScreenState();
+}
+
+class _TransactionManageScreenState extends State<TransactionManageScreen> {
+  final TextEditingController titleController = TextEditingController();
+  final TextEditingController amountController = TextEditingController();
+  final TextEditingController notesController = TextEditingController();
+  final TextEditingController dateController = TextEditingController();
+  final TextEditingController categoryController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  Category? selectedCategory;
+  DateTime selectedDate = DateTime.now();
+  TransactionType selectedType = TransactionType.expense;
+
+  bool isLoading = true;
+
+  String get titleText =>
+      widget.transaction == null ? "Add transaction" : "Update transaction";
+
+  TransactionsCompanion getTransaction() {
+    // Create a transaction based on the data in the form
+    TransactionsCompanion transaction = TransactionsCompanion(
+      id: Value.absentIfNull(widget.transaction?.id),
+      title: Value(titleController.text),
+      amount: Value(double.tryParse(amountController.text) ?? 0),
+      date: Value(selectedDate),
+      notes: Value(notesController.text),
+      type: Value(selectedType),
+      category: Value(selectedCategory?.id),
+    );
+
+    return transaction;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(titleText), actions: [
+        Consumer<AppDatabase>(
+          builder: (context, transactionProvider, child) => IconButton(
+            icon: const Icon(Icons.check),
+            onPressed: () async {
+              if (_formKey.currentState!.validate()) {
+                try {
+                  if (widget.transaction != null) {
+                    transactionProvider
+                        .updatePartialTransaction(getTransaction());
+                  } else {
+                    await transactionProvider
+                        .createTransaction(getTransaction());
+                  }
+
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    context.read<SnackbarProvider>().showSnackBar(SnackBar(
+                          content: Text('Failed to save transaction: $e'),
+                        ));
+                  }
+                }
+              }
+            },
+          ),
+        ),
+      ]),
     );
   }
 }
