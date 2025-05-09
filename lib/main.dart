@@ -14,9 +14,14 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 ThemeMode? theme;
 
 Future<void> setup() async {
+  final logger = AppLogger().logger;
+
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   var settings = await loadSettings();
+
+  logger.i('Loaded settings');
+  logger.d('Settings: ${settings.map((e) => "${e.type.name} ${e.name}: ${e.value}")}');
 
   switch (settings.where((element) => element.name == "Theme").first.value) {
     case "System":

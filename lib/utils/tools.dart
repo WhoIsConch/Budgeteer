@@ -3,6 +3,23 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import 'package:logger/logger.dart';
+
+class AppLogger {
+  static final AppLogger _instance = AppLogger._internal();
+
+  factory AppLogger() {
+    return _instance;
+  }
+
+  AppLogger._internal();
+
+  final Logger logger = Logger(
+    printer: PrettyPrinter()
+  );
+}
+
+
 Color getAdjustedColor(BuildContext context, Color color,
     {double amount = 0.04}) {
   // Courtesy of Gemini 2.5 Pro
