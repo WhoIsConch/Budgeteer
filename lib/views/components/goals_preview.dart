@@ -1,4 +1,5 @@
 import 'package:budget/services/app_database.dart';
+import 'package:budget/utils/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -15,6 +16,9 @@ class GoalPreviewButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final formattedAmount = formatAmount(amount);
+    final formattedMaxAmount = formatAmount(maxAmount);
+
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () {},
@@ -42,7 +46,7 @@ class GoalPreviewButton extends StatelessWidget {
                         color: Theme.of(context)
                             .colorScheme
                             .onSecondaryContainer)),
-                Text("\$$amount of \$$maxAmount",
+                Text("\$$formattedAmount of \$$formattedMaxAmount",
                     style: Theme.of(context).textTheme.titleMedium!.copyWith(
                         color: Theme.of(context)
                             .colorScheme
@@ -96,31 +100,30 @@ class _GoalPreviewCardState extends State<GoalPreviewCard> {
                         color:
                             Theme.of(context).colorScheme.onPrimaryContainer)),
               ),
-              StreamBuilder(
-                  stream: goalDao.watchGoals(),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return Text("Loading");
-                    } else if (snapshot.hasData && snapshot.data!.isEmpty) {
-                      hasGoals = false;
-                      return SizedBox.shrink();
-                    }
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 200),
+                child: StreamBuilder(
+                    stream: goalDao.watchGoals(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const LinearProgressIndicator();
+                      } else if (snapshot.hasData && snapshot.data!.isEmpty) {
+                        hasGoals = false;
+                        return const SizedBox.shrink();
+                      }
 
-                    hasGoals = true;
+                      hasGoals = true;
 
-                    return SizedBox(
-                      height: 300,
-                      child: SingleChildScrollView(
-                        child: ListView.builder(
-                          itemCount: snapshot.data!.length,
-                          itemBuilder: (context, index) => GoalPreviewButton(
-                              title: snapshot.data![index].goal.name,
-                              amount: snapshot.data![index].achievedAmount ?? 0,
-                              maxAmount: snapshot.data![index].goal.cost),
-                        ),
-                      ),
-                    );
-                  })
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: snapshot.data!.length,
+                        itemBuilder: (context, index) => GoalPreviewButton(
+                            title: snapshot.data![index].goal.name,
+                            amount: snapshot.data![index].achievedAmount ?? 0,
+                            maxAmount: snapshot.data![index].goal.cost),
+                      );
+                    }),
+              )
             ],
           ),
         ));

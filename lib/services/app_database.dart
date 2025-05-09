@@ -187,15 +187,20 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
 
   Stream<List<GoalWithAchievedAmount>> watchGoals() {
     // View all of the goals in the database
+    final amountSum = db.transactions.amount.sum();
+
     final query = select(goals).join([
       leftOuterJoin(db.transactions, db.transactions.goalId.equalsExp(goals.id))
     ]);
 
-    return query.watch().map((rows) {
+    final queryWithSum = query
+      ..addColumns([amountSum])
+      ..groupBy([goals.id]);
+
+    return queryWithSum.watch().map((rows) {
       return rows.map((row) {
         final goal = row.readTable(goals);
-        final achievedAmount =
-            row.read<double>(db.transactions.amount.sum()) ?? 0.0;
+        final achievedAmount = row.read<double>(amountSum) ?? 0.0;
 
         return GoalWithAchievedAmount(
             goal: goal, achievedAmount: achievedAmount);
