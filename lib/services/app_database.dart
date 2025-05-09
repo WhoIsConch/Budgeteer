@@ -342,7 +342,7 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
       case AggregationLevel.weekly:
         while (start.isBefore(end)) {
           final DateTime chunkEnd =
-              DateTime(start.year, start.month, start.day + 6, 23, 59, 59, 999);
+              DateTime(start.year, start.month, start.day + 7);
 
           // To make sure the end date doesn't summarize beyond the specified
           // date range. Though, that behavior may be preferable for data uniformity.
@@ -350,8 +350,8 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
 
           points.add(await getPointFromRange(
               DateTimeRange(start: start, end: actualEnd).makeInclusive()));
-          start = chunkEnd
-              .add(Duration(days: 1)); // To start the new chunk at a new spot
+          start = chunkEnd.add(
+              const Duration(days: 1)); // To start the new chunk at a new spot
         }
       case _:
         while (start.isBefore(end)) {

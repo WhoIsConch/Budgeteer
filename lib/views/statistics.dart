@@ -835,7 +835,7 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
             sideTitles: SideTitles(
                 interval: calculateNiceInterval(data.minY, data.maxY, 5),
                 showTitles: true,
-                reservedSize: 45,
+                reservedSize: 55,
                 getTitlesWidget: (value, meta) => SideTitleWidget(
                     axisSide: meta.axisSide,
                     child: Text(
@@ -844,10 +844,10 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
         bottomTitles: AxisTitles(
             sideTitles: SideTitles(
           showTitles: true,
-          reservedSize: 45,
+          reservedSize: 65,
           getTitlesWidget: (value, meta) => SideTitleWidget(
               axisSide: meta.axisSide,
-              space: 4,
+              space: 16,
               angle: -45 * 3.14 / 180,
               child: Text(data.xTitles[value.toInt()])),
         )));

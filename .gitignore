@@ -4,6 +4,7 @@
 *.pyc
 *.swp
 *.env
+*.dll
 .DS_Store
 .atom/
 .buildlog/
