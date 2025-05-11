@@ -12,10 +12,8 @@ import 'package:budget/utils/validators.dart';
 import 'package:intl/intl.dart';
 
 class ManageTransactionDialog extends StatefulWidget {
-  const ManageTransactionDialog(
-      {super.key, this.mode = ObjectManageMode.add, this.transaction});
+  const ManageTransactionDialog({super.key, this.transaction});
 
-  final ObjectManageMode mode;
   final Transaction? transaction;
 
   @override
@@ -36,6 +34,9 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
 
   DateTime selectedDate = DateTime.now();
   TransactionType selectedType = TransactionType.expense;
+
+  Transaction? get originalTransaction => widget.transaction;
+  bool get isEditing => originalTransaction != null;
 
   final _formKey = GlobalKey<FormState>();
 
@@ -67,17 +68,17 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
     dateController.text = DateFormat('MM/dd/yyyy').format(selectedDate);
 
     // There's probably a better way to do this
-    if (widget.mode == ObjectManageMode.edit) {
-      titleController.text = widget.transaction!.title;
-      amountController.text = widget.transaction!.amount.toStringAsFixed(2);
-      notesController.text = widget.transaction!.notes ?? "";
-      selectedDate = widget.transaction!.date;
+    if (isEditing) {
+      titleController.text = originalTransaction!.title;
+      amountController.text = originalTransaction!.amount.toStringAsFixed(2);
+      notesController.text = originalTransaction!.notes ?? "";
+      selectedDate = originalTransaction!.date;
       dateController.text = DateFormat('MM/dd/yyyy').format(selectedDate);
-      selectedType = widget.transaction!.type;
+      selectedType = originalTransaction!.type;
     }
 
-    if (widget.transaction?.category != null) {
-      _loadSelectedCategory(widget.transaction!.category!);
+    if (originalTransaction?.category != null) {
+      _loadSelectedCategory(originalTransaction!.category!);
     } else {
       isLoading = false;
     }
@@ -97,7 +98,8 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
 
   Future<void> _setCategoryInfo(CategoryWithAmount? categoryPair) async {
     String catText;
-    double? catTotal = selectedCategoryTotal;
+    double? categoryTotal =
+        (categoryPair?.amount ?? 0) + (categoryPair?.category.balance ?? 0);
 
     if (categoryPair == null) {
       catText = "No Category";
@@ -107,29 +109,29 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
       // Get the transaction that's currently represented in the form
       TransactionsCompanion currentTransaction = getTransaction();
 
-      catTotal = categoryPair.amount ?? 0;
+      if (isEditing &&
+          originalTransaction!.category == categoryPair.category.id) {
+        // Since the categoryPair's amount already factors in the current transaction's
+        // amount, we want to remove the original amount from the category's total.
 
-      if (widget.transaction != null &&
-          widget.transaction!.category == categoryPair.category.id) {
-        // This means we're editing a transaction has its amount logged in the selected category.
-        // For accurate results, we subtract the original transaction amount from
-        // catTotal, then add the current transaction amount.
-        catTotal -= widget.transaction!.amount;
+        if (originalTransaction!.type == TransactionType.expense) {
+          categoryTotal += originalTransaction!.amount;
+        } else {
+          categoryTotal -= originalTransaction!.amount;
+        }
       }
 
       if (currentTransaction.type.value == TransactionType.expense) {
-        catTotal -= currentTransaction.amount.value;
+        categoryTotal -= currentTransaction.amount.value;
       } else {
-        catTotal += currentTransaction.amount.value;
+        categoryTotal += currentTransaction.amount.value;
       }
-
-      catTotal = (categoryPair.category.balance ?? 0) + catTotal;
     }
 
     setState(() {
       selectedCategory = categoryPair;
       categoryController.text = catText;
-      selectedCategoryTotal = catTotal;
+      selectedCategoryTotal = categoryTotal;
       isLoading = false;
     });
   }
@@ -251,6 +253,8 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
                 },
                 onDeleted: () => _setCategoryInfo(null),
                 selectedCategory: selectedCategory,
+                selectedCategoryTotal:
+                    selectedCategoryTotal ?? selectedCategory?.amount ?? 0,
               )),
       TextFormField(
         controller: notesController,
@@ -260,7 +264,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
     ];
     Widget title = const Text("Add Transaction");
 
-    if (widget.mode == ObjectManageMode.edit) {
+    if (isEditing) {
       title = const Text("Edit Transaction");
     }
 
@@ -285,7 +289,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
             onPressed: () async {
               if (_formKey.currentState!.validate()) {
                 try {
-                  if (widget.mode == ObjectManageMode.edit) {
+                  if (isEditing) {
                     transactionProvider
                         .updatePartialTransaction(getTransaction());
                   } else {

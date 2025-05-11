@@ -152,8 +152,8 @@ class TransactionPreviewCard extends StatelessWidget {
                 BorderRadius.circular(12), // To match the card's radius
             onTap: () {
               Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => ManageTransactionDialog(
-                      mode: ObjectManageMode.edit, transaction: transaction)));
+                  builder: (_) =>
+                      ManageTransactionDialog(transaction: transaction)));
             },
             onLongPress: () => showOptionsDialog(context, transaction),
             child: Padding(

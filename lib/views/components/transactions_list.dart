@@ -99,8 +99,8 @@ class _TransactionsListState extends State<TransactionsList> {
       onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (context) => ManageTransactionDialog(
-                  mode: ObjectManageMode.edit, transaction: transaction))),
+              builder: (context) =>
+                  ManageTransactionDialog(transaction: transaction))),
       onLongPress: () => showOptionsDialog(context, transaction),
       trailing: IconButton(
         icon: const Icon(Icons.more_vert),
@@ -213,8 +213,7 @@ class _TransactionsListState extends State<TransactionsList> {
         onPressed: () => Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (context) =>
-                    const ManageTransactionDialog(mode: ObjectManageMode.add))),
+                builder: (context) => const ManageTransactionDialog())),
       );
     } else {
       actionButton = null;

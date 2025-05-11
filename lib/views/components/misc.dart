@@ -1,6 +1,5 @@
 import 'package:budget/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
-import 'package:budget/utils/enums.dart';
 import 'package:budget/views/panels/manage_transaction.dart';
 import 'package:flutter/material.dart';
 
@@ -19,9 +18,8 @@ void showOptionsDialog(BuildContext context, Transaction transaction) {
               Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => ManageTransactionDialog(
-                          mode: ObjectManageMode.edit,
-                          transaction: transaction)));
+                      builder: (context) =>
+                          ManageTransactionDialog(transaction: transaction)));
             },
           ),
           ListTile(

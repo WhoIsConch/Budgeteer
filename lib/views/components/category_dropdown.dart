@@ -11,6 +11,7 @@ class CategoryDropdown extends StatelessWidget {
     required this.categories,
     required this.onChanged,
     required this.selectedCategory,
+    required this.selectedCategoryTotal,
     this.onDeleted,
     this.showExpanded = true,
     this.transactionDate,
@@ -19,6 +20,7 @@ class CategoryDropdown extends StatelessWidget {
 
   final List<CategoryWithAmount> categories;
   final bool isLoading;
+  final double selectedCategoryTotal;
   final Function(CategoryWithAmount?) onChanged;
   final Function? onDeleted;
   final CategoryWithAmount? selectedCategory;
@@ -30,8 +32,6 @@ class CategoryDropdown extends StatelessWidget {
 
   Color getDividerColor(BuildContext context) =>
       selectedCategory?.category.color ?? Theme.of(context).dividerColor;
-
-  double get selectedCategoryTotal => selectedCategory?.amount ?? 0.0;
 
   @override
   Widget build(BuildContext context) {
@@ -127,8 +127,7 @@ class CategoryDropdown extends StatelessWidget {
 
     List<Widget> columnChildren = [categorySelector];
 
-    String balance =
-        formatAmount(selectedCategory?.amount?.abs() ?? 0, exact: true);
+    String balance = formatAmount(selectedCategoryTotal.abs(), exact: true);
 
     // The rest of the column children will be the category information
     // if the expanded view is up
