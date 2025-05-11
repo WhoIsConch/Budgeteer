@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:budget/models/database_extensions.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
@@ -10,11 +11,9 @@ import 'package:budget/utils/enums.dart';
 import 'package:budget/utils/validators.dart';
 
 class ManageCategoryDialog extends StatefulWidget {
-  const ManageCategoryDialog(
-      {super.key, this.mode = ObjectManageMode.add, this.category});
+  const ManageCategoryDialog({super.key, this.category});
 
-  final ObjectManageMode mode;
-  final Category? category;
+  final CategoryWithAmount? category;
 
   @override
   State<ManageCategoryDialog> createState() => _ManageCategoryDialogState();
@@ -32,7 +31,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
 
   CategoriesCompanion getCategory() {
     return CategoriesCompanion(
-      id: Value.absentIfNull(widget.category?.id),
+      id: Value.absentIfNull(widget.category?.category.id),
       name: Value(nameController.text),
       balance: Value.absentIfNull(double.tryParse(amountController.text)),
       resetIncrement: Value(resetIncrement),
@@ -41,17 +40,20 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
     );
   }
 
+  bool get isEditing => widget.category != null;
+
   @override
   void initState() {
     super.initState();
 
-    if (widget.mode == ObjectManageMode.edit) {
-      nameController.text = widget.category!.name;
-      amountController.text =
-          widget.category!.balance?.toStringAsFixed(2) ?? "0";
-      allowNegatives = widget.category!.allowNegatives;
-      resetIncrement = widget.category!.resetIncrement;
-      selectedColor = widget.category!.color;
+    if (isEditing) {
+      var category = widget.category!.category;
+
+      nameController.text = category.name;
+      amountController.text = category.balance?.toStringAsFixed(2) ?? "0";
+      allowNegatives = category.allowNegatives;
+      resetIncrement = category.resetIncrement;
+      selectedColor = category.color;
     }
   }
 
@@ -88,10 +90,10 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
         }
 
         final provider = Provider.of<AppDatabase>(context, listen: false);
-        Category savedCategory;
+        CategoryWithAmount savedCategory;
 
         try {
-          if (widget.mode == ObjectManageMode.edit) {
+          if (isEditing) {
             // There is no way this shouldn't be a valid category with a valid
             // ID. If it isn't, I'll let the try-catch handle it for now.
             // I'll think of something else if it becomes a problem.
@@ -115,7 +117,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
 
     List<Widget> formActions;
 
-    if (widget.mode == ObjectManageMode.add) {
+    if (isEditing) {
       formActions = [okButton];
     } else {
       formActions = [
@@ -129,8 +131,8 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                 onPressed: () {
                   final deletionManager = DeletionManager(context);
 
-                  deletionManager
-                      .stageObjectsForDeletion<Category>([widget.category!.id]);
+                  deletionManager.stageObjectsForDeletion<Category>(
+                      [widget.category!.category.id]);
                   Navigator.of(context).pop(true);
                 }),
             Row(
@@ -212,8 +214,9 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                   DropdownMenu(
                     expandedInsets: EdgeInsets.zero,
                     textStyle: const TextStyle(fontSize: 16),
-                    initialSelection: widget.category?.resetIncrement ??
-                        CategoryResetIncrement.never,
+                    initialSelection:
+                        widget.category?.category.resetIncrement ??
+                            CategoryResetIncrement.never,
                     dropdownMenuEntries: CategoryResetIncrement.values
                         .map(
                           (e) => DropdownMenuEntry(label: e.text, value: e),

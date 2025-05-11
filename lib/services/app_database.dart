@@ -442,6 +442,13 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
       db.deleteCategoryById(id);
 }
 
+class CategoryQueryWithConditionalSum {
+  final JoinedSelectStatement query;
+  final Expression<double> conditionalSum;
+
+  CategoryQueryWithConditionalSum(this.query, this.conditionalSum);
+}
+
 @DriftDatabase(
     tables: [Categories, Transactions, Goals, Accounts], daos: [TransactionDao])
 class AppDatabase extends _$AppDatabase {
@@ -462,7 +469,7 @@ class AppDatabase extends _$AppDatabase {
             _formatter.format(isStart ? timeRange.start : timeRange.end)));
   }
 
-  Stream<List<CategoryWithAmount>> watchCategories() {
+  CategoryQueryWithConditionalSum getCategoriesWithAmountsQuery() {
     // Get the start and end date to look for the values
     Expression<String> startDate = CaseWhenExpression<String>(
         cases: CategoryResetIncrement.values
@@ -509,10 +516,16 @@ class AppDatabase extends _$AppDatabase {
       ..addColumns([conditionalSum])
       ..groupBy([categories.id]);
 
-    return queryWithSum.watch().map((rows) => rows
+    return CategoryQueryWithConditionalSum(queryWithSum, conditionalSum);
+  }
+
+  Stream<List<CategoryWithAmount>> watchCategories() {
+    final queryWithSum = getCategoriesWithAmountsQuery();
+
+    return queryWithSum.query.watch().map((rows) => rows
         .map((row) => CategoryWithAmount(
             category: row.readTable(categories),
-            amount: row.read<double>(conditionalSum)))
+            amount: row.read<double>(queryWithSum.conditionalSum)))
         .toList());
   }
 
@@ -580,11 +593,26 @@ class AppDatabase extends _$AppDatabase {
         ))
       .getSingle();
 
-  Future<Category> getCategoryById(String id) =>
-      (select(categories)..where((tbl) => tbl.id.equals(id))).getSingle();
+  Future<CategoryWithAmount?> getCategoryById(String id) async {
+    final categorySumQuery = getCategoriesWithAmountsQuery();
+
+    final singleCategoryQuery = categorySumQuery.query
+      ..where(categories.id.equals(id));
+
+    final row = await singleCategoryQuery.getSingleOrNull();
+
+    if (row != null) {
+      final category = row.readTable(categories);
+      final amount = row.read<double>(categorySumQuery.conditionalSum);
+
+      return CategoryWithAmount(category: category, amount: amount);
+    } else {
+      return null;
+    }
+  }
 
   // Category methods
-  Future<Category> createCategory(CategoriesCompanion entry) async {
+  Future<CategoryWithAmount> createCategory(CategoriesCompanion entry) async {
     final id = entry.id.present ? entry.id.value : uuid.v4();
     // 2. Create a companion that definitely includes the ID
     final entryWithId = entry.copyWith(id: Value(id));
@@ -598,7 +626,10 @@ class AppDatabase extends _$AppDatabase {
 
     var category = await getCategoryById(id);
 
-    return category;
+    // There's something wrong if we can't get the ID of this category for
+    // some reason, so I guess it's okay if I make the program crash
+    // in that case.
+    return category!;
   }
 
   Future<void> updateCategory(Category entry) async {
@@ -607,7 +638,8 @@ class AppDatabase extends _$AppDatabase {
     await executeQuery(query);
   }
 
-  Future<Category> updatePartialCategory(CategoriesCompanion entry) async {
+  Future<CategoryWithAmount> updatePartialCategory(
+      CategoriesCompanion entry) async {
     final query = (update(categories)
           ..where((t) => t.id.equals(entry.id.value))
           ..write(entry))
@@ -615,7 +647,8 @@ class AppDatabase extends _$AppDatabase {
 
     await executeQuery(query);
 
-    return await getCategoryById(entry.id.value);
+    // Same logic as with createCategory
+    return (await getCategoryById(entry.id.value))!;
   }
 
   Future<void> deleteCategory(Category entry) async {

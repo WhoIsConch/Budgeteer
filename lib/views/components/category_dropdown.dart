@@ -1,3 +1,4 @@
+import 'package:budget/models/database_extensions.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/views/panels/manage_category.dart';
 import 'package:budget/utils/enums.dart';
@@ -11,18 +12,16 @@ class CategoryDropdown extends StatelessWidget {
     required this.onChanged,
     required this.selectedCategory,
     this.onDeleted,
-    this.selectedCategoryTotal,
     this.showExpanded = true,
     this.transactionDate,
     this.isLoading = false,
   });
 
-  final List<Category> categories;
+  final List<CategoryWithAmount> categories;
   final bool isLoading;
-  final Function(Category?) onChanged;
+  final Function(CategoryWithAmount?) onChanged;
   final Function? onDeleted;
-  final Category? selectedCategory;
-  final double? selectedCategoryTotal;
+  final CategoryWithAmount? selectedCategory;
   final DateTime? transactionDate;
   final TextEditingController categoryController = TextEditingController();
   final bool showExpanded;
@@ -30,21 +29,24 @@ class CategoryDropdown extends StatelessWidget {
   bool get shouldShowExpanded => showExpanded && selectedCategory != null;
 
   Color getDividerColor(BuildContext context) =>
-      selectedCategory?.color ?? Theme.of(context).dividerColor;
+      selectedCategory?.category.color ?? Theme.of(context).dividerColor;
+
+  double get selectedCategoryTotal => selectedCategory?.amount ?? 0.0;
 
   @override
   Widget build(BuildContext context) {
-    if (selectedCategory == null || selectedCategory!.name.isEmpty) {
+    if (selectedCategory == null || selectedCategory!.category.name.isEmpty) {
       categoryController.text = "No Category";
     } else {
-      categoryController.text = selectedCategory!.name;
+      categoryController.text = selectedCategory!.category.name;
     }
 
     List<DropdownMenuEntry<String>> dropdownEntries = categories
-        .map<DropdownMenuEntry<String>>((Category cat) => DropdownMenuEntry(
-              value: cat.id,
-              label: cat.name,
-            ))
+        .map<DropdownMenuEntry<String>>(
+            (CategoryWithAmount cat) => DropdownMenuEntry(
+                  value: cat.category.id,
+                  label: cat.category.name,
+                ))
         .toList();
 
     dropdownEntries
@@ -54,7 +56,7 @@ class CategoryDropdown extends StatelessWidget {
       enabled: !isLoading,
       inputDecorationTheme:
           const InputDecorationTheme(border: InputBorder.none),
-      initialSelection: selectedCategory?.name ?? "",
+      initialSelection: selectedCategory?.category.name ?? "",
       controller: categoryController,
       requestFocusOnTap: true,
       label: const Text('Category'),
@@ -66,7 +68,8 @@ class CategoryDropdown extends StatelessWidget {
         }
 
         // This should usually be either a list of 1 or 0, so we use firstOrNull
-        onChanged(categories.where((e) => e.id == categoryId).firstOrNull);
+        onChanged(
+            categories.where((e) => e.category.id == categoryId).firstOrNull);
       },
       dropdownMenuEntries: dropdownEntries,
     );
@@ -103,22 +106,18 @@ class CategoryDropdown extends StatelessWidget {
               onPressed: () async {
                 final result = await showDialog(
                     context: context,
-                    builder: (context) => ManageCategoryDialog(
-                          category: selectedCategory,
-                          mode: selectedCategory == null
-                              ? ObjectManageMode.add
-                              : ObjectManageMode.edit,
-                        )).then(
+                    builder: (context) =>
+                        ManageCategoryDialog(category: selectedCategory)).then(
                   (value) => value == true && onDeleted != null
                       ? onDeleted!()
-                      : value is Category
+                      : value is CategoryWithAmount
                           ? onChanged(value)
                           : null,
                 );
 
                 if (result is String && result.isEmpty) {
                   onChanged(null);
-                } else if (result is Category) {
+                } else if (result is CategoryWithAmount) {
                   onChanged(result);
                 }
               },
@@ -128,13 +127,8 @@ class CategoryDropdown extends StatelessWidget {
 
     List<Widget> columnChildren = [categorySelector];
 
-    String balance;
-
-    if (selectedCategoryTotal != null) {
-      balance = formatAmount(selectedCategoryTotal!.abs(), exact: true);
-    } else {
-      balance = "ERR";
-    }
+    String balance =
+        formatAmount(selectedCategory?.amount?.abs() ?? 0, exact: true);
 
     // The rest of the column children will be the category information
     // if the expanded view is up
@@ -143,10 +137,9 @@ class CategoryDropdown extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(8, 8, 8, 2),
           child: Text(
-              "Balance: ${selectedCategoryTotal != null && selectedCategoryTotal! < 0 ? "-" : ""}\$$balance",
-              style: selectedCategoryTotal != null &&
-                      selectedCategoryTotal! < 0 &&
-                      !selectedCategory!.allowNegatives
+              "Balance: ${selectedCategoryTotal < 0 ? "-" : ""}\$$balance",
+              style: selectedCategoryTotal < 0 &&
+                      !selectedCategory!.category.allowNegatives
                   ? TextStyle(
                       fontSize: 18, color: Theme.of(context).colorScheme.error)
                   : const TextStyle(fontSize: 18)),
@@ -155,9 +148,9 @@ class CategoryDropdown extends StatelessWidget {
 
       columnChildren.add(Padding(
         padding: const EdgeInsets.all(8.0),
-        child: Text((selectedCategory?.resetIncrement !=
+        child: Text((selectedCategory?.category.resetIncrement !=
                 CategoryResetIncrement.never
-            ? "Resets in ${selectedCategory?.getTimeUntilNextReset(fromDate: transactionDate)}"
+            ? "Resets in ${selectedCategory?.category.getTimeUntilNextReset(fromDate: transactionDate)}"
             : "Amount doesn't reset")),
       ));
     }

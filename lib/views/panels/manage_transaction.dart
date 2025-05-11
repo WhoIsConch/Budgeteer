@@ -1,7 +1,7 @@
 import 'dart:async';
 
+import 'package:budget/models/database_extensions.dart';
 import 'package:budget/providers/snackbar_provider.dart';
-import 'package:budget/utils/tools.dart';
 import 'package:budget/views/components/category_dropdown.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:drift/drift.dart' show Value;
@@ -29,10 +29,10 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
   final TextEditingController notesController = TextEditingController();
   final TextEditingController dateController = TextEditingController();
   final TextEditingController categoryController = TextEditingController();
-  Category? selectedCategory;
+  CategoryWithAmount? selectedCategory;
   double? selectedCategoryTotal;
   bool isLoading = true;
-  late Stream<List<Category>> allCategories;
+  late Stream<List<CategoryWithAmount>> allCategories;
 
   DateTime selectedDate = DateTime.now();
   TransactionType selectedType = TransactionType.expense;
@@ -48,7 +48,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
       date: Value(selectedDate),
       notes: Value(notesController.text),
       type: Value(selectedType),
-      category: Value(selectedCategory?.id),
+      category: Value(selectedCategory?.category.id),
     );
 
     return transaction;
@@ -58,10 +58,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    allCategories = context
-        .watch<AppDatabase>()
-        .watchCategories()
-        .map((ca) => ca.map((c) => c.category).toList());
+    allCategories = context.watch<AppDatabase>().watchCategories();
   }
 
   @override
@@ -87,7 +84,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
   }
 
   Future<void> _loadSelectedCategory(String id) async {
-    Category? category;
+    CategoryWithAmount? category;
 
     if (id.isNotEmpty) {
       final provider = Provider.of<AppDatabase>(context, listen: false);
@@ -98,36 +95,22 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
     _setCategoryInfo(category);
   }
 
-  Future<void> _setCategoryInfo(Category? category) async {
+  Future<void> _setCategoryInfo(CategoryWithAmount? categoryPair) async {
     String catText;
     double? catTotal = selectedCategoryTotal;
 
-    if (category == null) {
+    if (categoryPair == null) {
       catText = "No Category";
     } else {
-      final provider = Provider.of<TransactionDao>(context, listen: false);
-
-      catText = category.name;
+      catText = categoryPair.category.name;
 
       // Get the transaction that's currently represented in the form
       TransactionsCompanion currentTransaction = getTransaction();
 
-      RelativeDateRange? categoryRelRange =
-          category.resetIncrement.relativeDateRange;
-
-      catTotal = await provider
-              .watchTotalAmount(
-                  dateRange: categoryRelRange
-                      ?.getRange(
-                          fullRange: true,
-                          fromDate: currentTransaction.date.value)
-                      .makeInclusive(),
-                  category: category)
-              .first ??
-          0;
+      catTotal = categoryPair.amount ?? 0;
 
       if (widget.transaction != null &&
-          widget.transaction!.category == category.id) {
+          widget.transaction!.category == categoryPair.category.id) {
         // This means we're editing a transaction has its amount logged in the selected category.
         // For accurate results, we subtract the original transaction amount from
         // catTotal, then add the current transaction amount.
@@ -140,11 +123,11 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
         catTotal += currentTransaction.amount.value;
       }
 
-      catTotal = (category.balance ?? 0) + catTotal;
+      catTotal = (categoryPair.category.balance ?? 0) + catTotal;
     }
 
     setState(() {
-      selectedCategory = category;
+      selectedCategory = categoryPair;
       categoryController.text = catText;
       selectedCategoryTotal = catTotal;
       isLoading = false;
@@ -171,7 +154,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
 
     if (selectedCategoryTotal != null &&
         selectedCategoryTotal! < 0 &&
-        !selectedCategory!.allowNegatives) {
+        !selectedCategory!.category.allowNegatives) {
       return "Category balance can't be negative";
     }
 
@@ -257,7 +240,7 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
               }),
         ),
       ),
-      StreamBuilder(
+      StreamBuilder<List<CategoryWithAmount>>(
           stream: allCategories,
           builder: (context, snapshot) => CategoryDropdown(
                 isLoading: snapshot.connectionState == ConnectionState.waiting,
@@ -268,7 +251,6 @@ class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
                 },
                 onDeleted: () => _setCategoryInfo(null),
                 selectedCategory: selectedCategory,
-                selectedCategoryTotal: selectedCategoryTotal,
               )),
       TextFormField(
         controller: notesController,
