@@ -268,7 +268,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                             validator: validateTitle,
                           ),
                         ),
-                        menuButton,
+                        if (isEditing) menuButton,
                       ],
                     ),
                     Row(
