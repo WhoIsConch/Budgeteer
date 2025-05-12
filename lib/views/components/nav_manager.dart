@@ -67,6 +67,7 @@ class _NavManagerState extends State<NavManager>
   List<Widget> _buildActionButtons() => List.generate(
       _expandedButtonsData.length,
       (index) => ScaleTransition(
+          alignment: Alignment.centerRight,
           scale: _scaleAnimation,
           child: SpeedDialExpandedButton(data: _expandedButtonsData[index])));
 
