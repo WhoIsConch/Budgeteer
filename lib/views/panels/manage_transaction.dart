@@ -127,6 +127,8 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       tempControllers["amount"]!.text =
           initialTransaction!.amount.toStringAsFixed(2);
       tempControllers["notes"]!.text = initialTransaction!.notes ?? "";
+      _selectedDate = initialTransaction!.date;
+      _selectedType = initialTransaction!.type;
 
       // Ensure we don't call setState while initState is still working
       WidgetsBinding.instance.addPostFrameCallback((_) {
