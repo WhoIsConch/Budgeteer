@@ -1,3 +1,4 @@
+import 'package:budget/views/panels/manage_transaction.dart';
 import 'package:flutter/material.dart';
 
 class Account extends StatelessWidget {
@@ -5,7 +6,7 @@ class Account extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    return Column(
       children: [
         Column(
           spacing: 16,
@@ -57,6 +58,10 @@ class Account extends StatelessWidget {
             //   },
             //   child: Text("Send Firestore Data"),
             // )
+            TextButton(
+                onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => ManageTransactionPage())),
+                child: Text("Open new transaction manager"))
           ],
         ),
         Divider(),

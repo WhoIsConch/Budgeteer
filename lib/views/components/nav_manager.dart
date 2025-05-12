@@ -59,7 +59,7 @@ class _NavManagerState extends State<NavManager>
             icon: const Icon(Icons.attach_money),
             onPressed: () {
               Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => const ManageTransactionDialog()));
+                  builder: (_) => const ManageTransactionPage()));
               _toggleFabMenu();
             })
       ];

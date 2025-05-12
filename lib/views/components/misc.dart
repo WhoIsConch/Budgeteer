@@ -18,8 +18,8 @@ void showOptionsDialog(BuildContext context, Transaction transaction) {
               Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) =>
-                          ManageTransactionDialog(transaction: transaction)));
+                      builder: (context) => ManageTransactionPage(
+                          initialTransaction: transaction)));
             },
           ),
           ListTile(

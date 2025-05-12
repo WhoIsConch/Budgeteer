@@ -1,401 +1,324 @@
-import 'dart:async';
-
 import 'package:budget/models/database_extensions.dart';
 import 'package:budget/providers/snackbar_provider.dart';
-import 'package:budget/views/components/category_dropdown.dart';
 import 'package:budget/services/app_database.dart';
+import 'package:budget/utils/enums.dart';
+import 'package:budget/utils/tools.dart';
+import 'package:budget/utils/validators.dart';
+import 'package:budget/views/panels/manage_category.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:budget/utils/enums.dart';
-import 'package:budget/utils/validators.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
-class ManageTransactionDialog extends StatefulWidget {
-  const ManageTransactionDialog({super.key, this.transaction});
+class ManageTransactionPage extends StatefulWidget {
+  const ManageTransactionPage({super.key, this.initialTransaction});
 
-  final Transaction? transaction;
+  final Transaction? initialTransaction;
 
   @override
-  State<ManageTransactionDialog> createState() =>
-      _ManageTransactionDialogState();
+  State<ManageTransactionPage> createState() => _ManageTransactionPageState();
 }
 
-class _ManageTransactionDialogState extends State<ManageTransactionDialog> {
-  final TextEditingController titleController = TextEditingController();
-  final TextEditingController amountController = TextEditingController();
-  final TextEditingController notesController = TextEditingController();
-  final TextEditingController dateController = TextEditingController();
-  final TextEditingController categoryController = TextEditingController();
-  CategoryWithAmount? selectedCategory;
-  double? selectedCategoryTotal;
-  bool isLoading = true;
-  late Stream<List<CategoryWithAmount>> allCategories;
-
-  DateTime selectedDate = DateTime.now();
-  TransactionType selectedType = TransactionType.expense;
-
-  Transaction? get originalTransaction => widget.transaction;
-  bool get isEditing => originalTransaction != null;
-
+class _ManageTransactionPageState extends State<ManageTransactionPage> {
   final _formKey = GlobalKey<FormState>();
 
-  TransactionsCompanion getTransaction() {
-    // Create a transaction based on the data in the form
-    TransactionsCompanion transaction = TransactionsCompanion(
-      id: Value.absentIfNull(widget.transaction?.id),
-      title: Value(titleController.text),
-      amount: Value(double.tryParse(amountController.text) ?? 0),
-      date: Value(selectedDate),
-      notes: Value(notesController.text),
-      type: Value(selectedType),
-      category: Value(selectedCategory?.category.id),
+  final List<String> _validControllers = [
+    "amount",
+    "title",
+    "notes",
+    "category",
+    "account",
+    "goal"
+  ];
+  late final Map<String, TextEditingController> controllers;
+
+  DateTime _selectedDate = DateTime.now();
+  TransactionType _selectedType = TransactionType.expense;
+  CategoryWithAmount? _selectedCategoryPair;
+  Account? _selectedAccount;
+  Goal? _selectedGoal;
+
+  Transaction? get initialTransaction => widget.initialTransaction;
+
+  bool get isEditing => widget.initialTransaction != null;
+
+  void _pickDate(context) async {
+    final DateTime? selectedDate = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 365 * 100)),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 100)),
     );
 
-    return transaction;
+    if (selectedDate != null) {
+      setState(() => _selectedDate = selectedDate);
+    }
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  Value<String> getControllerValue(String id) => controllers[id] != null
+      ? Value(controllers[id]!.text)
+      : const Value.absent();
 
-    allCategories = context.watch<AppDatabase>().watchCategories();
+  DropdownMenu _buildDropdownMenu<T>({
+    required String label,
+    required List<T> values,
+    required List<String> labels,
+    required ValueChanged<T?> onChanged,
+    TextEditingController? controller,
+    T? initialSelection,
+  }) => // Dart formatter PLEASE this is so ugly
+      DropdownMenu<T>(
+        enabled: controller != null,
+        controller: controller,
+        initialSelection: initialSelection,
+        expandedInsets: EdgeInsets.zero,
+        dropdownMenuEntries: values
+            .map(
+              (e) =>
+                  DropdownMenuEntry(value: e, label: labels[values.indexOf(e)]),
+            )
+            .toList(),
+        label: Text(label),
+        onSelected: onChanged,
+        inputDecorationTheme:
+            const InputDecorationTheme(border: OutlineInputBorder()),
+      );
+
+  TransactionsCompanion _buildTransaction() => TransactionsCompanion(
+        id: isEditing ? Value(initialTransaction!.id) : const Value.absent(),
+        title: getControllerValue("title"),
+        amount: Value(double.parse(controllers["amount"]!.text)),
+        date: Value(_selectedDate),
+        type: Value(_selectedType),
+        notes: getControllerValue("notes"),
+        category: Value(_selectedCategoryPair?.category.id),
+        accountId: Value(_selectedAccount?.id),
+        goalId: Value(_selectedGoal?.id),
+      );
+
+  void _loadCategory() async {
+    // Load the currently selected category into the form
+    if (!isEditing) return;
+    if (initialTransaction!.category == null) return;
+
+    final categoryPair = await context
+        .read<AppDatabase>()
+        .getCategoryById(initialTransaction!.category!);
+
+    setState(() {
+      _selectedCategoryPair = categoryPair;
+      controllers["category"]!.text = categoryPair!.category.name;
+    });
   }
 
   @override
   void initState() {
     super.initState();
-    dateController.text = DateFormat('MM/dd/yyyy').format(selectedDate);
 
-    // There's probably a better way to do this
+    Map<String, TextEditingController> tempControllers = {};
+
+    for (var id in _validControllers) {
+      tempControllers[id] = TextEditingController();
+    }
+
     if (isEditing) {
-      titleController.text = originalTransaction!.title;
-      amountController.text = originalTransaction!.amount.toStringAsFixed(2);
-      notesController.text = originalTransaction!.notes ?? "";
-      selectedDate = originalTransaction!.date;
-      dateController.text = DateFormat('MM/dd/yyyy').format(selectedDate);
-      selectedType = originalTransaction!.type;
+      tempControllers["title"]!.text = initialTransaction!.title;
+      tempControllers["amount"]!.text =
+          initialTransaction!.amount.toStringAsFixed(2);
+      tempControllers["notes"]!.text = initialTransaction!.notes ?? "";
+
+      // Ensure we don't call setState while initState is still working
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadCategory();
+      });
     }
 
-    if (originalTransaction?.category != null) {
-      _loadSelectedCategory(originalTransaction!.category!);
-    } else {
-      isLoading = false;
-    }
-  }
-
-  Future<void> _loadSelectedCategory(String id) async {
-    CategoryWithAmount? category;
-
-    if (id.isNotEmpty) {
-      final provider = Provider.of<AppDatabase>(context, listen: false);
-
-      category = await provider.getCategoryById(id);
-    }
-
-    _setCategoryInfo(category);
-  }
-
-  Future<void> _setCategoryInfo(CategoryWithAmount? categoryPair) async {
-    String catText;
-    double? categoryTotal =
-        (categoryPair?.amount ?? 0) + (categoryPair?.category.balance ?? 0);
-
-    if (categoryPair == null) {
-      catText = "No Category";
-    } else {
-      catText = categoryPair.category.name;
-
-      // Get the transaction that's currently represented in the form
-      TransactionsCompanion currentTransaction = getTransaction();
-
-      if (isEditing &&
-          originalTransaction!.category == categoryPair.category.id) {
-        // Since the categoryPair's amount already factors in the current transaction's
-        // amount, we want to remove the original amount from the category's total.
-
-        if (originalTransaction!.type == TransactionType.expense) {
-          categoryTotal += originalTransaction!.amount;
-        } else {
-          categoryTotal -= originalTransaction!.amount;
-        }
-      }
-
-      if (currentTransaction.type.value == TransactionType.expense) {
-        categoryTotal -= currentTransaction.amount.value;
-      } else {
-        categoryTotal += currentTransaction.amount.value;
-      }
-    }
-
-    setState(() {
-      selectedCategory = categoryPair;
-      categoryController.text = catText;
-      selectedCategoryTotal = categoryTotal;
-      isLoading = false;
-    });
+    controllers = tempControllers;
   }
 
   @override
   void dispose() {
-    titleController.dispose();
-    amountController.dispose();
-    notesController.dispose();
-    dateController.dispose();
-    categoryController.dispose();
-
+    for (var c in controllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
-  String? validateTransactionAmount(value) {
-    String? initialCheck = const AmountValidator().validateAmount(value);
-
-    if (initialCheck != null) {
-      return initialCheck;
-    }
-
-    if (selectedCategoryTotal != null &&
-        selectedCategoryTotal! < 0 &&
-        !selectedCategory!.category.allowNegatives) {
-      return "Category balance can't be negative";
-    }
-
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
-    TextStyle fieldTextStyle = const TextStyle(fontSize: 24, height: 2);
-    TextStyle labelStyle = const TextStyle(fontSize: 24);
+    return Scaffold(
+        appBar: AppBar(
+            title: Text(isEditing ? "Edit transaction" : "Add transaction"),
+            actions: [
+              IconButton(
+                  icon: const Icon(Icons.check),
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      final database = context.read<AppDatabase>();
+                      final currentTransaction = _buildTransaction();
 
-    List<Widget> formFields = [
-      TextFormField(
-          style: fieldTextStyle,
-          controller: titleController,
-          decoration: InputDecoration(
-            labelStyle: labelStyle,
-            labelText: "Title",
-          ),
-          validator: validateTitle),
-      Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Expanded(
-            child: TextFormField(
-              onChanged: (value) => _setCategoryInfo(selectedCategory),
-              style: fieldTextStyle,
-              controller: amountController,
-              decoration: InputDecoration(
-                  labelText: "Amount",
-                  prefix: const Text("\$"),
-                  labelStyle: labelStyle),
-              keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true, signed: false),
-              validator: validateTransactionAmount,
-              inputFormatters: [DecimalTextInputFormatter()],
+                      try {
+                        if (isEditing) {
+                          database.updatePartialTransaction(currentTransaction);
+                        } else {
+                          database.createTransaction(currentTransaction);
+                        }
+
+                        Navigator.of(context).pop();
+                      } catch (e) {
+                        AppLogger().logger.e("Unable to save transaction: $e");
+                        context
+                            .read<SnackbarProvider>()
+                            .showSnackBar(const SnackBar(
+                              content: Text("Unable to save transaction"),
+                            ));
+                      }
+                    }
+                  })
+            ]),
+        body: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: SingleChildScrollView(
+            child: Form(
+              autovalidateMode: AutovalidateMode.onUnfocus,
+              key: _formKey,
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: 16.0,
+                  children: [
+                    SegmentedButton(
+                      onSelectionChanged: (p0) =>
+                          setState(() => _selectedType = p0.first),
+                      selected: {_selectedType},
+                      segments: const [
+                        ButtonSegment(
+                            value: TransactionType.expense,
+                            label: Text("Expense")),
+                        ButtonSegment(
+                            value: TransactionType.income,
+                            label: Text("Income"))
+                      ],
+                    ),
+                    TextFormField(
+                      controller: controllers["amount"],
+                      decoration: InputDecoration(
+                          labelText: "Amount",
+                          prefixIcon: Icon(Icons.attach_money,
+                              color: Theme.of(context).colorScheme.primary),
+                          border: const OutlineInputBorder()),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      validator: const AmountValidator().validateAmount,
+                    ),
+                    TextFormField(
+                      controller: controllers["title"],
+                      decoration: const InputDecoration(
+                          labelText: "Title", border: OutlineInputBorder()),
+                      validator: validateTitle,
+                    ),
+                    TextFormField(
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          labelText: "Date",
+                          border: const OutlineInputBorder(),
+                          suffixIcon: Icon(Icons.calendar_today,
+                              color: Theme.of(context).colorScheme.primary),
+                        ),
+                        controller: TextEditingController(
+                            text:
+                                DateFormat('MM/dd/yyyy').format(_selectedDate)),
+                        onTap: () => _pickDate(context)),
+                    Row(spacing: 8.0, children: [
+                      Expanded(
+                        child: StreamBuilder<List<CategoryWithAmount?>>(
+                            stream:
+                                context.read<AppDatabase>().watchCategories(),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return _buildDropdownMenu(
+                                      label: "Loading",
+                                      values: [],
+                                      labels: [],
+                                      onChanged: (_) {});
+                                }
+                                return _buildDropdownMenu(
+                                    label: "No categories",
+                                    values: [],
+                                    labels: [],
+                                    onChanged: (_) {});
+                              }
+
+                              final List<CategoryWithAmount?> values = [
+                                ...snapshot.data!,
+                                null
+                              ];
+                              final labels = values
+                                  .map(
+                                    (e) => e?.category.name ?? "No Category",
+                                  )
+                                  .toList();
+
+                              return _buildDropdownMenu<CategoryWithAmount?>(
+                                  label: "Category",
+                                  values: values,
+                                  labels: labels,
+                                  initialSelection: _selectedCategoryPair,
+                                  controller: controllers["category"],
+                                  onChanged: (pair) => setState(() {
+                                        _selectedCategoryPair = pair;
+                                        controllers["category"]!.text =
+                                            pair?.category.name ??
+                                                "No category";
+                                      }));
+                            }),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                            _selectedCategoryPair == null
+                                ? Icons.add_circle_outline
+                                : Icons.edit,
+                            color: Theme.of(context).colorScheme.primary),
+                        tooltip: _selectedCategoryPair == null
+                            ? "New category"
+                            : "Edit category",
+                        onPressed: () async {
+                          final result = await showDialog(
+                              context: context,
+                              builder: (context) => ManageCategoryDialog(
+                                  category: _selectedCategoryPair));
+
+                          if (result is String && result.isEmpty) {
+                            setState(() => _selectedCategoryPair = null);
+                          } else if (result is CategoryWithAmount) {
+                            setState(() => _selectedCategoryPair = result);
+                          }
+                        },
+                      ),
+                    ]),
+                    _buildDropdownMenu(
+                        label: "Account",
+                        values: [],
+                        labels: [],
+                        onChanged: (_) {}),
+                    _buildDropdownMenu(
+                        label: "Goal",
+                        values: [],
+                        labels: [],
+                        onChanged: (_) {}),
+                    TextFormField(
+                      controller: controllers["notes"],
+                      decoration: const InputDecoration(
+                          labelText: "Notes (optional)",
+                          border: OutlineInputBorder(),
+                          alignLabelWithHint: true),
+                      maxLines: 3,
+                      textInputAction: TextInputAction.done,
+                    )
+                  ]),
             ),
           ),
-          const SizedBox(width: 24),
-          SegmentedButton(
-            style: ButtonStyle(
-                shape: WidgetStatePropertyAll(RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)))),
-            direction: Axis.vertical,
-            selected: {selectedType},
-            segments: const [
-              ButtonSegment(
-                  value: TransactionType.expense, label: Text("Expense")),
-              ButtonSegment(
-                  value: TransactionType.income, label: Text("Income"))
-            ],
-            onSelectionChanged: (Set<TransactionType> value) {
-              selectedType = value.first;
-              _setCategoryInfo(selectedCategory);
-            },
-          ),
-        ],
-      ),
-      TextFormField(
-        readOnly: true,
-        controller: dateController,
-        style: fieldTextStyle,
-        decoration: InputDecoration(
-          labelText: "Date",
-          labelStyle: labelStyle,
-          suffixIcon: IconButton(
-              icon: const Icon(Icons.calendar_today),
-              onPressed: () {
-                showDatePicker(
-                  context: context,
-                  initialDate: selectedDate,
-                  firstDate:
-                      DateTime.now().subtract(const Duration(days: 365 * 100)),
-                  lastDate: DateTime.now().add(const Duration(days: 365 * 100)),
-                ).then((value) {
-                  if (value != null) {
-                    selectedDate = value;
-                    dateController.text =
-                        DateFormat('MM/dd/yyyy').format(selectedDate);
-                    _setCategoryInfo(selectedCategory);
-                  }
-                });
-              }),
-        ),
-      ),
-      StreamBuilder<List<CategoryWithAmount>>(
-          stream: allCategories,
-          builder: (context, snapshot) => CategoryDropdown(
-                isLoading: snapshot.connectionState == ConnectionState.waiting,
-                categories: snapshot.data ?? [],
-                transactionDate: selectedDate,
-                onChanged: (category) {
-                  _setCategoryInfo(category);
-                },
-                onDeleted: () => _setCategoryInfo(null),
-                selectedCategory: selectedCategory,
-                selectedCategoryTotal:
-                    selectedCategoryTotal ?? selectedCategory?.amount ?? 0,
-              )),
-      TextFormField(
-        controller: notesController,
-        style: fieldTextStyle,
-        decoration: InputDecoration(labelText: "Notes", labelStyle: labelStyle),
-      ),
-    ];
-    Widget title = const Text("Add Transaction");
-
-    if (isEditing) {
-      title = const Text("Edit Transaction");
-    }
-
-    Widget body =
-        StatefulBuilder(builder: (BuildContext context, StateSetter setState) {
-      return SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            spacing: 24,
-            children: formFields,
-          ),
-        ),
-      );
-    });
-
-    return Scaffold(
-      appBar: AppBar(title: title, actions: [
-        Consumer<AppDatabase>(
-          builder: (context, transactionProvider, child) => IconButton(
-            icon: const Icon(Icons.check),
-            onPressed: () async {
-              if (_formKey.currentState!.validate()) {
-                try {
-                  if (isEditing) {
-                    transactionProvider
-                        .updatePartialTransaction(getTransaction());
-                  } else {
-                    await transactionProvider
-                        .createTransaction(getTransaction());
-                  }
-
-                  if (context.mounted) {
-                    Navigator.of(context).pop();
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to save transaction: $e')),
-                    );
-                  }
-                }
-              }
-            },
-          ),
-        ),
-      ]),
-      body: Form(
-        key: _formKey,
-        // title: title,
-        child: body,
-      ),
-    );
-  }
-}
-
-class TransactionManageScreen extends StatefulWidget {
-  final Transaction? transaction;
-
-  const TransactionManageScreen({super.key, this.transaction});
-
-  @override
-  State<TransactionManageScreen> createState() =>
-      _TransactionManageScreenState();
-}
-
-class _TransactionManageScreenState extends State<TransactionManageScreen> {
-  final TextEditingController titleController = TextEditingController();
-  final TextEditingController amountController = TextEditingController();
-  final TextEditingController notesController = TextEditingController();
-  final TextEditingController dateController = TextEditingController();
-  final TextEditingController categoryController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
-
-  Category? selectedCategory;
-  DateTime selectedDate = DateTime.now();
-  TransactionType selectedType = TransactionType.expense;
-
-  bool isLoading = true;
-
-  String get titleText =>
-      widget.transaction == null ? "Add transaction" : "Update transaction";
-
-  TransactionsCompanion getTransaction() {
-    // Create a transaction based on the data in the form
-    TransactionsCompanion transaction = TransactionsCompanion(
-      id: Value.absentIfNull(widget.transaction?.id),
-      title: Value(titleController.text),
-      amount: Value(double.tryParse(amountController.text) ?? 0),
-      date: Value(selectedDate),
-      notes: Value(notesController.text),
-      type: Value(selectedType),
-      category: Value(selectedCategory?.id),
-    );
-
-    return transaction;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(titleText), actions: [
-        Consumer<AppDatabase>(
-          builder: (context, transactionProvider, child) => IconButton(
-            icon: const Icon(Icons.check),
-            onPressed: () async {
-              if (_formKey.currentState!.validate()) {
-                try {
-                  if (widget.transaction != null) {
-                    transactionProvider
-                        .updatePartialTransaction(getTransaction());
-                  } else {
-                    await transactionProvider
-                        .createTransaction(getTransaction());
-                  }
-
-                  if (context.mounted) {
-                    Navigator.of(context).pop();
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    context.read<SnackbarProvider>().showSnackBar(SnackBar(
-                          content: Text('Failed to save transaction: $e'),
-                        ));
-                  }
-                }
-              }
-            },
-          ),
-        ),
-      ]),
-    );
+        ));
   }
 }

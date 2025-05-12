@@ -153,7 +153,7 @@ class TransactionPreviewCard extends StatelessWidget {
             onTap: () {
               Navigator.of(context).push(MaterialPageRoute(
                   builder: (_) =>
-                      ManageTransactionDialog(transaction: transaction)));
+                      ManageTransactionPage(initialTransaction: transaction)));
             },
             onLongPress: () => showOptionsDialog(context, transaction),
             child: Padding(
