@@ -15,4 +15,12 @@ class CategoryWithAmount {
   final double? amount;
 
   CategoryWithAmount({required this.category, this.amount});
+
+  // Get the remaining amount that can be used in a category over a certain time
+  // The amount field was already grabbed with the relative date range in mind,
+  // so we just need to add it to the category.
+  // We add it because the database call returns negative numbers for expenses and 
+  // positive for income, so the balance in a category would increase if you add
+  // an income transaction to a category.
+  get double? remainingAmount => category.balance + (amount ?? 0);
 }
