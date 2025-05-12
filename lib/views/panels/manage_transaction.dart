@@ -1,5 +1,6 @@
 import 'package:budget/models/database_extensions.dart';
 import 'package:budget/providers/snackbar_provider.dart';
+import 'package:budget/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/enums.dart';
 import 'package:budget/utils/tools.dart';
@@ -144,6 +145,62 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     super.dispose();
   }
 
+  Widget get menuButton => MenuAnchor(
+        alignmentOffset: const Offset(-24, 0),
+        menuChildren: [
+          MenuItemButton(
+              child: const Text("Archive"),
+              onPressed: () => showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                        title: const Text("Archive transaction?"),
+                        content: const Text(
+                            "Archived transactions do not affect balances or appear in search"),
+                        actions: [
+                          TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text("Cancel")),
+                          TextButton(
+                              onPressed: () {}, child: const Text("Archive"))
+                        ]),
+                  )),
+          MenuItemButton(
+              child: const Text("Delete"),
+              onPressed: () => showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                          title: const Text("Delete transaction?"),
+                          content: const Text(
+                              "Are you sure you want to delete this transaction?"),
+                          actions: [
+                            TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: const Text("Cancel")),
+                            TextButton(
+                                onPressed: () {
+                                  final manager = DeletionManager(context);
+
+                                  manager.stageObjectsForDeletion<Transaction>(
+                                      [initialTransaction!.id]);
+                                  Navigator.of(context)
+                                    ..pop()
+                                    ..pop();
+                                },
+                                child: const Text("Delete")),
+                          ])))
+        ],
+        builder: (BuildContext context, MenuController controller, _) =>
+            IconButton(
+                icon: Icon(Icons.more_vert),
+                onPressed: () {
+                  if (controller.isOpen) {
+                    controller.close();
+                  } else {
+                    controller.open();
+                  }
+                }),
+      );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -199,35 +256,55 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                             label: Text("Income"))
                       ],
                     ),
-                    TextFormField(
-                      controller: controllers["amount"],
-                      decoration: InputDecoration(
-                          labelText: "Amount",
-                          prefixIcon: Icon(Icons.attach_money,
-                              color: Theme.of(context).colorScheme.primary),
-                          border: const OutlineInputBorder()),
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      validator: const AmountValidator().validateAmount,
-                    ),
-                    TextFormField(
-                      controller: controllers["title"],
-                      decoration: const InputDecoration(
-                          labelText: "Title", border: OutlineInputBorder()),
-                      validator: validateTitle,
-                    ),
-                    TextFormField(
-                        readOnly: true,
-                        decoration: InputDecoration(
-                          labelText: "Date",
-                          border: const OutlineInputBorder(),
-                          suffixIcon: Icon(Icons.calendar_today,
-                              color: Theme.of(context).colorScheme.primary),
+                    Row(
+                      spacing: 8.0,
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: controllers["title"],
+                            decoration: const InputDecoration(
+                                labelText: "Title",
+                                border: OutlineInputBorder()),
+                            validator: validateTitle,
+                          ),
                         ),
-                        controller: TextEditingController(
-                            text:
-                                DateFormat('MM/dd/yyyy').format(_selectedDate)),
-                        onTap: () => _pickDate(context)),
+                        menuButton,
+                      ],
+                    ),
+                    Row(
+                      spacing: 16.0,
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: controllers["amount"],
+                            decoration: InputDecoration(
+                                labelText: "Amount",
+                                prefixIcon: Icon(Icons.attach_money,
+                                    color:
+                                        Theme.of(context).colorScheme.primary),
+                                border: const OutlineInputBorder()),
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            validator: const AmountValidator().validateAmount,
+                          ),
+                        ),
+                        Expanded(
+                          child: TextFormField(
+                              readOnly: true,
+                              decoration: InputDecoration(
+                                labelText: "Date",
+                                border: const OutlineInputBorder(),
+                                suffixIcon: Icon(Icons.calendar_today,
+                                    color:
+                                        Theme.of(context).colorScheme.primary),
+                              ),
+                              controller: TextEditingController(
+                                  text: DateFormat('MM/dd/yyyy')
+                                      .format(_selectedDate)),
+                              onTap: () => _pickDate(context)),
+                        ),
+                      ],
+                    ),
                     Row(spacing: 8.0, children: [
                       Expanded(
                         child: StreamBuilder<List<CategoryWithAmount?>>(
