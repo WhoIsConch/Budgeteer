@@ -200,13 +200,13 @@ void main() {
       });
 
       test('default formats numbers in the millions with M', () {
-        final String result = formatAmount(1000000);
+        final String result = formatAmount(1_000_000);
 
         expect(result, '1.00M');
       });
 
       test('default formats numbers in the billions with B', () {
-        final String result = formatAmount(1000000000);
+        final String result = formatAmount(1_000_000_000);
 
         expect(result, '1.00B');
       });

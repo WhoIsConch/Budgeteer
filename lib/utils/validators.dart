@@ -33,7 +33,7 @@ class AmountValidator {
     // Make sure the amount entered isn't too small or too high
     if (amount < 0) {
       return 'Please enter a positive amount';
-    } else if (amount > 100000000) {
+    } else if (amount > 100_000_000) {
       // Enforce a hard limit because it would probably mess up the UI to put in a
       // number too big
       // If some hyper rich guy likes using my app for some reason and requests I
@@ -126,11 +126,11 @@ String formatAmount(num amount, {bool round = false, bool exact = false}) {
   num amountToFormat;
   String? character;
 
-  if (amount >= 1000000000) {
-    amountToFormat = amount / 1000000000;
+  if (amount >= 1_000_000_000) {
+    amountToFormat = amount / 1_000_000_000;
     character = 'B';
-  } else if (amount >= 1000000) {
-    amountToFormat = amount / 1000000;
+  } else if (amount >= 1_000_000) {
+    amountToFormat = amount / 1_000_000;
     character = 'M';
   } else if (amount >= 1000) {
     amountToFormat = amount / 1000;
@@ -143,7 +143,7 @@ String formatAmount(num amount, {bool round = false, bool exact = false}) {
 }
 
 String formatYValue(double value) {
-  if (value.abs() >= 1000000) {
+  if (value.abs() >= 1_000_000) {
     // Use 'M' for millions
     return NumberFormat.compactSimpleCurrency(locale: 'en_US', decimalDigits: 1)
         .format(value)
@@ -152,7 +152,7 @@ String formatYValue(double value) {
     // Use 'K' for thousands
     return NumberFormat.compactSimpleCurrency(
       locale: 'en_US',
-      decimalDigits: value.abs() < 10000 ? 1 : 0,
+      decimalDigits: value.abs() < 10_000 ? 1 : 0,
     ) // More precision for lower thousands
     .format(value).replaceAll('\$', '');
   } else {
