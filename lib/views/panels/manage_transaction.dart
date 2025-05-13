@@ -157,13 +157,22 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                     builder: (context) => AlertDialog(
                         title: const Text("Archive transaction?"),
                         content: const Text(
-                            "Archived transactions do not affect balances or appear in search"),
+                            "Archived transactions no longer affect balances and statistics"),
                         actions: [
                           TextButton(
                               onPressed: () => Navigator.of(context).pop(),
                               child: const Text("Cancel")),
                           TextButton(
-                              onPressed: () {}, child: const Text("Archive"))
+                              onPressed: () {
+                                final manager = DeletionManager(context);
+
+                                manager.stageObjectsForArchival<Transaction>(
+                                    [initialTransaction!.id]);
+                                Navigator.of(context)
+                                  ..pop()
+                                  ..pop();
+                              },
+                              child: const Text("Archive"))
                         ]),
                   )),
           MenuItemButton(
