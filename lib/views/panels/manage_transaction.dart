@@ -147,17 +147,55 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     super.dispose();
   }
 
-  Widget get menuButton => MenuAnchor(
-        alignmentOffset: const Offset(-24, 0),
-        menuChildren: [
-          MenuItemButton(
-              child: const Text("Archive"),
-              onPressed: () => showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                        title: const Text("Archive transaction?"),
+  Widget getMenuButton(BuildContext context) {
+    final isArchived = initialTransaction!.isArchived != null &&
+        initialTransaction!.isArchived!;
+
+    return MenuAnchor(
+      alignmentOffset: const Offset(-24, 0),
+      menuChildren: [
+        MenuItemButton(
+            child: Text(isArchived ? "Unarchive" : "Archive"),
+            onPressed: () => showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                      title: Text(
+                          "${isArchived ? 'Una' : 'A'}rchive transaction?"),
+                      content: const Text(
+                          "Archived transactions don't affect balances and statistics"),
+                      actions: [
+                        TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text("Cancel")),
+                        TextButton(
+                            onPressed: () {
+                              if (!isArchived) {
+                                final manager = DeletionManager(context);
+
+                                manager.stageObjectsForArchival<Transaction>(
+                                    [initialTransaction!.id]);
+                              } else {
+                                final transactionDao =
+                                    context.read<TransactionDao>();
+
+                                transactionDao.setArchiveTransactions(
+                                    [initialTransaction!.id], false);
+                              }
+                              Navigator.of(context)
+                                ..pop()
+                                ..pop();
+                            },
+                            child: Text("${isArchived ? 'Una' : 'A'}rchive"))
+                      ]),
+                )),
+        MenuItemButton(
+            child: const Text("Delete"),
+            onPressed: () => showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                        title: const Text("Delete transaction?"),
                         content: const Text(
-                            "Archived transactions no longer affect balances and statistics"),
+                            "Are you sure you want to delete this transaction?"),
                         actions: [
                           TextButton(
                               onPressed: () => Navigator.of(context).pop(),
@@ -166,51 +204,27 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                               onPressed: () {
                                 final manager = DeletionManager(context);
 
-                                manager.stageObjectsForArchival<Transaction>(
+                                manager.stageObjectsForDeletion<Transaction>(
                                     [initialTransaction!.id]);
                                 Navigator.of(context)
                                   ..pop()
                                   ..pop();
                               },
-                              child: const Text("Archive"))
-                        ]),
-                  )),
-          MenuItemButton(
-              child: const Text("Delete"),
-              onPressed: () => showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                          title: const Text("Delete transaction?"),
-                          content: const Text(
-                              "Are you sure you want to delete this transaction?"),
-                          actions: [
-                            TextButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                child: const Text("Cancel")),
-                            TextButton(
-                                onPressed: () {
-                                  final manager = DeletionManager(context);
-
-                                  manager.stageObjectsForDeletion<Transaction>(
-                                      [initialTransaction!.id]);
-                                  Navigator.of(context)
-                                    ..pop()
-                                    ..pop();
-                                },
-                                child: const Text("Delete")),
-                          ])))
-        ],
-        builder: (BuildContext context, MenuController controller, _) =>
-            IconButton(
-                icon: Icon(Icons.more_vert),
-                onPressed: () {
-                  if (controller.isOpen) {
-                    controller.close();
-                  } else {
-                    controller.open();
-                  }
-                }),
-      );
+                              child: const Text("Delete")),
+                        ])))
+      ],
+      builder: (BuildContext context, MenuController controller, _) =>
+          IconButton(
+              icon: Icon(Icons.more_vert),
+              onPressed: () {
+                if (controller.isOpen) {
+                  controller.close();
+                } else {
+                  controller.open();
+                }
+              }),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -279,7 +293,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                             validator: validateTitle,
                           ),
                         ),
-                        if (isEditing) menuButton,
+                        if (isEditing) getMenuButton(context),
                       ],
                     ),
                     Row(
