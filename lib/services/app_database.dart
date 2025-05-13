@@ -199,7 +199,7 @@ class Goals extends Table {
 
 @DriftAccessor(tables: [Goals])
 class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
-  GoalDao(AppDatabase db) : super(db);
+  GoalDao(super.db);
 
   Stream<List<GoalWithAchievedAmount>> watchGoals() {
     // View all of the goals in the database
@@ -242,7 +242,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
 @DriftAccessor(tables: [Transactions])
 class TransactionDao extends DatabaseAccessor<AppDatabase>
     with _$TransactionDaoMixin {
-  TransactionDao(AppDatabase db) : super(db);
+  TransactionDao(super.db);
 
   Stream<List<Transaction>> watchTransactionsPage({
     List<TransactionFilter>? filters,

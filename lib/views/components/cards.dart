@@ -83,14 +83,14 @@ class AsyncOverviewCard extends StatelessWidget {
   final Function(String)? onContentUpdated;
 
   const AsyncOverviewCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.amountCalculator,
     this.textStyle = CardTextStyle.cluster,
     this.previousContent = "\$0.00",
     this.onPressed,
     this.onContentUpdated,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) => FutureBuilder<double>(

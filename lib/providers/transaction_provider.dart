@@ -71,10 +71,10 @@ class DeletionManager {
     _cancelTimer(objectIds);
 
     switch (T) {
-      case Transaction:
+      case Transaction _:
         dao.setTransactionsDeleted(objectIds, false);
         break;
-      case Category:
+      case Category _:
         dao.setCategoriesDeleted(objectIds, false);
         break;
       case _:
@@ -86,13 +86,13 @@ class DeletionManager {
     _cancelTimer(objectIds);
 
     switch (T) {
-      case Transaction:
+      case Transaction _:
         dao.setArchiveTransactions(objectIds, false);
         break;
-      case Category:
+      case Category _:
         dao.setArchiveCategories(objectIds, false);
         break;
-      case Accounts:
+      case Accounts _:
         dao.setArchiveAccounts(objectIds, false);
         break;
       case _:
@@ -116,10 +116,10 @@ class DeletionManager {
     // I reused just about the same exact switch statement in at least four
     // different methods
     switch (T) {
-      case Transaction:
+      case Transaction _:
         deletionFuture = dao.setTransactionsDeleted(objectIds, true);
         break;
-      case Category:
+      case Category _:
         deletionFuture = dao.setCategoriesDeleted(objectIds, true);
         break;
       case _:
@@ -159,17 +159,17 @@ class DeletionManager {
     bool isSingle = objectIds.length == 1;
 
     switch (T) {
-      case Transaction:
+      case Transaction _:
         deletedItemString = isSingle ? "Transaction" : "Transactions";
         archivalFuture = dao.setArchiveTransactions(objectIds, true);
         break;
 
-      case Category:
+      case Category _:
         deletedItemString = isSingle ? "Category" : "Categories";
         archivalFuture = dao.setArchiveCategories(objectIds, true);
         break;
 
-      case Account:
+      case Account _:
         deletedItemString = isSingle ? "Account" : "Accounts";
         archivalFuture = dao.setArchiveAccounts(objectIds, true);
         break;

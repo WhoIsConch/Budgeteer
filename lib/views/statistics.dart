@@ -645,7 +645,7 @@ class _LineChartCardState extends State<LineChartCard> {
                     reservedSize: 48,
                     getTitlesWidget: (value, meta) {
                       return SideTitleWidget(
-                          axisSide: meta.axisSide,
+                        meta: meta,
                           child: Text("\$${value.toInt()}"));
                     })),
             bottomTitles: AxisTitles(
@@ -654,7 +654,7 @@ class _LineChartCardState extends State<LineChartCard> {
               reservedSize: 36,
               showTitles: true,
               getTitlesWidget: (value, meta) => SideTitleWidget(
-                axisSide: meta.axisSide,
+                meta: meta,
                 child: Transform.rotate(
                     angle: -45 * 3.14 / 180,
                     child: Text(data.xTitles[value.toInt()])),
@@ -841,7 +841,7 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
                 showTitles: true,
                 reservedSize: 55,
                 getTitlesWidget: (value, meta) => SideTitleWidget(
-                    axisSide: meta.axisSide,
+                    meta: meta,
                     child: Text(
                       "\$${formatYValue(value)}",
                     )))),
@@ -850,7 +850,7 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
           showTitles: true,
           reservedSize: 65,
           getTitlesWidget: (value, meta) => SideTitleWidget(
-              axisSide: meta.axisSide,
+              meta: meta,
               space: 16,
               angle: -45 * 3.14 / 180,
               child: Text(data.xTitles[value.toInt()])),
