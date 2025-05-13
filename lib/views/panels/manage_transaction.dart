@@ -155,7 +155,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     super.dispose();
   }
 
-  String? getCategorySubtext() {
+  double? _getTotalBalance() {
     if (_selectedCategoryPair == null) return null;
 
     final originalBalance = _selectedCategoryPair!.amount! +
@@ -182,7 +182,14 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       adjustedBalance += currentAmount;
     }
 
-    final formattedBalance = formatAmount(adjustedBalance);
+    return adjustedBalance;
+  }
+
+  String? _getCategorySubtext() {
+    if (_selectedCategoryPair == null) return null;
+
+    final adjustedBalance = _getTotalBalance();
+    final formattedBalance = formatAmount(adjustedBalance ?? 0);
 
     String resetText;
 
@@ -231,7 +238,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                     label: "Category",
                     values: values,
                     labels: labels,
-                    helperText: getCategorySubtext(),
+                    helperText: _getCategorySubtext(),
                     initialSelection: _selectedCategoryPair,
                     controller: controllers["category"],
                     onChanged: (pair) => setState(() {
@@ -264,7 +271,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
         ),
       ]);
 
-  Widget getMenuButton(BuildContext context) {
+  Widget _getMenuButton(BuildContext context) {
     final isArchived = initialTransaction!.isArchived != null &&
         initialTransaction!.isArchived!;
 
@@ -352,6 +359,14 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
               IconButton(
                   icon: const Icon(Icons.check),
                   onPressed: () {
+                    final currentBal = _getTotalBalance();
+
+                    if (currentBal != null &&
+                        currentBal < 0 &&
+                        !_selectedCategoryPair!.category.allowNegatives) {
+                      // TODO: Invalidate the category if these are the case
+                    }
+
                     if (_formKey.currentState!.validate()) {
                       final database = context.read<AppDatabase>();
                       final currentTransaction = _buildTransaction();
@@ -410,7 +425,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                             validator: validateTitle,
                           ),
                         ),
-                        if (isEditing) getMenuButton(context),
+                        if (isEditing) _getMenuButton(context),
                       ],
                     ),
                     Row(
