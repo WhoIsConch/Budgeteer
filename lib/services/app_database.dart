@@ -209,9 +209,11 @@ class Goals extends Table {
 class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
   GoalDao(super.db);
 
-  Stream<List<GoalWithAchievedAmount>> watchGoals() {
+  Stream<List<GoalWithAchievedAmount>> watchGoals({
+    bool includeFinished = true,
+  }) {
     // View all of the goals in the database
-    final query = select(goals).join([
+    var query = select(goals).join([
       leftOuterJoin(
         db.transactions,
         db.transactions.goalId.equalsExp(goals.id),
@@ -219,6 +221,10 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     ]);
 
     final signedSumQuery = db.getSignedTransactionSumQuery();
+
+    if (!includeFinished) {
+      query = query..where(goals.isFinished.isNotExp(const Constant(true)));
+    }
 
     final queryWithSum =
         query

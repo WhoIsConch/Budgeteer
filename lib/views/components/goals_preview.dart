@@ -113,7 +113,7 @@ class _GoalPreviewCardState extends State<GoalPreviewCard> {
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 200),
               child: StreamBuilder(
-                stream: goalDao.watchGoals(),
+                stream: goalDao.watchGoals(includeFinished: false),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return const LinearProgressIndicator();

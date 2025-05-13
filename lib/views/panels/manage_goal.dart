@@ -21,11 +21,7 @@ class ManageGoalPage extends StatefulWidget {
 class _ManageGoalPageState extends State<ManageGoalPage> {
   final _formKey = GlobalKey<FormState>();
 
-  final List<String> _validControllers = [
-    'amount',
-    'name',
-    'notes'
-  ];
+  final List<String> _validControllers = ['amount', 'name', 'notes'];
   DateTime _selectedDate = DateTime.now();
   double _currentAmount = 0;
   Color? _selectedColor;
@@ -42,7 +38,8 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
     cost: Value(double.parse(_controllers['amount']!.text)),
     dueDate: Value(_selectedDate),
     notes: getControllerValue('notes'),
-    color: Value.absentIfNull(_selectedColor)
+    color: Value.absentIfNull(_selectedColor),
+    isFinished: Value(_isFinished),
   );
 
   void _pickDate(context) async {
@@ -62,7 +59,7 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
     () => _currentAmount = double.tryParse(_controllers['amount']!.text) ?? 0,
   );
 
- Widget _getMenuButton(BuildContext context) {
+  Widget _getMenuButton(BuildContext context) {
     return MenuAnchor(
       alignmentOffset: const Offset(-24, 0),
       menuChildren: [
@@ -132,7 +129,9 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
     if (isEditing) {
       tempControllers['name']!.text = initialGoal!.goal.name;
       tempControllers['notes']!.text = initialGoal!.goal.notes ?? '';
-      tempControllers['amount']!.text = initialGoal!.goal.cost.toStringAsFixed(2);
+      tempControllers['amount']!.text = initialGoal!.goal.cost.toStringAsFixed(
+        2,
+      );
 
       _selectedColor = initialGoal!.goal.color;
       _currentAmount = initialGoal!.goal.cost;
@@ -170,8 +169,8 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
                   );
                 }
               }
-            }
-          )
+            },
+          ),
         ],
       ),
       body: Padding(
@@ -187,24 +186,27 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
                 Row(
                   spacing: 8.0,
                   children: [
-                    Expanded(child: TextFormField(
-                      controller: _controllers['name'],
+                    Expanded(
+                      child: TextFormField(
+                        controller: _controllers['name'],
                         decoration: const InputDecoration(
                           labelText: 'Name',
                           border: OutlineInputBorder(),
                         ),
-                      validator: validateTitle,
-                    )),
-                    if (isEditing) _getMenuButton(context)
-                  ]
+                        validator: validateTitle,
+                      ),
+                    ),
+                    if (isEditing) _getMenuButton(context),
+                  ],
                 ),
                 Row(
                   spacing: 16.0,
                   children: [
-                    Expanded(child: TextFormField(
-                      onChanged: (_) => _updateAmount(),
-                      controller: _controllers['amount'],
-                      decoration: InputDecoration(
+                    Expanded(
+                      child: TextFormField(
+                        onChanged: (_) => _updateAmount(),
+                        controller: _controllers['amount'],
+                        decoration: InputDecoration(
                           labelText: 'Cost',
                           prefixIcon: Icon(
                             Icons.attach_money,
@@ -234,8 +236,8 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
                         ),
                         onTap: () => _pickDate(context),
                       ),
-                    )
-                  ]
+                    ),
+                  ],
                 ),
                 GestureDetector(
                   onTap: () => setState(() => _isFinished = !_isFinished),
@@ -245,9 +247,14 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
                         visualDensity: VisualDensity.compact,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         value: _isFinished,
-                        onChanged: (value) => setState(() => _isFinished = value ?? false)
+                        onChanged:
+                            (value) =>
+                                setState(() => _isFinished = value ?? false),
                       ),
-                      Text('Mark as finished', style: Theme.of(context).textTheme.labelLarge)
+                      Text(
+                        'Mark as finished',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
                     ],
                   ),
                 ),
@@ -261,11 +268,11 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
                   maxLines: 3,
                   textInputAction: TextInputAction.done,
                 ),
-              ]
-            )
-          )
-        )
-      )
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
