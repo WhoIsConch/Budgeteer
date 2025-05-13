@@ -211,8 +211,6 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
 
   Stream<List<GoalWithAchievedAmount>> watchGoals() {
     // View all of the goals in the database
-    final amountSum = db.transactions.amount.sum();
-
     final query = select(goals).join([
       leftOuterJoin(
         db.transactions,
@@ -220,16 +218,18 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
       ),
     ]);
 
+    final signedSumQuery = db.getSignedTransactionSumQuery();
+
     final queryWithSum =
         query
           ..where(goals.isDeleted.equals(false))
-          ..addColumns([amountSum])
+          ..addColumns([signedSumQuery])
           ..groupBy([goals.id]);
 
     return queryWithSum.watch().map((rows) {
       return rows.map((row) {
         final goal = row.readTable(goals);
-        final achievedAmount = row.read<double>(amountSum) ?? 0.0;
+        final achievedAmount = row.read<double>(signedSumQuery) ?? 0.0;
 
         return GoalWithAchievedAmount(
           goal: goal,
@@ -247,9 +247,11 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
           t.isArchived.equals(true).not(),
     );
 
+    final signedSumQuery = db.getSignedTransactionSumQuery();
+
     return query
-        .addColumns([db.transactions.amount.sum()])
-        .map((row) => row.read(db.transactions.amount.sum()))
+        .addColumns([signedSumQuery])
+        .map((row) => row.read(signedSumQuery))
         .watchSingle();
   }
 
@@ -283,9 +285,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     // 2. Create a companion that definitely includes the ID
     final entryWithId = entry.copyWith(id: Value(id));
 
-    final statement = into(
-      goals,
-    ).createContext(entryWithId, InsertMode.insert);
+    final statement = into(goals).createContext(entryWithId, InsertMode.insert);
 
     await db.executeQuery(statement);
 
@@ -297,10 +297,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
   Future<Goal> getGoalById(String id) =>
       (select(goals)..where((g) => g.id.equals(id))).getSingle();
 
-
-  Future<Goal> updateGoal(
-    GoalsCompanion entry,
-  ) async {
+  Future<Goal> updateGoal(GoalsCompanion entry) async {
     final query =
         (update(goals)
               ..where((g) => g.id.equals(entry.id.value))
@@ -454,26 +451,13 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
           );
     }
 
+    final sumQuery = db.getSignedTransactionSumQuery();
+
     if (type == null && net) {
       // If the type is null, we want to get the net amount
-      final signedAmount =
-          CaseWhenExpression(
-            cases: [
-              CaseWhen(
-                transactions.type.equalsValue(TransactionType.income),
-                then: transactions.amount,
-              ),
-              CaseWhen(
-                transactions.type.equalsValue(TransactionType.expense),
-                then: -transactions.amount,
-              ),
-            ],
-            orElse: const Constant(0.0),
-          ).sum();
-
       return query
-          .addColumns([signedAmount])
-          .map((row) => row.read(signedAmount))
+          .addColumns([sumQuery])
+          .map((row) => row.read(sumQuery))
           .watchSingle();
     }
 
@@ -647,6 +631,21 @@ class AppDatabase extends _$AppDatabase {
   @override
   int get schemaVersion => 1;
 
+  Expression<double> getSignedTransactionSumQuery() =>
+      CaseWhenExpression(
+        cases: [
+          CaseWhen(
+            transactions.type.equalsValue(TransactionType.income),
+            then: transactions.amount,
+          ),
+          CaseWhen(
+            transactions.type.equalsValue(TransactionType.expense),
+            then: -transactions.amount,
+          ),
+        ],
+        orElse: const Constant(0.0),
+      ).sum();
+
   CaseWhen<bool, String> getCaseWhen(
     CategoryResetIncrement increment,
     bool isStart,
@@ -686,19 +685,7 @@ class AppDatabase extends _$AppDatabase {
 
     // A filter to sign the amount, since we always want the total amount in
     // a category to be the net value
-    final signedAmount = CaseWhenExpression(
-      cases: [
-        CaseWhen(
-          transactions.type.equalsValue(TransactionType.income),
-          then: transactions.amount,
-        ),
-        CaseWhen(
-          transactions.type.equalsValue(TransactionType.expense),
-          then: -transactions.amount,
-        ),
-      ],
-      orElse: const Constant(0.0),
-    );
+    final signedAmount = getSignedTransactionSumQuery();
 
     // The actual condition we're going to filter by. If the reset increment is
     // never, we can't filter by dates so we ensure the filter is always true,
