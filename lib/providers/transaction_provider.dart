@@ -89,9 +89,6 @@ class DeletionManager {
   }
 
   void stageObjectsForDeletion<T>(List<String> objectIds) {
-    // Context so we can use the snackbars
-    // "object" so we can keep our system DRY
-
     Future deletionFuture;
 
     if (T == Transaction) {
@@ -128,4 +125,12 @@ class DeletionManager {
       });
     });
   }
+
+  // void stageObjectsForArchival<T>(List<String> objectIds) {
+  //   Future archivalFuture;
+
+  //   if (T == Transaction) {
+  //     archivalFuture = dao.archiveTransaction();
+  //   }
+  // }
 }

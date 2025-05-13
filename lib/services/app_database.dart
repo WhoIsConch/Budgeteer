@@ -41,6 +41,10 @@ class Transactions extends Table {
       .nullable()
       .withDefault(const Constant(false))
       .named('is_deleted')();
+  BoolColumn get isArchived => boolean()
+      .nullable()
+      .withDefault(const Constant(false))
+      .named('is_archived')();
   TextColumn get notes => text().nullable()();
 
   TextColumn get category => text()
@@ -84,6 +88,7 @@ class Categories extends Table {
 
   TextColumn get id => text().clientDefault(() => uuid.v4())();
   TextColumn get name => text()();
+  TextColumn get notes => text().nullable()();
 
   IntColumn get resetIncrement => intEnum<CategoryResetIncrement>()
       .withDefault(const Constant(0))
@@ -97,6 +102,8 @@ class Categories extends Table {
       .nullable()
       .withDefault(const Constant(false))
       .named('is_deleted')();
+  BoolColumn get isArchived =>
+      boolean().withDefault(const Constant(false)).named('is_archived')();
 
   @override
   Set<Column<Object>>? get primaryKey => {id};
@@ -159,7 +166,10 @@ class Accounts extends Table {
 
   TextColumn get id => text().clientDefault(() => uuid.v4())();
   TextColumn get name => text()();
+  TextColumn get notes => text().nullable()();
 
+  IntColumn get color =>
+      integer().clientDefault(genColor).map(const ColorConverter())();
   BoolColumn get isDeleted =>
       boolean().withDefault(const Constant(false)).named('is_deleted')();
   BoolColumn get isArchived =>
@@ -172,10 +182,14 @@ class Goals extends Table {
 
   TextColumn get id => text().clientDefault(() => uuid.v4())();
   TextColumn get name => text()();
+  TextColumn get notes => text().nullable()();
   RealColumn get cost => real()();
+
+  IntColumn get color =>
+      integer().clientDefault(genColor).map(const ColorConverter())();
   TextColumn get dueDate =>
       text().nullable().named('due_date').map(const DateTextConverter())();
-  BoolColumn get isFinished =>
+  BoolColumn get isFinished => // Basically isArchived
       boolean().withDefault(const Constant(false)).named('is_finished')();
   BoolColumn get isDeleted =>
       boolean().withDefault(const Constant(false)).named('is_deleted')();

@@ -31,6 +31,11 @@ class $CategoriesTable extends Categories
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
       'name', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   late final GeneratedColumnWithTypeConverter<CategoryResetIncrement, int>
       resetIncrement = GeneratedColumn<int>(
@@ -73,9 +78,28 @@ class $CategoriesTable extends Categories
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("is_deleted" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _isArchivedMeta =
+      const VerificationMeta('isArchived');
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, name, resetIncrement, allowNegatives, color, balance, isDeleted];
+  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
+      'is_archived', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_archived" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        name,
+        notes,
+        resetIncrement,
+        allowNegatives,
+        color,
+        balance,
+        isDeleted,
+        isArchived
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -95,6 +119,10 @@ class $CategoriesTable extends Categories
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
     if (data.containsKey('allow_negatives')) {
       context.handle(
           _allowNegativesMeta,
@@ -109,6 +137,12 @@ class $CategoriesTable extends Categories
       context.handle(_isDeletedMeta,
           isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
     }
+    if (data.containsKey('is_archived')) {
+      context.handle(
+          _isArchivedMeta,
+          isArchived.isAcceptableOrUnknown(
+              data['is_archived']!, _isArchivedMeta));
+    }
     return context;
   }
 
@@ -122,6 +156,8 @@ class $CategoriesTable extends Categories
           .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
       name: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
       resetIncrement: $CategoriesTable.$converterresetIncrement.fromSql(
           attachedDatabase.typeMapping.read(
               DriftSqlType.int, data['${effectivePrefix}reset_increment'])!),
@@ -134,6 +170,8 @@ class $CategoriesTable extends Categories
           .read(DriftSqlType.double, data['${effectivePrefix}balance']),
       isDeleted: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted']),
+      isArchived: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_archived'])!,
     );
   }
 
@@ -152,24 +190,31 @@ class $CategoriesTable extends Categories
 class Category extends DataClass implements Insertable<Category> {
   final String id;
   final String name;
+  final String? notes;
   final CategoryResetIncrement resetIncrement;
   final bool allowNegatives;
   final Color color;
   final double? balance;
   final bool? isDeleted;
+  final bool isArchived;
   const Category(
       {required this.id,
       required this.name,
+      this.notes,
       required this.resetIncrement,
       required this.allowNegatives,
       required this.color,
       this.balance,
-      this.isDeleted});
+      this.isDeleted,
+      required this.isArchived});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
     {
       map['reset_increment'] = Variable<int>(
           $CategoriesTable.$converterresetIncrement.toSql(resetIncrement));
@@ -185,6 +230,7 @@ class Category extends DataClass implements Insertable<Category> {
     if (!nullToAbsent || isDeleted != null) {
       map['is_deleted'] = Variable<bool>(isDeleted);
     }
+    map['is_archived'] = Variable<bool>(isArchived);
     return map;
   }
 
@@ -192,6 +238,8 @@ class Category extends DataClass implements Insertable<Category> {
     return CategoriesCompanion(
       id: Value(id),
       name: Value(name),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
       resetIncrement: Value(resetIncrement),
       allowNegatives: Value(allowNegatives),
       color: Value(color),
@@ -201,6 +249,7 @@ class Category extends DataClass implements Insertable<Category> {
       isDeleted: isDeleted == null && nullToAbsent
           ? const Value.absent()
           : Value(isDeleted),
+      isArchived: Value(isArchived),
     );
   }
 
@@ -210,12 +259,14 @@ class Category extends DataClass implements Insertable<Category> {
     return Category(
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
+      notes: serializer.fromJson<String?>(json['notes']),
       resetIncrement: $CategoriesTable.$converterresetIncrement
           .fromJson(serializer.fromJson<int>(json['resetIncrement'])),
       allowNegatives: serializer.fromJson<bool>(json['allowNegatives']),
       color: serializer.fromJson<Color>(json['color']),
       balance: serializer.fromJson<double?>(json['balance']),
       isDeleted: serializer.fromJson<bool?>(json['isDeleted']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
     );
   }
   @override
@@ -224,36 +275,43 @@ class Category extends DataClass implements Insertable<Category> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
+      'notes': serializer.toJson<String?>(notes),
       'resetIncrement': serializer.toJson<int>(
           $CategoriesTable.$converterresetIncrement.toJson(resetIncrement)),
       'allowNegatives': serializer.toJson<bool>(allowNegatives),
       'color': serializer.toJson<Color>(color),
       'balance': serializer.toJson<double?>(balance),
       'isDeleted': serializer.toJson<bool?>(isDeleted),
+      'isArchived': serializer.toJson<bool>(isArchived),
     };
   }
 
   Category copyWith(
           {String? id,
           String? name,
+          Value<String?> notes = const Value.absent(),
           CategoryResetIncrement? resetIncrement,
           bool? allowNegatives,
           Color? color,
           Value<double?> balance = const Value.absent(),
-          Value<bool?> isDeleted = const Value.absent()}) =>
+          Value<bool?> isDeleted = const Value.absent(),
+          bool? isArchived}) =>
       Category(
         id: id ?? this.id,
         name: name ?? this.name,
+        notes: notes.present ? notes.value : this.notes,
         resetIncrement: resetIncrement ?? this.resetIncrement,
         allowNegatives: allowNegatives ?? this.allowNegatives,
         color: color ?? this.color,
         balance: balance.present ? balance.value : this.balance,
         isDeleted: isDeleted.present ? isDeleted.value : this.isDeleted,
+        isArchived: isArchived ?? this.isArchived,
       );
   Category copyWithCompanion(CategoriesCompanion data) {
     return Category(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
+      notes: data.notes.present ? data.notes.value : this.notes,
       resetIncrement: data.resetIncrement.present
           ? data.resetIncrement.value
           : this.resetIncrement,
@@ -263,6 +321,8 @@ class Category extends DataClass implements Insertable<Category> {
       color: data.color.present ? data.color.value : this.color,
       balance: data.balance.present ? data.balance.value : this.balance,
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      isArchived:
+          data.isArchived.present ? data.isArchived.value : this.isArchived,
     );
   }
 
@@ -271,78 +331,92 @@ class Category extends DataClass implements Insertable<Category> {
     return (StringBuffer('Category(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('notes: $notes, ')
           ..write('resetIncrement: $resetIncrement, ')
           ..write('allowNegatives: $allowNegatives, ')
           ..write('color: $color, ')
           ..write('balance: $balance, ')
-          ..write('isDeleted: $isDeleted')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('isArchived: $isArchived')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      id, name, resetIncrement, allowNegatives, color, balance, isDeleted);
+  int get hashCode => Object.hash(id, name, notes, resetIncrement,
+      allowNegatives, color, balance, isDeleted, isArchived);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Category &&
           other.id == this.id &&
           other.name == this.name &&
+          other.notes == this.notes &&
           other.resetIncrement == this.resetIncrement &&
           other.allowNegatives == this.allowNegatives &&
           other.color == this.color &&
           other.balance == this.balance &&
-          other.isDeleted == this.isDeleted);
+          other.isDeleted == this.isDeleted &&
+          other.isArchived == this.isArchived);
 }
 
 class CategoriesCompanion extends UpdateCompanion<Category> {
   final Value<String> id;
   final Value<String> name;
+  final Value<String?> notes;
   final Value<CategoryResetIncrement> resetIncrement;
   final Value<bool> allowNegatives;
   final Value<Color> color;
   final Value<double?> balance;
   final Value<bool?> isDeleted;
+  final Value<bool> isArchived;
   final Value<int> rowid;
   const CategoriesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
+    this.notes = const Value.absent(),
     this.resetIncrement = const Value.absent(),
     this.allowNegatives = const Value.absent(),
     this.color = const Value.absent(),
     this.balance = const Value.absent(),
     this.isDeleted = const Value.absent(),
+    this.isArchived = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CategoriesCompanion.insert({
     this.id = const Value.absent(),
     required String name,
+    this.notes = const Value.absent(),
     this.resetIncrement = const Value.absent(),
     this.allowNegatives = const Value.absent(),
     this.color = const Value.absent(),
     this.balance = const Value.absent(),
     this.isDeleted = const Value.absent(),
+    this.isArchived = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : name = Value(name);
   static Insertable<Category> custom({
     Expression<String>? id,
     Expression<String>? name,
+    Expression<String>? notes,
     Expression<int>? resetIncrement,
     Expression<bool>? allowNegatives,
     Expression<int>? color,
     Expression<double>? balance,
     Expression<bool>? isDeleted,
+    Expression<bool>? isArchived,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
+      if (notes != null) 'notes': notes,
       if (resetIncrement != null) 'reset_increment': resetIncrement,
       if (allowNegatives != null) 'allow_negatives': allowNegatives,
       if (color != null) 'color': color,
       if (balance != null) 'balance': balance,
       if (isDeleted != null) 'is_deleted': isDeleted,
+      if (isArchived != null) 'is_archived': isArchived,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -350,20 +424,24 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
   CategoriesCompanion copyWith(
       {Value<String>? id,
       Value<String>? name,
+      Value<String?>? notes,
       Value<CategoryResetIncrement>? resetIncrement,
       Value<bool>? allowNegatives,
       Value<Color>? color,
       Value<double?>? balance,
       Value<bool?>? isDeleted,
+      Value<bool>? isArchived,
       Value<int>? rowid}) {
     return CategoriesCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
+      notes: notes ?? this.notes,
       resetIncrement: resetIncrement ?? this.resetIncrement,
       allowNegatives: allowNegatives ?? this.allowNegatives,
       color: color ?? this.color,
       balance: balance ?? this.balance,
       isDeleted: isDeleted ?? this.isDeleted,
+      isArchived: isArchived ?? this.isArchived,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -376,6 +454,9 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
     }
     if (resetIncrement.present) {
       map['reset_increment'] = Variable<int>($CategoriesTable
@@ -395,6 +476,9 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     if (isDeleted.present) {
       map['is_deleted'] = Variable<bool>(isDeleted.value);
     }
+    if (isArchived.present) {
+      map['is_archived'] = Variable<bool>(isArchived.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -406,11 +490,13 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     return (StringBuffer('CategoriesCompanion(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('notes: $notes, ')
           ..write('resetIncrement: $resetIncrement, ')
           ..write('allowNegatives: $allowNegatives, ')
           ..write('color: $color, ')
           ..write('balance: $balance, ')
           ..write('isDeleted: $isDeleted, ')
+          ..write('isArchived: $isArchived, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -434,6 +520,18 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
       'name', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  late final GeneratedColumnWithTypeConverter<Color, int> color =
+      GeneratedColumn<int>('color', aliasedName, false,
+              type: DriftSqlType.int,
+              requiredDuringInsert: false,
+              clientDefault: genColor)
+          .withConverter<Color>($AccountsTable.$convertercolor);
   static const VerificationMeta _isDeletedMeta =
       const VerificationMeta('isDeleted');
   @override
@@ -455,7 +553,8 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
           GeneratedColumn.constraintIsAlways('CHECK ("is_archived" IN (0, 1))'),
       defaultValue: const Constant(false));
   @override
-  List<GeneratedColumn> get $columns => [id, name, isDeleted, isArchived];
+  List<GeneratedColumn> get $columns =>
+      [id, name, notes, color, isDeleted, isArchived];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -474,6 +573,10 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
           _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
     } else if (isInserting) {
       context.missing(_nameMeta);
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
     }
     if (data.containsKey('is_deleted')) {
       context.handle(_isDeletedMeta,
@@ -498,6 +601,10 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
           .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
       name: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      color: $AccountsTable.$convertercolor.fromSql(attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}color'])!),
       isDeleted: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
       isArchived: attachedDatabase.typeMapping
@@ -509,16 +616,22 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
   $AccountsTable createAlias(String alias) {
     return $AccountsTable(attachedDatabase, alias);
   }
+
+  static TypeConverter<Color, int> $convertercolor = const ColorConverter();
 }
 
 class Account extends DataClass implements Insertable<Account> {
   final String id;
   final String name;
+  final String? notes;
+  final Color color;
   final bool isDeleted;
   final bool isArchived;
   const Account(
       {required this.id,
       required this.name,
+      this.notes,
+      required this.color,
       required this.isDeleted,
       required this.isArchived});
   @override
@@ -526,6 +639,12 @@ class Account extends DataClass implements Insertable<Account> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    {
+      map['color'] = Variable<int>($AccountsTable.$convertercolor.toSql(color));
+    }
     map['is_deleted'] = Variable<bool>(isDeleted);
     map['is_archived'] = Variable<bool>(isArchived);
     return map;
@@ -535,6 +654,9 @@ class Account extends DataClass implements Insertable<Account> {
     return AccountsCompanion(
       id: Value(id),
       name: Value(name),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      color: Value(color),
       isDeleted: Value(isDeleted),
       isArchived: Value(isArchived),
     );
@@ -546,6 +668,8 @@ class Account extends DataClass implements Insertable<Account> {
     return Account(
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      color: serializer.fromJson<Color>(json['color']),
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
       isArchived: serializer.fromJson<bool>(json['isArchived']),
     );
@@ -556,16 +680,25 @@ class Account extends DataClass implements Insertable<Account> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
+      'notes': serializer.toJson<String?>(notes),
+      'color': serializer.toJson<Color>(color),
       'isDeleted': serializer.toJson<bool>(isDeleted),
       'isArchived': serializer.toJson<bool>(isArchived),
     };
   }
 
   Account copyWith(
-          {String? id, String? name, bool? isDeleted, bool? isArchived}) =>
+          {String? id,
+          String? name,
+          Value<String?> notes = const Value.absent(),
+          Color? color,
+          bool? isDeleted,
+          bool? isArchived}) =>
       Account(
         id: id ?? this.id,
         name: name ?? this.name,
+        notes: notes.present ? notes.value : this.notes,
+        color: color ?? this.color,
         isDeleted: isDeleted ?? this.isDeleted,
         isArchived: isArchived ?? this.isArchived,
       );
@@ -573,6 +706,8 @@ class Account extends DataClass implements Insertable<Account> {
     return Account(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      color: data.color.present ? data.color.value : this.color,
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
       isArchived:
           data.isArchived.present ? data.isArchived.value : this.isArchived,
@@ -584,6 +719,8 @@ class Account extends DataClass implements Insertable<Account> {
     return (StringBuffer('Account(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('notes: $notes, ')
+          ..write('color: $color, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('isArchived: $isArchived')
           ..write(')'))
@@ -591,13 +728,16 @@ class Account extends DataClass implements Insertable<Account> {
   }
 
   @override
-  int get hashCode => Object.hash(id, name, isDeleted, isArchived);
+  int get hashCode =>
+      Object.hash(id, name, notes, color, isDeleted, isArchived);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Account &&
           other.id == this.id &&
           other.name == this.name &&
+          other.notes == this.notes &&
+          other.color == this.color &&
           other.isDeleted == this.isDeleted &&
           other.isArchived == this.isArchived);
 }
@@ -605,12 +745,16 @@ class Account extends DataClass implements Insertable<Account> {
 class AccountsCompanion extends UpdateCompanion<Account> {
   final Value<String> id;
   final Value<String> name;
+  final Value<String?> notes;
+  final Value<Color> color;
   final Value<bool> isDeleted;
   final Value<bool> isArchived;
   final Value<int> rowid;
   const AccountsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.color = const Value.absent(),
     this.isDeleted = const Value.absent(),
     this.isArchived = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -618,6 +762,8 @@ class AccountsCompanion extends UpdateCompanion<Account> {
   AccountsCompanion.insert({
     this.id = const Value.absent(),
     required String name,
+    this.notes = const Value.absent(),
+    this.color = const Value.absent(),
     this.isDeleted = const Value.absent(),
     this.isArchived = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -625,6 +771,8 @@ class AccountsCompanion extends UpdateCompanion<Account> {
   static Insertable<Account> custom({
     Expression<String>? id,
     Expression<String>? name,
+    Expression<String>? notes,
+    Expression<int>? color,
     Expression<bool>? isDeleted,
     Expression<bool>? isArchived,
     Expression<int>? rowid,
@@ -632,6 +780,8 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
+      if (notes != null) 'notes': notes,
+      if (color != null) 'color': color,
       if (isDeleted != null) 'is_deleted': isDeleted,
       if (isArchived != null) 'is_archived': isArchived,
       if (rowid != null) 'rowid': rowid,
@@ -641,12 +791,16 @@ class AccountsCompanion extends UpdateCompanion<Account> {
   AccountsCompanion copyWith(
       {Value<String>? id,
       Value<String>? name,
+      Value<String?>? notes,
+      Value<Color>? color,
       Value<bool>? isDeleted,
       Value<bool>? isArchived,
       Value<int>? rowid}) {
     return AccountsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
+      notes: notes ?? this.notes,
+      color: color ?? this.color,
       isDeleted: isDeleted ?? this.isDeleted,
       isArchived: isArchived ?? this.isArchived,
       rowid: rowid ?? this.rowid,
@@ -661,6 +815,13 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (color.present) {
+      map['color'] =
+          Variable<int>($AccountsTable.$convertercolor.toSql(color.value));
     }
     if (isDeleted.present) {
       map['is_deleted'] = Variable<bool>(isDeleted.value);
@@ -679,6 +840,8 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     return (StringBuffer('AccountsCompanion(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('notes: $notes, ')
+          ..write('color: $color, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('isArchived: $isArchived, ')
           ..write('rowid: $rowid')
@@ -704,11 +867,23 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
       'name', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _costMeta = const VerificationMeta('cost');
   @override
   late final GeneratedColumn<double> cost = GeneratedColumn<double>(
       'cost', aliasedName, false,
       type: DriftSqlType.double, requiredDuringInsert: true);
+  @override
+  late final GeneratedColumnWithTypeConverter<Color, int> color =
+      GeneratedColumn<int>('color', aliasedName, false,
+              type: DriftSqlType.int,
+              requiredDuringInsert: false,
+              clientDefault: genColor)
+          .withConverter<Color>($GoalsTable.$convertercolor);
   @override
   late final GeneratedColumnWithTypeConverter<DateTime?, String> dueDate =
       GeneratedColumn<String>('due_date', aliasedName, true,
@@ -736,7 +911,7 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
       defaultValue: const Constant(false));
   @override
   List<GeneratedColumn> get $columns =>
-      [id, name, cost, dueDate, isFinished, isDeleted];
+      [id, name, notes, cost, color, dueDate, isFinished, isDeleted];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -755,6 +930,10 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
           _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
     } else if (isInserting) {
       context.missing(_nameMeta);
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
     }
     if (data.containsKey('cost')) {
       context.handle(
@@ -785,8 +964,12 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
           .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
       name: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
       cost: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}cost'])!,
+      color: $GoalsTable.$convertercolor.fromSql(attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}color'])!),
       dueDate: $GoalsTable.$converterdueDaten.fromSql(attachedDatabase
           .typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}due_date'])),
@@ -802,6 +985,7 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
     return $GoalsTable(attachedDatabase, alias);
   }
 
+  static TypeConverter<Color, int> $convertercolor = const ColorConverter();
   static TypeConverter<DateTime, String> $converterdueDate =
       const DateTextConverter();
   static TypeConverter<DateTime?, String?> $converterdueDaten =
@@ -811,14 +995,18 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
 class Goal extends DataClass implements Insertable<Goal> {
   final String id;
   final String name;
+  final String? notes;
   final double cost;
+  final Color color;
   final DateTime? dueDate;
   final bool isFinished;
   final bool isDeleted;
   const Goal(
       {required this.id,
       required this.name,
+      this.notes,
       required this.cost,
+      required this.color,
       this.dueDate,
       required this.isFinished,
       required this.isDeleted});
@@ -827,7 +1015,13 @@ class Goal extends DataClass implements Insertable<Goal> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
     map['cost'] = Variable<double>(cost);
+    {
+      map['color'] = Variable<int>($GoalsTable.$convertercolor.toSql(color));
+    }
     if (!nullToAbsent || dueDate != null) {
       map['due_date'] =
           Variable<String>($GoalsTable.$converterdueDaten.toSql(dueDate));
@@ -841,7 +1035,10 @@ class Goal extends DataClass implements Insertable<Goal> {
     return GoalsCompanion(
       id: Value(id),
       name: Value(name),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
       cost: Value(cost),
+      color: Value(color),
       dueDate: dueDate == null && nullToAbsent
           ? const Value.absent()
           : Value(dueDate),
@@ -856,7 +1053,9 @@ class Goal extends DataClass implements Insertable<Goal> {
     return Goal(
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
+      notes: serializer.fromJson<String?>(json['notes']),
       cost: serializer.fromJson<double>(json['cost']),
+      color: serializer.fromJson<Color>(json['color']),
       dueDate: serializer.fromJson<DateTime?>(json['dueDate']),
       isFinished: serializer.fromJson<bool>(json['isFinished']),
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
@@ -868,7 +1067,9 @@ class Goal extends DataClass implements Insertable<Goal> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
+      'notes': serializer.toJson<String?>(notes),
       'cost': serializer.toJson<double>(cost),
+      'color': serializer.toJson<Color>(color),
       'dueDate': serializer.toJson<DateTime?>(dueDate),
       'isFinished': serializer.toJson<bool>(isFinished),
       'isDeleted': serializer.toJson<bool>(isDeleted),
@@ -878,14 +1079,18 @@ class Goal extends DataClass implements Insertable<Goal> {
   Goal copyWith(
           {String? id,
           String? name,
+          Value<String?> notes = const Value.absent(),
           double? cost,
+          Color? color,
           Value<DateTime?> dueDate = const Value.absent(),
           bool? isFinished,
           bool? isDeleted}) =>
       Goal(
         id: id ?? this.id,
         name: name ?? this.name,
+        notes: notes.present ? notes.value : this.notes,
         cost: cost ?? this.cost,
+        color: color ?? this.color,
         dueDate: dueDate.present ? dueDate.value : this.dueDate,
         isFinished: isFinished ?? this.isFinished,
         isDeleted: isDeleted ?? this.isDeleted,
@@ -894,7 +1099,9 @@ class Goal extends DataClass implements Insertable<Goal> {
     return Goal(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
+      notes: data.notes.present ? data.notes.value : this.notes,
       cost: data.cost.present ? data.cost.value : this.cost,
+      color: data.color.present ? data.color.value : this.color,
       dueDate: data.dueDate.present ? data.dueDate.value : this.dueDate,
       isFinished:
           data.isFinished.present ? data.isFinished.value : this.isFinished,
@@ -907,7 +1114,9 @@ class Goal extends DataClass implements Insertable<Goal> {
     return (StringBuffer('Goal(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('notes: $notes, ')
           ..write('cost: $cost, ')
+          ..write('color: $color, ')
           ..write('dueDate: $dueDate, ')
           ..write('isFinished: $isFinished, ')
           ..write('isDeleted: $isDeleted')
@@ -917,14 +1126,16 @@ class Goal extends DataClass implements Insertable<Goal> {
 
   @override
   int get hashCode =>
-      Object.hash(id, name, cost, dueDate, isFinished, isDeleted);
+      Object.hash(id, name, notes, cost, color, dueDate, isFinished, isDeleted);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Goal &&
           other.id == this.id &&
           other.name == this.name &&
+          other.notes == this.notes &&
           other.cost == this.cost &&
+          other.color == this.color &&
           other.dueDate == this.dueDate &&
           other.isFinished == this.isFinished &&
           other.isDeleted == this.isDeleted);
@@ -933,7 +1144,9 @@ class Goal extends DataClass implements Insertable<Goal> {
 class GoalsCompanion extends UpdateCompanion<Goal> {
   final Value<String> id;
   final Value<String> name;
+  final Value<String?> notes;
   final Value<double> cost;
+  final Value<Color> color;
   final Value<DateTime?> dueDate;
   final Value<bool> isFinished;
   final Value<bool> isDeleted;
@@ -941,7 +1154,9 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
   const GoalsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
+    this.notes = const Value.absent(),
     this.cost = const Value.absent(),
+    this.color = const Value.absent(),
     this.dueDate = const Value.absent(),
     this.isFinished = const Value.absent(),
     this.isDeleted = const Value.absent(),
@@ -950,7 +1165,9 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
   GoalsCompanion.insert({
     this.id = const Value.absent(),
     required String name,
+    this.notes = const Value.absent(),
     required double cost,
+    this.color = const Value.absent(),
     this.dueDate = const Value.absent(),
     this.isFinished = const Value.absent(),
     this.isDeleted = const Value.absent(),
@@ -960,7 +1177,9 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
   static Insertable<Goal> custom({
     Expression<String>? id,
     Expression<String>? name,
+    Expression<String>? notes,
     Expression<double>? cost,
+    Expression<int>? color,
     Expression<String>? dueDate,
     Expression<bool>? isFinished,
     Expression<bool>? isDeleted,
@@ -969,7 +1188,9 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
+      if (notes != null) 'notes': notes,
       if (cost != null) 'cost': cost,
+      if (color != null) 'color': color,
       if (dueDate != null) 'due_date': dueDate,
       if (isFinished != null) 'is_finished': isFinished,
       if (isDeleted != null) 'is_deleted': isDeleted,
@@ -980,7 +1201,9 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
   GoalsCompanion copyWith(
       {Value<String>? id,
       Value<String>? name,
+      Value<String?>? notes,
       Value<double>? cost,
+      Value<Color>? color,
       Value<DateTime?>? dueDate,
       Value<bool>? isFinished,
       Value<bool>? isDeleted,
@@ -988,7 +1211,9 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
     return GoalsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
+      notes: notes ?? this.notes,
       cost: cost ?? this.cost,
+      color: color ?? this.color,
       dueDate: dueDate ?? this.dueDate,
       isFinished: isFinished ?? this.isFinished,
       isDeleted: isDeleted ?? this.isDeleted,
@@ -1005,8 +1230,15 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
     if (name.present) {
       map['name'] = Variable<String>(name.value);
     }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
     if (cost.present) {
       map['cost'] = Variable<double>(cost.value);
+    }
+    if (color.present) {
+      map['color'] =
+          Variable<int>($GoalsTable.$convertercolor.toSql(color.value));
     }
     if (dueDate.present) {
       map['due_date'] =
@@ -1029,7 +1261,9 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
     return (StringBuffer('GoalsCompanion(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('notes: $notes, ')
           ..write('cost: $cost, ')
+          ..write('color: $color, ')
           ..write('dueDate: $dueDate, ')
           ..write('isFinished: $isFinished, ')
           ..write('isDeleted: $isDeleted, ')
@@ -1082,6 +1316,16 @@ class $TransactionsTable extends Transactions
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("is_deleted" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _isArchivedMeta =
+      const VerificationMeta('isArchived');
+  @override
+  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
+      'is_archived', aliasedName, true,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_archived" IN (0, 1))'),
+      defaultValue: const Constant(false));
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -1121,6 +1365,7 @@ class $TransactionsTable extends Transactions
         date,
         type,
         isDeleted,
+        isArchived,
         notes,
         category,
         accountId,
@@ -1154,6 +1399,12 @@ class $TransactionsTable extends Transactions
     if (data.containsKey('is_deleted')) {
       context.handle(_isDeletedMeta,
           isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
+    }
+    if (data.containsKey('is_archived')) {
+      context.handle(
+          _isArchivedMeta,
+          isArchived.isAcceptableOrUnknown(
+              data['is_archived']!, _isArchivedMeta));
     }
     if (data.containsKey('notes')) {
       context.handle(
@@ -1194,6 +1445,8 @@ class $TransactionsTable extends Transactions
           .read(DriftSqlType.int, data['${effectivePrefix}type'])!),
       isDeleted: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted']),
+      isArchived: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_archived']),
       notes: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}notes']),
       category: attachedDatabase.typeMapping
@@ -1223,6 +1476,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   final DateTime date;
   final TransactionType type;
   final bool? isDeleted;
+  final bool? isArchived;
   final String? notes;
   final String? category;
   final String? accountId;
@@ -1234,6 +1488,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       required this.date,
       required this.type,
       this.isDeleted,
+      this.isArchived,
       this.notes,
       this.category,
       this.accountId,
@@ -1254,6 +1509,9 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     }
     if (!nullToAbsent || isDeleted != null) {
       map['is_deleted'] = Variable<bool>(isDeleted);
+    }
+    if (!nullToAbsent || isArchived != null) {
+      map['is_archived'] = Variable<bool>(isArchived);
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
@@ -1280,6 +1538,9 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       isDeleted: isDeleted == null && nullToAbsent
           ? const Value.absent()
           : Value(isDeleted),
+      isArchived: isArchived == null && nullToAbsent
+          ? const Value.absent()
+          : Value(isArchived),
       notes:
           notes == null && nullToAbsent ? const Value.absent() : Value(notes),
       category: category == null && nullToAbsent
@@ -1304,6 +1565,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       type: $TransactionsTable.$convertertype
           .fromJson(serializer.fromJson<int>(json['type'])),
       isDeleted: serializer.fromJson<bool?>(json['isDeleted']),
+      isArchived: serializer.fromJson<bool?>(json['isArchived']),
       notes: serializer.fromJson<String?>(json['notes']),
       category: serializer.fromJson<String?>(json['category']),
       accountId: serializer.fromJson<String?>(json['accountId']),
@@ -1321,6 +1583,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       'type': serializer
           .toJson<int>($TransactionsTable.$convertertype.toJson(type)),
       'isDeleted': serializer.toJson<bool?>(isDeleted),
+      'isArchived': serializer.toJson<bool?>(isArchived),
       'notes': serializer.toJson<String?>(notes),
       'category': serializer.toJson<String?>(category),
       'accountId': serializer.toJson<String?>(accountId),
@@ -1335,6 +1598,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           DateTime? date,
           TransactionType? type,
           Value<bool?> isDeleted = const Value.absent(),
+          Value<bool?> isArchived = const Value.absent(),
           Value<String?> notes = const Value.absent(),
           Value<String?> category = const Value.absent(),
           Value<String?> accountId = const Value.absent(),
@@ -1346,6 +1610,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
         date: date ?? this.date,
         type: type ?? this.type,
         isDeleted: isDeleted.present ? isDeleted.value : this.isDeleted,
+        isArchived: isArchived.present ? isArchived.value : this.isArchived,
         notes: notes.present ? notes.value : this.notes,
         category: category.present ? category.value : this.category,
         accountId: accountId.present ? accountId.value : this.accountId,
@@ -1359,6 +1624,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       date: data.date.present ? data.date.value : this.date,
       type: data.type.present ? data.type.value : this.type,
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      isArchived:
+          data.isArchived.present ? data.isArchived.value : this.isArchived,
       notes: data.notes.present ? data.notes.value : this.notes,
       category: data.category.present ? data.category.value : this.category,
       accountId: data.accountId.present ? data.accountId.value : this.accountId,
@@ -1375,6 +1642,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           ..write('date: $date, ')
           ..write('type: $type, ')
           ..write('isDeleted: $isDeleted, ')
+          ..write('isArchived: $isArchived, ')
           ..write('notes: $notes, ')
           ..write('category: $category, ')
           ..write('accountId: $accountId, ')
@@ -1385,7 +1653,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
 
   @override
   int get hashCode => Object.hash(id, title, amount, date, type, isDeleted,
-      notes, category, accountId, goalId);
+      isArchived, notes, category, accountId, goalId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1396,6 +1664,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           other.date == this.date &&
           other.type == this.type &&
           other.isDeleted == this.isDeleted &&
+          other.isArchived == this.isArchived &&
           other.notes == this.notes &&
           other.category == this.category &&
           other.accountId == this.accountId &&
@@ -1409,6 +1678,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   final Value<DateTime> date;
   final Value<TransactionType> type;
   final Value<bool?> isDeleted;
+  final Value<bool?> isArchived;
   final Value<String?> notes;
   final Value<String?> category;
   final Value<String?> accountId;
@@ -1421,6 +1691,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.date = const Value.absent(),
     this.type = const Value.absent(),
     this.isDeleted = const Value.absent(),
+    this.isArchived = const Value.absent(),
     this.notes = const Value.absent(),
     this.category = const Value.absent(),
     this.accountId = const Value.absent(),
@@ -1434,6 +1705,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     required DateTime date,
     required TransactionType type,
     this.isDeleted = const Value.absent(),
+    this.isArchived = const Value.absent(),
     this.notes = const Value.absent(),
     this.category = const Value.absent(),
     this.accountId = const Value.absent(),
@@ -1450,6 +1722,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Expression<String>? date,
     Expression<int>? type,
     Expression<bool>? isDeleted,
+    Expression<bool>? isArchived,
     Expression<String>? notes,
     Expression<String>? category,
     Expression<String>? accountId,
@@ -1463,6 +1736,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       if (date != null) 'date': date,
       if (type != null) 'type': type,
       if (isDeleted != null) 'is_deleted': isDeleted,
+      if (isArchived != null) 'is_archived': isArchived,
       if (notes != null) 'notes': notes,
       if (category != null) 'category_id': category,
       if (accountId != null) 'account_id': accountId,
@@ -1478,6 +1752,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       Value<DateTime>? date,
       Value<TransactionType>? type,
       Value<bool?>? isDeleted,
+      Value<bool?>? isArchived,
       Value<String?>? notes,
       Value<String?>? category,
       Value<String?>? accountId,
@@ -1490,6 +1765,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       date: date ?? this.date,
       type: type ?? this.type,
       isDeleted: isDeleted ?? this.isDeleted,
+      isArchived: isArchived ?? this.isArchived,
       notes: notes ?? this.notes,
       category: category ?? this.category,
       accountId: accountId ?? this.accountId,
@@ -1521,6 +1797,9 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     if (isDeleted.present) {
       map['is_deleted'] = Variable<bool>(isDeleted.value);
     }
+    if (isArchived.present) {
+      map['is_archived'] = Variable<bool>(isArchived.value);
+    }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
@@ -1548,6 +1827,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
           ..write('date: $date, ')
           ..write('type: $type, ')
           ..write('isDeleted: $isDeleted, ')
+          ..write('isArchived: $isArchived, ')
           ..write('notes: $notes, ')
           ..write('category: $category, ')
           ..write('accountId: $accountId, ')
@@ -1604,21 +1884,25 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 typedef $$CategoriesTableCreateCompanionBuilder = CategoriesCompanion Function({
   Value<String> id,
   required String name,
+  Value<String?> notes,
   Value<CategoryResetIncrement> resetIncrement,
   Value<bool> allowNegatives,
   Value<Color> color,
   Value<double?> balance,
   Value<bool?> isDeleted,
+  Value<bool> isArchived,
   Value<int> rowid,
 });
 typedef $$CategoriesTableUpdateCompanionBuilder = CategoriesCompanion Function({
   Value<String> id,
   Value<String> name,
+  Value<String?> notes,
   Value<CategoryResetIncrement> resetIncrement,
   Value<bool> allowNegatives,
   Value<Color> color,
   Value<double?> balance,
   Value<bool?> isDeleted,
+  Value<bool> isArchived,
   Value<int> rowid,
 });
 
@@ -1657,6 +1941,9 @@ class $$CategoriesTableFilterComposer
   ColumnFilters<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnFilters(column));
+
   ColumnWithTypeConverterFilters<CategoryResetIncrement, CategoryResetIncrement,
           int>
       get resetIncrement => $composableBuilder(
@@ -1677,6 +1964,9 @@ class $$CategoriesTableFilterComposer
 
   ColumnFilters<bool> get isDeleted => $composableBuilder(
       column: $table.isDeleted, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isArchived => $composableBuilder(
+      column: $table.isArchived, builder: (column) => ColumnFilters(column));
 
   Expression<bool> transactionsRefs(
       Expression<bool> Function($$TransactionsTableFilterComposer f) f) {
@@ -1715,6 +2005,9 @@ class $$CategoriesTableOrderingComposer
   ColumnOrderings<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get resetIncrement => $composableBuilder(
       column: $table.resetIncrement,
       builder: (column) => ColumnOrderings(column));
@@ -1731,6 +2024,9 @@ class $$CategoriesTableOrderingComposer
 
   ColumnOrderings<bool> get isDeleted => $composableBuilder(
       column: $table.isDeleted, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isArchived => $composableBuilder(
+      column: $table.isArchived, builder: (column) => ColumnOrderings(column));
 }
 
 class $$CategoriesTableAnnotationComposer
@@ -1748,6 +2044,9 @@ class $$CategoriesTableAnnotationComposer
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
 
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
   GeneratedColumnWithTypeConverter<CategoryResetIncrement, int>
       get resetIncrement => $composableBuilder(
           column: $table.resetIncrement, builder: (column) => column);
@@ -1763,6 +2062,9 @@ class $$CategoriesTableAnnotationComposer
 
   GeneratedColumn<bool> get isDeleted =>
       $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+
+  GeneratedColumn<bool> get isArchived => $composableBuilder(
+      column: $table.isArchived, builder: (column) => column);
 
   Expression<T> transactionsRefs<T extends Object>(
       Expression<T> Function($$TransactionsTableAnnotationComposer a) f) {
@@ -1811,41 +2113,49 @@ class $$CategoriesTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> name = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
             Value<CategoryResetIncrement> resetIncrement = const Value.absent(),
             Value<bool> allowNegatives = const Value.absent(),
             Value<Color> color = const Value.absent(),
             Value<double?> balance = const Value.absent(),
             Value<bool?> isDeleted = const Value.absent(),
+            Value<bool> isArchived = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               CategoriesCompanion(
             id: id,
             name: name,
+            notes: notes,
             resetIncrement: resetIncrement,
             allowNegatives: allowNegatives,
             color: color,
             balance: balance,
             isDeleted: isDeleted,
+            isArchived: isArchived,
             rowid: rowid,
           ),
           createCompanionCallback: ({
             Value<String> id = const Value.absent(),
             required String name,
+            Value<String?> notes = const Value.absent(),
             Value<CategoryResetIncrement> resetIncrement = const Value.absent(),
             Value<bool> allowNegatives = const Value.absent(),
             Value<Color> color = const Value.absent(),
             Value<double?> balance = const Value.absent(),
             Value<bool?> isDeleted = const Value.absent(),
+            Value<bool> isArchived = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               CategoriesCompanion.insert(
             id: id,
             name: name,
+            notes: notes,
             resetIncrement: resetIncrement,
             allowNegatives: allowNegatives,
             color: color,
             balance: balance,
             isDeleted: isDeleted,
+            isArchived: isArchived,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
@@ -1896,6 +2206,8 @@ typedef $$CategoriesTableProcessedTableManager = ProcessedTableManager<
 typedef $$AccountsTableCreateCompanionBuilder = AccountsCompanion Function({
   Value<String> id,
   required String name,
+  Value<String?> notes,
+  Value<Color> color,
   Value<bool> isDeleted,
   Value<bool> isArchived,
   Value<int> rowid,
@@ -1903,6 +2215,8 @@ typedef $$AccountsTableCreateCompanionBuilder = AccountsCompanion Function({
 typedef $$AccountsTableUpdateCompanionBuilder = AccountsCompanion Function({
   Value<String> id,
   Value<String> name,
+  Value<String?> notes,
+  Value<Color> color,
   Value<bool> isDeleted,
   Value<bool> isArchived,
   Value<int> rowid,
@@ -1942,6 +2256,14 @@ class $$AccountsTableFilterComposer
 
   ColumnFilters<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnFilters(column));
+
+  ColumnWithTypeConverterFilters<Color, Color, int> get color =>
+      $composableBuilder(
+          column: $table.color,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
 
   ColumnFilters<bool> get isDeleted => $composableBuilder(
       column: $table.isDeleted, builder: (column) => ColumnFilters(column));
@@ -1986,6 +2308,12 @@ class $$AccountsTableOrderingComposer
   ColumnOrderings<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get color => $composableBuilder(
+      column: $table.color, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<bool> get isDeleted => $composableBuilder(
       column: $table.isDeleted, builder: (column) => ColumnOrderings(column));
 
@@ -2007,6 +2335,12 @@ class $$AccountsTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Color, int> get color =>
+      $composableBuilder(column: $table.color, builder: (column) => column);
 
   GeneratedColumn<bool> get isDeleted =>
       $composableBuilder(column: $table.isDeleted, builder: (column) => column);
@@ -2061,6 +2395,8 @@ class $$AccountsTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> name = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<Color> color = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
             Value<bool> isArchived = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -2068,6 +2404,8 @@ class $$AccountsTableTableManager extends RootTableManager<
               AccountsCompanion(
             id: id,
             name: name,
+            notes: notes,
+            color: color,
             isDeleted: isDeleted,
             isArchived: isArchived,
             rowid: rowid,
@@ -2075,6 +2413,8 @@ class $$AccountsTableTableManager extends RootTableManager<
           createCompanionCallback: ({
             Value<String> id = const Value.absent(),
             required String name,
+            Value<String?> notes = const Value.absent(),
+            Value<Color> color = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
             Value<bool> isArchived = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -2082,6 +2422,8 @@ class $$AccountsTableTableManager extends RootTableManager<
               AccountsCompanion.insert(
             id: id,
             name: name,
+            notes: notes,
+            color: color,
             isDeleted: isDeleted,
             isArchived: isArchived,
             rowid: rowid,
@@ -2132,7 +2474,9 @@ typedef $$AccountsTableProcessedTableManager = ProcessedTableManager<
 typedef $$GoalsTableCreateCompanionBuilder = GoalsCompanion Function({
   Value<String> id,
   required String name,
+  Value<String?> notes,
   required double cost,
+  Value<Color> color,
   Value<DateTime?> dueDate,
   Value<bool> isFinished,
   Value<bool> isDeleted,
@@ -2141,7 +2485,9 @@ typedef $$GoalsTableCreateCompanionBuilder = GoalsCompanion Function({
 typedef $$GoalsTableUpdateCompanionBuilder = GoalsCompanion Function({
   Value<String> id,
   Value<String> name,
+  Value<String?> notes,
   Value<double> cost,
+  Value<Color> color,
   Value<DateTime?> dueDate,
   Value<bool> isFinished,
   Value<bool> isDeleted,
@@ -2181,8 +2527,16 @@ class $$GoalsTableFilterComposer extends Composer<_$AppDatabase, $GoalsTable> {
   ColumnFilters<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnFilters(column));
+
   ColumnFilters<double> get cost => $composableBuilder(
       column: $table.cost, builder: (column) => ColumnFilters(column));
+
+  ColumnWithTypeConverterFilters<Color, Color, int> get color =>
+      $composableBuilder(
+          column: $table.color,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
 
   ColumnWithTypeConverterFilters<DateTime?, DateTime, String> get dueDate =>
       $composableBuilder(
@@ -2232,8 +2586,14 @@ class $$GoalsTableOrderingComposer
   ColumnOrderings<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<double> get cost => $composableBuilder(
       column: $table.cost, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get color => $composableBuilder(
+      column: $table.color, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get dueDate => $composableBuilder(
       column: $table.dueDate, builder: (column) => ColumnOrderings(column));
@@ -2260,8 +2620,14 @@ class $$GoalsTableAnnotationComposer
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
 
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
   GeneratedColumn<double> get cost =>
       $composableBuilder(column: $table.cost, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Color, int> get color =>
+      $composableBuilder(column: $table.color, builder: (column) => column);
 
   GeneratedColumnWithTypeConverter<DateTime?, String> get dueDate =>
       $composableBuilder(column: $table.dueDate, builder: (column) => column);
@@ -2319,7 +2685,9 @@ class $$GoalsTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> name = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
             Value<double> cost = const Value.absent(),
+            Value<Color> color = const Value.absent(),
             Value<DateTime?> dueDate = const Value.absent(),
             Value<bool> isFinished = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
@@ -2328,7 +2696,9 @@ class $$GoalsTableTableManager extends RootTableManager<
               GoalsCompanion(
             id: id,
             name: name,
+            notes: notes,
             cost: cost,
+            color: color,
             dueDate: dueDate,
             isFinished: isFinished,
             isDeleted: isDeleted,
@@ -2337,7 +2707,9 @@ class $$GoalsTableTableManager extends RootTableManager<
           createCompanionCallback: ({
             Value<String> id = const Value.absent(),
             required String name,
+            Value<String?> notes = const Value.absent(),
             required double cost,
+            Value<Color> color = const Value.absent(),
             Value<DateTime?> dueDate = const Value.absent(),
             Value<bool> isFinished = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
@@ -2346,7 +2718,9 @@ class $$GoalsTableTableManager extends RootTableManager<
               GoalsCompanion.insert(
             id: id,
             name: name,
+            notes: notes,
             cost: cost,
+            color: color,
             dueDate: dueDate,
             isFinished: isFinished,
             isDeleted: isDeleted,
@@ -2402,6 +2776,7 @@ typedef $$TransactionsTableCreateCompanionBuilder = TransactionsCompanion
   required DateTime date,
   required TransactionType type,
   Value<bool?> isDeleted,
+  Value<bool?> isArchived,
   Value<String?> notes,
   Value<String?> category,
   Value<String?> accountId,
@@ -2416,6 +2791,7 @@ typedef $$TransactionsTableUpdateCompanionBuilder = TransactionsCompanion
   Value<DateTime> date,
   Value<TransactionType> type,
   Value<bool?> isDeleted,
+  Value<bool?> isArchived,
   Value<String?> notes,
   Value<String?> category,
   Value<String?> accountId,
@@ -2502,6 +2878,9 @@ class $$TransactionsTableFilterComposer
 
   ColumnFilters<bool> get isDeleted => $composableBuilder(
       column: $table.isDeleted, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isArchived => $composableBuilder(
+      column: $table.isArchived, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get notes => $composableBuilder(
       column: $table.notes, builder: (column) => ColumnFilters(column));
@@ -2594,6 +2973,9 @@ class $$TransactionsTableOrderingComposer
   ColumnOrderings<bool> get isDeleted => $composableBuilder(
       column: $table.isDeleted, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get isArchived => $composableBuilder(
+      column: $table.isArchived, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get notes => $composableBuilder(
       column: $table.notes, builder: (column) => ColumnOrderings(column));
 
@@ -2684,6 +3066,9 @@ class $$TransactionsTableAnnotationComposer
 
   GeneratedColumn<bool> get isDeleted =>
       $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+
+  GeneratedColumn<bool> get isArchived => $composableBuilder(
+      column: $table.isArchived, builder: (column) => column);
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
@@ -2778,6 +3163,7 @@ class $$TransactionsTableTableManager extends RootTableManager<
             Value<DateTime> date = const Value.absent(),
             Value<TransactionType> type = const Value.absent(),
             Value<bool?> isDeleted = const Value.absent(),
+            Value<bool?> isArchived = const Value.absent(),
             Value<String?> notes = const Value.absent(),
             Value<String?> category = const Value.absent(),
             Value<String?> accountId = const Value.absent(),
@@ -2791,6 +3177,7 @@ class $$TransactionsTableTableManager extends RootTableManager<
             date: date,
             type: type,
             isDeleted: isDeleted,
+            isArchived: isArchived,
             notes: notes,
             category: category,
             accountId: accountId,
@@ -2804,6 +3191,7 @@ class $$TransactionsTableTableManager extends RootTableManager<
             required DateTime date,
             required TransactionType type,
             Value<bool?> isDeleted = const Value.absent(),
+            Value<bool?> isArchived = const Value.absent(),
             Value<String?> notes = const Value.absent(),
             Value<String?> category = const Value.absent(),
             Value<String?> accountId = const Value.absent(),
@@ -2817,6 +3205,7 @@ class $$TransactionsTableTableManager extends RootTableManager<
             date: date,
             type: type,
             isDeleted: isDeleted,
+            isArchived: isArchived,
             notes: notes,
             category: category,
             accountId: accountId,
