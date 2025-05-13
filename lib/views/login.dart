@@ -56,10 +56,10 @@ class _LoginPageState extends State<LoginPage> {
         canFinish = true;
       } on AuthException catch (e) {
         if (e.code == 'invalid_credentials') {
-          setState(() => passwordError = "Invalid username or password");
+          setState(() => passwordError = 'Invalid username or password');
         } else {
           scaffoldMessengerKey.currentState!.showSnackBar(
-            SnackBar(content: Text("An unknown error occurred: ${e.message}")),
+            SnackBar(content: Text('An unknown error occurred: ${e.message}')),
           );
         }
         print(e.code);
@@ -95,11 +95,11 @@ class _LoginPageState extends State<LoginPage> {
 
       if (googleAuth?.idToken == null) {
         scaffoldMessengerKey.currentState!.showSnackBar(
-          const SnackBar(content: Text("Error: No Client ID")),
+          const SnackBar(content: Text('Error: No Client ID')),
         );
       } else if (googleAuth?.accessToken == null) {
         scaffoldMessengerKey.currentState!.showSnackBar(
-          const SnackBar(content: Text("Error: No Access Token")),
+          const SnackBar(content: Text('Error: No Access Token')),
         );
       }
 
@@ -121,12 +121,12 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget get signInButton => LoginButton(
-    text: "Sign in",
+    text: 'Sign in',
     callback: isLoading ? null : () => submitForm(SignInType.signIn),
   );
 
   Widget get signUpButton => LoginButton(
-    text: "Sign up",
+    text: 'Sign up',
     callback: isLoading ? null : () => submitForm(SignInType.signUp),
   );
 
@@ -144,7 +144,7 @@ class _LoginPageState extends State<LoginPage> {
           isLoading && signInType == SignInType.google
               ? const CircularProgressIndicator()
               : Text(
-                "Sign in with Google",
+                'Sign in with Google',
                 style: Theme.of(
                   context,
                 ).textTheme.headlineSmall!.copyWith(color: Colors.black),
@@ -158,7 +158,7 @@ class _LoginPageState extends State<LoginPage> {
     forceErrorText: usernameError,
     controller: usernameController,
     decoration: const InputDecoration(
-      label: Text("Email"),
+      label: Text('Email'),
       border: OutlineInputBorder(),
     ),
   );
@@ -182,7 +182,7 @@ class _LoginPageState extends State<LoginPage> {
               () => setState(() => passwordIsVisible = !passwordIsVisible),
         ),
       ),
-      label: const Text("Password"),
+      label: const Text('Password'),
       border: const OutlineInputBorder(),
     ),
   );
@@ -210,11 +210,11 @@ class _LoginPageState extends State<LoginPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Log in",
+                          'Log in',
                           style: Theme.of(context).textTheme.headlineLarge,
                         ),
                         Text(
-                          "To access your budget",
+                          'To access your budget',
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),
                         const SizedBox(height: 16),

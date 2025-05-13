@@ -27,7 +27,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget makeBool(Setting setting) {
-    print("In MakeBool");
+    print('In MakeBool');
     return Row(
       children: [
         Text(setting.name, style: settingTextStyle),
@@ -38,7 +38,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget makeMulti(Setting setting) {
-    print("In MakeString");
+    print('In MakeString');
     return Row(
       children: [
         Text(setting.name, style: settingTextStyle),
@@ -98,12 +98,12 @@ class _SettingsPageState extends State<SettingsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Settings"),
+        title: const Text('Settings'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: TextButton(
-              child: const Text("Save", style: TextStyle(fontSize: 20.0)),
+              child: const Text('Save', style: TextStyle(fontSize: 20.0)),
               onPressed: () {},
             ),
           ),

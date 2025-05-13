@@ -25,12 +25,12 @@ Future<void> setup() async {
     'Settings: ${settings.map((e) => "${e.type.name} ${e.name}: ${e.value}")}',
   );
 
-  switch (settings.where((element) => element.name == "Theme").first.value) {
-    case "System":
+  switch (settings.where((element) => element.name == 'Theme').first.value) {
+    case 'System':
       theme = ThemeMode.system;
-    case "Dark":
+    case 'Dark':
       theme = ThemeMode.dark;
-    case "Light":
+    case 'Light':
       theme = ThemeMode.light;
     default:
       theme = ThemeMode.system;

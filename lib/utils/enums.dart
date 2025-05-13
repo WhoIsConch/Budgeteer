@@ -18,11 +18,11 @@ enum TransactionType {
 enum AggregationLevel { daily, weekly, monthly, yearly }
 
 enum RelativeDateRange {
-  today("Today"),
-  yesterday("Yesterday"),
-  thisWeek("This Week"),
-  thisMonth("This Month"),
-  thisYear("This Year");
+  today('Today'),
+  yesterday('Yesterday'),
+  thisWeek('This Week'),
+  thisMonth('This Month'),
+  thisYear('This Year');
 
   const RelativeDateRange(this.name);
   final String name;
@@ -106,13 +106,13 @@ enum CategoryResetIncrement {
   };
 
   String get text => switch (value) {
-    1 => "Day",
-    2 => "Week",
-    3 => "Two Weeks",
-    4 => "Month",
-    5 => "Year",
-    0 => "Never Reset",
-    _ => "Error",
+    1 => 'Day',
+    2 => 'Week',
+    3 => 'Two Weeks',
+    4 => 'Month',
+    5 => 'Year',
+    0 => 'Never Reset',
+    _ => 'Error',
   };
 }
 

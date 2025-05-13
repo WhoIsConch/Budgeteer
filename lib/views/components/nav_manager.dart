@@ -43,7 +43,7 @@ class _NavManagerState extends State<NavManager>
   List<ExpandedButtonData> get _expandedButtonsData => [
     ExpandedButtonData(
       icon: const Icon(Icons.account_balance_wallet_outlined),
-      text: "Category",
+      text: 'Category',
       onPressed: () {
         Navigator.of(context).push(
           DialogRoute(
@@ -55,17 +55,17 @@ class _NavManagerState extends State<NavManager>
       },
     ),
     ExpandedButtonData(
-      text: "Account",
+      text: 'Account',
       icon: const Icon(Icons.wallet),
       onPressed: () {},
     ),
     ExpandedButtonData(
-      text: "Goal",
+      text: 'Goal',
       icon: const Icon(Icons.flag),
       onPressed: () {},
     ),
     ExpandedButtonData(
-      text: "Transaction",
+      text: 'Transaction',
       icon: const Icon(Icons.attach_money),
       onPressed: () {
         Navigator.of(context).push(
@@ -140,23 +140,23 @@ class _NavManagerState extends State<NavManager>
               destinations: const [
                 NavigationDestination(
                   icon: Icon(Icons.home_outlined),
-                  label: "Home",
+                  label: 'Home',
                   selectedIcon: Icon(Icons.home),
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.history_outlined),
                   selectedIcon: Icon(Icons.history),
-                  label: "Activity",
+                  label: 'Activity',
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.bar_chart_outlined),
                   selectedIcon: Icon(Icons.bar_chart),
-                  label: "Stats",
+                  label: 'Stats',
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.code),
                   selectedIcon: Icon(Icons.code),
-                  label: "Debug",
+                  label: 'Debug',
                 ),
               ],
             ),
@@ -274,7 +274,7 @@ class SpeedDialExpandedButton extends StatelessWidget {
             ),
           ),
           FloatingActionButton.small(
-            heroTag: "${data.text.toLowerCase()}_fab",
+            heroTag: '${data.text.toLowerCase()}_fab',
             backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
             foregroundColor: Theme.of(context).colorScheme.onTertiaryContainer,
             onPressed: data.onPressed,

@@ -130,7 +130,7 @@ class _TransactionsListState extends State<TransactionsList> {
 
   Widget get _noTransactions => Center(
     child: Text(
-      "No transactions found",
+      'No transactions found',
       style: Theme.of(context).textTheme.headlineSmall,
     ),
   );
@@ -160,7 +160,7 @@ class _TransactionsListState extends State<TransactionsList> {
 
             if (snapshot.hasError) {
               return const Center(
-                child: Text("Something went wrong. Please try again"),
+                child: Text('Something went wrong. Please try again'),
               );
             }
 
@@ -208,7 +208,7 @@ class _TransactionsListState extends State<TransactionsList> {
 
     if (isMultiselect) {
       actionButton = FloatingActionButton(
-        heroTag: "list_fab",
+        heroTag: 'list_fab',
         child: const Icon(size: 28, Icons.delete),
         onPressed: () {
           deletionManager.stageObjectsForDeletion<Transaction>(
@@ -223,7 +223,7 @@ class _TransactionsListState extends State<TransactionsList> {
       );
     } else if (widget.showActionButton) {
       actionButton = FloatingActionButton(
-        heroTag: "list_fab",
+        heroTag: 'list_fab',
         child: const Icon(size: 28, Icons.add),
         onPressed:
             () => Navigator.push(

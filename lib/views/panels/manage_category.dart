@@ -50,7 +50,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
       var category = widget.category!.category;
 
       nameController.text = category.name;
-      amountController.text = category.balance?.toStringAsFixed(2) ?? "0";
+      amountController.text = category.balance?.toStringAsFixed(2) ?? '0';
       allowNegatives = category.allowNegatives;
       resetIncrement = category.resetIncrement;
       selectedColor = category.color;
@@ -59,19 +59,19 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
 
   @override
   Widget build(BuildContext context) {
-    String title = "Create Category";
+    String title = 'Create Category';
 
     // Random category hints for fun
     List<String> categoryHints = [
-      "CD Collection",
-      "Eating Out",
-      "Phone Bill",
-      "Video Games",
-      "Entertainment",
-      "Streaming Services",
-      "ChatGPT Credits",
-      "Clothes",
-      "Car",
+      'CD Collection',
+      'Eating Out',
+      'Phone Bill',
+      'Video Games',
+      'Entertainment',
+      'Streaming Services',
+      'ChatGPT Credits',
+      'Clothes',
+      'Car',
     ];
 
     Random random = Random();
@@ -79,11 +79,11 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
         categoryHints[random.nextInt(categoryHints.length - 1)];
 
     if (widget.category != null) {
-      title = "Edit Category";
+      title = 'Edit Category';
     }
 
     TextButton okButton = TextButton(
-      child: const Text("Ok"),
+      child: const Text('Ok'),
       onPressed: () async {
         if (!_formKey.currentState!.validate()) {
           return;
@@ -108,7 +108,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
         } catch (e) {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Failed to save transaction: $e")),
+              SnackBar(content: Text('Failed to save transaction: $e')),
             );
           }
         }
@@ -126,7 +126,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
           children: [
             TextButton(
               child: Text(
-                "Delete",
+                'Delete',
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
               onPressed: () {
@@ -168,7 +168,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                   TextFormField(
                     controller: nameController,
                     decoration: InputDecoration(
-                      labelText: "Category Name",
+                      labelText: 'Category Name',
                       hintText: categoryHint,
                     ),
                     validator: validateTitle,
@@ -184,9 +184,9 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                     inputFormatters: [DecimalTextInputFormatter()],
                     controller: amountController,
                     decoration: const InputDecoration(
-                      prefixText: "\$",
-                      hintText: "500.00",
-                      labelText: "Maximum Balance",
+                      prefixText: '\$',
+                      hintText: '500.00',
+                      labelText: 'Maximum Balance',
                     ),
                   ),
                   Padding(
@@ -202,7 +202,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                             height: 20,
                             width: 20,
                             child: Checkbox(
-                              semanticLabel: "Allow Negative Balance",
+                              semanticLabel: 'Allow Negative Balance',
                               value: allowNegatives,
                               onChanged: (value) {
                                 if (value != null) {
@@ -212,13 +212,13 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Text("Allow Negative Balance"),
+                          const Text('Allow Negative Balance'),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text("Reset every", style: TextStyle(fontSize: 16)),
+                  const Text('Reset every', style: TextStyle(fontSize: 16)),
                   const SizedBox(height: 4),
                   DropdownMenu(
                     expandedInsets: EdgeInsets.zero,
@@ -245,7 +245,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                           context: context,
                           builder:
                               (context) => AlertDialog(
-                                title: const Text("Pick a color"),
+                                title: const Text('Pick a color'),
                                 content: MaterialPicker(
                                   pickerColor: selectedColor ?? Colors.white,
                                   onColorChanged:
@@ -255,7 +255,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                                 ),
                                 actions: [
                                   TextButton(
-                                    child: const Text("Ok"),
+                                    child: const Text('Ok'),
                                     onPressed: () => Navigator.pop(context),
                                   ),
                                 ],
@@ -264,7 +264,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const Text("Color: ", style: TextStyle(fontSize: 18)),
+                        const Text('Color: ', style: TextStyle(fontSize: 18)),
                         Expanded(
                           child: Container(
                             height: 30,

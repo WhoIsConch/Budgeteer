@@ -49,12 +49,12 @@ class _HomePageState extends State<HomePage> {
                 return AccountsCarousel(
                   items: [
                     CarouselCardPair(
-                      "Total balance",
+                      'Total balance',
                       "${isNegative ? '-' : ''}\$$formattedAmount",
                       isNegative: isNegative,
                     ),
-                    const CarouselCardPair("Checking", "\$4,182.33"),
-                    const CarouselCardPair("Cash", "\$130.50"),
+                    const CarouselCardPair('Checking', '\$4,182.33'),
+                    const CarouselCardPair('Cash', '\$130.50'),
                   ],
                 );
               },
@@ -64,7 +64,7 @@ class _HomePageState extends State<HomePage> {
               child: Row(
                 children: [
                   Text(
-                    "Recent activity",
+                    'Recent activity',
                     style: Theme.of(context).textTheme.headlineMedium!.copyWith(
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
@@ -81,7 +81,7 @@ class _HomePageState extends State<HomePage> {
                     child: Row(
                       children: [
                         Text(
-                          "View all",
+                          'View all',
                           style: Theme.of(
                             context,
                           ).textTheme.bodyLarge!.copyWith(
@@ -140,7 +140,7 @@ class TransactionPreviewer extends StatelessWidget {
           if (snapshot.data!.isEmpty) {
             return Center(
               child: Text(
-                "No recent transactions",
+                'No recent transactions',
                 style: Theme.of(context).textTheme.headlineSmall!.copyWith(
                   color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
                 ),
@@ -260,7 +260,7 @@ class WelcomeHeader extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            "Welcome, Noah",
+            'Welcome, Noah',
             softWrap: true,
             style: Theme.of(context).textTheme.headlineMedium!.copyWith(
               color: Theme.of(context).colorScheme.onSurface,

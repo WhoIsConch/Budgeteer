@@ -13,7 +13,7 @@ import 'package:drift_sqlite_async/drift_sqlite_async.dart';
 
 part 'app_database.g.dart';
 
-final _formatter = DateFormat("yyyy-MM-dd");
+final _formatter = DateFormat('yyyy-MM-dd');
 
 int genColor() =>
     Color((Random().nextDouble() * 0xFFFFFF).toInt()).withAlpha(255).toARGB32();
@@ -30,7 +30,7 @@ class DateTextConverter extends TypeConverter<DateTime, String> {
 
 class Transactions extends Table {
   @override
-  String get tableName => "transactions";
+  String get tableName => 'transactions';
 
   TextColumn get id => text().clientDefault(() => uuid.v4())();
   TextColumn get title => text()();
@@ -146,7 +146,7 @@ extension CategoriesExtension on Category {
         nextReset = DateTime(now.year + 1, 1, 1);
         break;
       default:
-        return "";
+        return '';
     }
 
     Duration timeLeft = nextReset.difference(now);
@@ -156,16 +156,16 @@ extension CategoriesExtension on Category {
 
     if (days > 30) {
       int months = days ~/ 30;
-      return months == 1 ? "a month" : "$months months";
+      return months == 1 ? 'a month' : '$months months';
     } else if (days >= 7) {
       int weeks = days ~/ 7;
-      return weeks == 1 ? "a week" : "$weeks weeks";
+      return weeks == 1 ? 'a week' : '$weeks weeks';
     } else if (days > 0) {
-      return days == 1 ? "a day" : "$days days";
+      return days == 1 ? 'a day' : '$days days';
     } else if (hours > 0) {
-      return hours == 1 ? "an hour" : "$hours hours";
+      return hours == 1 ? 'an hour' : '$hours hours';
     } else {
-      return minutes == 1 ? "a minute" : "$minutes minutes";
+      return minutes == 1 ? 'a minute' : '$minutes minutes';
     }
   }
 }

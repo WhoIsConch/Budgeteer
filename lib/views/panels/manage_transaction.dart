@@ -24,12 +24,12 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   final _formKey = GlobalKey<FormState>();
 
   final List<String> _validControllers = [
-    "amount",
-    "title",
-    "notes",
-    "category",
-    "account",
-    "goal",
+    'amount',
+    'title',
+    'notes',
+    'category',
+    'account',
+    'goal',
   ];
   late final Map<String, TextEditingController> controllers;
 
@@ -94,11 +94,11 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
 
   TransactionsCompanion _buildTransaction() => TransactionsCompanion(
     id: isEditing ? Value(initialTransaction!.id) : const Value.absent(),
-    title: getControllerValue("title"),
-    amount: Value(double.parse(controllers["amount"]!.text)),
+    title: getControllerValue('title'),
+    amount: Value(double.parse(controllers['amount']!.text)),
     date: Value(_selectedDate),
     type: Value(_selectedType),
-    notes: getControllerValue("notes"),
+    notes: getControllerValue('notes'),
     category: Value(_selectedCategoryPair?.category.id),
     accountId: Value(_selectedAccount?.id),
     goalId: Value(_selectedGoal?.id),
@@ -115,12 +115,12 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
 
     setState(() {
       _selectedCategoryPair = categoryPair;
-      controllers["category"]!.text = categoryPair!.category.name;
+      controllers['category']!.text = categoryPair!.category.name;
     });
   }
 
   void _updateAmount() => setState(
-    () => _currentAmount = double.tryParse(controllers["amount"]!.text) ?? 0,
+    () => _currentAmount = double.tryParse(controllers['amount']!.text) ?? 0,
   );
 
   @override
@@ -134,10 +134,10 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     }
 
     if (isEditing) {
-      tempControllers["title"]!.text = initialTransaction!.title;
-      tempControllers["amount"]!.text = initialTransaction!.amount
+      tempControllers['title']!.text = initialTransaction!.title;
+      tempControllers['amount']!.text = initialTransaction!.amount
           .toStringAsFixed(2);
-      tempControllers["notes"]!.text = initialTransaction!.notes ?? "";
+      tempControllers['notes']!.text = initialTransaction!.notes ?? '';
       _selectedDate = initialTransaction!.date;
       _selectedType = initialTransaction!.type;
       _currentAmount = initialTransaction!.amount;
@@ -205,7 +205,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       resetText = _selectedCategoryPair!.category.getTimeUntilNextReset();
     }
 
-    return "Balance: \$$formattedBalance | $resetText";
+    return 'Balance: \$$formattedBalance | $resetText';
   }
 
   Widget _getCategoryButton(BuildContext context) => Row(
@@ -218,14 +218,14 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
             if (!snapshot.hasData) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return _buildDropdownMenu(
-                  label: "Loading",
+                  label: 'Loading',
                   values: [],
                   labels: [],
                   onChanged: (_) {},
                 );
               }
               return _buildDropdownMenu(
-                label: "No categories",
+                label: 'No categories',
                 values: [],
                 labels: [],
                 onChanged: (_) {},
@@ -234,20 +234,20 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
 
             final List<CategoryWithAmount?> values = [...snapshot.data!, null];
             final labels =
-                values.map((e) => e?.category.name ?? "No Category").toList();
+                values.map((e) => e?.category.name ?? 'No Category').toList();
 
             return _buildDropdownMenu<CategoryWithAmount?>(
-              label: "Category",
+              label: 'Category',
               values: values,
               labels: labels,
               helperText: _getCategorySubtext(),
               initialSelection: _selectedCategoryPair,
-              controller: controllers["category"],
+              controller: controllers['category'],
               onChanged:
                   (pair) => setState(() {
                     _selectedCategoryPair = pair;
-                    controllers["category"]!.text =
-                        pair?.category.name ?? "No category";
+                    controllers['category']!.text =
+                        pair?.category.name ?? 'No category';
                   }),
             );
           },
@@ -259,7 +259,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
           color: Theme.of(context).colorScheme.primary,
         ),
         tooltip:
-            _selectedCategoryPair == null ? "New category" : "Edit category",
+            _selectedCategoryPair == null ? 'New category' : 'Edit category',
         onPressed: () async {
           final result = await showDialog(
             context: context,
@@ -287,7 +287,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       alignmentOffset: const Offset(-24, 0),
       menuChildren: [
         MenuItemButton(
-          child: Text(isArchived ? "Unarchive" : "Archive"),
+          child: Text(isArchived ? 'Unarchive' : 'Archive'),
           onPressed:
               () => showDialog(
                 context: context,
@@ -302,7 +302,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          child: const Text("Cancel"),
+                          child: const Text('Cancel'),
                         ),
                         TextButton(
                           onPressed: () {
@@ -331,20 +331,20 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
               ),
         ),
         MenuItemButton(
-          child: const Text("Delete"),
+          child: const Text('Delete'),
           onPressed:
               () => showDialog(
                 context: context,
                 builder:
                     (context) => AlertDialog(
-                      title: const Text("Delete transaction?"),
+                      title: const Text('Delete transaction?'),
                       content: const Text(
-                        "Are you sure you want to delete this transaction?",
+                        'Are you sure you want to delete this transaction?',
                       ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          child: const Text("Cancel"),
+                          child: const Text('Cancel'),
                         ),
                         TextButton(
                           onPressed: () {
@@ -357,7 +357,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                               ..pop()
                               ..pop();
                           },
-                          child: const Text("Delete"),
+                          child: const Text('Delete'),
                         ),
                       ],
                     ),
@@ -382,7 +382,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEditing ? "Edit transaction" : "Add transaction"),
+        title: Text(isEditing ? 'Edit transaction' : 'Add transaction'),
         actions: [
           IconButton(
             icon: const Icon(Icons.check),
@@ -408,9 +408,9 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
 
                   Navigator.of(context).pop();
                 } catch (e) {
-                  AppLogger().logger.e("Unable to save transaction: $e");
+                  AppLogger().logger.e('Unable to save transaction: $e');
                   context.read<SnackbarProvider>().showSnackBar(
-                    const SnackBar(content: Text("Unable to save transaction")),
+                    const SnackBar(content: Text('Unable to save transaction')),
                   );
                 }
               }
@@ -435,11 +435,11 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                   segments: const [
                     ButtonSegment(
                       value: TransactionType.expense,
-                      label: Text("Expense"),
+                      label: Text('Expense'),
                     ),
                     ButtonSegment(
                       value: TransactionType.income,
-                      label: Text("Income"),
+                      label: Text('Income'),
                     ),
                   ],
                 ),
@@ -448,9 +448,9 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                   children: [
                     Expanded(
                       child: TextFormField(
-                        controller: controllers["title"],
+                        controller: controllers['title'],
                         decoration: const InputDecoration(
-                          labelText: "Title",
+                          labelText: 'Title',
                           border: OutlineInputBorder(),
                         ),
                         validator: validateTitle,
@@ -465,9 +465,9 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                     Expanded(
                       child: TextFormField(
                         onChanged: (_) => _updateAmount(),
-                        controller: controllers["amount"],
+                        controller: controllers['amount'],
                         decoration: InputDecoration(
-                          labelText: "Amount",
+                          labelText: 'Amount',
                           prefixIcon: Icon(
                             Icons.attach_money,
                             color: Theme.of(context).colorScheme.primary,
@@ -484,7 +484,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                       child: TextFormField(
                         readOnly: true,
                         decoration: InputDecoration(
-                          labelText: "Date",
+                          labelText: 'Date',
                           border: const OutlineInputBorder(),
                           suffixIcon: Icon(
                             Icons.calendar_today,
@@ -501,21 +501,21 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                 ),
                 _getCategoryButton(context),
                 _buildDropdownMenu(
-                  label: "Account",
+                  label: 'Account',
                   values: [],
                   labels: [],
                   onChanged: (_) {},
                 ),
                 _buildDropdownMenu(
-                  label: "Goal",
+                  label: 'Goal',
                   values: [],
                   labels: [],
                   onChanged: (_) {},
                 ),
                 TextFormField(
-                  controller: controllers["notes"],
+                  controller: controllers['notes'],
                   decoration: const InputDecoration(
-                    labelText: "Notes (optional)",
+                    labelText: 'Notes (optional)',
                     border: OutlineInputBorder(),
                     alignLabelWithHint: true,
                   ),

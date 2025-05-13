@@ -40,25 +40,25 @@ class _TransactionSearchState extends State<TransactionSearch> {
 
     for (TransactionFilter filter in filters) {
       String label = switch (filter) {
-        TransactionFilter<String> t => "\"${t.value}\"", // "Value"
+        TransactionFilter<String> t => '"${t.value}"', // "Value"
         TransactionFilter<AmountFilter> t =>
-          "${t.value.type!.symbol} \$${formatAmount(t.value.amount ?? 0, exact: true)}", // > $Value
+          '${t.value.type!.symbol} \$${formatAmount(t.value.amount ?? 0, exact: true)}', // > $Value
         TransactionFilter<List<CategoryWithAmount>> t =>
           t.value.length > 3
-              ? "${t.value.length} categories"
-              : t.value.map((e) => e.category.name).join(", "),
+              ? '${t.value.length} categories'
+              : t.value.map((e) => e.category.name).join(', '),
         TransactionFilter<DateTimeRange> t =>
-          "${dateFormat.format(t.value.start)}–${dateFormat.format(t.value.end)}",
+          '${dateFormat.format(t.value.start)}–${dateFormat.format(t.value.end)}',
         TransactionFilter<RelativeDateRange> t =>
-          "${dateFormat.format(t.value.getRange().start)}–${dateFormat.format(t.value.getRange().end)}",
+          '${dateFormat.format(t.value.getRange().start)}–${dateFormat.format(t.value.getRange().end)}',
         TransactionFilter<TransactionType> t =>
-          t.value == TransactionType.expense ? "Expense" : "Income",
-        _ => "ERR",
+          t.value == TransactionType.expense ? 'Expense' : 'Income',
+        _ => 'ERR',
       };
 
-      if (label.startsWith("ERR")) {
+      if (label.startsWith('ERR')) {
         AppLogger().logger.e(
-          "Failed to filter transactions: Unexpected value:\n${filter.value}",
+          'Failed to filter transactions: Unexpected value:\n${filter.value}',
         );
       }
 
@@ -86,11 +86,11 @@ class _TransactionSearchState extends State<TransactionSearch> {
         controller: searchController,
         decoration: const InputDecoration(
           icon: Icon(Icons.search),
-          hintText: "Search",
+          hintText: 'Search',
         ),
       );
     }
-    return const Text("Transactions");
+    return const Text('Transactions');
   }
 
   Future<TransactionFilter?> _showAmountFilterDialog(
@@ -103,7 +103,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
     AmountFilter amountFilter =
         provider.getFilterValue<AmountFilter>() ?? AmountFilter();
     // Update the text to match
-    controller.text = amountFilter.amount?.toStringAsFixed(2) ?? "";
+    controller.text = amountFilter.amount?.toStringAsFixed(2) ?? '';
 
     // Listen for changes on the controller since it's easier and better-looking
     // than redoing it in the end, though probably less performant
@@ -121,7 +121,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
-              title: const Text("Filter by Amount"),
+              title: const Text('Filter by Amount'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -156,8 +156,8 @@ class _TransactionSearchState extends State<TransactionSearch> {
                       keyboardType: TextInputType.number,
                       controller: controller,
                       decoration: const InputDecoration(
-                        hintText: "Amount",
-                        prefixText: "\$ ",
+                        hintText: 'Amount',
+                        prefixText: '\$ ',
                         isDense: true,
                       ),
                     ),
@@ -167,7 +167,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, null),
-                  child: const Text("Cancel"),
+                  child: const Text('Cancel'),
                 ),
                 TextButton(
                   onPressed: () {
@@ -180,7 +180,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
                       TransactionFilter<AmountFilter>(amountFilter),
                     );
                   },
-                  child: const Text("OK"),
+                  child: const Text('OK'),
                 ),
               ],
             );
@@ -213,7 +213,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
               scrollable: true,
-              title: const Text("Select Categories"),
+              title: const Text('Select Categories'),
               content: SizedBox(
                 width: double.maxFinite,
                 child: StreamBuilder<List<CategoryWithAmount>>(
@@ -259,7 +259,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
                     TextButton(
                       onPressed: () => setState(() => selectedCategories = []),
                       child: Text(
-                        "Clear",
+                        'Clear',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.error,
                         ),
@@ -305,19 +305,19 @@ class _TransactionSearchState extends State<TransactionSearch> {
 
   List<Widget> get filterMenuButtons => [
     MenuItemButton(
-      child: const Text("Date"),
+      child: const Text('Date'),
       onPressed: () => _activateFilter(DateTimeRange),
     ),
     MenuItemButton(
-      child: const Text("Amount"),
+      child: const Text('Amount'),
       onPressed: () => _activateFilter(AmountFilter),
     ),
     MenuItemButton(
-      child: const Text("Type"),
+      child: const Text('Type'),
       onPressed: () => _activateFilter(TransactionType),
     ),
     MenuItemButton(
-      child: const Text("Category"),
+      child: const Text('Category'),
       onPressed: () => _activateFilter(List<CategoryWithAmount>),
     ),
   ];
@@ -360,9 +360,9 @@ class _TransactionSearchState extends State<TransactionSearch> {
   List<Widget> get mainMenuButtons => [
     SubmenuButton(
       menuChildren: filterMenuButtons,
-      child: const Text("Filter by"),
+      child: const Text('Filter by'),
     ),
-    SubmenuButton(menuChildren: sortMenuButtons, child: const Text("Sort by")),
+    SubmenuButton(menuChildren: sortMenuButtons, child: const Text('Sort by')),
   ];
 
   Widget get filterButton => MenuAnchor(
@@ -430,7 +430,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    print("Dependencies");
+    print('Dependencies');
     provider = context.watch<TransactionProvider>();
   }
 
@@ -464,7 +464,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
             String text = searchController.text.trim();
 
             if (text.length > 30) {
-              text = "${text.substring(0, 27)}...";
+              text = '${text.substring(0, 27)}...';
             }
 
             TransactionFilter<String> filter = TransactionFilter(text);

@@ -49,7 +49,7 @@ class GoalPreviewButton extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    "\$$formattedAmount of \$$formattedMaxAmount",
+                    '\$$formattedAmount of \$$formattedMaxAmount',
                     style: Theme.of(context).textTheme.titleMedium!.copyWith(
                       color: Theme.of(
                         context,
@@ -100,7 +100,7 @@ class _GoalPreviewCardState extends State<GoalPreviewCard> {
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
-                hasGoals ? "Your goals" : "No goals",
+                hasGoals ? 'Your goals' : 'No goals',
                 style: Theme.of(context).textTheme.headlineMedium!.copyWith(
                   color: Theme.of(context).colorScheme.onPrimaryContainer,
                 ),

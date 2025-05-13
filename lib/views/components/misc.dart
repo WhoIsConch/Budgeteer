@@ -12,7 +12,7 @@ void showOptionsDialog(BuildContext context, Transaction transaction) {
         children: [
           ListTile(
             leading: const Icon(Icons.edit),
-            title: const Text("Edit"),
+            title: const Text('Edit'),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
@@ -28,7 +28,7 @@ void showOptionsDialog(BuildContext context, Transaction transaction) {
           ),
           ListTile(
             leading: const Icon(Icons.delete),
-            title: const Text("Delete"),
+            title: const Text('Delete'),
             onTap: () {
               DeletionManager(
                 context,

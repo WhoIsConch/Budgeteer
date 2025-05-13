@@ -36,7 +36,7 @@ class CategoryDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (selectedCategory == null || selectedCategory!.category.name.isEmpty) {
-      categoryController.text = "No Category";
+      categoryController.text = 'No Category';
     } else {
       categoryController.text = selectedCategory!.category.name;
     }
@@ -52,7 +52,7 @@ class CategoryDropdown extends StatelessWidget {
             .toList();
 
     dropdownEntries.add(
-      const DropdownMenuEntry<String>(value: "", label: "No Category"),
+      const DropdownMenuEntry<String>(value: '', label: 'No Category'),
     );
 
     DropdownMenu menu = DropdownMenu<String>(
@@ -60,7 +60,7 @@ class CategoryDropdown extends StatelessWidget {
       inputDecorationTheme: const InputDecorationTheme(
         border: InputBorder.none,
       ),
-      initialSelection: selectedCategory?.category.name ?? "",
+      initialSelection: selectedCategory?.category.name ?? '',
       controller: categoryController,
       requestFocusOnTap: true,
       label: const Text('Category'),
@@ -169,7 +169,7 @@ class CategoryDropdown extends StatelessWidget {
           child: Text(
             (selectedCategory?.category.resetIncrement !=
                     CategoryResetIncrement.never
-                ? "Resets in ${selectedCategory?.category.getTimeUntilNextReset(fromDate: transactionDate)}"
+                ? 'Resets in ${selectedCategory?.category.getTimeUntilNextReset(fromDate: transactionDate)}'
                 : "Amount doesn't reset"),
           ),
         ),

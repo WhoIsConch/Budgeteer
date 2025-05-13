@@ -131,7 +131,7 @@ class _HistoryState extends State<History> {
           child: Row(
             children: [
               Text(
-                "Your activity",
+                'Your activity',
                 textAlign: TextAlign.start,
                 style: Theme.of(context).textTheme.headlineMedium!.copyWith(
                   color: Theme.of(context).colorScheme.onSurface,

@@ -14,9 +14,9 @@ class Setting {
 }
 
 final List<Setting> allSettings = [
-  Setting("Theme", SettingType.multi, ["System", "Dark", "Light"]),
-  Setting("Starting Weekday", SettingType.multi, ["Sunday", "Monday"]),
-  Setting("Account", SettingType.button, ["Manage"]),
+  Setting('Theme', SettingType.multi, ['System', 'Dark', 'Light']),
+  Setting('Starting Weekday', SettingType.multi, ['Sunday', 'Monday']),
+  Setting('Account', SettingType.button, ['Manage']),
 ];
 
 Future<List<Setting>> loadSettings() async {

@@ -21,25 +21,25 @@ class AmountValidator {
   */
 
     if (value == null) {
-      return "Please enter an amount";
+      return 'Please enter an amount';
     }
 
     double? amount = double.tryParse(value);
 
     if (amount == null || (!allowZero && amount == 0)) {
-      return "Please enter a valid amount";
+      return 'Please enter a valid amount';
     }
 
     // Make sure the amount entered isn't too small or too high
     if (amount < 0) {
-      return "Please enter a positive amount";
+      return 'Please enter a positive amount';
     } else if (amount > 100000000) {
       // Enforce a hard limit because it would probably mess up the UI to put in a
       // number too big
       // If some hyper rich guy likes using my app for some reason and requests I
       // allow him to input transactions that are more than 100 million dollars
       // I might fix it
-      return "No way you have that much money";
+      return 'No way you have that much money';
     }
     return null;
   }
@@ -52,14 +52,14 @@ String? validateEmail(String? value) {
   );
 
   if (value == null || value.isEmpty) {
-    return "Required";
+    return 'Required';
   }
 
   if (regex.hasMatch(value)) {
     return null;
   }
 
-  return "Invalid email address";
+  return 'Invalid email address';
 }
 
 String? validateTitle(String? value) {
@@ -68,9 +68,9 @@ String? validateTitle(String? value) {
   Also makes sure the title isn't empty. 
   */
   if (value == null || value.isEmpty) {
-    return "Please enter a title";
+    return 'Please enter a title';
   } else if (value.length > 50) {
-    return "Title must be less than 50 characters";
+    return 'Title must be less than 50 characters';
   }
   return null;
 }
@@ -91,14 +91,14 @@ class DecimalTextInputFormatter extends TextInputFormatter {
     if (regex.hasMatch(text)) {
       // A regex match would mean the number is a valid number formatted as
       // `xxx.xx`, `xxx`, or `xxx.x`, or similar.
-      if (newValue.text[0] == "0" &&
+      if (newValue.text[0] == '0' &&
           newValue.text.length > 1 &&
-          newValue.text[1] != ".") {
+          newValue.text[1] != '.') {
         return TextEditingValue(text: newValue.text.substring(1));
       }
       return newValue;
     } else if (newValue.text.isEmpty) {
-      return const TextEditingValue(text: "0");
+      return const TextEditingValue(text: '0');
     } else {
       return oldValue;
     }
@@ -109,7 +109,7 @@ String formatAmount(num amount, {bool round = false, bool exact = false}) {
   NumberFormat formatter;
 
   if (round) {
-    formatter = NumberFormat("#,###");
+    formatter = NumberFormat('#,###');
     amount = amount.round();
   } else {
     formatter = NumberFormat('#,##0.00');

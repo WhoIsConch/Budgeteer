@@ -3,9 +3,9 @@ enum SortType { title, date, amount }
 enum SortOrder { ascending, descending }
 
 enum AmountFilterType {
-  exactly("="),
-  lessThan("<"),
-  greaterThan(">");
+  exactly('='),
+  lessThan('<'),
+  greaterThan('>');
 
   const AmountFilterType(this.symbol);
 
@@ -80,6 +80,6 @@ class FilterTypeException implements Exception {
 
   @override
   String toString() {
-    return "Type $type is not a valid Filter.";
+    return 'Type $type is not a valid Filter.';
   }
 }

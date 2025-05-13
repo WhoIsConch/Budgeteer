@@ -63,7 +63,7 @@ class Account extends StatelessWidget {
                   () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => ManageTransactionPage()),
                   ),
-              child: Text("Open new transaction manager"),
+              child: Text('Open new transaction manager'),
             ),
           ],
         ),

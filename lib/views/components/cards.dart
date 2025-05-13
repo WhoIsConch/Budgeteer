@@ -94,7 +94,7 @@ class AsyncOverviewCard extends StatelessWidget {
     required this.title,
     required this.amountCalculator,
     this.textStyle = CardTextStyle.cluster,
-    this.previousContent = "\$0.00",
+    this.previousContent = '\$0.00',
     this.onPressed,
     this.onContentUpdated,
   });
@@ -107,7 +107,7 @@ class AsyncOverviewCard extends StatelessWidget {
 
       if (snapshot.connectionState == ConnectionState.done) {
         if (snapshot.hasError) {
-          displayAmount = "Error";
+          displayAmount = 'Error';
         } else if (snapshot.hasData) {
           if (snapshot.data! < 0) {
             displayAmount = '-\$${formatAmount(snapshot.data!.abs())}';

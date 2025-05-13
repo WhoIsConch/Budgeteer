@@ -74,7 +74,7 @@ class ChartKeyItem extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        Text("$percent%", style: textStyle),
+        Text('$percent%', style: textStyle),
       ],
     );
   }
@@ -104,7 +104,7 @@ class VerticalTabButton extends StatelessWidget {
       // TODO: Implement this functionality.
       // These temporarily are disabled until goals and accounts are actually
       // added.
-      onPressed: ["Goal", "Account"].contains(text) ? null : onPressed,
+      onPressed: ['Goal', 'Account'].contains(text) ? null : onPressed,
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(text, style: Theme.of(context).textTheme.titleMedium),
@@ -267,8 +267,8 @@ class _PieChartCardState extends State<PieChartCard> {
   // In this case, goals, categories, and accounts are containers
   int typeIndex = 0;
   int containerIndex = 0;
-  final List<String> _typeTabs = ["Expenses", "Income", "Net"];
-  final List<String> _containerTabs = ["Category", "Goal", "Account"];
+  final List<String> _typeTabs = ['Expenses', 'Income', 'Net'];
+  final List<String> _containerTabs = ['Category', 'Goal', 'Account'];
 
   late final TransactionDao _transactionDao;
   late TransactionProvider _filtersProvider;
@@ -364,7 +364,7 @@ class _PieChartCardState extends State<PieChartCard> {
       double percentage = (total.abs() / absTotal) * 100;
 
       final color = category?.color ?? Colors.grey[400]!;
-      final name = category?.name ?? "No category";
+      final name = category?.name ?? 'No category';
 
       if (percentage < 2) {
         otherSectionTotal += total.abs();
@@ -406,7 +406,7 @@ class _PieChartCardState extends State<PieChartCard> {
         keyItems.add(
           ChartKeyItem(
             color: Colors.grey,
-            name: "Other",
+            name: 'Other',
             percent: percentage.round(),
           ),
         );
@@ -432,9 +432,9 @@ class _PieChartCardState extends State<PieChartCard> {
     String amountString;
 
     if (amountIsNegative) {
-      amountString = "-\$$formattedAmount";
+      amountString = '-\$$formattedAmount';
     } else {
-      amountString = "\$$formattedAmount";
+      amountString = '\$$formattedAmount';
     }
 
     return SizedBox(
@@ -489,10 +489,10 @@ class _PieChartCardState extends State<PieChartCard> {
     _filtersProvider = context.watch<TransactionProvider>();
 
     String titleText = switch (typeIndex) {
-      0 => "spending",
-      1 => "earning",
-      2 => "cash flow",
-      _ => "invalid", // Shouldn't happen
+      0 => 'spending',
+      1 => 'earning',
+      2 => 'cash flow',
+      _ => 'invalid', // Shouldn't happen
     };
 
     return Card(
@@ -513,14 +513,14 @@ class _PieChartCardState extends State<PieChartCard> {
                     return const SizedBox();
                   } else if (categorySnapshot.hasError) {
                     AppLogger().logger.e(
-                      "Error loading categories: ${categorySnapshot.error}",
+                      'Error loading categories: ${categorySnapshot.error}',
                     );
                     return _formattedErrorInset(
                       'Error loading categories: ${categorySnapshot.error}',
                     );
                   } else if (!categorySnapshot.hasData ||
                       categorySnapshot.data!.isEmpty) {
-                    return _formattedErrorInset("No categories");
+                    return _formattedErrorInset('No categories');
                   }
 
                   final availableCategories = categorySnapshot.data!.map(
@@ -537,18 +537,18 @@ class _PieChartCardState extends State<PieChartCard> {
                       // These error widgets should be centered in the row vertically.
                       if (dataSnapshot.hasError) {
                         return _formattedErrorInset(
-                          "Something went wrong. Try again later",
+                          'Something went wrong. Try again later',
                         );
                       } else if (!dataSnapshot.hasData ||
                           dataSnapshot.data!.isEmpty) {
-                        return _formattedErrorInset("No data");
+                        return _formattedErrorInset('No data');
                       }
 
                       return Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            "Your $titleText",
+                            'Your $titleText',
                             textAlign: TextAlign.left,
                             style: Theme.of(context).textTheme.headlineSmall,
                           ),
@@ -674,7 +674,7 @@ class _LineChartCardState extends State<LineChartCard> {
           );
           final String lastDate = DateFormat.Md().format(point.dateRange.end);
 
-          xTitles.add("$firstDate–$lastDate");
+          xTitles.add('$firstDate–$lastDate');
           break;
         case _:
           xTitles.add(DateFormat.MMM().format(point.dateRange.start));
@@ -727,7 +727,7 @@ class _LineChartCardState extends State<LineChartCard> {
               getTitlesWidget: (value, meta) {
                 return SideTitleWidget(
                   meta: meta,
-                  child: Text("\$${value.toInt()}"),
+                  child: Text('\$${value.toInt()}'),
                 );
               },
             ),
@@ -775,14 +775,14 @@ class _LineChartCardState extends State<LineChartCard> {
             future: _calculateData(),
             builder: (context, snapshot) {
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return errorInset(context, "No data");
+                return errorInset(context, 'No data');
               } else if ((snapshot.data!.expenseSpots.length +
                       snapshot.data!.incomeSpots.length) <
                   3) {
                 // If there aren't enough spots the table will look pointless
-                return errorInset(context, "Insufficient data");
+                return errorInset(context, 'Insufficient data');
               } else if (snapshot.hasError) {
-                return errorInset(context, "Something went wrong");
+                return errorInset(context, 'Something went wrong');
               } else {
                 return _getLineChart(snapshot.data!);
               }
@@ -943,7 +943,7 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
           getTitlesWidget:
               (value, meta) => SideTitleWidget(
                 meta: meta,
-                child: Text("\$${formatYValue(value)}"),
+                child: Text('\$${formatYValue(value)}'),
               ),
         ),
       ),
@@ -976,7 +976,7 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text(
-              "Spending vs income",
+              'Spending vs income',
               style: Theme.of(context).textTheme.headlineSmall,
               textAlign: TextAlign.left,
             ),
@@ -989,7 +989,7 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
                 future: _calculateData(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return errorInset(context, "No data");
+                    return errorInset(context, 'No data');
                   }
 
                   var interval = calculateNiceInterval(

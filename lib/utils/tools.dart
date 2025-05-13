@@ -70,7 +70,7 @@ extension InclusiveModifier on DateTimeRange {
   String asString() {
     DateFormat formatter = DateFormat(DateFormat.ABBR_MONTH_DAY);
 
-    return "${formatter.format(start)}–${formatter.format(end)}";
+    return '${formatter.format(start)}–${formatter.format(end)}';
   }
 }
 

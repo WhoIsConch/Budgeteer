@@ -81,7 +81,7 @@ class DeletionManager {
         dao.setCategoriesDeleted(objectIds, false);
         break;
       case _:
-        throw "Unexpected Type $T";
+        throw 'Unexpected Type $T';
     }
   }
 
@@ -99,7 +99,7 @@ class DeletionManager {
         dao.setArchiveAccounts(objectIds, false);
         break;
       case _:
-        throw "Unexpected Type $T";
+        throw 'Unexpected Type $T';
     }
   }
 
@@ -126,7 +126,7 @@ class DeletionManager {
         deletionFuture = dao.setCategoriesDeleted(objectIds, true);
         break;
       case _:
-        throw "Unexpected type $T";
+        throw 'Unexpected type $T';
     }
 
     deletionFuture.then((_) {
@@ -149,7 +149,7 @@ class DeletionManager {
           ),
           duration: const Duration(seconds: 3),
           action: SnackBarAction(
-            label: "UNDO",
+            label: 'UNDO',
             onPressed: () => _undoDeletion<T>(objectIds),
           ),
         ),
@@ -172,22 +172,22 @@ class DeletionManager {
 
     switch (T) {
       case Transaction _:
-        deletedItemString = isSingle ? "Transaction" : "Transactions";
+        deletedItemString = isSingle ? 'Transaction' : 'Transactions';
         archivalFuture = dao.setArchiveTransactions(objectIds, true);
         break;
 
       case Category _:
-        deletedItemString = isSingle ? "Category" : "Categories";
+        deletedItemString = isSingle ? 'Category' : 'Categories';
         archivalFuture = dao.setArchiveCategories(objectIds, true);
         break;
 
       case Account _:
-        deletedItemString = isSingle ? "Account" : "Accounts";
+        deletedItemString = isSingle ? 'Account' : 'Accounts';
         archivalFuture = dao.setArchiveAccounts(objectIds, true);
         break;
 
       case _:
-        throw "Unexpected Type $T";
+        throw 'Unexpected Type $T';
     }
 
     archivalFuture.then((_) {
@@ -201,10 +201,10 @@ class DeletionManager {
 
       snackbarProvider.showSnackBar(
         SnackBar(
-          content: Text("$deletedItemString archived"),
+          content: Text('$deletedItemString archived'),
           duration: const Duration(seconds: 3),
           action: SnackBarAction(
-            label: "UNDO",
+            label: 'UNDO',
             onPressed: () => _undoArchival<T>(objectIds),
           ),
         ),

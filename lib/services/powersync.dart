@@ -50,7 +50,7 @@ class SupabaseConnector extends PowerSyncBackendConnector {
             : DateTime.fromMillisecondsSinceEpoch(session.expiresAt! * 1000);
 
     return PowerSyncCredentials(
-      endpoint: dotenv.env["POWERSYNC_URL"]!,
+      endpoint: dotenv.env['POWERSYNC_URL']!,
       token: token,
       userId: userId,
       expiresAt: expiresAt,
@@ -92,14 +92,14 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         // TODO: Logging to ensure the bug is logged.
         // Usually this is a bug in the application
 
-        print("ERR IN UPLOADDATA: $e");
+        print('ERR IN UPLOADDATA: $e');
 
         await transaction.complete();
       } else {
         rethrow;
       }
     }
-    print("ANOTHER WIN FOR THE OGS");
+    print('ANOTHER WIN FOR THE OGS');
   }
 }
 

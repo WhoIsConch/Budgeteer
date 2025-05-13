@@ -51,7 +51,7 @@ class TransactionCard extends StatelessWidget {
             SizedBox(
               height: 36,
               child: AutoSizeText(
-                "+\$8.00",
+                '+\$8.00',
                 style: Theme.of(
                   context,
                 ).textTheme.headlineSmall!.copyWith(color: greenColor(context)),
@@ -59,7 +59,7 @@ class TransactionCard extends StatelessWidget {
               ),
             ),
             Text(
-              "Hello",
+              'Hello',
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 18,
@@ -69,7 +69,7 @@ class TransactionCard extends StatelessWidget {
             ),
             const Spacer(),
             Text(
-              "Apr 28",
+              'Apr 28',
               style: Theme.of(context).textTheme.titleSmall!.copyWith(
                 color: Theme.of(context).colorScheme.onSurface.withAlpha(200),
               ),
@@ -96,7 +96,7 @@ class TransactionCard extends StatelessWidget {
                   child: Row(
                     children: [
                       Text(
-                        "Recent activity",
+                        'Recent activity',
                         style: Theme.of(
                           context,
                         ).textTheme.headlineMedium!.copyWith(
@@ -105,7 +105,7 @@ class TransactionCard extends StatelessWidget {
                       ),
                       const Spacer(),
                       Text(
-                        "View all",
+                        'View all',
                         style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                           color: Theme.of(
                             context,
