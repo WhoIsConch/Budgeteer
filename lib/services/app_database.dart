@@ -637,20 +637,27 @@ class AppDatabase extends _$AppDatabase {
   @override
   int get schemaVersion => 1;
 
-  Expression<double> getSignedTransactionSumQuery() =>
-      CaseWhenExpression(
-        cases: [
-          CaseWhen(
-            transactions.type.equalsValue(TransactionType.income),
-            then: transactions.amount,
-          ),
-          CaseWhen(
-            transactions.type.equalsValue(TransactionType.expense),
-            then: -transactions.amount,
-          ),
-        ],
-        orElse: const Constant(0.0),
-      ).sum();
+  Expression<double> getSignedTransactionSumQuery({bool summed = true}) {
+    // Mainly uses "summed" for backwards compatibility with code I wrote less
+    // than an hour ago
+    final expression = CaseWhenExpression(
+      cases: [
+        CaseWhen(
+          transactions.type.equalsValue(TransactionType.income),
+          then: transactions.amount,
+        ),
+        CaseWhen(
+          transactions.type.equalsValue(TransactionType.expense),
+          then: -transactions.amount,
+        ),
+      ],
+      orElse: const Constant(0.0),
+    );
+    if (summed) {
+      return expression.sum();
+    }
+    return expression;
+  }
 
   CaseWhen<bool, String> getCaseWhen(
     CategoryResetIncrement increment,
@@ -691,7 +698,7 @@ class AppDatabase extends _$AppDatabase {
 
     // A filter to sign the amount, since we always want the total amount in
     // a category to be the net value
-    final signedAmount = getSignedTransactionSumQuery();
+    final signedAmount = getSignedTransactionSumQuery(summed: false);
 
     // The actual condition we're going to filter by. If the reset increment is
     // never, we can't filter by dates so we ensure the filter is always true,
