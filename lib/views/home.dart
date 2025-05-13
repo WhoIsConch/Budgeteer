@@ -104,8 +104,23 @@ class TransactionPreviewer extends StatelessWidget {
               .makeInclusive())
         ]),
         builder: (context, snapshot) {
-          if (!snapshot.hasData || snapshot.hasData && snapshot.data!.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+          } else {
+            if (snapshot.data!.isEmpty) {
+              return Center(
+                  child: Text("No recent transactions",
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineSmall!
+                          .copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withAlpha(150))));
+            }
           }
 
           return SizedBox(
