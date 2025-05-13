@@ -63,18 +63,20 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
           ? Value(controllers[id]!.text)
           : const Value.absent();
 
-  DropdownMenu _buildDropdownMenu<T>({
+  Widget _buildDropdownMenu<T>({
     required String label,
     required List<T> values,
     required List<String> labels,
     required ValueChanged<T?> onChanged,
     TextEditingController? controller,
+    bool enabled = true,
+    String? errorText,
     String? helperText,
     T? initialSelection,
-  }) =>
-      DropdownMenu<T>(
+  }) => DropdownMenu<T>(
+    errorText: errorText,
     helperText: helperText,
-    enabled: controller != null,
+    enabled: controller != null && enabled,
     controller: controller,
     initialSelection: initialSelection,
     expandedInsets: EdgeInsets.zero,
@@ -208,75 +210,127 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     return 'Balance: \$$formattedBalance | $resetText';
   }
 
-  Widget _getCategoryButton(BuildContext context) => Row(
-    spacing: 8.0,
-    children: [
-      Expanded(
-        child: StreamBuilder<List<CategoryWithAmount?>>(
-          stream: context.read<AppDatabase>().watchCategories(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return _buildDropdownMenu(
-                  label: 'Loading',
-                  values: [],
-                  labels: [],
-                  onChanged: (_) {},
-                );
-              }
-              return _buildDropdownMenu(
-                label: 'No categories',
-                values: [],
-                labels: [],
-                onChanged: (_) {},
+  Widget _getCategoryButton(BuildContext context) {
+    return StreamBuilder<List<CategoryWithAmount?>>(
+      stream: context.read<AppDatabase>().watchCategories(),
+      builder: (context, snapshot) {
+        final List<CategoryWithAmount?> values =
+            snapshot.hasData ? [...snapshot.data!, null] : [];
+        final labels =
+            values.map((e) => e?.category.name ?? 'No Category').toList();
+
+        final bool isDropdownEnabled = snapshot.hasData && values.isNotEmpty;
+
+        String dropdownLabel = 'Category';
+        if (!snapshot.hasData) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            dropdownLabel = 'Loading';
+          } else {
+            dropdownLabel = 'No categories';
+          }
+        }
+
+        return FormField<CategoryWithAmount?>(
+          initialValue: _selectedCategoryPair,
+          autovalidateMode: AutovalidateMode.always,
+          validator: (value) {
+            if (value == null) return null;
+
+            double? totalBalance = _getTotalBalance();
+
+            if (totalBalance == null) return null;
+
+            if (totalBalance < 0 && !value.category.allowNegatives) {
+              return "Balance can't be negative";
+            }
+
+            return null;
+          },
+          builder: (formState) {
+            // Ensure the state represents the actual selected value.
+            // needed in case the selected pair is changed by something other than the dropdown menu,
+            // like _loadCategory or the edit/add category button.
+            // Use Future.microtask to avoid calling didChange during build.
+            if (formState.value != _selectedCategoryPair) {
+              Future.microtask(
+                () => formState.didChange(_selectedCategoryPair),
               );
             }
 
-            final List<CategoryWithAmount?> values = [...snapshot.data!, null];
-            final labels =
-                values.map((e) => e?.category.name ?? 'No Category').toList();
+            String? errorText = formState.errorText;
+            String? helperText = _getCategorySubtext();
 
-            return _buildDropdownMenu<CategoryWithAmount?>(
-              label: 'Category',
-              values: values,
-              labels: labels,
-              helperText: _getCategorySubtext(),
-              initialSelection: _selectedCategoryPair,
-              controller: controllers['category'],
-              onChanged:
-                  (pair) => setState(() {
-                    _selectedCategoryPair = pair;
-                    controllers['category']!.text =
-                        pair?.category.name ?? 'No category';
-                  }),
+            if (errorText != null && helperText != null) {
+              errorText = '$helperText\n$errorText';
+            }
+
+            return Row(
+              spacing: 4.0,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _buildDropdownMenu<CategoryWithAmount?>(
+                    label: dropdownLabel,
+                    values: values,
+                    labels: labels,
+                    errorText: errorText,
+                    helperText: helperText,
+                    enabled: isDropdownEnabled,
+                    initialSelection: formState.value,
+                    controller: controllers['category'],
+                    onChanged: (pair) {
+                      setState(() {
+                        _selectedCategoryPair = pair;
+                        controllers['category']!.text =
+                            pair?.category.name ?? 'No category';
+                      });
+                      formState.didChange(pair);
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: IconButton(
+                    icon: Icon(
+                      _selectedCategoryPair == null
+                          ? Icons.add_circle_outline
+                          : Icons.edit,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    tooltip:
+                        _selectedCategoryPair == null
+                            ? 'New category'
+                            : 'Edit category',
+                    onPressed: () async {
+                      final result = await showDialog(
+                        context: context,
+                        builder:
+                            (context) => ManageCategoryDialog(
+                              category: _selectedCategoryPair,
+                            ),
+                      );
+
+                      if (result is String && result.isEmpty) {
+                        setState(() {
+                          _selectedCategoryPair = null;
+                        });
+                        formState.didChange(null);
+                      } else if (result is CategoryWithAmount) {
+                        setState(() {
+                          _selectedCategoryPair = result;
+                        });
+                        formState.didChange(result);
+                      }
+                    },
+                  ),
+                ),
+              ],
             );
           },
-        ),
-      ),
-      IconButton(
-        icon: Icon(
-          _selectedCategoryPair == null ? Icons.add_circle_outline : Icons.edit,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        tooltip:
-            _selectedCategoryPair == null ? 'New category' : 'Edit category',
-        onPressed: () async {
-          final result = await showDialog(
-            context: context,
-            builder:
-                (context) =>
-                    ManageCategoryDialog(category: _selectedCategoryPair),
-          );
-
-          if (result is String && result.isEmpty) {
-            setState(() => _selectedCategoryPair = null);
-          } else if (result is CategoryWithAmount) {
-            setState(() => _selectedCategoryPair = result);
-          }
-        },
-      ),
-    ],
-  );
+        );
+      },
+    );
+  }
 
   Widget _getMenuButton(BuildContext context) {
     final isArchived =
@@ -387,14 +441,6 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
           IconButton(
             icon: const Icon(Icons.check),
             onPressed: () {
-              final currentBal = _getTotalBalance();
-
-              if (currentBal != null &&
-                  currentBal < 0 &&
-                  !_selectedCategoryPair!.category.allowNegatives) {
-                // TODO: Invalidate the category if these are the case
-              }
-
               if (_formKey.currentState!.validate()) {
                 final database = context.read<AppDatabase>();
                 final currentTransaction = _buildTransaction();
