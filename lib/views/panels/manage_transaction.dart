@@ -39,6 +39,8 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   Account? _selectedAccount;
   Goal? _selectedGoal;
 
+  double _currentAmount = 0;
+
   Transaction? get initialTransaction => widget.initialTransaction;
 
   bool get isEditing => widget.initialTransaction != null;
@@ -66,9 +68,11 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     required List<String> labels,
     required ValueChanged<T?> onChanged,
     TextEditingController? controller,
+    String? helperText,
     T? initialSelection,
   }) => // Dart formatter PLEASE this is so ugly
       DropdownMenu<T>(
+        helperText: helperText,
         enabled: controller != null,
         controller: controller,
         initialSelection: initialSelection,
@@ -112,6 +116,9 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     });
   }
 
+  void _updateAmount() => setState(
+      () => _currentAmount = double.tryParse(controllers["amount"]!.text) ?? 0);
+
   @override
   void initState() {
     super.initState();
@@ -129,6 +136,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       tempControllers["notes"]!.text = initialTransaction!.notes ?? "";
       _selectedDate = initialTransaction!.date;
       _selectedType = initialTransaction!.type;
+      _currentAmount = initialTransaction!.amount;
 
       // Ensure we don't call setState while initState is still working
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -146,6 +154,115 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     }
     super.dispose();
   }
+
+  String? getCategorySubtext() {
+    if (_selectedCategoryPair == null) return null;
+
+    final originalBalance = _selectedCategoryPair!.amount! +
+        _selectedCategoryPair!.category.balance!;
+
+    double adjustedBalance = originalBalance;
+
+    if (isEditing &&
+        initialTransaction!.category == _selectedCategoryPair!.category.id) {
+      // This means we're editing the category and the transaction's amount still
+      // exists within the balance. Therefore, we negate it.
+      if (initialTransaction!.type == TransactionType.expense) {
+        adjustedBalance += initialTransaction!.amount;
+      } else {
+        adjustedBalance -= initialTransaction!.amount;
+      }
+    }
+
+    double currentAmount = _currentAmount;
+
+    if (_selectedType == TransactionType.expense) {
+      adjustedBalance -= currentAmount;
+    } else {
+      adjustedBalance += currentAmount;
+    }
+
+    final formattedBalance = formatAmount(adjustedBalance);
+
+    String resetText;
+
+    if (_selectedCategoryPair!.category.resetIncrement ==
+        CategoryResetIncrement.never) {
+      resetText = "Amount doesn't reset";
+    } else {
+      resetText = _selectedCategoryPair!.category.getTimeUntilNextReset();
+    }
+
+    return "Balance: \$$formattedBalance | $resetText";
+  }
+
+  Widget _getCategoryButton(BuildContext context) =>
+      Row(spacing: 8.0, children: [
+        Expanded(
+          child: StreamBuilder<List<CategoryWithAmount?>>(
+              stream: context.read<AppDatabase>().watchCategories(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return _buildDropdownMenu(
+                        label: "Loading",
+                        values: [],
+                        labels: [],
+                        onChanged: (_) {});
+                  }
+                  return _buildDropdownMenu(
+                      label: "No categories",
+                      values: [],
+                      labels: [],
+                      onChanged: (_) {});
+                }
+
+                final List<CategoryWithAmount?> values = [
+                  ...snapshot.data!,
+                  null
+                ];
+                final labels = values
+                    .map(
+                      (e) => e?.category.name ?? "No Category",
+                    )
+                    .toList();
+
+                return _buildDropdownMenu<CategoryWithAmount?>(
+                    label: "Category",
+                    values: values,
+                    labels: labels,
+                    helperText: getCategorySubtext(),
+                    initialSelection: _selectedCategoryPair,
+                    controller: controllers["category"],
+                    onChanged: (pair) => setState(() {
+                          _selectedCategoryPair = pair;
+                          controllers["category"]!.text =
+                              pair?.category.name ?? "No category";
+                        }));
+              }),
+        ),
+        IconButton(
+          icon: Icon(
+              _selectedCategoryPair == null
+                  ? Icons.add_circle_outline
+                  : Icons.edit,
+              color: Theme.of(context).colorScheme.primary),
+          tooltip:
+              _selectedCategoryPair == null ? "New category" : "Edit category",
+          onPressed: () async {
+            final result = await showDialog(
+                context: context,
+                builder: (context) =>
+                    ManageCategoryDialog(category: _selectedCategoryPair));
+
+            if (result is String && result.isEmpty) {
+              setState(() => _selectedCategoryPair = null);
+            } else if (result is CategoryWithAmount) {
+              setState(() => _selectedCategoryPair = result);
+            }
+          },
+        ),
+      ]);
 
   Widget getMenuButton(BuildContext context) {
     final isArchived = initialTransaction!.isArchived != null &&
@@ -301,6 +418,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                       children: [
                         Expanded(
                           child: TextFormField(
+                            onChanged: (_) => _updateAmount(),
                             controller: controllers["amount"],
                             decoration: InputDecoration(
                                 labelText: "Amount",
@@ -330,75 +448,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                         ),
                       ],
                     ),
-                    Row(spacing: 8.0, children: [
-                      Expanded(
-                        child: StreamBuilder<List<CategoryWithAmount?>>(
-                            stream:
-                                context.read<AppDatabase>().watchCategories(),
-                            builder: (context, snapshot) {
-                              if (!snapshot.hasData) {
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return _buildDropdownMenu(
-                                      label: "Loading",
-                                      values: [],
-                                      labels: [],
-                                      onChanged: (_) {});
-                                }
-                                return _buildDropdownMenu(
-                                    label: "No categories",
-                                    values: [],
-                                    labels: [],
-                                    onChanged: (_) {});
-                              }
-
-                              final List<CategoryWithAmount?> values = [
-                                ...snapshot.data!,
-                                null
-                              ];
-                              final labels = values
-                                  .map(
-                                    (e) => e?.category.name ?? "No Category",
-                                  )
-                                  .toList();
-
-                              return _buildDropdownMenu<CategoryWithAmount?>(
-                                  label: "Category",
-                                  values: values,
-                                  labels: labels,
-                                  initialSelection: _selectedCategoryPair,
-                                  controller: controllers["category"],
-                                  onChanged: (pair) => setState(() {
-                                        _selectedCategoryPair = pair;
-                                        controllers["category"]!.text =
-                                            pair?.category.name ??
-                                                "No category";
-                                      }));
-                            }),
-                      ),
-                      IconButton(
-                        icon: Icon(
-                            _selectedCategoryPair == null
-                                ? Icons.add_circle_outline
-                                : Icons.edit,
-                            color: Theme.of(context).colorScheme.primary),
-                        tooltip: _selectedCategoryPair == null
-                            ? "New category"
-                            : "Edit category",
-                        onPressed: () async {
-                          final result = await showDialog(
-                              context: context,
-                              builder: (context) => ManageCategoryDialog(
-                                  category: _selectedCategoryPair));
-
-                          if (result is String && result.isEmpty) {
-                            setState(() => _selectedCategoryPair = null);
-                          } else if (result is CategoryWithAmount) {
-                            setState(() => _selectedCategoryPair = result);
-                          }
-                        },
-                      ),
-                    ]),
+                    _getCategoryButton(context),
                     _buildDropdownMenu(
                         label: "Account",
                         values: [],

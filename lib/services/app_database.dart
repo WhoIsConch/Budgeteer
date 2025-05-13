@@ -102,8 +102,10 @@ class Categories extends Table {
       .nullable()
       .withDefault(const Constant(false))
       .named('is_deleted')();
-  BoolColumn get isArchived =>
-      boolean().withDefault(const Constant(false)).named('is_archived')();
+  BoolColumn get isArchived => boolean()
+      .nullable()
+      .withDefault(const Constant(false))
+      .named('is_archived')();
 
   @override
   Set<Column<Object>>? get primaryKey => {id};

@@ -82,7 +82,7 @@ class $CategoriesTable extends Categories
       const VerificationMeta('isArchived');
   @override
   late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
-      'is_archived', aliasedName, false,
+      'is_archived', aliasedName, true,
       type: DriftSqlType.bool,
       requiredDuringInsert: false,
       defaultConstraints:
@@ -171,7 +171,7 @@ class $CategoriesTable extends Categories
       isDeleted: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted']),
       isArchived: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}is_archived'])!,
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_archived']),
     );
   }
 
@@ -196,7 +196,7 @@ class Category extends DataClass implements Insertable<Category> {
   final Color color;
   final double? balance;
   final bool? isDeleted;
-  final bool isArchived;
+  final bool? isArchived;
   const Category(
       {required this.id,
       required this.name,
@@ -206,7 +206,7 @@ class Category extends DataClass implements Insertable<Category> {
       required this.color,
       this.balance,
       this.isDeleted,
-      required this.isArchived});
+      this.isArchived});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -230,7 +230,9 @@ class Category extends DataClass implements Insertable<Category> {
     if (!nullToAbsent || isDeleted != null) {
       map['is_deleted'] = Variable<bool>(isDeleted);
     }
-    map['is_archived'] = Variable<bool>(isArchived);
+    if (!nullToAbsent || isArchived != null) {
+      map['is_archived'] = Variable<bool>(isArchived);
+    }
     return map;
   }
 
@@ -249,7 +251,9 @@ class Category extends DataClass implements Insertable<Category> {
       isDeleted: isDeleted == null && nullToAbsent
           ? const Value.absent()
           : Value(isDeleted),
-      isArchived: Value(isArchived),
+      isArchived: isArchived == null && nullToAbsent
+          ? const Value.absent()
+          : Value(isArchived),
     );
   }
 
@@ -266,7 +270,7 @@ class Category extends DataClass implements Insertable<Category> {
       color: serializer.fromJson<Color>(json['color']),
       balance: serializer.fromJson<double?>(json['balance']),
       isDeleted: serializer.fromJson<bool?>(json['isDeleted']),
-      isArchived: serializer.fromJson<bool>(json['isArchived']),
+      isArchived: serializer.fromJson<bool?>(json['isArchived']),
     );
   }
   @override
@@ -282,7 +286,7 @@ class Category extends DataClass implements Insertable<Category> {
       'color': serializer.toJson<Color>(color),
       'balance': serializer.toJson<double?>(balance),
       'isDeleted': serializer.toJson<bool?>(isDeleted),
-      'isArchived': serializer.toJson<bool>(isArchived),
+      'isArchived': serializer.toJson<bool?>(isArchived),
     };
   }
 
@@ -295,7 +299,7 @@ class Category extends DataClass implements Insertable<Category> {
           Color? color,
           Value<double?> balance = const Value.absent(),
           Value<bool?> isDeleted = const Value.absent(),
-          bool? isArchived}) =>
+          Value<bool?> isArchived = const Value.absent()}) =>
       Category(
         id: id ?? this.id,
         name: name ?? this.name,
@@ -305,7 +309,7 @@ class Category extends DataClass implements Insertable<Category> {
         color: color ?? this.color,
         balance: balance.present ? balance.value : this.balance,
         isDeleted: isDeleted.present ? isDeleted.value : this.isDeleted,
-        isArchived: isArchived ?? this.isArchived,
+        isArchived: isArchived.present ? isArchived.value : this.isArchived,
       );
   Category copyWithCompanion(CategoriesCompanion data) {
     return Category(
@@ -369,7 +373,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
   final Value<Color> color;
   final Value<double?> balance;
   final Value<bool?> isDeleted;
-  final Value<bool> isArchived;
+  final Value<bool?> isArchived;
   final Value<int> rowid;
   const CategoriesCompanion({
     this.id = const Value.absent(),
@@ -430,7 +434,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
       Value<Color>? color,
       Value<double?>? balance,
       Value<bool?>? isDeleted,
-      Value<bool>? isArchived,
+      Value<bool?>? isArchived,
       Value<int>? rowid}) {
     return CategoriesCompanion(
       id: id ?? this.id,
@@ -1890,7 +1894,7 @@ typedef $$CategoriesTableCreateCompanionBuilder = CategoriesCompanion Function({
   Value<Color> color,
   Value<double?> balance,
   Value<bool?> isDeleted,
-  Value<bool> isArchived,
+  Value<bool?> isArchived,
   Value<int> rowid,
 });
 typedef $$CategoriesTableUpdateCompanionBuilder = CategoriesCompanion Function({
@@ -1902,7 +1906,7 @@ typedef $$CategoriesTableUpdateCompanionBuilder = CategoriesCompanion Function({
   Value<Color> color,
   Value<double?> balance,
   Value<bool?> isDeleted,
-  Value<bool> isArchived,
+  Value<bool?> isArchived,
   Value<int> rowid,
 });
 
@@ -2119,7 +2123,7 @@ class $$CategoriesTableTableManager extends RootTableManager<
             Value<Color> color = const Value.absent(),
             Value<double?> balance = const Value.absent(),
             Value<bool?> isDeleted = const Value.absent(),
-            Value<bool> isArchived = const Value.absent(),
+            Value<bool?> isArchived = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               CategoriesCompanion(
@@ -2143,7 +2147,7 @@ class $$CategoriesTableTableManager extends RootTableManager<
             Value<Color> color = const Value.absent(),
             Value<double?> balance = const Value.absent(),
             Value<bool?> isDeleted = const Value.absent(),
-            Value<bool> isArchived = const Value.absent(),
+            Value<bool?> isArchived = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               CategoriesCompanion.insert(
