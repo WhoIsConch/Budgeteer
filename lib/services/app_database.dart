@@ -252,6 +252,65 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
         .map((row) => row.read(db.transactions.amount.sum()))
         .watchSingle();
   }
+
+  Future<void> setGoalsDeleted(List<String> ids, bool status) async {
+    var query =
+        update(goals)
+          ..where((g) => g.id.isIn(ids))
+          ..write(GoalsCompanion(isDeleted: Value(status)));
+
+    await db.executeQuery(query.constructQuery());
+  }
+
+  Future<void> setGoalsFinished(List<String> ids, bool status) async {
+    var query =
+        update(goals)
+          ..where((g) => g.id.isIn(ids))
+          ..write(GoalsCompanion(isFinished: Value(status)));
+
+    await db.executeQuery(query.constructQuery());
+  }
+
+  Future<void> permanentlyDeleteGoals(List<String> ids) async {
+    var query = delete(goals)..where((g) => g.id.isIn(ids));
+
+    await db.executeQuery(query.constructQuery());
+  }
+
+  Future<Goal> createGoal(GoalsCompanion entry) async {
+    // Generate the SQL with Drift, then write the SQL to the database.
+    final id = entry.id.present ? entry.id.value : uuid.v4();
+    // 2. Create a companion that definitely includes the ID
+    final entryWithId = entry.copyWith(id: Value(id));
+
+    final statement = into(
+      goals,
+    ).createContext(entryWithId, InsertMode.insert);
+
+    await db.executeQuery(statement);
+
+    var goal = await getGoalById(id);
+
+    return goal;
+  }
+
+  Future<Goal> getGoalById(String id) =>
+      (select(goals)..where((g) => g.id.equals(id))).getSingle();
+
+
+  Future<Goal> updateGoal(
+    GoalsCompanion entry,
+  ) async {
+    final query =
+        (update(goals)
+              ..where((g) => g.id.equals(entry.id.value))
+              ..write(entry))
+            .constructQuery();
+
+    await db.executeQuery(query);
+
+    return await getGoalById(entry.id.value);
+  }
 }
 
 @DriftAccessor(tables: [Transactions])

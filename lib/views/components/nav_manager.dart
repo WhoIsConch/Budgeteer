@@ -3,6 +3,7 @@ import 'package:budget/views/history.dart';
 import 'package:budget/views/login.dart';
 import 'package:budget/utils/enums.dart';
 import 'package:budget/views/panels/manage_category.dart';
+import 'package:budget/views/panels/manage_goal.dart';
 import 'package:budget/views/panels/manage_transaction.dart';
 
 import 'package:flutter/material.dart';
@@ -62,7 +63,13 @@ class _NavManagerState extends State<NavManager>
     ExpandedButtonData(
       text: 'Goal',
       icon: const Icon(Icons.flag),
-      onPressed: () {},
+      onPressed: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const ManageGoalPage(),
+          ),
+        );
+        _toggleFabMenu();},
     ),
     ExpandedButtonData(
       text: 'Transaction',

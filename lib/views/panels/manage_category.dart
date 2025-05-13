@@ -202,7 +202,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                             height: 20,
                             width: 20,
                             child: Checkbox(
-                              semanticLabel: 'Allow Negative Balance',
+                              semanticLabel: 'Allow negative balance',
                               value: allowNegatives,
                               onChanged: (value) {
                                 if (value != null) {
@@ -212,7 +212,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Text('Allow Negative Balance'),
+                          const Text('Allow negative balance'),
                         ],
                       ),
                     ),
