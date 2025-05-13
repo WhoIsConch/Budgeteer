@@ -70,12 +70,33 @@ class DeletionManager {
   void _undoDeletion<T>(List<String> objectIds) {
     _cancelTimer(objectIds);
 
-    if (T == Transaction) {
-      dao.unmarkTransactionsAsDeleted(objectIds);
-    } else if (T == Category) {
-      dao.unmarkCategoryAsDeleted(objectIds.single);
-    } else {
-      throw "Unexpected Type $T";
+    switch (T) {
+      case Transaction:
+        dao.setTransactionsDeleted(objectIds, false);
+        break;
+      case Category:
+        dao.setCategoriesDeleted(objectIds, false);
+        break;
+      case _:
+        throw "Unexpected Type $T";
+    }
+  }
+
+  void _undoArchival<T>(List<String> objectIds) {
+    _cancelTimer(objectIds);
+
+    switch (T) {
+      case Transaction:
+        dao.setArchiveTransactions(objectIds, false);
+        break;
+      case Category:
+        dao.setArchiveCategories(objectIds, false);
+        break;
+      case Accounts:
+        dao.setArchiveAccounts(objectIds, false);
+        break;
+      case _:
+        throw "Unexpected Type $T";
     }
   }
 
@@ -83,7 +104,7 @@ class DeletionManager {
     if (T == Transaction) {
       dao.permanentlyDeleteTransactions(objectIds);
     } else if (T == Category) {
-      dao.permanentlyDeleteCategory(objectIds.single);
+      dao.permanentlyDeleteCategories(objectIds);
     }
     _activeDeleteTimers.remove(objectIds);
   }
@@ -91,12 +112,18 @@ class DeletionManager {
   void stageObjectsForDeletion<T>(List<String> objectIds) {
     Future deletionFuture;
 
-    if (T == Transaction) {
-      deletionFuture = dao.markTransactionsAsDeleted(objectIds);
-    } else if (T == Category) {
-      deletionFuture = dao.markCategoryAsDeleted(objectIds.single);
-    } else {
-      throw "Unexpected type $T";
+    // "Make deletion manager DRYer,"" I write in a commit message, knowing
+    // I reused just about the same exact switch statement in at least four
+    // different methods
+    switch (T) {
+      case Transaction:
+        deletionFuture = dao.setTransactionsDeleted(objectIds, true);
+        break;
+      case Category:
+        deletionFuture = dao.setCategoriesDeleted(objectIds, true);
+        break;
+      case _:
+        throw "Unexpected type $T";
     }
 
     deletionFuture.then((_) {
@@ -126,11 +153,52 @@ class DeletionManager {
     });
   }
 
-  // void stageObjectsForArchival<T>(List<String> objectIds) {
-  //   Future archivalFuture;
+  void stageObjectsForArchival<T>(List<String> objectIds) {
+    Future archivalFuture;
+    String deletedItemString;
+    bool isSingle = objectIds.length == 1;
 
-  //   if (T == Transaction) {
-  //     archivalFuture = dao.archiveTransaction();
-  //   }
-  // }
+    switch (T) {
+      case Transaction:
+        deletedItemString = isSingle ? "Transaction" : "Transactions";
+        archivalFuture = dao.setArchiveTransactions(objectIds, true);
+        break;
+
+      case Category:
+        deletedItemString = isSingle ? "Category" : "Categories";
+        archivalFuture = dao.setArchiveCategories(objectIds, true);
+        break;
+
+      case Account:
+        deletedItemString = isSingle ? "Account" : "Accounts";
+        archivalFuture = dao.setArchiveAccounts(objectIds, true);
+        break;
+
+      case _:
+        throw "Unexpected Type $T";
+    }
+
+    archivalFuture.then((_) {
+      _cancelTimer(objectIds);
+
+      final timer = Timer(const Duration(seconds: 5), () {
+        snackbarProvider.hideCurrentSnackBar();
+      });
+
+      _activeDeleteTimers[objectIds] = timer;
+
+      snackbarProvider.showSnackBar(
+          SnackBar(
+            content: Text("$deletedItemString archived"),
+            duration: const Duration(seconds: 3),
+            action: SnackBarAction(
+                label: "UNDO", onPressed: () => _undoArchival<T>(objectIds)),
+          ), snackbarCallback: (reason) {
+        if (_activeDeleteTimers.containsKey(objectIds) &&
+            reason != SnackBarClosedReason.action) {
+          _cancelTimer(objectIds);
+        }
+      });
+    });
+  }
 }

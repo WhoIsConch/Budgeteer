@@ -422,29 +422,45 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     return points;
   }
 
-  // Handle it through updatePartialTransaction so it can work the correct way
-  // with PowerSync
-  Future<void> markTransactionsAsDeleted(List<String> ids) async {
+  Future<void> setArchiveTransactions(List<String> ids, bool status) async {
     var query = update(transactions)
       ..where((t) => t.id.isIn(ids))
-      ..write(const TransactionsCompanion(isDeleted: Value(true)));
+      ..write(TransactionsCompanion(isArchived: Value(status)));
 
     await db.executeQuery(query.constructQuery());
   }
 
-  Future<void> markCategoryAsDeleted(String id) => db.updatePartialCategory(
-      CategoriesCompanion(id: Value(id), isDeleted: const Value(true)));
-
-  Future<void> unmarkTransactionsAsDeleted(List<String> ids) async {
-    var query = update(transactions)
+  Future<void> setArchiveCategories(List<String> ids, bool status) async {
+    var query = update(categories)
       ..where((t) => t.id.isIn(ids))
-      ..write(const TransactionsCompanion(isDeleted: Value(false)));
+      ..write(CategoriesCompanion(isArchived: Value(status)));
 
     await db.executeQuery(query.constructQuery());
   }
 
-  Future<void> unmarkCategoryAsDeleted(String id) => db.updatePartialCategory(
-      CategoriesCompanion(id: Value(id), isDeleted: const Value(false)));
+  Future<void> setArchiveAccounts(List<String> ids, bool status) async {
+    var query = update(accounts)
+      ..where((t) => t.id.isIn(ids))
+      ..write(AccountsCompanion(isArchived: Value(status)));
+
+    await db.executeQuery(query.constructQuery());
+  }
+
+  Future<void> setTransactionsDeleted(List<String> ids, bool status) async {
+    var query = update(transactions)
+      ..where((t) => t.id.isIn(ids))
+      ..write(TransactionsCompanion(isDeleted: Value(status)));
+
+    await db.executeQuery(query.constructQuery());
+  }
+
+  Future<void> setCategoriesDeleted(List<String> ids, bool status) async {
+    var query = update(categories)
+      ..where((c) => c.id.isIn(ids))
+      ..write(CategoriesCompanion(isDeleted: Value(status)));
+
+    await db.executeQuery(query.constructQuery());
+  }
 
   Future<void> permanentlyDeleteTransactions(List<String> ids) async {
     var query = delete(transactions)..where((t) => t.id.isIn(ids));
@@ -452,8 +468,11 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     await db.executeQuery(query.constructQuery());
   }
 
-  Future<void> permanentlyDeleteCategory(String id) =>
-      db.deleteCategoryById(id);
+  Future<void> permanentlyDeleteCategories(List<String> ids) async {
+    var query = delete(categories)..where((c) => c.id.isIn(ids));
+
+    await db.executeQuery(query.constructQuery());
+  }
 }
 
 class CategoryQueryWithConditionalSum {
