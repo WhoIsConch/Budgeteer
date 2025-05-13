@@ -24,6 +24,7 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
   final List<String> _validControllers = [
     'amount',
     'name',
+    'notes'
   ];
   DateTime _selectedDate = DateTime.now();
   double _currentAmount = 0;

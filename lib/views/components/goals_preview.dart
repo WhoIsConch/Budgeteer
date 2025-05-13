@@ -1,35 +1,39 @@
+import 'package:budget/models/database_extensions.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/validators.dart';
+import 'package:budget/views/panels/manage_goal.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class GoalPreviewButton extends StatelessWidget {
-  final String title;
-  final double amount;
-  final double maxAmount;
+  final GoalWithAchievedAmount goalPair;
 
-  const GoalPreviewButton({
-    super.key,
-    required this.title,
-    required this.amount,
-    required this.maxAmount,
-  });
+  const GoalPreviewButton({super.key, required this.goalPair});
+
+  double get achievedAmount => goalPair.achievedAmount ?? 0;
+  double get goalCost => goalPair.goal.cost;
+  String get title => goalPair.goal.name;
 
   @override
   Widget build(BuildContext context) {
-    final formattedAmount = formatAmount(amount);
-    final formattedMaxAmount = formatAmount(maxAmount);
+    final formattedAmount = formatAmount(achievedAmount);
+    final formattedGoalCost = formatAmount(goalCost);
 
     return InkWell(
       borderRadius: BorderRadius.circular(12),
-      onTap: () {},
+      onTap:
+          () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ManageGoalPage(initialGoal: goalPair),
+            ),
+          ),
       child: Padding(
         padding: const EdgeInsets.all(4.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             CircularProgressIndicator(
-              value: amount / maxAmount,
+              value: achievedAmount / goalCost,
               backgroundColor: Theme.of(
                 context,
               ).colorScheme.onSecondaryContainer.withAlpha(68),
@@ -49,7 +53,7 @@ class GoalPreviewButton extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '\$$formattedAmount of \$$formattedMaxAmount',
+                    '\$$formattedAmount of \$$formattedGoalCost',
                     style: Theme.of(context).textTheme.titleMedium!.copyWith(
                       color: Theme.of(
                         context,
@@ -124,11 +128,8 @@ class _GoalPreviewCardState extends State<GoalPreviewCard> {
                     shrinkWrap: true,
                     itemCount: snapshot.data!.length,
                     itemBuilder:
-                        (context, index) => GoalPreviewButton(
-                          title: snapshot.data![index].goal.name,
-                          amount: snapshot.data![index].achievedAmount ?? 0,
-                          maxAmount: snapshot.data![index].goal.cost,
-                        ),
+                        (context, index) =>
+                            GoalPreviewButton(goalPair: snapshot.data![index]),
                   );
                 },
               ),
