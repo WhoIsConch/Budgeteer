@@ -64,12 +64,11 @@ class _NavManagerState extends State<NavManager>
       text: 'Goal',
       icon: const Icon(Icons.flag),
       onPressed: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => const ManageGoalPage(),
-          ),
-        );
-        _toggleFabMenu();},
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const ManageGoalPage()));
+        _toggleFabMenu();
+      },
     ),
     ExpandedButtonData(
       text: 'Transaction',
@@ -276,8 +275,10 @@ class SpeedDialExpandedButton extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 4.0),
             child: Text(
-              data.text,
-              style: Theme.of(context).textTheme.titleMedium,
+              data.text, // Use a white color since the background always gets darker
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium!.copyWith(color: Colors.white),
             ),
           ),
           FloatingActionButton.small(
