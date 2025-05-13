@@ -4,10 +4,7 @@ class GoalWithAchievedAmount {
   final Goal goal;
   final double? achievedAmount;
 
-  GoalWithAchievedAmount({
-    required this.goal,
-    this.achievedAmount,
-  });
+  GoalWithAchievedAmount({required this.goal, this.achievedAmount});
 }
 
 class CategoryWithAmount {

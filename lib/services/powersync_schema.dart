@@ -12,7 +12,7 @@ const powersyncAppSchema = Schema([
     Column.integer('is_deleted'),
     Column.text('account_id'),
     Column.text('goal_id'),
-    Column.integer('is_archived')
+    Column.integer('is_archived'),
   ]),
   Table('categories', [
     Column.text('user_id'),
@@ -23,7 +23,7 @@ const powersyncAppSchema = Schema([
     Column.integer('color'),
     Column.text('notes'),
     Column.integer('is_deleted'),
-    Column.integer('is_archived')
+    Column.integer('is_archived'),
   ]),
   Table('accounts', [
     Column.text('user_id'),
@@ -31,7 +31,7 @@ const powersyncAppSchema = Schema([
     Column.integer('is_deleted'),
     Column.integer('is_archived'),
     Column.text('notes'),
-    Column.integer('color')
+    Column.integer('color'),
   ]),
   Table('goals', [
     Column.text('user_id'),
@@ -41,6 +41,6 @@ const powersyncAppSchema = Schema([
     Column.integer('is_finished'),
     Column.integer('is_deleted'),
     Column.text('notes'),
-    Column.integer('color')
-  ])
+    Column.integer('color'),
+  ]),
 ]);

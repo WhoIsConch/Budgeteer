@@ -7,8 +7,10 @@ class SnackbarProvider extends ChangeNotifier {
 
   bool get isSnackBarVisible => _isSnackBarVisible;
 
-  void showSnackBar(SnackBar snackBar,
-      {void Function(dynamic)? snackbarCallback}) {
+  void showSnackBar(
+    SnackBar snackBar, {
+    void Function(dynamic)? snackbarCallback,
+  }) {
     _currentSnackBarController?.close();
 
     _isSnackBarVisible = true;

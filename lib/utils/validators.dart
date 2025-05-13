@@ -151,12 +151,10 @@ String formatYValue(double value) {
   } else if (value.abs() >= 1000) {
     // Use 'K' for thousands
     return NumberFormat.compactSimpleCurrency(
-            locale: 'en_US',
-            decimalDigits: value.abs() < 10000
-                ? 1
-                : 0) // More precision for lower thousands
-        .format(value)
-        .replaceAll('\$', '');
+      locale: 'en_US',
+      decimalDigits: value.abs() < 10000 ? 1 : 0,
+    ) // More precision for lower thousands
+    .format(value).replaceAll('\$', '');
   } else {
     // Show regular number for smaller values
     return NumberFormat.decimalPattern().format(value);

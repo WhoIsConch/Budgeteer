@@ -81,12 +81,14 @@ void main() {
         expect(result, "Invalid email address");
       });
 
-      test('email validator rejects email when its domain has a dot but no TLD',
-          () {
-        final String? result = validateEmail("test@test.");
+      test(
+        'email validator rejects email when its domain has a dot but no TLD',
+        () {
+          final String? result = validateEmail("test@test.");
 
-        expect(result, "Invalid email address");
-      });
+          expect(result, "Invalid email address");
+        },
+      );
 
       test('email validator rejects email when its domain is only TLD', () {
         final String? result = validateEmail(".com");
@@ -94,12 +96,14 @@ void main() {
         expect(result, "Invalid email address");
       });
 
-      test('email validator rejects email when it consists of only @ and TLD',
-          () {
-        final String? result = validateEmail("@.com");
+      test(
+        'email validator rejects email when it consists of only @ and TLD',
+        () {
+          final String? result = validateEmail("@.com");
 
-        expect(result, "Invalid email address");
-      });
+          expect(result, "Invalid email address");
+        },
+      );
 
       test('email validator accepts an email address', () {
         final String? result = validateEmail("test@test.com");
@@ -123,14 +127,16 @@ void main() {
 
       test('title validator rejects string that is too long', () {
         final String? result = validateTitle(
-            "this is a string that is more than fifty characters long");
+          "this is a string that is more than fifty characters long",
+        );
 
         expect(result, "Title must be less than 50 characters");
       });
 
       test('title validator accepts string that is exactly 50 characters', () {
-        final String? result =
-            validateTitle("this is a title that is exactly 50 characters long");
+        final String? result = validateTitle(
+          "this is a title that is exactly 50 characters long",
+        );
 
         expect(result, isNull);
       });
@@ -230,12 +236,13 @@ void main() {
       });
 
       test(
-          'exact=true and round=true rounds decimal places but doesn\'t truncate large numbers',
-          () {
-        final String result = formatAmount(999.51, exact: true, round: true);
+        'exact=true and round=true rounds decimal places but doesn\'t truncate large numbers',
+        () {
+          final String result = formatAmount(999.51, exact: true, round: true);
 
-        expect(result, "1,000");
-      });
+          expect(result, "1,000");
+        },
+      );
     });
 
     group('Decimal text input formatter', () {
@@ -243,8 +250,10 @@ void main() {
 
       String formatText(String oldValue, String newValue) {
         return formatter
-            .formatEditUpdate(TextEditingValue(text: oldValue),
-                TextEditingValue(text: newValue))
+            .formatEditUpdate(
+              TextEditingValue(text: oldValue),
+              TextEditingValue(text: newValue),
+            )
             .text;
       }
 

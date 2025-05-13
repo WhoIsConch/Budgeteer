@@ -32,44 +32,58 @@ class _NavManagerState extends State<NavManager>
   final LayerLink _appBarLink = LayerLink();
 
   void _toggleFabMenu() => setState(() {
-        _isMenuOpen = !_isMenuOpen;
-        if (_isMenuOpen) {
-          _animationController.forward();
-        } else {
-          _animationController.reverse();
-        }
-      });
+    _isMenuOpen = !_isMenuOpen;
+    if (_isMenuOpen) {
+      _animationController.forward();
+    } else {
+      _animationController.reverse();
+    }
+  });
 
   List<ExpandedButtonData> get _expandedButtonsData => [
-        ExpandedButtonData(
-            icon: const Icon(Icons.account_balance_wallet_outlined),
-            text: "Category",
-            onPressed: () {
-              Navigator.of(context).push(DialogRoute(
-                  context: context,
-                  builder: (_) => const ManageCategoryDialog()));
-              _toggleFabMenu();
-            }),
-        ExpandedButtonData(
-            text: "Account", icon: const Icon(Icons.wallet), onPressed: () {}),
-        ExpandedButtonData(
-            text: "Goal", icon: const Icon(Icons.flag), onPressed: () {}),
-        ExpandedButtonData(
-            text: "Transaction",
-            icon: const Icon(Icons.attach_money),
-            onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => const ManageTransactionPage()));
-              _toggleFabMenu();
-            })
-      ];
+    ExpandedButtonData(
+      icon: const Icon(Icons.account_balance_wallet_outlined),
+      text: "Category",
+      onPressed: () {
+        Navigator.of(context).push(
+          DialogRoute(
+            context: context,
+            builder: (_) => const ManageCategoryDialog(),
+          ),
+        );
+        _toggleFabMenu();
+      },
+    ),
+    ExpandedButtonData(
+      text: "Account",
+      icon: const Icon(Icons.wallet),
+      onPressed: () {},
+    ),
+    ExpandedButtonData(
+      text: "Goal",
+      icon: const Icon(Icons.flag),
+      onPressed: () {},
+    ),
+    ExpandedButtonData(
+      text: "Transaction",
+      icon: const Icon(Icons.attach_money),
+      onPressed: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const ManageTransactionPage()),
+        );
+        _toggleFabMenu();
+      },
+    ),
+  ];
 
   List<Widget> _buildActionButtons() => List.generate(
-      _expandedButtonsData.length,
-      (index) => ScaleTransition(
-          alignment: Alignment.centerRight,
-          scale: _scaleAnimation,
-          child: SpeedDialExpandedButton(data: _expandedButtonsData[index])));
+    _expandedButtonsData.length,
+    (index) => ScaleTransition(
+      alignment: Alignment.centerRight,
+      scale: _scaleAnimation,
+      child: SpeedDialExpandedButton(data: _expandedButtonsData[index]),
+    ),
+  );
 
   @override
   void dispose() {
@@ -83,13 +97,20 @@ class _NavManagerState extends State<NavManager>
     super.initState();
 
     _animationController = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 250));
-    _fadeAnimation =
-        Tween<double>(begin: 0.0, end: 1.0).animate(_animationController);
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(_animationController);
     _rotateAnimation = Tween<double>(begin: 0.0, end: 0.125).animate(
-        CurvedAnimation(parent: _animationController, curve: Curves.easeOut));
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
     _scaleAnimation = CurvedAnimation(
-        parent: _animationController, curve: Curves.easeOutBack);
+      parent: _animationController,
+      curve: Curves.easeOutBack,
+    );
   }
 
   void indexCallback(PageType page) {
@@ -106,43 +127,44 @@ class _NavManagerState extends State<NavManager>
     return Stack(
       children: [
         Scaffold(
-            bottomNavigationBar: CompositedTransformTarget(
-              link: _appBarLink,
-              child: NavigationBar(
-                backgroundColor: theme.appBarTheme.backgroundColor,
-                selectedIndex: selectedIndex,
-                onDestinationSelected: (value) {
-                  setState(() {
-                    selectedIndex = value;
-                  });
-                },
-                destinations: const [
-                  NavigationDestination(
-                    icon: Icon(Icons.home_outlined),
-                    label: "Home",
-                    selectedIcon: Icon(Icons.home),
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Icons.history_outlined),
-                    selectedIcon: Icon(Icons.history),
-                    label: "Activity",
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Icons.bar_chart_outlined),
-                    selectedIcon: Icon(Icons.bar_chart),
-                    label: "Stats",
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Icons.code),
-                    selectedIcon: Icon(Icons.code),
-                    label: "Debug",
-                  ),
-                ],
-              ),
+          bottomNavigationBar: CompositedTransformTarget(
+            link: _appBarLink,
+            child: NavigationBar(
+              backgroundColor: theme.appBarTheme.backgroundColor,
+              selectedIndex: selectedIndex,
+              onDestinationSelected: (value) {
+                setState(() {
+                  selectedIndex = value;
+                });
+              },
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.home_outlined),
+                  label: "Home",
+                  selectedIcon: Icon(Icons.home),
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.history_outlined),
+                  selectedIcon: Icon(Icons.history),
+                  label: "Activity",
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.bar_chart_outlined),
+                  selectedIcon: Icon(Icons.bar_chart),
+                  label: "Stats",
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.code),
+                  selectedIcon: Icon(Icons.code),
+                  label: "Debug",
+                ),
+              ],
             ),
-            body: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 100),
-                child: [
+          ),
+          body: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 100),
+            child:
+                [
                   const SafeArea(
                     key: ValueKey('overview'),
                     child: Padding(
@@ -151,23 +173,29 @@ class _NavManagerState extends State<NavManager>
                     ),
                   ),
                   const SafeArea(
-                      key: ValueKey('history'),
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: History(),
-                      )),
+                    key: ValueKey('history'),
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: History(),
+                    ),
+                  ),
                   const SafeArea(
-                      key: ValueKey('budget'),
-                      child: Padding(
-                          padding: EdgeInsets.all(16),
-                          child: StatisticsPage())),
+                    key: ValueKey('budget'),
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: StatisticsPage(),
+                    ),
+                  ),
                   const SafeArea(
-                      key: ValueKey('account'),
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Account(),
-                      )),
-                ][selectedIndex])),
+                    key: ValueKey('account'),
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Account(),
+                    ),
+                  ),
+                ][selectedIndex],
+          ),
+        ),
         if (_isMenuOpen)
           Positioned.fill(
             child: FadeTransition(
@@ -175,36 +203,39 @@ class _NavManagerState extends State<NavManager>
               child: GestureDetector(
                 onTap: _toggleFabMenu,
                 child: Container(
-                    // Fill the screen with darkness when the FAB is pressed
-                    color: Colors.black.withAlpha(200)),
+                  // Fill the screen with darkness when the FAB is pressed
+                  color: Colors.black.withAlpha(200),
+                ),
               ),
             ),
           ),
         CompositedTransformFollower(
-            link: _appBarLink,
-            showWhenUnlinked: false,
-            targetAnchor: Alignment.topRight,
-            followerAnchor: Alignment.bottomRight,
-            offset: Offset(-16.0, snackbarPresent ? -64.0 : -16.0),
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (!_animationController.isDismissed)
-                    ..._buildActionButtons(),
-                  const SizedBox(height: 4),
-                  FloatingActionButton(
-                      backgroundColor:
-                          Theme.of(context).colorScheme.tertiaryContainer,
-                      foregroundColor:
-                          Theme.of(context).colorScheme.onTertiaryContainer,
-                      heroTag: 'home_fab',
-                      onPressed: _toggleFabMenu,
-                      child: RotationTransition(
-                        turns: _rotateAnimation,
-                        child: const Icon(size: 28, Icons.add),
-                      ))
-                ]))
+          link: _appBarLink,
+          showWhenUnlinked: false,
+          targetAnchor: Alignment.topRight,
+          followerAnchor: Alignment.bottomRight,
+          offset: Offset(-16.0, snackbarPresent ? -64.0 : -16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!_animationController.isDismissed) ..._buildActionButtons(),
+              const SizedBox(height: 4),
+              FloatingActionButton(
+                backgroundColor:
+                    Theme.of(context).colorScheme.tertiaryContainer,
+                foregroundColor:
+                    Theme.of(context).colorScheme.onTertiaryContainer,
+                heroTag: 'home_fab',
+                onPressed: _toggleFabMenu,
+                child: RotationTransition(
+                  turns: _rotateAnimation,
+                  child: const Icon(size: 28, Icons.add),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -215,8 +246,11 @@ class ExpandedButtonData {
   final String text;
   final void Function() onPressed;
 
-  const ExpandedButtonData(
-      {required this.icon, required this.text, required this.onPressed});
+  const ExpandedButtonData({
+    required this.icon,
+    required this.text,
+    required this.onPressed,
+  });
 }
 
 class SpeedDialExpandedButton extends StatelessWidget {
@@ -234,16 +268,18 @@ class SpeedDialExpandedButton extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(right: 4.0),
-            child:
-                Text(data.text, style: Theme.of(context).textTheme.titleMedium),
+            child: Text(
+              data.text,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
           ),
           FloatingActionButton.small(
-              heroTag: "${data.text.toLowerCase()}_fab",
-              backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
-              foregroundColor:
-                  Theme.of(context).colorScheme.onTertiaryContainer,
-              onPressed: data.onPressed,
-              child: data.icon)
+            heroTag: "${data.text.toLowerCase()}_fab",
+            backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
+            foregroundColor: Theme.of(context).colorScheme.onTertiaryContainer,
+            onPressed: data.onPressed,
+            child: data.icon,
+          ),
         ],
       ),
     );
@@ -256,22 +292,26 @@ class AuthWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<AuthState>(
-        stream: Supabase.instance.client.auth.onAuthStateChange,
-        builder: (BuildContext context, AsyncSnapshot snapshot) {
-          Widget body;
+      stream: Supabase.instance.client.auth.onAuthStateChange,
+      builder: (BuildContext context, AsyncSnapshot snapshot) {
+        Widget body;
 
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            body = const Scaffold(
-                key: ValueKey('loading'),
-                body: Center(child: CircularProgressIndicator()));
-          } else if (Supabase.instance.client.auth.currentUser != null) {
-            body = const NavManager(key: ValueKey('home'));
-          } else {
-            body = const LoginPage(key: ValueKey('login'));
-          }
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          body = const Scaffold(
+            key: ValueKey('loading'),
+            body: Center(child: CircularProgressIndicator()),
+          );
+        } else if (Supabase.instance.client.auth.currentUser != null) {
+          body = const NavManager(key: ValueKey('home'));
+        } else {
+          body = const LoginPage(key: ValueKey('login'));
+        }
 
-          return AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250), child: body);
-        });
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          child: body,
+        );
+      },
+    );
   }
 }

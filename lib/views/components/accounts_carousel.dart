@@ -25,47 +25,51 @@ class _AccountsCarouselState extends State<AccountsCarousel> {
   final _carouselController = CarouselSliderController();
 
   Widget getCardStack(CarouselCardPair data) => Stack(
-        children: [
-          Align(
-            alignment: Alignment.topLeft,
-            child: Text(data.title,
-                style: Theme.of(context).textTheme.headlineMedium!.copyWith(
-                    color: Theme.of(context).colorScheme.onPrimaryContainer)),
+    children: [
+      Align(
+        alignment: Alignment.topLeft,
+        child: Text(
+          data.title,
+          style: Theme.of(context).textTheme.headlineMedium!.copyWith(
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
           ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: AutoSizeText(
-                maxLines: 1,
-                data.content,
-                style: Theme.of(context).textTheme.displayLarge!.copyWith(
-                    color: data.isNegative
-                        ? Theme.of(context).colorScheme.error
-                        : Theme.of(context).colorScheme.onPrimaryContainer)),
+        ),
+      ),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: AutoSizeText(
+          maxLines: 1,
+          data.content,
+          style: Theme.of(context).textTheme.displayLarge!.copyWith(
+            color:
+                data.isNegative
+                    ? Theme.of(context).colorScheme.error
+                    : Theme.of(context).colorScheme.onPrimaryContainer,
           ),
-        ],
-      );
+        ),
+      ),
+    ],
+  );
 
   @override
   Widget build(BuildContext context) {
     return Card(
-        margin: const EdgeInsets.all(4),
-        color: Theme.of(context).colorScheme.primaryContainer,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Stack(children: [
+      margin: const EdgeInsets.all(4),
+      color: Theme.of(context).colorScheme.primaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Stack(
+          children: [
             CarouselSlider(
-                carouselController: _carouselController,
-                options: CarouselOptions(
-                  initialPage: index,
-                  viewportFraction: 1,
-                  aspectRatio: 2,
-                  onPageChanged: (i, reason) => setState(() => index = i),
-                ),
-                items: widget.items
-                    .map(
-                      (e) => getCardStack(e),
-                    )
-                    .toList()),
+              carouselController: _carouselController,
+              options: CarouselOptions(
+                initialPage: index,
+                viewportFraction: 1,
+                aspectRatio: 2,
+                onPageChanged: (i, reason) => setState(() => index = i),
+              ),
+              items: widget.items.map((e) => getCardStack(e)).toList(),
+            ),
             Positioned(
               bottom: 0,
               left: 0,
@@ -74,24 +78,29 @@ class _AccountsCarouselState extends State<AccountsCarousel> {
                 child: AnimatedSmoothIndicator(
                   activeIndex: index,
                   count: widget.items.length,
-                  onDotClicked: (i) => setState(() {
-                    index = i;
-                    _carouselController.animateToPage(i,
-                        curve: Curves.decelerate);
-                  }),
+                  onDotClicked:
+                      (i) => setState(() {
+                        index = i;
+                        _carouselController.animateToPage(
+                          i,
+                          curve: Curves.decelerate,
+                        );
+                      }),
                   effect: ExpandingDotsEffect(
-                      dotHeight: 8,
-                      dotWidth: 8,
-                      dotColor: Theme.of(context)
-                          .colorScheme
-                          .onPrimaryContainer
-                          .withAlpha(68),
-                      activeDotColor:
-                          Theme.of(context).colorScheme.onPrimaryContainer),
+                    dotHeight: 8,
+                    dotWidth: 8,
+                    dotColor: Theme.of(
+                      context,
+                    ).colorScheme.onPrimaryContainer.withAlpha(68),
+                    activeDotColor:
+                        Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
                 ),
               ),
-            )
-          ]),
-        ));
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

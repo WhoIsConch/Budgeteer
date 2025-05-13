@@ -64,27 +64,33 @@ class _HistoryState extends State<History> {
     final start = firstDayOfMonth;
     final end = lastDayOfMonth.add(const Duration(days: 1));
 
-    _transactionsSubscription = _transactionDao.watchTransactionsPage(filters: [
-      TransactionFilter<DateTimeRange>(DateTimeRange(start: start, end: end))
-    ]).listen((transactionsInRange) {
-      final newEvents = LinkedHashMap<DateTime, List<Transaction>>(
-        equals: isSameDay,
-        hashCode: (key) => getUtcDate(key).hashCode,
-      );
-      for (final transaction in transactionsInRange) {
-        final dateKey = getUtcDate(transaction.date);
-        final dayEvents = newEvents.putIfAbsent(dateKey, () => []);
-        dayEvents.add(transaction);
-      }
+    _transactionsSubscription = _transactionDao
+        .watchTransactionsPage(
+          filters: [
+            TransactionFilter<DateTimeRange>(
+              DateTimeRange(start: start, end: end),
+            ),
+          ],
+        )
+        .listen((transactionsInRange) {
+          final newEvents = LinkedHashMap<DateTime, List<Transaction>>(
+            equals: isSameDay,
+            hashCode: (key) => getUtcDate(key).hashCode,
+          );
+          for (final transaction in transactionsInRange) {
+            final dateKey = getUtcDate(transaction.date);
+            final dayEvents = newEvents.putIfAbsent(dateKey, () => []);
+            dayEvents.add(transaction);
+          }
 
-      if (mounted) {
-        setState(() {
-          _events = newEvents;
-        });
+          if (mounted) {
+            setState(() {
+              _events = newEvents;
+            });
 
-        _selectedEvents.value = _getEventsForDay(_selectedDay);
-      }
-    }); // TODO: Error handler
+            _selectedEvents.value = _getEventsForDay(_selectedDay);
+          }
+        }); // TODO: Error handler
   }
 
   List<Transaction> _getEventsForDay(DateTime day) =>
@@ -124,15 +130,23 @@ class _HistoryState extends State<History> {
           padding: const EdgeInsets.symmetric(horizontal: 4.0),
           child: Row(
             children: [
-              Text("Your activity",
-                  textAlign: TextAlign.start,
-                  style: Theme.of(context).textTheme.headlineMedium!.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface)),
+              Text(
+                "Your activity",
+                textAlign: TextAlign.start,
+                style: Theme.of(context).textTheme.headlineMedium!.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
               const Spacer(),
               IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => const TransactionSearch())))
+                icon: const Icon(Icons.search),
+                onPressed:
+                    () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const TransactionSearch(),
+                      ),
+                    ),
+              ),
             ],
           ),
         ),
@@ -146,16 +160,17 @@ class _HistoryState extends State<History> {
           onPageChanged: _onPageChanged,
           eventLoader: _getEventsForDay,
         ),
-        const SizedBox(
-          height: 12,
-        ),
+        const SizedBox(height: 12),
         Expanded(
-            child: ValueListenableBuilder<List<Transaction>>(
-                valueListenable: _selectedEvents,
-                builder: (context, value, _) => TransactionsList(
-                      showBackground: false,
-                      transactions: value,
-                    )))
+          child: ValueListenableBuilder<List<Transaction>>(
+            valueListenable: _selectedEvents,
+            builder:
+                (context, value, _) => TransactionsList(
+                  showBackground: false,
+                  transactions: value,
+                ),
+          ),
+        ),
       ],
     );
   }

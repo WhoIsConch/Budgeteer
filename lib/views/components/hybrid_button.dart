@@ -28,22 +28,22 @@ class HybridButton extends StatelessWidget {
 
   Widget _buildToggleButton(BuildContext context) {
     return IconButton.outlined(
-        onPressed: onTap,
-        icon: icon,
-        color: isEnabled
-            ? Theme.of(context).buttonTheme.colorScheme?.onPrimary
-            : null,
-        style: ButtonStyle(
-          backgroundColor: WidgetStateProperty.resolveWith<Color?>(
-            (states) {
-              if (isEnabled) {
-                return Theme.of(context).buttonTheme.colorScheme?.primary;
-              }
+      onPressed: onTap,
+      icon: icon,
+      color:
+          isEnabled
+              ? Theme.of(context).buttonTheme.colorScheme?.onPrimary
+              : null,
+      style: ButtonStyle(
+        backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+          if (isEnabled) {
+            return Theme.of(context).buttonTheme.colorScheme?.primary;
+          }
 
-              return null;
-            },
-          ),
-        ));
+          return null;
+        }),
+      ),
+    );
   }
 
   Widget _buildInputButton(BuildContext context) {
@@ -56,34 +56,44 @@ class HybridButton extends StatelessWidget {
                 Theme.of(context).buttonTheme.colorScheme?.secondaryContainer,
             borderRadius: BorderRadius.circular(50),
           ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(text!,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  text!,
                   style: TextStyle(
-                      fontSize: 16,
-                      color: Theme.of(context)
-                          .buttonTheme
-                          .colorScheme
-                          ?.onSecondaryContainer)),
-            ),
-            Container(
+                    fontSize: 16,
+                    color:
+                        Theme.of(
+                          context,
+                        ).buttonTheme.colorScheme?.onSecondaryContainer,
+                  ),
+                ),
+              ),
+              Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Theme.of(context).buttonTheme.colorScheme?.primary),
-                child: dynamicIconSelector?.call() ?? icon),
-          ]),
+                  shape: BoxShape.circle,
+                  color: Theme.of(context).buttonTheme.colorScheme?.primary,
+                ),
+                child: dynamicIconSelector?.call() ?? icon,
+              ),
+            ],
+          ),
         ),
       );
     }
 
     return IconButton.outlined(
-        onPressed: () => onTap(),
-        style: TextButton.styleFrom(
-            shape: const CircleBorder(),
-            side: BorderSide(color: Theme.of(context).dividerColor)),
-        icon: icon);
+      onPressed: () => onTap(),
+      style: TextButton.styleFrom(
+        shape: const CircleBorder(),
+        side: BorderSide(color: Theme.of(context).dividerColor),
+      ),
+      icon: icon,
+    );
   }
 
   @override

@@ -10,12 +10,13 @@ class OverviewCard extends StatelessWidget {
   final CardTextStyle textStyle;
   final Function? onPressed;
 
-  const OverviewCard(
-      {super.key,
-      required this.title,
-      required this.content,
-      required this.textStyle,
-      this.onPressed});
+  const OverviewCard({
+    super.key,
+    required this.title,
+    required this.content,
+    required this.textStyle,
+    this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -32,18 +33,23 @@ class OverviewCard extends StatelessWidget {
     Widget cardContent = Padding(
       padding: const EdgeInsets.all(8),
       child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            AutoSizeText(title,
-                textAlign: TextAlign.center, style: titleStyle, maxLines: 1),
-            AutoSizeText(
-              content,
-              textAlign: TextAlign.center,
-              style: contentStyle,
-              maxLines: 1,
-            ),
-          ]),
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          AutoSizeText(
+            title,
+            textAlign: TextAlign.center,
+            style: titleStyle,
+            maxLines: 1,
+          ),
+          AutoSizeText(
+            content,
+            textAlign: TextAlign.center,
+            style: contentStyle,
+            maxLines: 1,
+          ),
+        ],
+      ),
     );
 
     if (onPressed != null) {
@@ -61,12 +67,13 @@ class OverviewCard extends StatelessWidget {
       );
     } else {
       return Card(
-          margin: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16.0),
-          ),
-          color: theme.colorScheme.primaryContainer,
-          child: cardContent);
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+        color: theme.colorScheme.primaryContainer,
+        child: cardContent,
+      );
     }
   }
 }
@@ -94,35 +101,40 @@ class AsyncOverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => FutureBuilder<double>(
-      future: amountCalculator(),
-      builder: (context, snapshot) {
-        String displayAmount = previousContent;
+    future: amountCalculator(),
+    builder: (context, snapshot) {
+      String displayAmount = previousContent;
 
-        if (snapshot.connectionState == ConnectionState.done) {
-          if (snapshot.hasError) {
-            displayAmount = "Error";
-          } else if (snapshot.hasData) {
-            if (snapshot.data! < 0) {
-              displayAmount = '-\$${formatAmount(snapshot.data!.abs())}';
-            } else {
-              displayAmount = '\$${formatAmount(snapshot.data!.abs())}';
-            }
-            onContentUpdated?.call(displayAmount);
+      if (snapshot.connectionState == ConnectionState.done) {
+        if (snapshot.hasError) {
+          displayAmount = "Error";
+        } else if (snapshot.hasData) {
+          if (snapshot.data! < 0) {
+            displayAmount = '-\$${formatAmount(snapshot.data!.abs())}';
+          } else {
+            displayAmount = '\$${formatAmount(snapshot.data!.abs())}';
           }
+          onContentUpdated?.call(displayAmount);
         }
+      }
 
-        return OverviewCard(
-          title: title,
-          content: displayAmount,
-          onPressed: onPressed,
-          textStyle: textStyle,
-        );
-      });
+      return OverviewCard(
+        title: title,
+        content: displayAmount,
+        onPressed: onPressed,
+        textStyle: textStyle,
+      );
+    },
+  );
 }
 
 class CardButton extends StatefulWidget {
-  const CardButton(
-      {super.key, required this.content, this.textSize = 16, this.callback});
+  const CardButton({
+    super.key,
+    required this.content,
+    this.textSize = 16,
+    this.callback,
+  });
 
   final String content;
   final double textSize;
@@ -142,15 +154,14 @@ class _CardButtonState extends State<CardButton> {
       style: TextButton.styleFrom(
         backgroundColor: theme.buttonTheme.colorScheme?.primary,
         foregroundColor: theme.buttonTheme.colorScheme?.onPrimary,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       child: AutoSizeText(
         widget.content,
         style: TextStyle(
-            fontSize: widget.textSize,
-            color: theme.buttonTheme.colorScheme?.onPrimary),
+          fontSize: widget.textSize,
+          color: theme.buttonTheme.colorScheme?.onPrimary,
+        ),
         textAlign: TextAlign.center,
         minFontSize: 12,
         maxLines: 2,

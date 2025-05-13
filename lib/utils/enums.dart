@@ -29,40 +29,53 @@ enum RelativeDateRange {
 
   DateTimeRange getRange({DateTime? fromDate, bool fullRange = false}) {
     DateTime now = fromDate ?? DateTime.now();
-    final startOfWeek = DateTime(now.year, now.month, now.day)
-        .subtract(Duration(days: now.weekday - 1));
+    final startOfWeek = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: now.weekday - 1));
 
     final range = switch (this) {
       // From the beginning of the day to right now
       // (or the end of the day)
       RelativeDateRange.today => DateTimeRange(
-          start: DateTime(now.year, now.month, now.day),
-          end: DateTime(now.year, now.month, now.day)),
+        start: DateTime(now.year, now.month, now.day),
+        end: DateTime(now.year, now.month, now.day),
+      ),
       // Same thing as above, but for yesterday
       RelativeDateRange.yesterday => DateTimeRange(
-          start: DateTime(now.year, now.month, now.day - 1),
-          end: DateTime(now.year, now.month, now.day - 1)),
+        start: DateTime(now.year, now.month, now.day - 1),
+        end: DateTime(now.year, now.month, now.day - 1),
+      ),
       // From the beginning of the week to right now
       // (or the end of the week)
-      RelativeDateRange.thisWeek => fullRange
-          ? DateTimeRange(
+      RelativeDateRange.thisWeek =>
+        fullRange
+            ? DateTimeRange(
               start: startOfWeek,
               end: startOfWeek.add(
-                  const Duration(days: 6, hours: 23, minutes: 59, seconds: 59)))
-          : DateTimeRange(start: startOfWeek, end: now),
+                const Duration(days: 6, hours: 23, minutes: 59, seconds: 59),
+              ),
+            )
+            : DateTimeRange(start: startOfWeek, end: now),
       // From the beginning of the month to right now
       // (or the end of the month)
-      RelativeDateRange.thisMonth => fullRange
-          ? DateTimeRange(
+      RelativeDateRange.thisMonth =>
+        fullRange
+            ? DateTimeRange(
               start: DateTime(now.year, now.month),
-              end: DateTime(now.year, now.month + 1))
-          : DateTimeRange(start: DateTime(now.year, now.month), end: now),
+              end: DateTime(now.year, now.month + 1),
+            )
+            : DateTimeRange(start: DateTime(now.year, now.month), end: now),
       // From the beginning of this year to right now
       // (or the end of the year)
-      RelativeDateRange.thisYear => fullRange
-          ? DateTimeRange(
-              start: DateTime(now.year), end: DateTime(now.year + 1))
-          : DateTimeRange(start: DateTime(now.year), end: now),
+      RelativeDateRange.thisYear =>
+        fullRange
+            ? DateTimeRange(
+              start: DateTime(now.year),
+              end: DateTime(now.year + 1),
+            )
+            : DateTimeRange(start: DateTime(now.year), end: now),
     };
 
     return range.makeInclusive();
@@ -85,22 +98,22 @@ enum CategoryResetIncrement {
   }
 
   RelativeDateRange? get relativeDateRange => switch (value) {
-        1 => RelativeDateRange.today,
-        2 => RelativeDateRange.thisWeek,
-        4 => RelativeDateRange.thisMonth,
-        5 => RelativeDateRange.thisYear,
-        _ => null,
-      };
+    1 => RelativeDateRange.today,
+    2 => RelativeDateRange.thisWeek,
+    4 => RelativeDateRange.thisMonth,
+    5 => RelativeDateRange.thisYear,
+    _ => null,
+  };
 
   String get text => switch (value) {
-        1 => "Day",
-        2 => "Week",
-        3 => "Two Weeks",
-        4 => "Month",
-        5 => "Year",
-        0 => "Never Reset",
-        _ => "Error"
-      };
+    1 => "Day",
+    2 => "Week",
+    3 => "Two Weeks",
+    4 => "Month",
+    5 => "Year",
+    0 => "Never Reset",
+    _ => "Error",
+  };
 }
 
 enum PageType {

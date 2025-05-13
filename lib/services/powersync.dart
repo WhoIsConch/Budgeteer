@@ -44,15 +44,17 @@ class SupabaseConnector extends PowerSyncBackendConnector {
 
     // These are for debugging purposes
     final userId = session.user.id;
-    final expiresAt = session.expiresAt == null
-        ? null
-        : DateTime.fromMillisecondsSinceEpoch(session.expiresAt! * 1000);
+    final expiresAt =
+        session.expiresAt == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(session.expiresAt! * 1000);
 
     return PowerSyncCredentials(
-        endpoint: dotenv.env["POWERSYNC_URL"]!,
-        token: token,
-        userId: userId,
-        expiresAt: expiresAt);
+      endpoint: dotenv.env["POWERSYNC_URL"]!,
+      token: token,
+      userId: userId,
+      expiresAt: expiresAt,
+    );
   }
 
   @override
@@ -123,7 +125,9 @@ Future<String> getDatabasePath() async {
 
 Future<void> openDatabase() async {
   db = PowerSyncDatabase(
-      schema: powersyncAppSchema, path: await getDatabasePath());
+    schema: powersyncAppSchema,
+    path: await getDatabasePath(),
+  );
 
   await db.initialize();
 

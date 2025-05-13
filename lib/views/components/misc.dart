@@ -16,18 +16,23 @@ void showOptionsDialog(BuildContext context, Transaction transaction) {
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => ManageTransactionPage(
-                          initialTransaction: transaction)));
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => ManageTransactionPage(
+                        initialTransaction: transaction,
+                      ),
+                ),
+              );
             },
           ),
           ListTile(
             leading: const Icon(Icons.delete),
             title: const Text("Delete"),
             onTap: () {
-              DeletionManager(context)
-                  .stageObjectsForDeletion<Transaction>([transaction.id]);
+              DeletionManager(
+                context,
+              ).stageObjectsForDeletion<Transaction>([transaction.id]);
               Navigator.pop(context);
             },
           ),

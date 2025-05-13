@@ -10,9 +10,7 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   List<Setting> settings = [];
-  final TextStyle settingTextStyle = const TextStyle(
-    fontSize: 18.0,
-  );
+  final TextStyle settingTextStyle = const TextStyle(fontSize: 18.0);
 
   @override
   void initState() {
@@ -30,38 +28,43 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget makeBool(Setting setting) {
     print("In MakeBool");
-    return Row(children: [
-      Text(setting.name, style: settingTextStyle),
-      const Spacer(),
-      Checkbox(value: setting.value, onChanged: (bool? newVal) {})
-    ]);
+    return Row(
+      children: [
+        Text(setting.name, style: settingTextStyle),
+        const Spacer(),
+        Checkbox(value: setting.value, onChanged: (bool? newVal) {}),
+      ],
+    );
   }
 
   Widget makeMulti(Setting setting) {
     print("In MakeString");
-    return Row(children: [
-      Text(setting.name, style: settingTextStyle),
-      const Spacer(),
-      DropdownMenu(
-        initialSelection: setting.value,
-        dropdownMenuEntries: setting.options
-            .map((e) => DropdownMenuEntry(
-                  value: e,
-                  label: e,
-                ))
-            .toList(),
-      )
-    ]);
+    return Row(
+      children: [
+        Text(setting.name, style: settingTextStyle),
+        const Spacer(),
+        DropdownMenu(
+          initialSelection: setting.value,
+          dropdownMenuEntries:
+              setting.options
+                  .map((e) => DropdownMenuEntry(value: e, label: e))
+                  .toList(),
+        ),
+      ],
+    );
   }
 
   Widget makeButton(Setting setting) {
-    return Row(children: [
-      Text(setting.name, style: settingTextStyle),
-      const Spacer(),
-      TextButton(
+    return Row(
+      children: [
+        Text(setting.name, style: settingTextStyle),
+        const Spacer(),
+        TextButton(
           child: Text(setting.options.first, style: settingTextStyle),
-          onPressed: () {})
-    ]);
+          onPressed: () {},
+        ),
+      ],
+    );
   }
 
   Future<void> saveSettings() async {}
@@ -90,27 +93,26 @@ class _SettingsPageState extends State<SettingsPage> {
           }
       }
 
-      children.add(Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: widget,
-      ));
+      children.add(Padding(padding: const EdgeInsets.all(8.0), child: widget));
     }
 
     return Scaffold(
-        appBar: AppBar(title: const Text("Settings"), actions: [
+      appBar: AppBar(
+        title: const Text("Settings"),
+        actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: TextButton(
               child: const Text("Save", style: TextStyle(fontSize: 20.0)),
               onPressed: () {},
             ),
-          )
-        ]),
-        body: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: children,
           ),
-        ));
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(children: children),
+      ),
+    );
   }
 }

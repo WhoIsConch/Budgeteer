@@ -29,7 +29,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     "notes",
     "category",
     "account",
-    "goal"
+    "goal",
   ];
   late final Map<String, TextEditingController> controllers;
 
@@ -58,9 +58,10 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     }
   }
 
-  Value<String> getControllerValue(String id) => controllers[id] != null
-      ? Value(controllers[id]!.text)
-      : const Value.absent();
+  Value<String> getControllerValue(String id) =>
+      controllers[id] != null
+          ? Value(controllers[id]!.text)
+          : const Value.absent();
 
   DropdownMenu _buildDropdownMenu<T>({
     required String label,
@@ -70,45 +71,47 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     TextEditingController? controller,
     String? helperText,
     T? initialSelection,
-  }) => // Dart formatter PLEASE this is so ugly
+  }) =>
       DropdownMenu<T>(
-        helperText: helperText,
-        enabled: controller != null,
-        controller: controller,
-        initialSelection: initialSelection,
-        expandedInsets: EdgeInsets.zero,
-        dropdownMenuEntries: values
+    helperText: helperText,
+    enabled: controller != null,
+    controller: controller,
+    initialSelection: initialSelection,
+    expandedInsets: EdgeInsets.zero,
+    dropdownMenuEntries:
+        values
             .map(
               (e) =>
                   DropdownMenuEntry(value: e, label: labels[values.indexOf(e)]),
             )
             .toList(),
-        label: Text(label),
-        onSelected: onChanged,
-        inputDecorationTheme:
-            const InputDecorationTheme(border: OutlineInputBorder()),
-      );
+    label: Text(label),
+    onSelected: onChanged,
+    inputDecorationTheme: const InputDecorationTheme(
+      border: OutlineInputBorder(),
+    ),
+  );
 
   TransactionsCompanion _buildTransaction() => TransactionsCompanion(
-        id: isEditing ? Value(initialTransaction!.id) : const Value.absent(),
-        title: getControllerValue("title"),
-        amount: Value(double.parse(controllers["amount"]!.text)),
-        date: Value(_selectedDate),
-        type: Value(_selectedType),
-        notes: getControllerValue("notes"),
-        category: Value(_selectedCategoryPair?.category.id),
-        accountId: Value(_selectedAccount?.id),
-        goalId: Value(_selectedGoal?.id),
-      );
+    id: isEditing ? Value(initialTransaction!.id) : const Value.absent(),
+    title: getControllerValue("title"),
+    amount: Value(double.parse(controllers["amount"]!.text)),
+    date: Value(_selectedDate),
+    type: Value(_selectedType),
+    notes: getControllerValue("notes"),
+    category: Value(_selectedCategoryPair?.category.id),
+    accountId: Value(_selectedAccount?.id),
+    goalId: Value(_selectedGoal?.id),
+  );
 
   void _loadCategory() async {
     // Load the currently selected category into the form
     if (!isEditing) return;
     if (initialTransaction!.category == null) return;
 
-    final categoryPair = await context
-        .read<AppDatabase>()
-        .getCategoryById(initialTransaction!.category!);
+    final categoryPair = await context.read<AppDatabase>().getCategoryById(
+      initialTransaction!.category!,
+    );
 
     setState(() {
       _selectedCategoryPair = categoryPair;
@@ -117,7 +120,8 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   }
 
   void _updateAmount() => setState(
-      () => _currentAmount = double.tryParse(controllers["amount"]!.text) ?? 0);
+    () => _currentAmount = double.tryParse(controllers["amount"]!.text) ?? 0,
+  );
 
   @override
   void initState() {
@@ -131,8 +135,8 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
 
     if (isEditing) {
       tempControllers["title"]!.text = initialTransaction!.title;
-      tempControllers["amount"]!.text =
-          initialTransaction!.amount.toStringAsFixed(2);
+      tempControllers["amount"]!.text = initialTransaction!.amount
+          .toStringAsFixed(2);
       tempControllers["notes"]!.text = initialTransaction!.notes ?? "";
       _selectedDate = initialTransaction!.date;
       _selectedType = initialTransaction!.type;
@@ -158,7 +162,8 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   double? _getTotalBalance() {
     if (_selectedCategoryPair == null) return null;
 
-    final originalBalance = _selectedCategoryPair!.amount! +
+    final originalBalance =
+        _selectedCategoryPair!.amount! +
         _selectedCategoryPair!.category.balance!;
 
     double adjustedBalance = originalBalance;
@@ -203,289 +208,325 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     return "Balance: \$$formattedBalance | $resetText";
   }
 
-  Widget _getCategoryButton(BuildContext context) =>
-      Row(spacing: 8.0, children: [
-        Expanded(
-          child: StreamBuilder<List<CategoryWithAmount?>>(
-              stream: context.read<AppDatabase>().watchCategories(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return _buildDropdownMenu(
-                        label: "Loading",
-                        values: [],
-                        labels: [],
-                        onChanged: (_) {});
-                  }
-                  return _buildDropdownMenu(
-                      label: "No categories",
-                      values: [],
-                      labels: [],
-                      onChanged: (_) {});
-                }
-
-                final List<CategoryWithAmount?> values = [
-                  ...snapshot.data!,
-                  null
-                ];
-                final labels = values
-                    .map(
-                      (e) => e?.category.name ?? "No Category",
-                    )
-                    .toList();
-
-                return _buildDropdownMenu<CategoryWithAmount?>(
-                    label: "Category",
-                    values: values,
-                    labels: labels,
-                    helperText: _getCategorySubtext(),
-                    initialSelection: _selectedCategoryPair,
-                    controller: controllers["category"],
-                    onChanged: (pair) => setState(() {
-                          _selectedCategoryPair = pair;
-                          controllers["category"]!.text =
-                              pair?.category.name ?? "No category";
-                        }));
-              }),
-        ),
-        IconButton(
-          icon: Icon(
-              _selectedCategoryPair == null
-                  ? Icons.add_circle_outline
-                  : Icons.edit,
-              color: Theme.of(context).colorScheme.primary),
-          tooltip:
-              _selectedCategoryPair == null ? "New category" : "Edit category",
-          onPressed: () async {
-            final result = await showDialog(
-                context: context,
-                builder: (context) =>
-                    ManageCategoryDialog(category: _selectedCategoryPair));
-
-            if (result is String && result.isEmpty) {
-              setState(() => _selectedCategoryPair = null);
-            } else if (result is CategoryWithAmount) {
-              setState(() => _selectedCategoryPair = result);
+  Widget _getCategoryButton(BuildContext context) => Row(
+    spacing: 8.0,
+    children: [
+      Expanded(
+        child: StreamBuilder<List<CategoryWithAmount?>>(
+          stream: context.read<AppDatabase>().watchCategories(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return _buildDropdownMenu(
+                  label: "Loading",
+                  values: [],
+                  labels: [],
+                  onChanged: (_) {},
+                );
+              }
+              return _buildDropdownMenu(
+                label: "No categories",
+                values: [],
+                labels: [],
+                onChanged: (_) {},
+              );
             }
+
+            final List<CategoryWithAmount?> values = [...snapshot.data!, null];
+            final labels =
+                values.map((e) => e?.category.name ?? "No Category").toList();
+
+            return _buildDropdownMenu<CategoryWithAmount?>(
+              label: "Category",
+              values: values,
+              labels: labels,
+              helperText: _getCategorySubtext(),
+              initialSelection: _selectedCategoryPair,
+              controller: controllers["category"],
+              onChanged:
+                  (pair) => setState(() {
+                    _selectedCategoryPair = pair;
+                    controllers["category"]!.text =
+                        pair?.category.name ?? "No category";
+                  }),
+            );
           },
         ),
-      ]);
+      ),
+      IconButton(
+        icon: Icon(
+          _selectedCategoryPair == null ? Icons.add_circle_outline : Icons.edit,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        tooltip:
+            _selectedCategoryPair == null ? "New category" : "Edit category",
+        onPressed: () async {
+          final result = await showDialog(
+            context: context,
+            builder:
+                (context) =>
+                    ManageCategoryDialog(category: _selectedCategoryPair),
+          );
+
+          if (result is String && result.isEmpty) {
+            setState(() => _selectedCategoryPair = null);
+          } else if (result is CategoryWithAmount) {
+            setState(() => _selectedCategoryPair = result);
+          }
+        },
+      ),
+    ],
+  );
 
   Widget _getMenuButton(BuildContext context) {
-    final isArchived = initialTransaction!.isArchived != null &&
+    final isArchived =
+        initialTransaction!.isArchived != null &&
         initialTransaction!.isArchived!;
 
     return MenuAnchor(
       alignmentOffset: const Offset(-24, 0),
       menuChildren: [
         MenuItemButton(
-            child: Text(isArchived ? "Unarchive" : "Archive"),
-            onPressed: () => showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
+          child: Text(isArchived ? "Unarchive" : "Archive"),
+          onPressed:
+              () => showDialog(
+                context: context,
+                builder:
+                    (context) => AlertDialog(
                       title: Text(
-                          "${isArchived ? 'Una' : 'A'}rchive transaction?"),
+                        "${isArchived ? 'Una' : 'A'}rchive transaction?",
+                      ),
                       content: const Text(
-                          "Archived transactions don't affect balances and statistics"),
+                        "Archived transactions don't affect balances and statistics",
+                      ),
                       actions: [
                         TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text("Cancel")),
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text("Cancel"),
+                        ),
                         TextButton(
-                            onPressed: () {
-                              if (!isArchived) {
-                                final manager = DeletionManager(context);
+                          onPressed: () {
+                            if (!isArchived) {
+                              final manager = DeletionManager(context);
 
-                                manager.stageObjectsForArchival<Transaction>(
-                                    [initialTransaction!.id]);
-                              } else {
-                                final transactionDao =
-                                    context.read<TransactionDao>();
+                              manager.stageObjectsForArchival<Transaction>([
+                                initialTransaction!.id,
+                              ]);
+                            } else {
+                              final transactionDao =
+                                  context.read<TransactionDao>();
 
-                                transactionDao.setArchiveTransactions(
-                                    [initialTransaction!.id], false);
-                              }
-                              Navigator.of(context)
-                                ..pop()
-                                ..pop();
-                            },
-                            child: Text("${isArchived ? 'Una' : 'A'}rchive"))
-                      ]),
-                )),
+                              transactionDao.setArchiveTransactions([
+                                initialTransaction!.id,
+                              ], false);
+                            }
+                            Navigator.of(context)
+                              ..pop()
+                              ..pop();
+                          },
+                          child: Text("${isArchived ? 'Una' : 'A'}rchive"),
+                        ),
+                      ],
+                    ),
+              ),
+        ),
         MenuItemButton(
-            child: const Text("Delete"),
-            onPressed: () => showDialog(
+          child: const Text("Delete"),
+          onPressed:
+              () => showDialog(
                 context: context,
-                builder: (context) => AlertDialog(
-                        title: const Text("Delete transaction?"),
-                        content: const Text(
-                            "Are you sure you want to delete this transaction?"),
-                        actions: [
-                          TextButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: const Text("Cancel")),
-                          TextButton(
-                              onPressed: () {
-                                final manager = DeletionManager(context);
+                builder:
+                    (context) => AlertDialog(
+                      title: const Text("Delete transaction?"),
+                      content: const Text(
+                        "Are you sure you want to delete this transaction?",
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text("Cancel"),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            final manager = DeletionManager(context);
 
-                                manager.stageObjectsForDeletion<Transaction>(
-                                    [initialTransaction!.id]);
-                                Navigator.of(context)
-                                  ..pop()
-                                  ..pop();
-                              },
-                              child: const Text("Delete")),
-                        ])))
+                            manager.stageObjectsForDeletion<Transaction>([
+                              initialTransaction!.id,
+                            ]);
+                            Navigator.of(context)
+                              ..pop()
+                              ..pop();
+                          },
+                          child: const Text("Delete"),
+                        ),
+                      ],
+                    ),
+              ),
+        ),
       ],
-      builder: (BuildContext context, MenuController controller, _) =>
-          IconButton(
-              icon: Icon(Icons.more_vert),
-              onPressed: () {
-                if (controller.isOpen) {
-                  controller.close();
-                } else {
-                  controller.open();
-                }
-              }),
+      builder:
+          (BuildContext context, MenuController controller, _) => IconButton(
+            icon: Icon(Icons.more_vert),
+            onPressed: () {
+              if (controller.isOpen) {
+                controller.close();
+              } else {
+                controller.open();
+              }
+            },
+          ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-            title: Text(isEditing ? "Edit transaction" : "Add transaction"),
-            actions: [
-              IconButton(
-                  icon: const Icon(Icons.check),
-                  onPressed: () {
-                    final currentBal = _getTotalBalance();
+      appBar: AppBar(
+        title: Text(isEditing ? "Edit transaction" : "Add transaction"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.check),
+            onPressed: () {
+              final currentBal = _getTotalBalance();
 
-                    if (currentBal != null &&
-                        currentBal < 0 &&
-                        !_selectedCategoryPair!.category.allowNegatives) {
-                      // TODO: Invalidate the category if these are the case
-                    }
+              if (currentBal != null &&
+                  currentBal < 0 &&
+                  !_selectedCategoryPair!.category.allowNegatives) {
+                // TODO: Invalidate the category if these are the case
+              }
 
-                    if (_formKey.currentState!.validate()) {
-                      final database = context.read<AppDatabase>();
-                      final currentTransaction = _buildTransaction();
+              if (_formKey.currentState!.validate()) {
+                final database = context.read<AppDatabase>();
+                final currentTransaction = _buildTransaction();
 
-                      try {
-                        if (isEditing) {
-                          database.updatePartialTransaction(currentTransaction);
-                        } else {
-                          database.createTransaction(currentTransaction);
-                        }
+                try {
+                  if (isEditing) {
+                    database.updatePartialTransaction(currentTransaction);
+                  } else {
+                    database.createTransaction(currentTransaction);
+                  }
 
-                        Navigator.of(context).pop();
-                      } catch (e) {
-                        AppLogger().logger.e("Unable to save transaction: $e");
-                        context
-                            .read<SnackbarProvider>()
-                            .showSnackBar(const SnackBar(
-                              content: Text("Unable to save transaction"),
-                            ));
-                      }
-                    }
-                  })
-            ]),
-        body: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: SingleChildScrollView(
-            child: Form(
-              autovalidateMode: AutovalidateMode.onUnfocus,
-              key: _formKey,
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  Navigator.of(context).pop();
+                } catch (e) {
+                  AppLogger().logger.e("Unable to save transaction: $e");
+                  context.read<SnackbarProvider>().showSnackBar(
+                    const SnackBar(content: Text("Unable to save transaction")),
+                  );
+                }
+              }
+            },
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: SingleChildScrollView(
+          child: Form(
+            autovalidateMode: AutovalidateMode.onUnfocus,
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: 16.0,
+              children: [
+                SegmentedButton(
+                  onSelectionChanged:
+                      (p0) => setState(() => _selectedType = p0.first),
+                  selected: {_selectedType},
+                  segments: const [
+                    ButtonSegment(
+                      value: TransactionType.expense,
+                      label: Text("Expense"),
+                    ),
+                    ButtonSegment(
+                      value: TransactionType.income,
+                      label: Text("Income"),
+                    ),
+                  ],
+                ),
+                Row(
+                  spacing: 8.0,
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: controllers["title"],
+                        decoration: const InputDecoration(
+                          labelText: "Title",
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: validateTitle,
+                      ),
+                    ),
+                    if (isEditing) _getMenuButton(context),
+                  ],
+                ),
+                Row(
                   spacing: 16.0,
                   children: [
-                    SegmentedButton(
-                      onSelectionChanged: (p0) =>
-                          setState(() => _selectedType = p0.first),
-                      selected: {_selectedType},
-                      segments: const [
-                        ButtonSegment(
-                            value: TransactionType.expense,
-                            label: Text("Expense")),
-                        ButtonSegment(
-                            value: TransactionType.income,
-                            label: Text("Income"))
-                      ],
+                    Expanded(
+                      child: TextFormField(
+                        onChanged: (_) => _updateAmount(),
+                        controller: controllers["amount"],
+                        decoration: InputDecoration(
+                          labelText: "Amount",
+                          prefixIcon: Icon(
+                            Icons.attach_money,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          border: const OutlineInputBorder(),
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        validator: const AmountValidator().validateAmount,
+                      ),
                     ),
-                    Row(
-                      spacing: 8.0,
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: controllers["title"],
-                            decoration: const InputDecoration(
-                                labelText: "Title",
-                                border: OutlineInputBorder()),
-                            validator: validateTitle,
+                    Expanded(
+                      child: TextFormField(
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          labelText: "Date",
+                          border: const OutlineInputBorder(),
+                          suffixIcon: Icon(
+                            Icons.calendar_today,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
-                        if (isEditing) _getMenuButton(context),
-                      ],
-                    ),
-                    Row(
-                      spacing: 16.0,
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            onChanged: (_) => _updateAmount(),
-                            controller: controllers["amount"],
-                            decoration: InputDecoration(
-                                labelText: "Amount",
-                                prefixIcon: Icon(Icons.attach_money,
-                                    color:
-                                        Theme.of(context).colorScheme.primary),
-                                border: const OutlineInputBorder()),
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            validator: const AmountValidator().validateAmount,
-                          ),
+                        controller: TextEditingController(
+                          text: DateFormat('MM/dd/yyyy').format(_selectedDate),
                         ),
-                        Expanded(
-                          child: TextFormField(
-                              readOnly: true,
-                              decoration: InputDecoration(
-                                labelText: "Date",
-                                border: const OutlineInputBorder(),
-                                suffixIcon: Icon(Icons.calendar_today,
-                                    color:
-                                        Theme.of(context).colorScheme.primary),
-                              ),
-                              controller: TextEditingController(
-                                  text: DateFormat('MM/dd/yyyy')
-                                      .format(_selectedDate)),
-                              onTap: () => _pickDate(context)),
-                        ),
-                      ],
+                        onTap: () => _pickDate(context),
+                      ),
                     ),
-                    _getCategoryButton(context),
-                    _buildDropdownMenu(
-                        label: "Account",
-                        values: [],
-                        labels: [],
-                        onChanged: (_) {}),
-                    _buildDropdownMenu(
-                        label: "Goal",
-                        values: [],
-                        labels: [],
-                        onChanged: (_) {}),
-                    TextFormField(
-                      controller: controllers["notes"],
-                      decoration: const InputDecoration(
-                          labelText: "Notes (optional)",
-                          border: OutlineInputBorder(),
-                          alignLabelWithHint: true),
-                      maxLines: 3,
-                      textInputAction: TextInputAction.done,
-                    )
-                  ]),
+                  ],
+                ),
+                _getCategoryButton(context),
+                _buildDropdownMenu(
+                  label: "Account",
+                  values: [],
+                  labels: [],
+                  onChanged: (_) {},
+                ),
+                _buildDropdownMenu(
+                  label: "Goal",
+                  values: [],
+                  labels: [],
+                  onChanged: (_) {},
+                ),
+                TextFormField(
+                  controller: controllers["notes"],
+                  decoration: const InputDecoration(
+                    labelText: "Notes (optional)",
+                    border: OutlineInputBorder(),
+                    alignLabelWithHint: true,
+                  ),
+                  maxLines: 3,
+                  textInputAction: TextInputAction.done,
+                ),
+              ],
             ),
           ),
-        ));
+        ),
+      ),
+    );
   }
 }

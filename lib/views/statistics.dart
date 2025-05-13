@@ -31,12 +31,13 @@ class ChartCalculationResult {
 }
 
 class ChartKeyItem extends StatelessWidget {
-  const ChartKeyItem(
-      {super.key,
-      required this.color,
-      required this.name,
-      this.icon,
-      required this.percent});
+  const ChartKeyItem({
+    super.key,
+    required this.color,
+    required this.name,
+    this.icon,
+    required this.percent,
+  });
 
   final Color color;
   final String name;
@@ -45,9 +46,7 @@ class ChartKeyItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const textStyle = TextStyle(
-      fontSize: 18,
-    );
+    const textStyle = TextStyle(fontSize: 18);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -55,15 +54,16 @@ class ChartKeyItem extends StatelessWidget {
       children: [
         icon == null
             ? Padding(
-                padding: const EdgeInsets.all(2.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.rectangle,
-                      borderRadius: BorderRadius.circular(6)),
-                  child: const SizedBox(height: 18, width: 18),
+              padding: const EdgeInsets.all(2.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.rectangle,
+                  borderRadius: BorderRadius.circular(6),
                 ),
-              )
+                child: const SizedBox(height: 18, width: 18),
+              ),
+            )
             : Icon(icon, color: color),
         const SizedBox(width: 6),
         Expanded(
@@ -85,31 +85,29 @@ class VerticalTabButton extends StatelessWidget {
   final void Function() onPressed;
   final bool isSelected;
 
-  const VerticalTabButton(
-      {super.key,
-      required this.text,
-      required this.onPressed,
-      this.isSelected = false});
+  const VerticalTabButton({
+    super.key,
+    required this.text,
+    required this.onPressed,
+    this.isSelected = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return TextButton(
       style: TextButton.styleFrom(
-          foregroundColor: Theme.of(context).colorScheme.onSurface,
-          backgroundColor:
-              isSelected ? Theme.of(context).colorScheme.surface : null,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        backgroundColor:
+            isSelected ? Theme.of(context).colorScheme.surface : null,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
       // TODO: Implement this functionality.
       // These temporarily are disabled until goals and accounts are actually
       // added.
       onPressed: ["Goal", "Account"].contains(text) ? null : onPressed,
       child: Align(
         alignment: Alignment.centerLeft,
-        child: Text(
-          text,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
+        child: Text(text, style: Theme.of(context).textTheme.titleMedium),
       ),
     );
   }
@@ -131,27 +129,33 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
   void pickDateRange({DateTimeRange? initialRange}) async {
     DateTimeRange? newRange = await showDateRangePicker(
-        context: context,
-        initialDateRange: initialRange,
-        firstDate: DateTime.now().subtract(const Duration(days: 365 * 100)),
-        lastDate: DateTime.now().add(const Duration(days: 365 * 100)));
+      context: context,
+      initialDateRange: initialRange,
+      firstDate: DateTime.now().subtract(const Duration(days: 365 * 100)),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 100)),
+    );
 
     if (newRange == null) return;
     _filterProvider.updateFilter<DateTimeRange>(TransactionFilter(newRange));
   }
 
   DropdownMenu getDateRangeDropdown() {
-    List<DropdownMenuEntry<DateTimeRange?>> entries = RelativeDateRange.values
-        .map((e) => DropdownMenuEntry<DateTimeRange?>(
-            value: e.getRange(), label: e.name))
-        .toList();
+    List<DropdownMenuEntry<DateTimeRange?>> entries =
+        RelativeDateRange.values
+            .map(
+              (e) => DropdownMenuEntry<DateTimeRange?>(
+                value: e.getRange(),
+                label: e.name,
+              ),
+            )
+            .toList();
 
-    RelativeDateRange? selectedRelRange =
-        RelativeDateRange.values.firstWhereOrNull(
-      (element) =>
-          element.getRange() ==
-          (currentDateRange ?? RelativeDateRange.today.getRange()),
-    );
+    RelativeDateRange? selectedRelRange = RelativeDateRange.values
+        .firstWhereOrNull(
+          (element) =>
+              element.getRange() ==
+              (currentDateRange ?? RelativeDateRange.today.getRange()),
+        );
 
     if (selectedRelRange != null) {
       _rangeController.text = selectedRelRange.name;
@@ -168,8 +172,11 @@ class _StatisticsPageState extends State<StatisticsPage> {
         if (range == null) {
           pickDateRange(initialRange: currentDateRange);
         } else {
-          setState(() => _filterProvider
-              .updateFilter(TransactionFilter<DateTimeRange>(range)));
+          setState(
+            () => _filterProvider.updateFilter(
+              TransactionFilter<DateTimeRange>(range),
+            ),
+          );
         }
       },
       dropdownMenuEntries: entries,
@@ -187,33 +194,38 @@ class _StatisticsPageState extends State<StatisticsPage> {
     // failsafe to make sure everything doesn't break
     // (we have some suspicious type safety usage in getDateRangeDropdown)
     if (_filterProvider.getFilterValue<DateTimeRange>() == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) =>
-          _filterProvider.updateFilter<DateTimeRange>(
-              TransactionFilter(RelativeDateRange.today.getRange())));
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _filterProvider.updateFilter<DateTimeRange>(
+          TransactionFilter(RelativeDateRange.today.getRange()),
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      child: Column(children: [
-        Row(
-          children: [
-            Expanded(child: getDateRangeDropdown()),
-            const SizedBox(width: 4),
-            IconButton(
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(child: getDateRangeDropdown()),
+              const SizedBox(width: 4),
+              IconButton(
                 iconSize: 32,
                 icon: const Icon(Icons.date_range),
-                onPressed: () => pickDateRange(initialRange: currentDateRange))
-          ],
-        ),
-        const SizedBox(height: 8.0), // Bottom padding
-        const PieChartCard(),
-        const SizedBox(height: 8.0),
-        // const LineChartCard(),
-        const SpendingBarChart(),
-        const SizedBox(height: 60) // To give the FAB somewhere to go
-      ]),
+                onPressed: () => pickDateRange(initialRange: currentDateRange),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8.0), // Bottom padding
+          const PieChartCard(),
+          const SizedBox(height: 8.0),
+          // const LineChartCard(),
+          const SpendingBarChart(),
+          const SizedBox(height: 60), // To give the FAB somewhere to go
+        ],
+      ),
     );
   }
 }
@@ -229,16 +241,24 @@ class PieChartCard extends StatefulWidget {
 }
 
 Widget errorInset(BuildContext context, String text) => Center(
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.warning_rounded,
-            size: 48,
-            color: Theme.of(context).colorScheme.onSurface.withAlpha(150)),
-        Text(text,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.headlineSmall!.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withAlpha(150)))
-      ]),
-    );
+  child: Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(
+        Icons.warning_rounded,
+        size: 48,
+        color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
+      ),
+      Text(
+        text,
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.headlineSmall!.copyWith(
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
+        ),
+      ),
+    ],
+  ),
+);
 
 class _PieChartCardState extends State<PieChartCard> {
   // I couldn't think of a better name for these so they are
@@ -277,14 +297,18 @@ class _PieChartCardState extends State<PieChartCard> {
     });
   }
 
-  List<Widget> _buildVerticalTabs(List<String> tabs, int selectedIndex,
-          ValueChanged<int> onTabSelected) =>
-      List.generate(
-          _containerTabs.length,
-          (index) => VerticalTabButton(
-              text: tabs[index],
-              isSelected: index == selectedIndex,
-              onPressed: () => onTabSelected(index)));
+  List<Widget> _buildVerticalTabs(
+    List<String> tabs,
+    int selectedIndex,
+    ValueChanged<int> onTabSelected,
+  ) => List.generate(
+    _containerTabs.length,
+    (index) => VerticalTabButton(
+      text: tabs[index],
+      isSelected: index == selectedIndex,
+      onPressed: () => onTabSelected(index),
+    ),
+  );
 
   Future<ChartCalculationResult> _calculateChartData({
     required List<Category?> categories,
@@ -295,24 +319,28 @@ class _PieChartCardState extends State<PieChartCard> {
     List<ChartKeyItem> keyItems = [];
     double otherSectionTotal = 0;
 
-    TransactionType? typeFilter = filters
-        .firstWhereOrNull((e) => e.value.runtimeType == TransactionType)
-        ?.value;
-    DateTimeRange? dateFilter = filters
-        .firstWhereOrNull((e) => e.value.runtimeType == DateTimeRange)
-        ?.value;
+    TransactionType? typeFilter =
+        filters
+            .firstWhereOrNull((e) => e.value.runtimeType == TransactionType)
+            ?.value;
+    DateTimeRange? dateFilter =
+        filters
+            .firstWhereOrNull((e) => e.value.runtimeType == DateTimeRange)
+            ?.value;
 
     List<Future<double?>> futures = [];
     for (final category in categories) {
-      futures.add(_transactionDao
-          .watchTotalAmount(
-            nullCategory: category == null,
-            category: category,
-            type: typeFilter,
-            dateRange: dateFilter,
-            net: false,
-          )
-          .first);
+      futures.add(
+        _transactionDao
+            .watchTotalAmount(
+              nullCategory: category == null,
+              category: category,
+              type: typeFilter,
+              dateRange: dateFilter,
+              net: false,
+            )
+            .first,
+      );
     }
     final totals = (await Future.wait(futures)).map((e) => e ?? 0).toList();
 
@@ -320,7 +348,11 @@ class _PieChartCardState extends State<PieChartCard> {
 
     if (absTotal == 0) {
       return ChartCalculationResult(
-          sectionData: [], keyItems: [], totalAmount: 0, isEmpty: true);
+        sectionData: [],
+        keyItems: [],
+        totalAmount: 0,
+        isEmpty: true,
+      );
     }
 
     for (int i = 0; i < categories.length; i++) {
@@ -337,12 +369,14 @@ class _PieChartCardState extends State<PieChartCard> {
       if (percentage < 2) {
         otherSectionTotal += total.abs();
       } else {
-        sectionData.add(PieChartSectionData(
-          value: total.abs(),
-          radius: 36,
-          showTitle: false,
-          color: color,
-        ));
+        sectionData.add(
+          PieChartSectionData(
+            value: total.abs(),
+            radius: 36,
+            showTitle: false,
+            color: color,
+          ),
+        );
 
         final keyItem = ChartKeyItem(
           color: color,
@@ -361,14 +395,21 @@ class _PieChartCardState extends State<PieChartCard> {
       double percentage = (otherSectionTotal.abs() / absTotal.abs()) * 100;
 
       if (percentage >= 1) {
-        sectionData.add(PieChartSectionData(
-          value: otherSectionTotal,
-          radius: 36,
-          showTitle: false,
-          color: Colors.grey,
-        ));
-        keyItems.add(ChartKeyItem(
-            color: Colors.grey, name: "Other", percent: percentage.round()));
+        sectionData.add(
+          PieChartSectionData(
+            value: otherSectionTotal,
+            radius: 36,
+            showTitle: false,
+            color: Colors.grey,
+          ),
+        );
+        keyItems.add(
+          ChartKeyItem(
+            color: Colors.grey,
+            name: "Other",
+            percent: percentage.round(),
+          ),
+        );
       }
     }
 
@@ -382,8 +423,11 @@ class _PieChartCardState extends State<PieChartCard> {
 
   Widget _getPieChart(ChartCalculationResult data) {
     bool amountIsNegative = data.totalAmount < 0;
-    String formattedAmount =
-        formatAmount(data.totalAmount.abs(), round: true, exact: true);
+    String formattedAmount = formatAmount(
+      data.totalAmount.abs(),
+      round: true,
+      exact: true,
+    );
 
     String amountString;
 
@@ -397,33 +441,47 @@ class _PieChartCardState extends State<PieChartCard> {
       width: 200,
       height: 200,
       child: AspectRatio(
-          aspectRatio: 1,
-          child: Stack(children: [
+        aspectRatio: 1,
+        child: Stack(
+          children: [
             Center(
-                child: SizedBox(
-              width: (chartCenterRadius - 12) *
-                  2, // To give it some padding and account for the fact that this is a radius and the text fits within the diameter
-              child: AutoSizeText(
+              child: SizedBox(
+                width:
+                    (chartCenterRadius - 12) *
+                    2, // To give it some padding and account for the fact that this is a radius and the text fits within the diameter
+                child: AutoSizeText(
                   textAlign: TextAlign.center,
                   amountString,
                   style: Theme.of(context).textTheme.headlineLarge,
-                  maxLines: 1),
-            )),
-            PieChart(PieChartData(
+                  maxLines: 1,
+                ),
+              ),
+            ),
+            PieChart(
+              PieChartData(
                 centerSpaceRadius: chartCenterRadius,
-                sections: data.sectionData)),
-          ])),
+                sections: data.sectionData,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _formattedErrorInset(String text) {
     // Same approach for "No categories" message
-    return LayoutBuilder(builder: (context, constraints) {
-      // TODO: Estimated center; make it exact
-      final buttonsHeight = MediaQuery.of(context).size.height * 0.35;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // TODO: Estimated center; make it exact
+        final buttonsHeight = MediaQuery.of(context).size.height * 0.35;
 
-      return SizedBox(height: buttonsHeight, child: errorInset(context, text));
-    });
+        return SizedBox(
+          height: buttonsHeight,
+          child: errorInset(context, text),
+        );
+      },
+    );
   }
 
   @override
@@ -434,7 +492,7 @@ class _PieChartCardState extends State<PieChartCard> {
       0 => "spending",
       1 => "earning",
       2 => "cash flow",
-      _ => "invalid" // Shouldn't happen
+      _ => "invalid", // Shouldn't happen
     };
 
     return Card(
@@ -447,71 +505,80 @@ class _PieChartCardState extends State<PieChartCard> {
             child: Padding(
               padding: const EdgeInsets.all(12.0),
               child: StreamBuilder<List<CategoryWithAmount>>(
-                  stream: context.read<AppDatabase>().watchCategories(),
-                  builder: (context, categorySnapshot) {
-                    if (categorySnapshot.connectionState ==
-                            ConnectionState.waiting &&
-                        !categorySnapshot.hasData) {
-                      return const SizedBox();
-                    } else if (categorySnapshot.hasError) {
-                      AppLogger().logger.e(
-                          "Error loading categories: ${categorySnapshot.error}");
-                      return _formattedErrorInset(
-                          'Error loading categories: ${categorySnapshot.error}');
-                    } else if (!categorySnapshot.hasData ||
-                        categorySnapshot.data!.isEmpty) {
-                      return _formattedErrorInset("No categories");
-                    }
+                stream: context.read<AppDatabase>().watchCategories(),
+                builder: (context, categorySnapshot) {
+                  if (categorySnapshot.connectionState ==
+                          ConnectionState.waiting &&
+                      !categorySnapshot.hasData) {
+                    return const SizedBox();
+                  } else if (categorySnapshot.hasError) {
+                    AppLogger().logger.e(
+                      "Error loading categories: ${categorySnapshot.error}",
+                    );
+                    return _formattedErrorInset(
+                      'Error loading categories: ${categorySnapshot.error}',
+                    );
+                  } else if (!categorySnapshot.hasData ||
+                      categorySnapshot.data!.isEmpty) {
+                    return _formattedErrorInset("No categories");
+                  }
 
-                    final availableCategories =
-                        categorySnapshot.data!.map((ca) => ca.category);
-                    final categoriesWithNull = [...availableCategories, null];
+                  final availableCategories = categorySnapshot.data!.map(
+                    (ca) => ca.category,
+                  );
+                  final categoriesWithNull = [...availableCategories, null];
 
-                    return FutureBuilder<ChartCalculationResult>(
-                        future: _calculateChartData(
-                            categories: categoriesWithNull,
-                            filters: _filtersProvider.filters),
-                        builder: (context, dataSnapshot) {
-                          // These error widgets should be centered in the row vertically.
-                          if (dataSnapshot.hasError) {
-                            return _formattedErrorInset(
-                                "Something went wrong. Try again later");
-                          } else if (!dataSnapshot.hasData ||
-                              dataSnapshot.data!.isEmpty) {
-                            return _formattedErrorInset("No data");
-                          }
+                  return FutureBuilder<ChartCalculationResult>(
+                    future: _calculateChartData(
+                      categories: categoriesWithNull,
+                      filters: _filtersProvider.filters,
+                    ),
+                    builder: (context, dataSnapshot) {
+                      // These error widgets should be centered in the row vertically.
+                      if (dataSnapshot.hasError) {
+                        return _formattedErrorInset(
+                          "Something went wrong. Try again later",
+                        );
+                      } else if (!dataSnapshot.hasData ||
+                          dataSnapshot.data!.isEmpty) {
+                        return _formattedErrorInset("No data");
+                      }
 
-                          return Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                "Your $titleText",
-                                textAlign: TextAlign.left,
-                                style:
-                                    Theme.of(context).textTheme.headlineSmall,
-                              ),
-                              const SizedBox(height: 8.0),
-                              _getPieChart(dataSnapshot.data!),
-                              const SizedBox(height: 12.0),
-                              ConstrainedBox(
-                                constraints: BoxConstraints(
-                                    maxHeight: (PieChartCard.estKeyItemHeight *
-                                            PieChartCard.maxItems)
-                                        .toDouble()),
-                                child: ListView(
-                                    shrinkWrap: true,
-                                    children: dataSnapshot.data!.keyItems),
-                              ),
-                            ],
-                          );
-                        });
-                  }),
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            "Your $titleText",
+                            textAlign: TextAlign.left,
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                          const SizedBox(height: 8.0),
+                          _getPieChart(dataSnapshot.data!),
+                          const SizedBox(height: 12.0),
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxHeight:
+                                  (PieChartCard.estKeyItemHeight *
+                                          PieChartCard.maxItems)
+                                      .toDouble(),
+                            ),
+                            child: ListView(
+                              shrinkWrap: true,
+                              children: dataSnapshot.data!.keyItems,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ),
           IntrinsicWidth(
-              child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -520,17 +587,24 @@ class _PieChartCardState extends State<PieChartCard> {
 
                     if (typeIndex == 0 || typeIndex == 1) {
                       _filtersProvider.updateFilter(
-                          TransactionFilter<TransactionType>(
-                              TransactionType.fromValue(typeIndex)));
+                        TransactionFilter<TransactionType>(
+                          TransactionType.fromValue(typeIndex),
+                        ),
+                      );
                     } else {
                       _filtersProvider.removeFilter<TransactionType>();
                     }
                   }),
                   const Divider(),
-                  ..._buildVerticalTabs(_containerTabs, containerIndex,
-                      (index) => setState(() => containerIndex = index)),
-                ]),
-          ))
+                  ..._buildVerticalTabs(
+                    _containerTabs,
+                    containerIndex,
+                    (index) => setState(() => containerIndex = index),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -595,8 +669,9 @@ class _LineChartCardState extends State<LineChartCard> {
           xTitles.add(DateFormat.Md().format(point.dateRange.start));
           break;
         case AggregationLevel.weekly:
-          final String firstDate =
-              DateFormat.Md().format(point.dateRange.start);
+          final String firstDate = DateFormat.Md().format(
+            point.dateRange.start,
+          );
           final String lastDate = DateFormat.Md().format(point.dateRange.end);
 
           xTitles.add("$firstDate–$lastDate");
@@ -608,17 +683,22 @@ class _LineChartCardState extends State<LineChartCard> {
     }
 
     return LineChartCalculationData(
-        expenseSpots, incomeSpots, xTitles, xTitles.isEmpty);
+      expenseSpots,
+      incomeSpots,
+      xTitles,
+      xTitles.isEmpty,
+    );
   }
 
   LineChartBarData _getChartBarData(List<FlSpot> spots, Color color) =>
       LineChartBarData(
-          isStrokeCapRound: true,
-          isCurved: true,
-          curveSmoothness: 0.15,
-          barWidth: 4,
-          color: color.harmonizeWith(Theme.of(context).colorScheme.primary),
-          spots: spots);
+        isStrokeCapRound: true,
+        isCurved: true,
+        curveSmoothness: 0.15,
+        barWidth: 4,
+        color: color.harmonizeWith(Theme.of(context).colorScheme.primary),
+        spots: spots,
+      );
 
   double _calculateYAxisInterval(double minValue, double maxValue) {
     double range = maxValue - minValue;
@@ -635,38 +715,49 @@ class _LineChartCardState extends State<LineChartCard> {
     final maxAmount = max(maxExpense, maxIncome);
     final minAmount = min(minExpense, minIncome);
 
-    return LineChart(LineChartData(
+    return LineChart(
+      LineChartData(
         titlesData: FlTitlesData(
-            // Fucking useless and unreasonably verbose way to describe titles on a chart
-            leftTitles: AxisTitles(
-                sideTitles: SideTitles(
-                    showTitles: true,
-                    interval: _calculateYAxisInterval(minAmount, maxAmount),
-                    reservedSize: 48,
-                    getTitlesWidget: (value, meta) {
-                      return SideTitleWidget(
-                          meta: meta, child: Text("\$${value.toInt()}"));
-                    })),
-            bottomTitles: AxisTitles(
-                // X axis are stuck here since they use line chart calculation data
-                sideTitles: SideTitles(
+          // Fucking useless and unreasonably verbose way to describe titles on a chart
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              interval: _calculateYAxisInterval(minAmount, maxAmount),
+              reservedSize: 48,
+              getTitlesWidget: (value, meta) {
+                return SideTitleWidget(
+                  meta: meta,
+                  child: Text("\$${value.toInt()}"),
+                );
+              },
+            ),
+          ),
+          bottomTitles: AxisTitles(
+            // X axis are stuck here since they use line chart calculation data
+            sideTitles: SideTitles(
               reservedSize: 36,
               showTitles: true,
-              getTitlesWidget: (value, meta) => SideTitleWidget(
-                meta: meta,
-                child: Transform.rotate(
-                    angle: -45 * 3.14 / 180,
-                    child: Text(data.xTitles[value.toInt()])),
-              ),
-            )),
-            topTitles: const AxisTitles(sideTitles: SideTitles()),
-            rightTitles: const AxisTitles(sideTitles: SideTitles())),
+              getTitlesWidget:
+                  (value, meta) => SideTitleWidget(
+                    meta: meta,
+                    child: Transform.rotate(
+                      angle: -45 * 3.14 / 180,
+                      child: Text(data.xTitles[value.toInt()]),
+                    ),
+                  ),
+            ),
+          ),
+          topTitles: const AxisTitles(sideTitles: SideTitles()),
+          rightTitles: const AxisTitles(sideTitles: SideTitles()),
+        ),
         borderData: FlBorderData(show: false),
         // gridData: const FlGridData(show: false),
         lineBarsData: [
           _getChartBarData(data.expenseSpots, Colors.red),
-          _getChartBarData(data.incomeSpots, Colors.green)
-        ]));
+          _getChartBarData(data.incomeSpots, Colors.green),
+        ],
+      ),
+    );
   }
 
   @override
@@ -679,24 +770,25 @@ class _LineChartCardState extends State<LineChartCard> {
         margin: EdgeInsets.zero,
         color: getAdjustedColor(context, Theme.of(context).colorScheme.surface),
         child: Padding(
-            padding: EdgeInsets.all(16.0),
-            child: FutureBuilder(
-              future: _calculateData(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return errorInset(context, "No data");
-                } else if ((snapshot.data!.expenseSpots.length +
-                        snapshot.data!.incomeSpots.length) <
-                    3) {
-                  // If there aren't enough spots the table will look pointless
-                  return errorInset(context, "Insufficient data");
-                } else if (snapshot.hasError) {
-                  return errorInset(context, "Something went wrong");
-                } else {
-                  return _getLineChart(snapshot.data!);
-                }
-              },
-            )),
+          padding: EdgeInsets.all(16.0),
+          child: FutureBuilder(
+            future: _calculateData(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return errorInset(context, "No data");
+              } else if ((snapshot.data!.expenseSpots.length +
+                      snapshot.data!.incomeSpots.length) <
+                  3) {
+                // If there aren't enough spots the table will look pointless
+                return errorInset(context, "Insufficient data");
+              } else if (snapshot.hasError) {
+                return errorInset(context, "Something went wrong");
+              } else {
+                return _getLineChart(snapshot.data!);
+              }
+            },
+          ),
+        ),
       ),
     );
   }
@@ -740,22 +832,32 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
     );
 
     return FlBorderData(
-        show: true, border: Border(bottom: borderSide, top: borderSide));
+      show: true,
+      border: Border(bottom: borderSide, top: borderSide),
+    );
   }
 
   BarChartGroupData createGroupData(FinancialDataPoint point, int x) =>
-      BarChartGroupData(barsSpace: 4, x: x, barRods: [
-        BarChartRodData(
+      BarChartGroupData(
+        barsSpace: 4,
+        x: x,
+        barRods: [
+          BarChartRodData(
             width: 12,
             toY: point.income,
-            color: Colors.green
-                .harmonizeWith(Theme.of(context).colorScheme.primary)),
-        BarChartRodData(
+            color: Colors.green.harmonizeWith(
+              Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          BarChartRodData(
             width: 12,
             toY: point.spending,
-            color:
-                Colors.red.harmonizeWith(Theme.of(context).colorScheme.primary))
-      ]);
+            color: Colors.red.harmonizeWith(
+              Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ],
+      );
 
   Future<BarChartCalculationData> _calculateData() async {
     final int daysDifference = dateRange.duration.inDays;
@@ -802,19 +904,18 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
             start: currentEmptyRunStart.dateRange.start,
             end: points[i - 1].dateRange.end,
           );
-          data.add(createGroupData(
-            FinancialDataPoint.empty(skippedRange),
-            i - skipped - 1,
-          ));
+          data.add(
+            createGroupData(
+              FinancialDataPoint.empty(skippedRange),
+              i - skipped - 1,
+            ),
+          );
           currentEmptyRunStart = null;
           xTitles.add(formatDateLabel(skippedRange));
         }
       }
 
-      data.add(createGroupData(
-        point,
-        i - skipped,
-      ));
+      data.add(createGroupData(point, i - skipped));
 
       xTitles.add(formatDateLabel(point.dateRange));
 
@@ -832,28 +933,34 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
 
   FlTitlesData _parseTitlesData(BarChartCalculationData data) {
     return FlTitlesData(
-        topTitles: noTitlesWidget,
-        rightTitles: noTitlesWidget,
-        leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-                interval: calculateNiceInterval(data.minY, data.maxY, 5),
-                showTitles: true,
-                reservedSize: 55,
-                getTitlesWidget: (value, meta) => SideTitleWidget(
-                    meta: meta,
-                    child: Text(
-                      "\$${formatYValue(value)}",
-                    )))),
-        bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
+      topTitles: noTitlesWidget,
+      rightTitles: noTitlesWidget,
+      leftTitles: AxisTitles(
+        sideTitles: SideTitles(
+          interval: calculateNiceInterval(data.minY, data.maxY, 5),
+          showTitles: true,
+          reservedSize: 55,
+          getTitlesWidget:
+              (value, meta) => SideTitleWidget(
+                meta: meta,
+                child: Text("\$${formatYValue(value)}"),
+              ),
+        ),
+      ),
+      bottomTitles: AxisTitles(
+        sideTitles: SideTitles(
           showTitles: true,
           reservedSize: 65,
-          getTitlesWidget: (value, meta) => SideTitleWidget(
-              meta: meta,
-              space: 16,
-              angle: -45 * 3.14 / 180,
-              child: Text(data.xTitles[value.toInt()])),
-        )));
+          getTitlesWidget:
+              (value, meta) => SideTitleWidget(
+                meta: meta,
+                space: 16,
+                angle: -45 * 3.14 / 180,
+                child: Text(data.xTitles[value.toInt()]),
+              ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -863,20 +970,22 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
     return Card(
       margin: EdgeInsets.zero,
       color: getAdjustedColor(context, Theme.of(context).colorScheme.surface),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(
-            "Spending vs income",
-            style: Theme.of(context).textTheme.headlineSmall,
-            textAlign: TextAlign.left,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              "Spending vs income",
+              style: Theme.of(context).textTheme.headlineSmall,
+              textAlign: TextAlign.left,
+            ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: AspectRatio(
-            aspectRatio: 1,
-            child: FutureBuilder<BarChartCalculationData>(
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: FutureBuilder<BarChartCalculationData>(
                 future: _calculateData(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -884,28 +993,41 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
                   }
 
                   var interval = calculateNiceInterval(
-                      snapshot.data!.minY, snapshot.data!.maxY, 5);
+                    snapshot.data!.minY,
+                    snapshot.data!.maxY,
+                    5,
+                  );
 
-                  return BarChart(BarChartData(
+                  return BarChart(
+                    BarChartData(
                       borderData: chartBorderData,
                       minY: snapshot.data?.minY,
                       maxY: adjustMaxYToNiceInterval(
-                          snapshot.data!.maxY, interval),
+                        snapshot.data!.maxY,
+                        interval,
+                      ),
                       gridData: FlGridData(
                         drawHorizontalLine: true,
                         drawVerticalLine: false,
-                        horizontalInterval: interval /
+                        horizontalInterval:
+                            interval /
                             2, // Make the lines show up 2x more often than the titles
-                        getDrawingHorizontalLine: (value) => FlLine(
-                            color:
-                                Theme.of(context).colorScheme.outlineVariant),
+                        getDrawingHorizontalLine:
+                            (value) => FlLine(
+                              color:
+                                  Theme.of(context).colorScheme.outlineVariant,
+                            ),
                       ),
                       barGroups: snapshot.data!.groups,
-                      titlesData: _parseTitlesData(snapshot.data!)));
-                }),
+                      titlesData: _parseTitlesData(snapshot.data!),
+                    ),
+                  );
+                },
+              ),
+            ),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 }

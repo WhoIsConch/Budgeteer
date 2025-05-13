@@ -23,7 +23,11 @@ class LineChartCalculationData {
   final bool isEmpty;
 
   LineChartCalculationData(
-      this.expenseSpots, this.incomeSpots, this.xTitles, this.isEmpty);
+    this.expenseSpots,
+    this.incomeSpots,
+    this.xTitles,
+    this.isEmpty,
+  );
 }
 
 class BarChartCalculationData {
@@ -34,7 +38,12 @@ class BarChartCalculationData {
   final bool isEmpty;
 
   BarChartCalculationData(
-      this.groups, this.xTitles, this.minY, this.maxY, this.isEmpty);
+    this.groups,
+    this.xTitles,
+    this.minY,
+    this.maxY,
+    this.isEmpty,
+  );
 
   factory BarChartCalculationData.empty() =>
       BarChartCalculationData([], [], 0, 0, true);

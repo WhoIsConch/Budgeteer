@@ -16,8 +16,11 @@ class TransactionProvider extends ChangeNotifier {
   List<TransactionFilter> get filters => _filters;
   Sort get sort => _sort;
 
-  void update(
-      {List<TransactionFilter>? filters, Sort? sort, bool notify = true}) {
+  void update({
+    List<TransactionFilter>? filters,
+    Sort? sort,
+    bool notify = true,
+  }) {
     bool hasFiltersChanged = filters != null && filters != _filters;
     bool hasSortChanged = sort != null && sort != _sort;
 
@@ -136,20 +139,29 @@ class DeletionManager {
       _activeDeleteTimers[objectIds] = timer;
 
       snackbarProvider.showSnackBar(
-          SnackBar(
-              content: Text(
-                  "${T == Transaction ? objectIds.length == 1 ? 'Transaction' : 'Transactions' : 'Category'} deleted"),
-              duration: const Duration(seconds: 3),
-              action: SnackBarAction(
-                  label: "UNDO", onPressed: () => _undoDeletion<T>(objectIds))),
-          snackbarCallback: (reason) {
-        if (_activeDeleteTimers.containsKey(objectIds) &&
-            reason != SnackBarClosedReason.action) {
-          // The snackbar was closed by the user, no reason to keep the timers going
-          _cancelTimer(objectIds);
-          _deletePermanently<T>(objectIds);
-        }
-      });
+        SnackBar(
+          content: Text(
+            "${T == Transaction
+                ? objectIds.length == 1
+                    ? 'Transaction'
+                    : 'Transactions'
+                : 'Category'} deleted",
+          ),
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+            label: "UNDO",
+            onPressed: () => _undoDeletion<T>(objectIds),
+          ),
+        ),
+        snackbarCallback: (reason) {
+          if (_activeDeleteTimers.containsKey(objectIds) &&
+              reason != SnackBarClosedReason.action) {
+            // The snackbar was closed by the user, no reason to keep the timers going
+            _cancelTimer(objectIds);
+            _deletePermanently<T>(objectIds);
+          }
+        },
+      );
     });
   }
 
@@ -188,17 +200,21 @@ class DeletionManager {
       _activeDeleteTimers[objectIds] = timer;
 
       snackbarProvider.showSnackBar(
-          SnackBar(
-            content: Text("$deletedItemString archived"),
-            duration: const Duration(seconds: 3),
-            action: SnackBarAction(
-                label: "UNDO", onPressed: () => _undoArchival<T>(objectIds)),
-          ), snackbarCallback: (reason) {
-        if (_activeDeleteTimers.containsKey(objectIds) &&
-            reason != SnackBarClosedReason.action) {
-          _cancelTimer(objectIds);
-        }
-      });
+        SnackBar(
+          content: Text("$deletedItemString archived"),
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+            label: "UNDO",
+            onPressed: () => _undoArchival<T>(objectIds),
+          ),
+        ),
+        snackbarCallback: (reason) {
+          if (_activeDeleteTimers.containsKey(objectIds) &&
+              reason != SnackBarClosedReason.action) {
+            _cancelTimer(objectIds);
+          }
+        },
+      );
     });
   }
 }

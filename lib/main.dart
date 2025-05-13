@@ -22,7 +22,8 @@ Future<void> setup() async {
 
   logger.i('Loaded settings');
   logger.d(
-      'Settings: ${settings.map((e) => "${e.type.name} ${e.name}: ${e.value}")}');
+    'Settings: ${settings.map((e) => "${e.type.name} ${e.name}: ${e.value}")}',
+  );
 
   switch (settings.where((element) => element.name == "Theme").first.value) {
     case "System":
@@ -50,29 +51,34 @@ void main() async {
   );
 
   final daoProvider = ProxyProvider<AppDatabase, TransactionDao>(
-    update: (_, db, __) => TransactionDao(db),
+    update: (_, db, _) => TransactionDao(db),
   );
 
   final goalDaoProvider = ProxyProvider<AppDatabase, GoalDao>(
-    update: (_, db, __) => GoalDao(db),
+    update: (_, db, _) => GoalDao(db),
   );
 
   final transactionProvider = ChangeNotifierProvider<TransactionProvider>(
-      create: (context) => TransactionProvider());
+    create: (context) => TransactionProvider(),
+  );
 
   final snackBarProvider = ChangeNotifierProvider<SnackbarProvider>(
-      create: (_) => SnackbarProvider());
+    create: (_) => SnackbarProvider(),
+  );
 
   await setup();
 
   runApp(
-    MultiProvider(providers: [
-      dbProvider,
-      daoProvider,
-      goalDaoProvider,
-      transactionProvider,
-      snackBarProvider,
-    ], child: const BudgetApp()),
+    MultiProvider(
+      providers: [
+        dbProvider,
+        daoProvider,
+        goalDaoProvider,
+        transactionProvider,
+        snackBarProvider,
+      ],
+      child: const BudgetApp(),
+    ),
   );
 }
 
@@ -99,8 +105,9 @@ class _BudgetAppState extends State<BudgetApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return DynamicColorBuilder(builder: (lightDynamic, darkDynamic) {
-      return MaterialApp(
+    return DynamicColorBuilder(
+      builder: (lightDynamic, darkDynamic) {
+        return MaterialApp(
           scaffoldMessengerKey: scaffoldMessengerKey,
           title: 'Budgeteer',
           home: const AuthWrapper(),
@@ -112,7 +119,9 @@ class _BudgetAppState extends State<BudgetApp> with WidgetsBindingObserver {
             colorScheme:
                 darkDynamic?.harmonized() ?? ThemeData.dark().colorScheme,
           ),
-          themeMode: theme);
-    });
+          themeMode: theme,
+        );
+      },
+    );
   }
 }

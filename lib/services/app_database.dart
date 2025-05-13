@@ -37,30 +37,35 @@ class Transactions extends Table {
   RealColumn get amount => real()();
   TextColumn get date => text().map(const DateTextConverter())();
   IntColumn get type => intEnum<TransactionType>()();
-  BoolColumn get isDeleted => boolean()
-      .nullable()
-      .withDefault(const Constant(false))
-      .named('is_deleted')();
-  BoolColumn get isArchived => boolean()
-      .nullable()
-      .withDefault(const Constant(false))
-      .named('is_archived')();
+  BoolColumn get isDeleted =>
+      boolean()
+          .nullable()
+          .withDefault(const Constant(false))
+          .named('is_deleted')();
+  BoolColumn get isArchived =>
+      boolean()
+          .nullable()
+          .withDefault(const Constant(false))
+          .named('is_archived')();
   TextColumn get notes => text().nullable()();
 
-  TextColumn get category => text()
-      .nullable()
-      .named('category_id')
-      .references(Categories, #id, onDelete: KeyAction.setNull)();
+  TextColumn get category =>
+      text()
+          .nullable()
+          .named('category_id')
+          .references(Categories, #id, onDelete: KeyAction.setNull)();
 
-  TextColumn get accountId => text()
-      .nullable()
-      .named('account_id')
-      .references(Accounts, #id, onDelete: KeyAction.setNull)();
+  TextColumn get accountId =>
+      text()
+          .nullable()
+          .named('account_id')
+          .references(Accounts, #id, onDelete: KeyAction.setNull)();
 
-  TextColumn get goalId => text()
-      .nullable()
-      .named('goal_id')
-      .references(Goals, #id, onDelete: KeyAction.setNull)();
+  TextColumn get goalId =>
+      text()
+          .nullable()
+          .named('goal_id')
+          .references(Goals, #id, onDelete: KeyAction.setNull)();
 
   @override
   Set<Column<Object>>? get primaryKey => {id};
@@ -90,22 +95,25 @@ class Categories extends Table {
   TextColumn get name => text()();
   TextColumn get notes => text().nullable()();
 
-  IntColumn get resetIncrement => intEnum<CategoryResetIncrement>()
-      .withDefault(const Constant(0))
-      .named('reset_increment')();
+  IntColumn get resetIncrement =>
+      intEnum<CategoryResetIncrement>()
+          .withDefault(const Constant(0))
+          .named('reset_increment')();
   BoolColumn get allowNegatives =>
       boolean().withDefault(const Constant(false)).named('allow_negatives')();
   IntColumn get color =>
       integer().clientDefault(genColor).map(const ColorConverter())();
   RealColumn get balance => real().nullable()();
-  BoolColumn get isDeleted => boolean()
-      .nullable()
-      .withDefault(const Constant(false))
-      .named('is_deleted')();
-  BoolColumn get isArchived => boolean()
-      .nullable()
-      .withDefault(const Constant(false))
-      .named('is_archived')();
+  BoolColumn get isDeleted =>
+      boolean()
+          .nullable()
+          .withDefault(const Constant(false))
+          .named('is_deleted')();
+  BoolColumn get isArchived =>
+      boolean()
+          .nullable()
+          .withDefault(const Constant(false))
+          .named('is_archived')();
 
   @override
   Set<Column<Object>>? get primaryKey => {id};
@@ -206,13 +214,17 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     final amountSum = db.transactions.amount.sum();
 
     final query = select(goals).join([
-      leftOuterJoin(db.transactions, db.transactions.goalId.equalsExp(goals.id))
+      leftOuterJoin(
+        db.transactions,
+        db.transactions.goalId.equalsExp(goals.id),
+      ),
     ]);
 
-    final queryWithSum = query
-      ..where(goals.isDeleted.equals(false))
-      ..addColumns([amountSum])
-      ..groupBy([goals.id]);
+    final queryWithSum =
+        query
+          ..where(goals.isDeleted.equals(false))
+          ..addColumns([amountSum])
+          ..groupBy([goals.id]);
 
     return queryWithSum.watch().map((rows) {
       return rows.map((row) {
@@ -220,17 +232,20 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
         final achievedAmount = row.read<double>(amountSum) ?? 0.0;
 
         return GoalWithAchievedAmount(
-            goal: goal, achievedAmount: achievedAmount);
+          goal: goal,
+          achievedAmount: achievedAmount,
+        );
       }).toList();
     });
   }
 
   Stream<double?> getGoalFulfillmentAmount(Goal goal) {
-    var query = db.select(db.transactions)
-      ..where((t) =>
+    var query = db.select(db.transactions)..where(
+      (t) =>
           t.goalId.equals(goal.id) &
           t.isDeleted.equals(true).not() &
-          t.isArchived.equals(true).not());
+          t.isArchived.equals(true).not(),
+    );
 
     return query
         .addColumns([db.transactions.amount.sum()])
@@ -265,12 +280,15 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
         case TransactionFilter<AmountFilter> f:
           switch (f.value.type!) {
             case AmountFilterType.greaterThan:
-              query = query
-                ..where((t) => t.amount.isBiggerThanValue(f.value.amount!));
+              query =
+                  query
+                    ..where((t) => t.amount.isBiggerThanValue(f.value.amount!));
               break;
             case AmountFilterType.lessThan:
-              query = query
-                ..where((t) => t.amount.isSmallerThanValue(f.value.amount!));
+              query =
+                  query..where(
+                    (t) => t.amount.isSmallerThanValue(f.value.amount!),
+                  );
               break;
             case AmountFilterType.exactly:
               query = query..where((t) => t.amount.equals(f.value.amount!));
@@ -279,42 +297,56 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
           break;
         case TransactionFilter<String> f:
           // TODO: Figure out if this can be converted to partial text search
-          query = query
-            ..where((t) =>
-                t.title.lower().equals(f.value.toLowerCase()) |
-                t.notes.lower().equals(f.value.toLowerCase()));
+          query =
+              query..where(
+                (t) =>
+                    t.title.lower().equals(f.value.toLowerCase()) |
+                    t.notes.lower().equals(f.value.toLowerCase()),
+              );
           break;
         case TransactionFilter<DateTimeRange> f:
-          query = query
-            ..where((t) =>
-                t.date.isBiggerOrEqualValue(_formatter.format(f.value.start)) &
-                t.date.isSmallerOrEqualValue(_formatter.format(f.value.end)));
+          query =
+              query..where(
+                (t) =>
+                    t.date.isBiggerOrEqualValue(
+                      _formatter.format(f.value.start),
+                    ) &
+                    t.date.isSmallerOrEqualValue(
+                      _formatter.format(f.value.end),
+                    ),
+              );
           break;
         case TransactionFilter<TransactionType> f:
           query = query..where((t) => t.type.equals(f.value.value));
           break;
         case TransactionFilter<List<CategoryWithAmount>> f:
-          query = query
-            ..where((t) => t.category.isIn(f.value.map((e) => e.category.id)));
+          query =
+              query..where(
+                (t) => t.category.isIn(f.value.map((e) => e.category.id)),
+              );
           break;
       }
     }
 
     if (sort != null) {
-      OrderingMode sortMode = sort.sortOrder == SortOrder.ascending
-          ? OrderingMode.asc
-          : OrderingMode.desc;
+      OrderingMode sortMode =
+          sort.sortOrder == SortOrder.ascending
+              ? OrderingMode.asc
+              : OrderingMode.desc;
 
-      query = query
-        ..orderBy([
-          (t) => OrderingTerm(
+      query =
+          query..orderBy([
+            (t) => OrderingTerm(
               mode: sortMode,
-              expression: switch (sort.sortType) {
-                SortType.amount => t.amount,
-                SortType.date => t.date,
-                SortType.title => t.title
-              } as Expression<Object>)
-        ]);
+              expression:
+                  switch (sort.sortType) {
+                        SortType.amount => t.amount,
+                        SortType.date => t.date,
+                        SortType.title => t.title,
+                      }
+                      as Expression<Object>,
+            ),
+          ]);
     } else {
       query = query..orderBy([(t) => OrderingTerm.desc(t.date)]);
     }
@@ -337,10 +369,11 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     // nullable. This is because something (either Supabase, Drift, or PowerSync)
     // doesn't think transactions are capable of handling non-null booleans.
     // My money is on PowerSync being the issue.
-    var query = select(transactions)
-      ..where((t) =>
+    var query = select(transactions)..where(
+      (t) =>
           t.isDeleted.isNotExp(const Constant(true)) &
-          t.isArchived.isNotExp(const Constant(true)));
+          t.isArchived.isNotExp(const Constant(true)),
+    );
 
     if (type != null) {
       query = query..where((t) => t.type.equalsValue(type));
@@ -353,21 +386,31 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     }
 
     if (dateRange != null) {
-      query = query
-        ..where((t) => t.date.isBetweenValues(
-            _formatter.format(dateRange.start),
-            _formatter.format(dateRange.end)));
+      query =
+          query..where(
+            (t) => t.date.isBetweenValues(
+              _formatter.format(dateRange.start),
+              _formatter.format(dateRange.end),
+            ),
+          );
     }
 
     if (type == null && net) {
       // If the type is null, we want to get the net amount
-      final signedAmount = CaseWhenExpression(cases: [
-        CaseWhen(transactions.type.equalsValue(TransactionType.income),
-            then: transactions.amount),
-        CaseWhen(transactions.type.equalsValue(TransactionType.expense),
-            then: -transactions.amount)
-      ], orElse: const Constant(0.0))
-          .sum();
+      final signedAmount =
+          CaseWhenExpression(
+            cases: [
+              CaseWhen(
+                transactions.type.equalsValue(TransactionType.income),
+                then: transactions.amount,
+              ),
+              CaseWhen(
+                transactions.type.equalsValue(TransactionType.expense),
+                then: -transactions.amount,
+              ),
+            ],
+            orElse: const Constant(0.0),
+          ).sum();
 
       return query
           .addColumns([signedAmount])
@@ -383,18 +426,27 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
 
   Future<FinancialDataPoint> getPointFromRange(DateTimeRange range) async {
     final totalSpent =
-        await watchTotalAmount(dateRange: range, type: TransactionType.expense)
-            .first;
+        await watchTotalAmount(
+          dateRange: range,
+          type: TransactionType.expense,
+        ).first;
     final totalEarned =
-        await watchTotalAmount(dateRange: range, type: TransactionType.income)
-            .first;
+        await watchTotalAmount(
+          dateRange: range,
+          type: TransactionType.income,
+        ).first;
 
     return FinancialDataPoint(
-        range, (totalSpent ?? 0).abs(), (totalEarned ?? 0).abs());
+      range,
+      (totalSpent ?? 0).abs(),
+      (totalEarned ?? 0).abs(),
+    );
   }
 
   Future<List<FinancialDataPoint>> getAggregatedRangeData(
-      DateTimeRange range, AggregationLevel aggregationLevel) async {
+    DateTimeRange range,
+    AggregationLevel aggregationLevel,
+  ) async {
     List<FinancialDataPoint> points = [];
 
     DateTime start = range.start;
@@ -405,32 +457,52 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
         for (int i = 0; i < range.duration.inDays; i++) {
           final day = range.start.add(Duration(days: i));
 
-          points.add(await getPointFromRange(
-              DateTimeRange(start: day, end: day).makeInclusive()));
+          points.add(
+            await getPointFromRange(
+              DateTimeRange(start: day, end: day).makeInclusive(),
+            ),
+          );
         }
         break;
       case AggregationLevel.weekly:
         while (start.isBefore(end)) {
-          final DateTime chunkEnd =
-              DateTime(start.year, start.month, start.day + 7);
+          final DateTime chunkEnd = DateTime(
+            start.year,
+            start.month,
+            start.day + 7,
+          );
 
           // To make sure the end date doesn't summarize beyond the specified
           // date range. Though, that behavior may be preferable for data uniformity.
           final DateTime actualEnd = chunkEnd.isAfter(end) ? end : chunkEnd;
 
-          points.add(await getPointFromRange(
-              DateTimeRange(start: start, end: actualEnd).makeInclusive()));
+          points.add(
+            await getPointFromRange(
+              DateTimeRange(start: start, end: actualEnd).makeInclusive(),
+            ),
+          );
           start = chunkEnd.add(
-              const Duration(days: 1)); // To start the new chunk at a new spot
+            const Duration(days: 1),
+          ); // To start the new chunk at a new spot
         }
       case _:
         while (start.isBefore(end)) {
-          final DateTime chunkEnd =
-              DateTime(start.year, start.month + 1, 0, 23, 59, 59, 999);
+          final DateTime chunkEnd = DateTime(
+            start.year,
+            start.month + 1,
+            0,
+            23,
+            59,
+            59,
+            999,
+          );
 
           final DateTime actualEnd = chunkEnd.isAfter(end) ? end : chunkEnd;
-          points.add(await getPointFromRange(
-              DateTimeRange(start: start, end: actualEnd).makeInclusive()));
+          points.add(
+            await getPointFromRange(
+              DateTimeRange(start: start, end: actualEnd).makeInclusive(),
+            ),
+          );
 
           start = chunkEnd.add(Duration(days: 1));
         }
@@ -440,41 +512,46 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
   }
 
   Future<void> setArchiveTransactions(List<String> ids, bool status) async {
-    var query = update(transactions)
-      ..where((t) => t.id.isIn(ids))
-      ..write(TransactionsCompanion(isArchived: Value(status)));
+    var query =
+        update(transactions)
+          ..where((t) => t.id.isIn(ids))
+          ..write(TransactionsCompanion(isArchived: Value(status)));
 
     await db.executeQuery(query.constructQuery());
   }
 
   Future<void> setArchiveCategories(List<String> ids, bool status) async {
-    var query = update(categories)
-      ..where((t) => t.id.isIn(ids))
-      ..write(CategoriesCompanion(isArchived: Value(status)));
+    var query =
+        update(categories)
+          ..where((t) => t.id.isIn(ids))
+          ..write(CategoriesCompanion(isArchived: Value(status)));
 
     await db.executeQuery(query.constructQuery());
   }
 
   Future<void> setArchiveAccounts(List<String> ids, bool status) async {
-    var query = update(accounts)
-      ..where((t) => t.id.isIn(ids))
-      ..write(AccountsCompanion(isArchived: Value(status)));
+    var query =
+        update(accounts)
+          ..where((t) => t.id.isIn(ids))
+          ..write(AccountsCompanion(isArchived: Value(status)));
 
     await db.executeQuery(query.constructQuery());
   }
 
   Future<void> setTransactionsDeleted(List<String> ids, bool status) async {
-    var query = update(transactions)
-      ..where((t) => t.id.isIn(ids))
-      ..write(TransactionsCompanion(isDeleted: Value(status)));
+    var query =
+        update(transactions)
+          ..where((t) => t.id.isIn(ids))
+          ..write(TransactionsCompanion(isDeleted: Value(status)));
 
     await db.executeQuery(query.constructQuery());
   }
 
   Future<void> setCategoriesDeleted(List<String> ids, bool status) async {
-    var query = update(categories)
-      ..where((c) => c.id.isIn(ids))
-      ..write(CategoriesCompanion(isDeleted: Value(status)));
+    var query =
+        update(categories)
+          ..where((c) => c.id.isIn(ids))
+          ..write(CategoriesCompanion(isDeleted: Value(status)));
 
     await db.executeQuery(query.constructQuery());
   }
@@ -500,7 +577,9 @@ class CategoryQueryWithConditionalSum {
 }
 
 @DriftDatabase(
-    tables: [Categories, Transactions, Goals, Accounts], daos: [TransactionDao])
+  tables: [Categories, Transactions, Goals, Accounts],
+  daos: [TransactionDao],
+)
 class AppDatabase extends _$AppDatabase {
   PowerSyncDatabase db;
 
@@ -510,64 +589,94 @@ class AppDatabase extends _$AppDatabase {
   int get schemaVersion => 1;
 
   CaseWhen<bool, String> getCaseWhen(
-      CategoryResetIncrement increment, bool isStart) {
-    DateTimeRange timeRange = increment.relativeDateRange?.getRange() ??
+    CategoryResetIncrement increment,
+    bool isStart,
+  ) {
+    DateTimeRange timeRange =
+        increment.relativeDateRange?.getRange() ??
         RelativeDateRange.today.getRange();
 
-    return CaseWhen(categories.resetIncrement.equalsValue(increment),
-        then: Constant<String>(
-            _formatter.format(isStart ? timeRange.start : timeRange.end)));
+    return CaseWhen(
+      categories.resetIncrement.equalsValue(increment),
+      then: Constant<String>(
+        _formatter.format(isStart ? timeRange.start : timeRange.end),
+      ),
+    );
   }
 
   CategoryQueryWithConditionalSum getCategoriesWithAmountsQuery() {
     // Get the start and end date to look for the values
     Expression<String> startDate = CaseWhenExpression<String>(
-        cases: CategoryResetIncrement.values
-            .map((increment) => getCaseWhen(increment, true))
-            .toList());
+      cases:
+          CategoryResetIncrement.values
+              .map((increment) => getCaseWhen(increment, true))
+              .toList(),
+    );
     Expression<String> endDate = CaseWhenExpression<String>(
-        cases: CategoryResetIncrement.values
-            .map((increment) => getCaseWhen(increment, false))
-            .toList());
+      cases:
+          CategoryResetIncrement.values
+              .map((increment) => getCaseWhen(increment, false))
+              .toList(),
+    );
 
     // A filter to check if the date is between these ranges.
-    final dateInRangeCondition =
-        transactions.date.isBetween(startDate, endDate);
+    final dateInRangeCondition = transactions.date.isBetween(
+      startDate,
+      endDate,
+    );
 
     // A filter to sign the amount, since we always want the total amount in
     // a category to be the net value
-    final signedAmount = CaseWhenExpression(cases: [
-      CaseWhen(transactions.type.equalsValue(TransactionType.income),
-          then: transactions.amount),
-      CaseWhen(transactions.type.equalsValue(TransactionType.expense),
-          then: -transactions.amount)
-    ], orElse: const Constant(0.0));
+    final signedAmount = CaseWhenExpression(
+      cases: [
+        CaseWhen(
+          transactions.type.equalsValue(TransactionType.income),
+          then: transactions.amount,
+        ),
+        CaseWhen(
+          transactions.type.equalsValue(TransactionType.expense),
+          then: -transactions.amount,
+        ),
+      ],
+      orElse: const Constant(0.0),
+    );
 
     // The actual condition we're going to filter by. If the reset increment is
     // never, we can't filter by dates so we ensure the filter is always true,
     // or accepts all transactions that fulfill the rest of the conditions
-    final sumFilterCondition = CaseWhenExpression(cases: [
-      CaseWhen(
+    final sumFilterCondition = CaseWhenExpression(
+      cases: [
+        CaseWhen(
           categories.resetIncrement.equalsValue(CategoryResetIncrement.never),
-          then: const Constant(true))
-    ], orElse: dateInRangeCondition);
+          then: const Constant(true),
+        ),
+      ],
+      orElse: dateInRangeCondition,
+    );
 
     // Construct the actual expression to put in the query, used in case the
     // signed amount's sum returns null for some reason (which it never should)
-    final conditionalSum = coalesce(
-        [signedAmount.sum(filter: sumFilterCondition), const Constant(0.0)]);
+    final conditionalSum = coalesce([
+      signedAmount.sum(filter: sumFilterCondition),
+      const Constant(0.0),
+    ]);
 
     var query = select(categories).join([
       leftOuterJoin(
-          transactions, transactions.category.equalsExp(categories.id))
+        transactions,
+        transactions.category.equalsExp(categories.id),
+      ),
     ]);
 
     // Also ensure the category isn't deleted or archived
-    final queryWithSum = query
-      ..where(categories.isDeleted.equals(false) &
-          categories.isArchived.equals(false))
-      ..addColumns([conditionalSum])
-      ..groupBy([categories.id]);
+    final queryWithSum =
+        query
+          ..where(
+            categories.isDeleted.equals(false) &
+                categories.isArchived.equals(false),
+          )
+          ..addColumns([conditionalSum])
+          ..groupBy([categories.id]);
 
     return CategoryQueryWithConditionalSum(queryWithSum, conditionalSum);
   }
@@ -575,11 +684,17 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<CategoryWithAmount>> watchCategories() {
     final queryWithSum = getCategoriesWithAmountsQuery();
 
-    return queryWithSum.query.watch().map((rows) => rows
-        .map((row) => CategoryWithAmount(
-            category: row.readTable(categories),
-            amount: row.read<double>(queryWithSum.conditionalSum)))
-        .toList());
+    return queryWithSum.query.watch().map(
+      (rows) =>
+          rows
+              .map(
+                (row) => CategoryWithAmount(
+                  category: row.readTable(categories),
+                  amount: row.read<double>(queryWithSum.conditionalSum),
+                ),
+              )
+              .toList(),
+    );
   }
 
   List<dynamic> convertVariables(List<dynamic> variables) =>
@@ -598,11 +713,13 @@ class AppDatabase extends _$AppDatabase {
     // 2. Create a companion that definitely includes the ID
     final entryWithId = entry.copyWith(id: Value(id));
 
-    final statement =
-        into(transactions).createContext(entryWithId, InsertMode.insert);
+    final statement = into(
+      transactions,
+    ).createContext(entryWithId, InsertMode.insert);
 
     await db.writeTransaction(
-        (tx) => tx.execute(statement.sql, statement.boundVariables));
+      (tx) => tx.execute(statement.sql, statement.boundVariables),
+    );
 
     var transaction = await getTransactionById(id);
 
@@ -616,11 +733,13 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<Transaction> updatePartialTransaction(
-      TransactionsCompanion entry) async {
-    final query = (update(transactions)
-          ..where((t) => t.id.equals(entry.id.value))
-          ..write(entry))
-        .constructQuery();
+    TransactionsCompanion entry,
+  ) async {
+    final query =
+        (update(transactions)
+              ..where((t) => t.id.equals(entry.id.value))
+              ..write(entry))
+            .constructQuery();
 
     await executeQuery(query);
 
@@ -640,17 +759,14 @@ class AppDatabase extends _$AppDatabase {
     await executeQuery(query);
   }
 
-  Future<Transaction> getTransactionById(String id) => (select(transactions)
-        ..where(
-          (tbl) => tbl.id.equals(id),
-        ))
-      .getSingle();
+  Future<Transaction> getTransactionById(String id) =>
+      (select(transactions)..where((tbl) => tbl.id.equals(id))).getSingle();
 
   Future<CategoryWithAmount?> getCategoryById(String id) async {
     final categorySumQuery = getCategoriesWithAmountsQuery();
 
-    final singleCategoryQuery = categorySumQuery.query
-      ..where(categories.id.equals(id));
+    final singleCategoryQuery =
+        categorySumQuery.query..where(categories.id.equals(id));
 
     final row = await singleCategoryQuery.getSingleOrNull();
 
@@ -670,8 +786,9 @@ class AppDatabase extends _$AppDatabase {
     // 2. Create a companion that definitely includes the ID
     final entryWithId = entry.copyWith(id: Value(id));
 
-    final statement =
-        into(categories).createContext(entryWithId, InsertMode.insert);
+    final statement = into(
+      categories,
+    ).createContext(entryWithId, InsertMode.insert);
 
     await db.writeTransaction((tx) async {
       await tx.execute(statement.sql, statement.boundVariables);
@@ -692,11 +809,13 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<CategoryWithAmount> updatePartialCategory(
-      CategoriesCompanion entry) async {
-    final query = (update(categories)
-          ..where((t) => t.id.equals(entry.id.value))
-          ..write(entry))
-        .constructQuery();
+    CategoriesCompanion entry,
+  ) async {
+    final query =
+        (update(categories)
+              ..where((t) => t.id.equals(entry.id.value))
+              ..write(entry))
+            .constructQuery();
 
     await executeQuery(query);
 

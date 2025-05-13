@@ -53,8 +53,12 @@ class TransactionsRequest {
   final int? pageKey;
   final int? pageSize;
 
-  const TransactionsRequest(
-      {this.filters, this.sort, this.pageKey, this.pageSize});
+  const TransactionsRequest({
+    this.filters,
+    this.sort,
+    this.pageKey,
+    this.pageSize,
+  });
 
   @override
   bool operator ==(other) {

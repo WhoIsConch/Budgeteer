@@ -71,7 +71,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
       "Streaming Services",
       "ChatGPT Credits",
       "Clothes",
-      "Car"
+      "Car",
     ];
 
     Random random = Random();
@@ -125,67 +125,76 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             TextButton(
-                child: Text("Delete",
-                    style:
-                        TextStyle(color: Theme.of(context).colorScheme.error)),
-                onPressed: () {
-                  final deletionManager = DeletionManager(context);
+              child: Text(
+                "Delete",
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+              onPressed: () {
+                final deletionManager = DeletionManager(context);
 
-                  deletionManager.stageObjectsForDeletion<Category>(
-                      [widget.category!.category.id]);
-                  Navigator.of(context).pop(true);
-                }),
-            Row(
-              children: [okButton],
+                deletionManager.stageObjectsForDeletion<Category>([
+                  widget.category!.category.id,
+                ]);
+                Navigator.of(context).pop(true);
+              },
             ),
+            Row(children: [okButton]),
           ],
-        )
+        ),
       ];
     }
 
     return Form(
       key: _formKey,
       child: AlertDialog(
-        title:
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text(title),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.pop(context),
-          )
-        ]),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(title),
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
         actions: formActions,
         content: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-          return SingleChildScrollView(
-            child: Column(
+          builder: (BuildContext context, StateSetter setState) {
+            return SingleChildScrollView(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextFormField(
                     controller: nameController,
                     decoration: InputDecoration(
-                        labelText: "Category Name", hintText: categoryHint),
+                      labelText: "Category Name",
+                      hintText: categoryHint,
+                    ),
                     validator: validateTitle,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true, signed: false),
-                      validator:
-                          const AmountValidator(allowZero: true).validateAmount,
-                      inputFormatters: [DecimalTextInputFormatter()],
-                      controller: amountController,
-                      decoration: const InputDecoration(
-                          prefixText: "\$",
-                          hintText: "500.00",
-                          labelText: "Maximum Balance")),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                      signed: false,
+                    ),
+                    validator:
+                        const AmountValidator(allowZero: true).validateAmount,
+                    inputFormatters: [DecimalTextInputFormatter()],
+                    controller: amountController,
+                    decoration: const InputDecoration(
+                      prefixText: "\$",
+                      hintText: "500.00",
+                      labelText: "Maximum Balance",
+                    ),
+                  ),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: GestureDetector(
-                      onTap: () => setState(
-                        () => allowNegatives = !allowNegatives,
-                      ),
+                      onTap:
+                          () =>
+                              setState(() => allowNegatives = !allowNegatives),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -203,7 +212,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Text("Allow Negative Balance")
+                          const Text("Allow Negative Balance"),
                         ],
                       ),
                     ),
@@ -216,12 +225,13 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                     textStyle: const TextStyle(fontSize: 16),
                     initialSelection:
                         widget.category?.category.resetIncrement ??
-                            CategoryResetIncrement.never,
-                    dropdownMenuEntries: CategoryResetIncrement.values
-                        .map(
-                          (e) => DropdownMenuEntry(label: e.text, value: e),
-                        )
-                        .toList(),
+                        CategoryResetIncrement.never,
+                    dropdownMenuEntries:
+                        CategoryResetIncrement.values
+                            .map(
+                              (e) => DropdownMenuEntry(label: e.text, value: e),
+                            )
+                            .toList(),
                     onSelected: (value) {
                       if (value != null) {
                         setState(() => resetIncrement = value);
@@ -230,40 +240,48 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                   ),
                   const SizedBox(height: 16),
                   GestureDetector(
-                    onTap: () => showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                          title: const Text("Pick a color"),
-                          content: MaterialPicker(
-                              pickerColor: selectedColor ?? Colors.white,
-                              onColorChanged: (newColor) =>
-                                  setState(() => selectedColor = newColor)),
-                          actions: [
-                            TextButton(
-                              child: const Text("Ok"),
-                              onPressed: () => Navigator.pop(context),
-                            )
-                          ]),
-                    ),
+                    onTap:
+                        () => showDialog(
+                          context: context,
+                          builder:
+                              (context) => AlertDialog(
+                                title: const Text("Pick a color"),
+                                content: MaterialPicker(
+                                  pickerColor: selectedColor ?? Colors.white,
+                                  onColorChanged:
+                                      (newColor) => setState(
+                                        () => selectedColor = newColor,
+                                      ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    child: const Text("Ok"),
+                                    onPressed: () => Navigator.pop(context),
+                                  ),
+                                ],
+                              ),
+                        ),
                     child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const Text(
-                            "Color: ",
-                            style: TextStyle(fontSize: 18),
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Text("Color: ", style: TextStyle(fontSize: 18)),
+                        Expanded(
+                          child: Container(
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: selectedColor ?? Colors.white,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
                           ),
-                          Expanded(
-                            child: Container(
-                                height: 30,
-                                decoration: BoxDecoration(
-                                    color: selectedColor ?? Colors.white,
-                                    borderRadius: BorderRadius.circular(2))),
-                          ),
-                        ]),
+                        ),
+                      ],
+                    ),
                   ),
-                ]),
-          );
-        }),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

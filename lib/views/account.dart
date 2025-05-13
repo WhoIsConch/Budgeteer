@@ -59,9 +59,12 @@ class Account extends StatelessWidget {
             //   child: Text("Send Firestore Data"),
             // )
             TextButton(
-                onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => ManageTransactionPage())),
-                child: Text("Open new transaction manager"))
+              onPressed:
+                  () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => ManageTransactionPage()),
+                  ),
+              child: Text("Open new transaction manager"),
+            ),
           ],
         ),
         Divider(),

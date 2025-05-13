@@ -41,21 +41,25 @@ class CategoryDropdown extends StatelessWidget {
       categoryController.text = selectedCategory!.category.name;
     }
 
-    List<DropdownMenuEntry<String>> dropdownEntries = categories
-        .map<DropdownMenuEntry<String>>(
-            (CategoryWithAmount cat) => DropdownMenuEntry(
-                  value: cat.category.id,
-                  label: cat.category.name,
-                ))
-        .toList();
+    List<DropdownMenuEntry<String>> dropdownEntries =
+        categories
+            .map<DropdownMenuEntry<String>>(
+              (CategoryWithAmount cat) => DropdownMenuEntry(
+                value: cat.category.id,
+                label: cat.category.name,
+              ),
+            )
+            .toList();
 
-    dropdownEntries
-        .add(const DropdownMenuEntry<String>(value: "", label: "No Category"));
+    dropdownEntries.add(
+      const DropdownMenuEntry<String>(value: "", label: "No Category"),
+    );
 
     DropdownMenu menu = DropdownMenu<String>(
       enabled: !isLoading,
-      inputDecorationTheme:
-          const InputDecorationTheme(border: InputBorder.none),
+      inputDecorationTheme: const InputDecorationTheme(
+        border: InputBorder.none,
+      ),
       initialSelection: selectedCategory?.category.name ?? "",
       controller: categoryController,
       requestFocusOnTap: true,
@@ -69,7 +73,8 @@ class CategoryDropdown extends StatelessWidget {
 
         // This should usually be either a list of 1 or 0, so we use firstOrNull
         onChanged(
-            categories.where((e) => e.category.id == categoryId).firstOrNull);
+          categories.where((e) => e.category.id == categoryId).firstOrNull,
+        );
       },
       dropdownMenuEntries: dropdownEntries,
     );
@@ -79,10 +84,8 @@ class CategoryDropdown extends StatelessWidget {
     // its outer container
     BoxDecoration jointBoxDecoration = BoxDecoration(
       border: Border(
-          bottom: BorderSide(
-        width: 1,
-        color: getDividerColor(context),
-      )),
+        bottom: BorderSide(width: 1, color: getDividerColor(context)),
+      ),
     );
 
     // This is the inner, first-row container that holds the category dropdown
@@ -90,27 +93,36 @@ class CategoryDropdown extends StatelessWidget {
     Container categorySelector = Container(
       height: 56,
       decoration: shouldShowExpanded ? jointBoxDecoration : null,
-      child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-        Expanded(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
             child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 4, 4), child: menu)),
-        Container(width: 1, height: 56, color: getDividerColor(context)),
-        Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 4, 4),
+              child: menu,
+            ),
+          ),
+          Container(width: 1, height: 56, color: getDividerColor(context)),
+          Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
             child: IconButton(
-              icon: isLoading
-                  ? const CircularProgressIndicator()
-                  : selectedCategory == null
+              icon:
+                  isLoading
+                      ? const CircularProgressIndicator()
+                      : selectedCategory == null
                       ? const Icon(Icons.add)
                       : const Icon(Icons.edit),
               onPressed: () async {
                 final result = await showDialog(
-                    context: context,
-                    builder: (context) =>
-                        ManageCategoryDialog(category: selectedCategory)).then(
-                  (value) => value == true && onDeleted != null
-                      ? onDeleted!()
-                      : value is CategoryWithAmount
+                  context: context,
+                  builder:
+                      (context) =>
+                          ManageCategoryDialog(category: selectedCategory),
+                ).then(
+                  (value) =>
+                      value == true && onDeleted != null
+                          ? onDeleted!()
+                          : value is CategoryWithAmount
                           ? onChanged(value)
                           : null,
                 );
@@ -121,8 +133,10 @@ class CategoryDropdown extends StatelessWidget {
                   onChanged(result);
                 }
               },
-            )),
-      ]),
+            ),
+          ),
+        ],
+      ),
     );
 
     List<Widget> columnChildren = [categorySelector];
@@ -136,33 +150,43 @@ class CategoryDropdown extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(8, 8, 8, 2),
           child: Text(
-              "Balance: ${selectedCategoryTotal < 0 ? "-" : ""}\$$balance",
-              style: selectedCategoryTotal < 0 &&
-                      !selectedCategory!.category.allowNegatives
-                  ? TextStyle(
-                      fontSize: 18, color: Theme.of(context).colorScheme.error)
-                  : const TextStyle(fontSize: 18)),
+            "Balance: ${selectedCategoryTotal < 0 ? "-" : ""}\$$balance",
+            style:
+                selectedCategoryTotal < 0 &&
+                        !selectedCategory!.category.allowNegatives
+                    ? TextStyle(
+                      fontSize: 18,
+                      color: Theme.of(context).colorScheme.error,
+                    )
+                    : const TextStyle(fontSize: 18),
+          ),
         ),
       );
 
-      columnChildren.add(Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Text((selectedCategory?.category.resetIncrement !=
-                CategoryResetIncrement.never
-            ? "Resets in ${selectedCategory?.category.getTimeUntilNextReset(fromDate: transactionDate)}"
-            : "Amount doesn't reset")),
-      ));
+      columnChildren.add(
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(
+            (selectedCategory?.category.resetIncrement !=
+                    CategoryResetIncrement.never
+                ? "Resets in ${selectedCategory?.category.getTimeUntilNextReset(fromDate: transactionDate)}"
+                : "Amount doesn't reset"),
+          ),
+        ),
+      );
     }
 
     // This outer container shows the rest of the selector's border. Won't be
     // visible unless the container is expanded
     return Container(
-        decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(width: 1, color: getDividerColor(context))),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: columnChildren,
-        ));
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(width: 1, color: getDividerColor(context)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: columnChildren,
+      ),
+    );
   }
 }

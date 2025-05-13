@@ -50,21 +50,26 @@ class _LoginPageState extends State<LoginPage> {
     if (type == SignInType.signIn) {
       try {
         await supabase.auth.signInWithPassword(
-            email: usernameController.text, password: passwordController.text);
+          email: usernameController.text,
+          password: passwordController.text,
+        );
         canFinish = true;
       } on AuthException catch (e) {
         if (e.code == 'invalid_credentials') {
           setState(() => passwordError = "Invalid username or password");
         } else {
-          scaffoldMessengerKey.currentState!.showSnackBar(SnackBar(
-              content: Text("An unknown error occurred: ${e.message}")));
+          scaffoldMessengerKey.currentState!.showSnackBar(
+            SnackBar(content: Text("An unknown error occurred: ${e.message}")),
+          );
         }
         print(e.code);
       }
     } else if (type == SignInType.signUp) {
       try {
         await supabase.auth.signUp(
-            email: usernameController.text, password: passwordController.text);
+          email: usernameController.text,
+          password: passwordController.text,
+        );
         canFinish = true;
       } catch (e) {
         // if (e.code == 'weak-password') {
@@ -78,29 +83,33 @@ class _LoginPageState extends State<LoginPage> {
         rethrow;
       }
     } else if (type == SignInType.google) {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn(
-              scopes: ['email', 'profile', 'openid'],
-              serverClientId: dotenv.env['GOOGLE_WEB_CLIENT_ID'])
-          .signIn();
+      final GoogleSignInAccount? googleUser =
+          await GoogleSignIn(
+            scopes: ['email', 'profile', 'openid'],
+            serverClientId: dotenv.env['GOOGLE_WEB_CLIENT_ID'],
+          ).signIn();
 
       // Obtain the auth details from the request
       final GoogleSignInAuthentication? googleAuth =
           await googleUser?.authentication;
 
       if (googleAuth?.idToken == null) {
-        scaffoldMessengerKey.currentState!
-            .showSnackBar(const SnackBar(content: Text("Error: No Client ID")));
+        scaffoldMessengerKey.currentState!.showSnackBar(
+          const SnackBar(content: Text("Error: No Client ID")),
+        );
       } else if (googleAuth?.accessToken == null) {
         scaffoldMessengerKey.currentState!.showSnackBar(
-            const SnackBar(content: Text("Error: No Access Token")));
+          const SnackBar(content: Text("Error: No Access Token")),
+        );
       }
 
       if (googleAuth != null) {
         // Once signed in, return the UserCredential
         await supabase.auth.signInWithIdToken(
-            provider: OAuthProvider.google,
-            idToken: googleAuth.idToken!,
-            accessToken: googleAuth.accessToken);
+          provider: OAuthProvider.google,
+          idToken: googleAuth.idToken!,
+          accessToken: googleAuth.accessToken,
+        );
         canFinish = true;
       }
     }
@@ -112,118 +121,141 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget get signInButton => LoginButton(
-        text: "Sign in",
-        callback: isLoading ? null : () => submitForm(SignInType.signIn),
-      );
+    text: "Sign in",
+    callback: isLoading ? null : () => submitForm(SignInType.signIn),
+  );
 
   Widget get signUpButton => LoginButton(
-        text: "Sign up",
-        callback: isLoading ? null : () => submitForm(SignInType.signUp),
-      );
+    text: "Sign up",
+    callback: isLoading ? null : () => submitForm(SignInType.signUp),
+  );
 
   Widget get googleButton => ElevatedButton(
-        style: ElevatedButton.styleFrom(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            backgroundColor: Colors.white
-                .harmonizeWith(Theme.of(context).colorScheme.primaryContainer)),
-        onPressed: () => submitForm(SignInType.google),
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: isLoading && signInType == SignInType.google
+    style: ElevatedButton.styleFrom(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      backgroundColor: Colors.white.harmonizeWith(
+        Theme.of(context).colorScheme.primaryContainer,
+      ),
+    ),
+    onPressed: () => submitForm(SignInType.google),
+    child: Padding(
+      padding: const EdgeInsets.all(8.0),
+      child:
+          isLoading && signInType == SignInType.google
               ? const CircularProgressIndicator()
-              : Text("Sign in with Google",
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall!
-                      .copyWith(color: Colors.black)),
-        ),
-      );
+              : Text(
+                "Sign in with Google",
+                style: Theme.of(
+                  context,
+                ).textTheme.headlineSmall!.copyWith(color: Colors.black),
+              ),
+    ),
+  );
 
   Widget get emailField => TextFormField(
-        enabled: !isLoading,
-        validator: validateEmail,
-        forceErrorText: usernameError,
-        controller: usernameController,
-        decoration: const InputDecoration(
-            label: Text("Email"), border: OutlineInputBorder()),
-      );
+    enabled: !isLoading,
+    validator: validateEmail,
+    forceErrorText: usernameError,
+    controller: usernameController,
+    decoration: const InputDecoration(
+      label: Text("Email"),
+      border: OutlineInputBorder(),
+    ),
+  );
 
   Widget get passwordField => TextFormField(
-        enabled: !isLoading,
-        controller: passwordController,
-        autocorrect: false,
-        obscureText: !passwordIsVisible,
-        enableSuggestions: false,
-        forceErrorText: passwordError,
-        decoration: InputDecoration(
-            suffixIcon: Padding(
-              padding: const EdgeInsets.only(right: 4),
-              child: IconButton(
-                icon: passwordIsVisible
-                    ? const Icon(Icons.visibility_off)
-                    : const Icon(Icons.visibility),
-                onPressed: () =>
-                    setState(() => passwordIsVisible = !passwordIsVisible),
-              ),
-            ),
-            label: const Text("Password"),
-            border: const OutlineInputBorder()),
-      );
+    enabled: !isLoading,
+    controller: passwordController,
+    autocorrect: false,
+    obscureText: !passwordIsVisible,
+    enableSuggestions: false,
+    forceErrorText: passwordError,
+    decoration: InputDecoration(
+      suffixIcon: Padding(
+        padding: const EdgeInsets.only(right: 4),
+        child: IconButton(
+          icon:
+              passwordIsVisible
+                  ? const Icon(Icons.visibility_off)
+                  : const Icon(Icons.visibility),
+          onPressed:
+              () => setState(() => passwordIsVisible = !passwordIsVisible),
+        ),
+      ),
+      label: const Text("Password"),
+      border: const OutlineInputBorder(),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: Center(
-            child: SizedBox(
-      width: 300,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: 8,
-        children: [
-          Card(
-              margin: EdgeInsets.zero,
-              color: Theme.of(context).colorScheme.primaryContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
+      body: Center(
+        child: SizedBox(
+          width: 300,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: 8,
+            children: [
+              Card(
+                margin: EdgeInsets.zero,
+                color: Theme.of(context).colorScheme.primaryContainer,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Log in",
-                            style: Theme.of(context).textTheme.headlineLarge),
-                        Text("To access your budget",
-                            style: Theme.of(context).textTheme.bodyLarge),
+                        Text(
+                          "Log in",
+                          style: Theme.of(context).textTheme.headlineLarge,
+                        ),
+                        Text(
+                          "To access your budget",
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
                         const SizedBox(height: 16),
                         Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: emailField),
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: emailField,
+                        ),
                         Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: passwordField),
-                      ]),
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: passwordField,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              )),
-          Row(
-            children: [
-              Expanded(
-                  child: isLoading
-                      ? DisabledButtonOverlay(child: signInButton)
-                      : signInButton),
-              const SizedBox(width: 8.0),
-              Expanded(
-                  child: isLoading
-                      ? DisabledButtonOverlay(child: signUpButton)
-                      : signUpButton),
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child:
+                        isLoading
+                            ? DisabledButtonOverlay(child: signInButton)
+                            : signInButton,
+                  ),
+                  const SizedBox(width: 8.0),
+                  Expanded(
+                    child:
+                        isLoading
+                            ? DisabledButtonOverlay(child: signUpButton)
+                            : signUpButton,
+                  ),
+                ],
+              ),
+              isLoading
+                  ? DisabledButtonOverlay(child: googleButton)
+                  : googleButton,
             ],
           ),
-          isLoading ? DisabledButtonOverlay(child: googleButton) : googleButton,
-        ],
+        ),
       ),
-    )));
+    );
   }
 }
 
@@ -241,8 +273,9 @@ class DisabledButtonOverlay extends StatelessWidget {
           child,
           Container(
             decoration: BoxDecoration(
-                color: Colors.black.withAlpha(150),
-                borderRadius: BorderRadius.circular(12)),
+              color: Colors.black.withAlpha(150),
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         ],
       ),
@@ -260,17 +293,20 @@ class LoginButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-          disabledBackgroundColor:
-              Theme.of(context).colorScheme.primaryContainer,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer),
+        disabledBackgroundColor: Theme.of(context).colorScheme.primaryContainer,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+      ),
       onPressed: callback,
       child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Text(text,
-              style: Theme.of(context).textTheme.headlineSmall!.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer))),
+        padding: const EdgeInsets.all(8.0),
+        child: Text(
+          text,
+          style: Theme.of(context).textTheme.headlineSmall!.copyWith(
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+          ),
+        ),
+      ),
     );
   }
 }
