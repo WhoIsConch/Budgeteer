@@ -645,8 +645,7 @@ class _LineChartCardState extends State<LineChartCard> {
                     reservedSize: 48,
                     getTitlesWidget: (value, meta) {
                       return SideTitleWidget(
-                        meta: meta,
-                          child: Text("\$${value.toInt()}"));
+                          meta: meta, child: Text("\$${value.toInt()}"));
                     })),
             bottomTitles: AxisTitles(
                 // X axis are stuck here since they use line chart calculation data

@@ -14,11 +14,8 @@ class AppLogger {
 
   AppLogger._internal();
 
-  final Logger logger = Logger(
-    printer: PrettyPrinter()
-  );
+  final Logger logger = Logger(printer: PrettyPrinter());
 }
-
 
 Color getAdjustedColor(BuildContext context, Color color,
     {double amount = 0.04}) {

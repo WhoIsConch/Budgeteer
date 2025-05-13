@@ -21,7 +21,8 @@ Future<void> setup() async {
   var settings = await loadSettings();
 
   logger.i('Loaded settings');
-  logger.d('Settings: ${settings.map((e) => "${e.type.name} ${e.name}: ${e.value}")}');
+  logger.d(
+      'Settings: ${settings.map((e) => "${e.type.name} ${e.name}: ${e.value}")}');
 
   switch (settings.where((element) => element.name == "Theme").first.value) {
     case "System":
