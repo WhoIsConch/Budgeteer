@@ -141,6 +141,7 @@ class _TransactionsListState extends State<TransactionsList> {
             stream: dao.watchTransactionsPage(
               filters: widget.filters,
               sort: widget.sort,
+              showArchived: true,
             ),
             builder: (context, snapshot) {
               List<Transaction>? transactionsToDisplay;

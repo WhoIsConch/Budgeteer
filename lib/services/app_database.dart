@@ -208,6 +208,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     ]);
 
     final queryWithSum = query
+      ..where(goals.isDeleted.equals(false))
       ..addColumns([amountSum])
       ..groupBy([goals.id]);
 
@@ -224,7 +225,10 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
 
   Stream<double?> getGoalFulfillmentAmount(Goal goal) {
     var query = db.select(db.transactions)
-      ..where((t) => t.goalId.equals(goal.id));
+      ..where((t) =>
+          t.goalId.equals(goal.id) &
+          t.isDeleted.equals(true).not() &
+          t.isArchived.equals(true).not());
 
     return query
         .addColumns([db.transactions.amount.sum()])
@@ -243,9 +247,14 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     Sort? sort,
     int? limit,
     int? offset,
+    bool showArchived = false,
   }) {
     var query = db.select(db.transactions)
-      ..where((t) => t.isDeleted.equals(true).not());
+      ..where((t) => t.isDeleted.isNotExp(const Constant(true)));
+
+    if (!showArchived) {
+      query = query..where((t) => t.isArchived.isNotExp(const Constant(true)));
+    }
 
     filters ??= [];
 
@@ -322,8 +331,14 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     bool nullCategory = false,
     bool net = true,
   }) {
+    // Unfortunately, we need to use isNotExp(Constant(true)) since these fields are
+    // nullable. This is because something (either Supabase, Drift, or PowerSync)
+    // doesn't think transactions are capable of handling non-null booleans.
+    // My money is on PowerSync being the issue.
     var query = select(transactions)
-      ..where((t) => t.isDeleted.equals(true).not());
+      ..where((t) =>
+          t.isDeleted.isNotExp(const Constant(true)) &
+          t.isArchived.isNotExp(const Constant(true)));
 
     if (type != null) {
       query = query..where((t) => t.type.equalsValue(type));
@@ -545,7 +560,10 @@ class AppDatabase extends _$AppDatabase {
           transactions, transactions.category.equalsExp(categories.id))
     ]);
 
+    // Also ensure the category isn't deleted or archived
     final queryWithSum = query
+      ..where(categories.isDeleted.equals(false) &
+          categories.isArchived.equals(false))
       ..addColumns([conditionalSum])
       ..groupBy([categories.id]);
 
