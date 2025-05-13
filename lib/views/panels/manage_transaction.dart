@@ -37,7 +37,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   TransactionType _selectedType = TransactionType.expense;
   CategoryWithAmount? _selectedCategoryPair;
   Account? _selectedAccount;
-  Goal? _selectedGoal;
+  GoalWithAchievedAmount? _selectedGoal;
 
   double _currentAmount = 0;
 
@@ -103,7 +103,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     notes: getControllerValue('notes'),
     category: Value(_selectedCategoryPair?.category.id),
     accountId: Value(_selectedAccount?.id),
-    goalId: Value(_selectedGoal?.id),
+    goalId: Value(_selectedGoal?.goal.id),
   );
 
   void _loadCategory() async {
@@ -208,6 +208,106 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     }
 
     return 'Balance: \$$formattedBalance | $resetText';
+  }
+
+  Widget _getMenuButton(BuildContext context) {
+    final isArchived =
+        initialTransaction!.isArchived != null &&
+        initialTransaction!.isArchived!;
+
+    return MenuAnchor(
+      alignmentOffset: const Offset(-24, 0),
+      menuChildren: [
+        MenuItemButton(
+          child: Text(isArchived ? 'Unarchive' : 'Archive'),
+          onPressed:
+              () => showDialog(
+                context: context,
+                builder:
+                    (context) => AlertDialog(
+                      title: Text(
+                        "${isArchived ? 'Una' : 'A'}rchive transaction?",
+                      ),
+                      content: const Text(
+                        "Archived transactions don't affect balances and statistics",
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            if (!isArchived) {
+                              final manager = DeletionManager(context);
+
+                              manager.stageObjectsForArchival<Transaction>([
+                                initialTransaction!.id,
+                              ]);
+                            } else {
+                              final transactionDao =
+                                  context.read<TransactionDao>();
+
+                              transactionDao.setArchiveTransactions([
+                                initialTransaction!.id,
+                              ], false);
+                            }
+                            Navigator.of(context)
+                              ..pop()
+                              ..pop();
+                          },
+                          child: Text("${isArchived ? 'Una' : 'A'}rchive"),
+                        ),
+                      ],
+                    ),
+              ),
+        ),
+        MenuItemButton(
+          child: const Text('Delete'),
+          onPressed:
+              () => showDialog(
+                context: context,
+                builder:
+                    (context) => AlertDialog(
+                      title: const Text('Delete transaction?'),
+                      content: const Text(
+                        'Are you sure you want to delete this transaction?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            final manager = DeletionManager(context);
+
+                            manager.stageObjectsForDeletion<Transaction>([
+                              initialTransaction!.id,
+                            ]);
+                            Navigator.of(context)
+                              ..pop()
+                              ..pop();
+                          },
+                          child: const Text('Delete'),
+                        ),
+                      ],
+                    ),
+              ),
+        ),
+      ],
+      builder:
+          (BuildContext context, MenuController controller, _) => IconButton(
+            icon: Icon(Icons.more_vert),
+            onPressed: () {
+              if (controller.isOpen) {
+                controller.close();
+              } else {
+                controller.open();
+              }
+            },
+          ),
+    );
   }
 
   Widget _getCategoryButton(BuildContext context) {
@@ -332,105 +432,39 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     );
   }
 
-  Widget _getMenuButton(BuildContext context) {
-    final isArchived =
-        initialTransaction!.isArchived != null &&
-        initialTransaction!.isArchived!;
+  Widget _getGoalDropdown(BuildContext context) =>
+      StreamBuilder<List<GoalWithAchievedAmount>>(
+        stream: context.read<GoalDao>().watchGoals(),
+        builder: (context, snapshot) {
+          final List<GoalWithAchievedAmount?> values =
+              snapshot.hasData ? [...snapshot.data!, null] : [];
 
-    return MenuAnchor(
-      alignmentOffset: const Offset(-24, 0),
-      menuChildren: [
-        MenuItemButton(
-          child: Text(isArchived ? 'Unarchive' : 'Archive'),
-          onPressed:
-              () => showDialog(
-                context: context,
-                builder:
-                    (context) => AlertDialog(
-                      title: Text(
-                        "${isArchived ? 'Una' : 'A'}rchive transaction?",
-                      ),
-                      content: const Text(
-                        "Archived transactions don't affect balances and statistics",
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            if (!isArchived) {
-                              final manager = DeletionManager(context);
+          String dropdownLabel = "Goal";
 
-                              manager.stageObjectsForArchival<Transaction>([
-                                initialTransaction!.id,
-                              ]);
-                            } else {
-                              final transactionDao =
-                                  context.read<TransactionDao>();
+          if (values.isEmpty) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              dropdownLabel = "Loading";
+            } else {
+              dropdownLabel = "No goals";
+            }
+          }
 
-                              transactionDao.setArchiveTransactions([
-                                initialTransaction!.id,
-                              ], false);
-                            }
-                            Navigator.of(context)
-                              ..pop()
-                              ..pop();
-                          },
-                          child: Text("${isArchived ? 'Una' : 'A'}rchive"),
-                        ),
-                      ],
-                    ),
-              ),
-        ),
-        MenuItemButton(
-          child: const Text('Delete'),
-          onPressed:
-              () => showDialog(
-                context: context,
-                builder:
-                    (context) => AlertDialog(
-                      title: const Text('Delete transaction?'),
-                      content: const Text(
-                        'Are you sure you want to delete this transaction?',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            final manager = DeletionManager(context);
-
-                            manager.stageObjectsForDeletion<Transaction>([
-                              initialTransaction!.id,
-                            ]);
-                            Navigator.of(context)
-                              ..pop()
-                              ..pop();
-                          },
-                          child: const Text('Delete'),
-                        ),
-                      ],
-                    ),
-              ),
-        ),
-      ],
-      builder:
-          (BuildContext context, MenuController controller, _) => IconButton(
-            icon: Icon(Icons.more_vert),
-            onPressed: () {
-              if (controller.isOpen) {
-                controller.close();
-              } else {
-                controller.open();
-              }
+          return _buildDropdownMenu<GoalWithAchievedAmount?>(
+            label: dropdownLabel,
+            values: values,
+            labels: values.map((e) => e?.goal.name ?? "No goal").toList(),
+            initialSelection: _selectedGoal,
+            controller: controllers['goal'],
+            enabled: values.isNotEmpty,
+            onChanged: (goal) {
+              setState(() {
+                _selectedGoal = goal;
+                controllers['goal']!.text = goal?.goal.name ?? '';
+              });
             },
-          ),
-    );
-  }
+          );
+        },
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -552,12 +586,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                   labels: [],
                   onChanged: (_) {},
                 ),
-                _buildDropdownMenu(
-                  label: 'Goal',
-                  values: [],
-                  labels: [],
-                  onChanged: (_) {},
-                ),
+                _getGoalDropdown(context),
                 TextFormField(
                   controller: controllers['notes'],
                   decoration: const InputDecoration(
