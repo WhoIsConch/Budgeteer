@@ -1,3 +1,4 @@
+import 'package:budget/views/components/edit_screen.dart';
 import 'package:budget/views/panels/manage_transaction.dart';
 import 'package:flutter/material.dart';
 
@@ -60,9 +61,9 @@ class Account extends StatelessWidget {
             // )
             TextButton(
               onPressed:
-                  () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => ManageTransactionPage()),
-                  ),
+                  () => Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => TestEditScreen())),
               child: Text('Open new transaction manager'),
             ),
           ],

@@ -5,6 +5,7 @@ import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/enums.dart';
 import 'package:budget/utils/tools.dart';
 import 'package:budget/utils/validators.dart';
+import 'package:budget/views/components/viewer_screen.dart';
 import 'package:budget/views/panels/manage_category.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:dynamic_color/dynamic_color.dart';
@@ -243,106 +244,6 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     }
 
     return 'Balance: \$$formattedBalance | $resetText';
-  }
-
-  Widget _getMenuButton(BuildContext context) {
-    final isArchived =
-        initialTransaction!.isArchived != null &&
-        initialTransaction!.isArchived!;
-
-    return MenuAnchor(
-      alignmentOffset: const Offset(-24, 0),
-      menuChildren: [
-        MenuItemButton(
-          child: Text(isArchived ? 'Unarchive' : 'Archive'),
-          onPressed:
-              () => showDialog(
-                context: context,
-                builder:
-                    (context) => AlertDialog(
-                      title: Text(
-                        "${isArchived ? 'Una' : 'A'}rchive transaction?",
-                      ),
-                      content: const Text(
-                        "Archived transactions don't affect balances and statistics",
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            if (!isArchived) {
-                              final manager = DeletionManager(context);
-
-                              manager.stageObjectsForArchival<Transaction>([
-                                initialTransaction!.id,
-                              ]);
-                            } else {
-                              final transactionDao =
-                                  context.read<TransactionDao>();
-
-                              transactionDao.setArchiveTransactions([
-                                initialTransaction!.id,
-                              ], false);
-                            }
-                            Navigator.of(context)
-                              ..pop()
-                              ..pop();
-                          },
-                          child: Text("${isArchived ? 'Una' : 'A'}rchive"),
-                        ),
-                      ],
-                    ),
-              ),
-        ),
-        MenuItemButton(
-          child: const Text('Delete'),
-          onPressed:
-              () => showDialog(
-                context: context,
-                builder:
-                    (context) => AlertDialog(
-                      title: const Text('Delete transaction?'),
-                      content: const Text(
-                        'Are you sure you want to delete this transaction?',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            final manager = DeletionManager(context);
-
-                            manager.stageObjectsForDeletion<Transaction>([
-                              initialTransaction!.id,
-                            ]);
-                            Navigator.of(context)
-                              ..pop()
-                              ..pop();
-                          },
-                          child: const Text('Delete'),
-                        ),
-                      ],
-                    ),
-              ),
-        ),
-      ],
-      builder:
-          (BuildContext context, MenuController controller, _) => IconButton(
-            icon: Icon(Icons.more_vert),
-            onPressed: () {
-              if (controller.isOpen) {
-                controller.close();
-              } else {
-                controller.open();
-              }
-            },
-          ),
-    );
   }
 
   Widget _getCategoryButton(BuildContext context) {
@@ -602,35 +503,6 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     ),
   );
 
-  Widget _previewCardItem(
-    BuildContext context,
-    Icon icon,
-    String title,
-    String description,
-  ) => Row(
-    spacing: 8.0,
-    children: [
-      Padding(padding: EdgeInsets.all(8.0), child: icon),
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-            ),
-            Text(
-              description,
-              style: TextStyle(fontSize: 16),
-              maxLines: 5,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    ],
-  );
-
   Widget _getPreview(BuildContext context) {
     if (hydratedTransaction == null) {
       return Center(child: CircularProgressIndicator());
@@ -652,85 +524,94 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       );
     }
 
-    Widget divider = Divider(color: Theme.of(context).colorScheme.outline);
-
-    List<Widget> previewCards = [
-      _previewCardItem(
-        context,
-        Icon(Icons.calendar_today),
-        "Date",
-        DateFormat(
+    List<ObjectPropertyData> objectProperties = [
+      ObjectPropertyData(
+        icon: Icons.calendar_today,
+        title: "Date",
+        description: DateFormat(
           DateFormat.YEAR_ABBR_MONTH_DAY,
         ).format(hydratedTransaction!.transaction.date),
       ),
     ];
 
     if (hydratedTransaction!.category != null) {
-      previewCards.add(divider);
-      previewCards.add(
-        _previewCardItem(
-          context,
-          Icon(Icons.category),
-          "Category",
-          hydratedTransaction!.category!.name,
+      objectProperties.add(
+        ObjectPropertyData(
+          icon: Icons.category,
+          title: "Category",
+          description: hydratedTransaction!.category!.name,
         ),
       );
     }
 
     if (hydratedTransaction!.goal != null) {
-      previewCards.add(divider);
-      previewCards.add(
-        _previewCardItem(
-          context,
-          Icon(Icons.flag),
-          "Goal",
-          hydratedTransaction!.goal!.name,
+      objectProperties.add(
+        ObjectPropertyData(
+          icon: Icons.flag,
+          title: "Goal",
+          description: hydratedTransaction!.goal!.name,
         ),
       );
     }
 
     if (hydratedTransaction!.transaction.notes != null &&
         hydratedTransaction!.transaction.notes!.isNotEmpty) {
-      previewCards.add(divider);
-      previewCards.add(
-        _previewCardItem(
-          context,
-          Icon(Icons.note),
-          "Notes",
-          hydratedTransaction!.transaction.notes!,
+      objectProperties.add(
+        ObjectPropertyData(
+          icon: Icons.note,
+          title: "Notes",
+          description: hydratedTransaction!.transaction.notes!,
         ),
       );
     }
 
-    return Column(
-      spacing: 16.0,
-      children: [
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          spacing: 8.0,
-          children: [
-            Text(
-              "$prefix\$${formatAmount(initialTransaction!.amount, exact: true)}",
-              style: Theme.of(
-                context,
-              ).textTheme.displayMedium!.copyWith(color: textColor),
-            ),
-            Text(
-              initialTransaction!.title,
-              style: Theme.of(context).textTheme.titleLarge!,
-            ),
-          ],
+    bool isArchived =
+        initialTransaction!.isArchived != null &&
+        initialTransaction!.isArchived!;
+
+    return ViewerScreen(
+      title: 'View transaction',
+      isArchived: isArchived,
+      onEdit: () => setState(() => _isEditing = true),
+      onDelete: () {
+        final manager = DeletionManager(context);
+
+        manager.stageObjectsForDeletion<Transaction>([initialTransaction!.id]);
+        Navigator.of(context)
+          ..pop()
+          ..pop();
+      },
+      onArchive: () {
+        if (!isArchived) {
+          final manager = DeletionManager(context);
+
+          manager.stageObjectsForArchival<Transaction>([
+            initialTransaction!.id,
+          ]);
+        } else {
+          final transactionDao = context.read<TransactionDao>();
+
+          transactionDao.setArchiveTransactions([
+            initialTransaction!.id,
+          ], false);
+        }
+        Navigator.of(context)
+          ..pop()
+          ..pop();
+      },
+      header: TextOverviewHeader(
+        title: Text(
+          '$prefix\$${formatAmount(initialTransaction!.amount, exact: true)}',
+          style: Theme.of(
+            context,
+          ).textTheme.displayMedium!.copyWith(color: textColor),
         ),
-        Card(
-          color: Theme.of(context).colorScheme.primaryContainer,
-          margin: EdgeInsets.all(16.0),
-          child: Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Column(children: previewCards),
-          ),
+        description: Text(
+          initialTransaction!.title,
+          style: Theme.of(context).textTheme.titleLarge!,
         ),
-      ],
+      ),
+      body: ObjectPropertiesList(properties: objectProperties),
     );
   }
 
@@ -784,7 +665,6 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
           icon: Icon(Icons.edit),
           onPressed: () => setState(() => _isEditing = true),
         ),
-      if (!_isEditing) _getMenuButton(context),
     ];
 
     Widget? leading;
@@ -795,6 +675,8 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
         onPressed: () => setState(() => _isEditing = false),
       );
     }
+
+    return _getPreview(context);
 
     return Scaffold(
       appBar: AppBar(
