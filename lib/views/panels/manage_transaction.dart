@@ -129,6 +129,21 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     });
   }
 
+  // void _loadGoal() async {
+  //   // Load the currently selected goal into the form
+  //   if (!isViewing) return;
+  //   if (initialTransaction!.goalId == null) return;
+
+  //   final goal = await context.read<GoalDao>().getGoalById(
+  //     initialTransaction!.goalId!,
+  //   );
+
+  //   setState(() {
+  //     _selectedGoal = goal;
+  //     controllers['goal']!.text = goal.goal.name;
+  //   });
+  // }
+
   void _hydrateTransaction() async {
     if (initialTransaction == null) return;
 
@@ -165,6 +180,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       // Ensure we don't call setState while initState is still working
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _loadCategory();
+        // _loadGoal();
         _hydrateTransaction();
       });
     }

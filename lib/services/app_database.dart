@@ -209,10 +209,9 @@ class Goals extends Table {
 class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
   GoalDao(super.db);
 
-  Stream<List<GoalWithAchievedAmount>> watchGoals({
-    bool includeFinished = true,
+  CategoryQueryWithConditionalSum getCombinedQuery({
+    bool includeFinished = false,
   }) {
-    // View all of the goals in the database
     var query = select(goals).join([
       leftOuterJoin(
         db.transactions,
@@ -226,16 +225,26 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
       query = query..where(goals.isFinished.isNotExp(const Constant(true)));
     }
 
-    final queryWithSum =
+    query =
         query
           ..where(goals.isDeleted.equals(false))
           ..addColumns([signedSumQuery])
           ..groupBy([goals.id]);
 
-    return queryWithSum.watch().map((rows) {
+    return CategoryQueryWithConditionalSum(query, signedSumQuery);
+  }
+
+  Stream<List<GoalWithAchievedAmount>> watchGoals({
+    bool includeFinished = true,
+  }) {
+    final queryWithSum = getCombinedQuery(includeFinished: includeFinished);
+
+    // View all of the goals in the database
+    return queryWithSum.query.watch().map((rows) {
       return rows.map((row) {
         final goal = row.readTable(goals);
-        final achievedAmount = row.read<double>(signedSumQuery) ?? 0.0;
+        final achievedAmount =
+            row.read<double>(queryWithSum.conditionalSum) ?? 0.0;
 
         return GoalWithAchievedAmount(
           goal: goal,
