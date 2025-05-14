@@ -7,9 +7,11 @@ import 'package:budget/utils/tools.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:budget/views/panels/manage_category.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ManageTransactionPage extends StatefulWidget {
   const ManageTransactionPage({super.key, this.initialTransaction});
@@ -38,12 +40,17 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   CategoryWithAmount? _selectedCategoryPair;
   Account? _selectedAccount;
   GoalWithAchievedAmount? _selectedGoal;
+  bool _isEditing = false;
 
   double _currentAmount = 0;
 
   Transaction? get initialTransaction => widget.initialTransaction;
-
-  bool get isEditing => widget.initialTransaction != null;
+  bool get isViewing => widget.initialTransaction != null;
+  String get pageTitle {
+    if (_isEditing) return "Edit transation";
+    if (isViewing) return "View transaction";
+    return "Create transaction";
+  }
 
   void _pickDate(context) async {
     final DateTime? selectedDate = await showDatePicker(
@@ -95,7 +102,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   );
 
   TransactionsCompanion _buildTransaction() => TransactionsCompanion(
-    id: isEditing ? Value(initialTransaction!.id) : const Value.absent(),
+    id: isViewing ? Value(initialTransaction!.id) : const Value.absent(),
     title: getControllerValue('title'),
     amount: Value(double.parse(controllers['amount']!.text)),
     date: Value(_selectedDate),
@@ -108,7 +115,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
 
   void _loadCategory() async {
     // Load the currently selected category into the form
-    if (!isEditing) return;
+    if (!isViewing) return;
     if (initialTransaction!.category == null) return;
 
     final categoryPair = await context.read<AppDatabase>().getCategoryById(
@@ -135,7 +142,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       tempControllers[id] = TextEditingController();
     }
 
-    if (isEditing) {
+    if (isViewing) {
       tempControllers['title']!.text = initialTransaction!.title;
       tempControllers['amount']!.text = initialTransaction!.amount
           .toStringAsFixed(2);
@@ -170,7 +177,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
 
     double adjustedBalance = originalBalance;
 
-    if (isEditing &&
+    if (isViewing &&
         initialTransaction!.category == _selectedCategoryPair!.category.id) {
       // This means we're editing the category and the transaction's amount still
       // exists within the balance. Therefore, we negate it.
@@ -466,141 +473,262 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
         },
       );
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(isEditing ? 'Edit transaction' : 'Add transaction'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.check),
-            onPressed: () {
-              if (_formKey.currentState!.validate()) {
-                final database = context.read<AppDatabase>();
-                final currentTransaction = _buildTransaction();
-
-                try {
-                  if (isEditing) {
-                    database.updatePartialTransaction(currentTransaction);
-                  } else {
-                    database.createTransaction(currentTransaction);
-                  }
-
-                  Navigator.of(context).pop();
-                } catch (e) {
-                  AppLogger().logger.e('Unable to save transaction: $e');
-                  context.read<SnackbarProvider>().showSnackBar(
-                    const SnackBar(content: Text('Unable to save transaction')),
-                  );
-                }
-              }
-            },
+  Widget _getForm(BuildContext context) => SingleChildScrollView(
+    child: Form(
+      autovalidateMode: AutovalidateMode.onUnfocus,
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 16.0,
+        children: [
+          SegmentedButton(
+            onSelectionChanged:
+                (p0) => setState(() => _selectedType = p0.first),
+            selected: {_selectedType},
+            segments: const [
+              ButtonSegment(
+                value: TransactionType.expense,
+                label: Text('Expense'),
+              ),
+              ButtonSegment(
+                value: TransactionType.income,
+                label: Text('Income'),
+              ),
+            ],
+          ),
+          Row(
+            spacing: 8.0,
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: controllers['title'],
+                  decoration: const InputDecoration(
+                    labelText: 'Title',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: validateTitle,
+                ),
+              ),
+            ],
+          ),
+          Row(
+            spacing: 16.0,
+            children: [
+              Expanded(
+                child: TextFormField(
+                  onChanged: (_) => _updateAmount(),
+                  controller: controllers['amount'],
+                  decoration: InputDecoration(
+                    labelText: 'Amount',
+                    prefixIcon: Icon(
+                      Icons.attach_money,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    border: const OutlineInputBorder(),
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  validator: const AmountValidator().validateAmount,
+                ),
+              ),
+              Expanded(
+                child: TextFormField(
+                  readOnly: true,
+                  decoration: InputDecoration(
+                    labelText: 'Date',
+                    border: const OutlineInputBorder(),
+                    suffixIcon: Icon(
+                      Icons.calendar_today,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  controller: TextEditingController(
+                    text: DateFormat('MM/dd/yyyy').format(_selectedDate),
+                  ),
+                  onTap: () => _pickDate(context),
+                ),
+              ),
+            ],
+          ),
+          _getCategoryButton(context),
+          _buildDropdownMenu(
+            label: 'Account',
+            values: [],
+            labels: [],
+            onChanged: (_) {},
+          ),
+          _getGoalDropdown(context),
+          TextFormField(
+            controller: controllers['notes'],
+            decoration: const InputDecoration(
+              labelText: 'Notes (optional)',
+              border: OutlineInputBorder(),
+              alignLabelWithHint: true,
+            ),
+            maxLines: 3,
+            textInputAction: TextInputAction.done,
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: SingleChildScrollView(
-          child: Form(
-            autovalidateMode: AutovalidateMode.onUnfocus,
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: 16.0,
-              children: [
-                SegmentedButton(
-                  onSelectionChanged:
-                      (p0) => setState(() => _selectedType = p0.first),
-                  selected: {_selectedType},
-                  segments: const [
-                    ButtonSegment(
-                      value: TransactionType.expense,
-                      label: Text('Expense'),
-                    ),
-                    ButtonSegment(
-                      value: TransactionType.income,
-                      label: Text('Income'),
-                    ),
-                  ],
-                ),
-                Row(
-                  spacing: 8.0,
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: controllers['title'],
-                        decoration: const InputDecoration(
-                          labelText: 'Title',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: validateTitle,
-                      ),
-                    ),
-                    if (isEditing) _getMenuButton(context),
-                  ],
-                ),
-                Row(
-                  spacing: 16.0,
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        onChanged: (_) => _updateAmount(),
-                        controller: controllers['amount'],
-                        decoration: InputDecoration(
-                          labelText: 'Amount',
-                          prefixIcon: Icon(
-                            Icons.attach_money,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          border: const OutlineInputBorder(),
-                        ),
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        validator: const AmountValidator().validateAmount,
-                      ),
-                    ),
-                    Expanded(
-                      child: TextFormField(
-                        readOnly: true,
-                        decoration: InputDecoration(
-                          labelText: 'Date',
-                          border: const OutlineInputBorder(),
-                          suffixIcon: Icon(
-                            Icons.calendar_today,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                        controller: TextEditingController(
-                          text: DateFormat('MM/dd/yyyy').format(_selectedDate),
-                        ),
-                        onTap: () => _pickDate(context),
-                      ),
-                    ),
-                  ],
-                ),
-                _getCategoryButton(context),
-                _buildDropdownMenu(
-                  label: 'Account',
-                  values: [],
-                  labels: [],
-                  onChanged: (_) {},
-                ),
-                _getGoalDropdown(context),
-                TextFormField(
-                  controller: controllers['notes'],
-                  decoration: const InputDecoration(
-                    labelText: 'Notes (optional)',
-                    border: OutlineInputBorder(),
-                    alignLabelWithHint: true,
-                  ),
-                  maxLines: 3,
-                  textInputAction: TextInputAction.done,
-                ),
-              ],
+    ),
+  );
+
+  Widget _previewCardItem(
+    BuildContext context,
+    Icon icon,
+    String title,
+    String description,
+  ) => Row(
+    spacing: 8.0,
+    children: [
+      Padding(padding: EdgeInsets.all(8.0), child: icon),
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+          ),
+          Text(description, style: TextStyle(fontSize: 16)),
+        ],
+      ),
+    ],
+  );
+
+  Widget _getPreview(BuildContext context) {
+    Color textColor;
+    String prefix = '';
+
+    if (initialTransaction!.type == TransactionType.expense) {
+      textColor = Colors.red.harmonizeWith(
+        Theme.of(context).colorScheme.primary,
+      );
+      prefix = '-';
+    } else {
+      textColor = Colors.green.harmonizeWith(
+        Theme.of(context).colorScheme.primary,
+      );
+    }
+
+    List<Widget> previewCards = [
+      _previewCardItem(
+        context,
+        Icon(Icons.calendar_today),
+        "Date",
+        DateFormat(
+          DateFormat.YEAR_ABBR_MONTH_DAY,
+        ).format(initialTransaction!.date),
+      ),
+    ];
+
+    if (initialTransaction!.category != null) {
+      previewCards.add(Divider());
+      previewCards.add(
+        _previewCardItem(
+          context,
+          Icon(Icons.category),
+          "Category",
+          initialTransaction!.category!,
+        ),
+      );
+    }
+
+    if (initialTransaction!.notes != null) {
+      previewCards.add(
+        _previewCardItem(
+          context,
+          Icon(Icons.note),
+          "Notes",
+          initialTransaction!.notes!,
+        ),
+      );
+    }
+
+    return Column(
+      spacing: 16.0,
+      children: [
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              "$prefix\$${formatAmount(initialTransaction!.amount, exact: true)}",
+              style: Theme.of(
+                context,
+              ).textTheme.headlineLarge!.copyWith(color: textColor),
             ),
+            Text(
+              initialTransaction!.title,
+              style: Theme.of(context).textTheme.titleLarge!,
+            ),
+          ],
+        ),
+        Card(
+          margin: EdgeInsets.all(16.0),
+          child: Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Column(children: previewCards),
           ),
         ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    List<Widget> appBarActions = [
+      if (_isEditing)
+        IconButton(
+          icon: const Icon(Icons.check),
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              final database = context.read<AppDatabase>();
+              final currentTransaction = _buildTransaction();
+
+              try {
+                if (isViewing) {
+                  database.updatePartialTransaction(currentTransaction);
+                } else {
+                  database.createTransaction(currentTransaction);
+                }
+
+                setState(() => _isEditing = false);
+              } catch (e) {
+                AppLogger().logger.e('Unable to save transaction: $e');
+                context.read<SnackbarProvider>().showSnackBar(
+                  const SnackBar(content: Text('Unable to save transaction')),
+                );
+              }
+            }
+          },
+        ),
+      if (!_isEditing)
+        IconButton(
+          icon: Icon(Icons.edit),
+          onPressed: () => setState(() => _isEditing = true),
+        ),
+      if (!_isEditing) _getMenuButton(context),
+    ];
+
+    Widget? leading;
+
+    if (_isEditing) {
+      leading = IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: () => setState(() => _isEditing = false),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: leading,
+        title: Text(pageTitle),
+        actions: appBarActions,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: _getPreview(context),
       ),
     );
   }
