@@ -22,3 +22,17 @@ class CategoryWithAmount {
   double? get remainingAmount =>
       category.balance == null ? null : category.balance! + (amount ?? 0);
 }
+
+class HydratedTransaction {
+  final Transaction transaction;
+  final Category? category;
+  final Account? account;
+  final Goal? goal;
+
+  HydratedTransaction({
+    required this.transaction,
+    this.category,
+    this.account,
+    this.goal,
+  });
+}

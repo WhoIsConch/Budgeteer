@@ -473,6 +473,33 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
         .watchSingle();
   }
 
+  Future<HydratedTransaction> hydrateTransaction(
+    Transaction transaction,
+  ) async {
+    // TODO: Optimize this
+    Goal? goal;
+    Category? category;
+    Account? account;
+
+    if (transaction.goalId != null) {
+      goal = await db.goalDao.getGoalById(transaction.goalId!);
+    }
+
+    if (transaction.category != null) {
+      final categoryWithAmount = await db.getCategoryById(
+        transaction.category!,
+      );
+
+      category = categoryWithAmount?.category;
+    }
+
+    return HydratedTransaction(
+      transaction: transaction,
+      goal: goal,
+      category: category,
+    );
+  }
+
   Future<FinancialDataPoint> getPointFromRange(DateTimeRange range) async {
     final totalSpent =
         await watchTotalAmount(
@@ -627,7 +654,7 @@ class CategoryQueryWithConditionalSum {
 
 @DriftDatabase(
   tables: [Categories, Transactions, Goals, Accounts],
-  daos: [TransactionDao],
+  daos: [TransactionDao, GoalDao],
 )
 class AppDatabase extends _$AppDatabase {
   PowerSyncDatabase db;

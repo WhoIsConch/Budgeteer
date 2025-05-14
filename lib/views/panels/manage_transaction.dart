@@ -40,11 +40,13 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   Account? _selectedAccount;
   GoalWithAchievedAmount? _selectedGoal;
   bool _isEditing = false;
-
   double _currentAmount = 0;
+
+  HydratedTransaction? hydratedTransaction;
 
   Transaction? get initialTransaction => widget.initialTransaction;
   bool get isViewing => widget.initialTransaction != null;
+
   String get pageTitle {
     if (_isEditing) return "Edit transation";
     if (isViewing) return "View transaction";
@@ -127,6 +129,16 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     });
   }
 
+  void _hydrateTransaction() async {
+    if (initialTransaction == null) return;
+
+    var hydrated = await context.read<TransactionDao>().hydrateTransaction(
+      initialTransaction!,
+    );
+
+    setState(() => hydratedTransaction = hydrated);
+  }
+
   void _updateAmount() => setState(
     () => _currentAmount = double.tryParse(controllers['amount']!.text) ?? 0,
   );
@@ -153,6 +165,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       // Ensure we don't call setState while initState is still working
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _loadCategory();
+        _hydrateTransaction();
       });
     }
 
@@ -603,10 +616,14 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   );
 
   Widget _getPreview(BuildContext context) {
+    if (hydratedTransaction == null) {
+      return Center(child: CircularProgressIndicator());
+    }
+
     Color textColor;
     String prefix = '+';
 
-    if (initialTransaction!.type == TransactionType.expense) {
+    if (hydratedTransaction!.transaction.type == TransactionType.expense) {
       textColor = getAdjustedColor(
         context,
         Colors.red.harmonizeWith(Theme.of(context).colorScheme.error),
@@ -628,31 +645,43 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
         "Date",
         DateFormat(
           DateFormat.YEAR_ABBR_MONTH_DAY,
-        ).format(initialTransaction!.date),
+        ).format(hydratedTransaction!.transaction.date),
       ),
     ];
 
-    if (initialTransaction!.category != null) {
+    if (hydratedTransaction!.category != null) {
       previewCards.add(divider);
       previewCards.add(
         _previewCardItem(
           context,
           Icon(Icons.category),
           "Category",
-          initialTransaction!.category!,
+          hydratedTransaction!.category!.name,
         ),
       );
     }
 
-    if (initialTransaction!.notes != null &&
-        initialTransaction!.notes!.isNotEmpty) {
+    if (hydratedTransaction!.goal != null) {
+      previewCards.add(divider);
+      previewCards.add(
+        _previewCardItem(
+          context,
+          Icon(Icons.flag),
+          "Goal",
+          hydratedTransaction!.goal!.name,
+        ),
+      );
+    }
+
+    if (hydratedTransaction!.transaction.notes != null &&
+        hydratedTransaction!.transaction.notes!.isNotEmpty) {
       previewCards.add(divider);
       previewCards.add(
         _previewCardItem(
           context,
           Icon(Icons.note),
           "Notes",
-          initialTransaction!.notes!,
+          hydratedTransaction!.transaction.notes!,
         ),
       );
     }
