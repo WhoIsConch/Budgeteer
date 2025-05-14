@@ -11,7 +11,6 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ManageTransactionPage extends StatefulWidget {
   const ManageTransactionPage({super.key, this.initialTransaction});
@@ -583,26 +582,35 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     spacing: 8.0,
     children: [
       Padding(padding: EdgeInsets.all(8.0), child: icon),
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-          ),
-          Text(description, style: TextStyle(fontSize: 16)),
-        ],
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+            ),
+            Text(
+              description,
+              style: TextStyle(fontSize: 16),
+              maxLines: 5,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     ],
   );
 
   Widget _getPreview(BuildContext context) {
     Color textColor;
-    String prefix = '';
+    String prefix = '+';
 
     if (initialTransaction!.type == TransactionType.expense) {
-      textColor = Colors.red.harmonizeWith(
-        Theme.of(context).colorScheme.primary,
+      textColor = getAdjustedColor(
+        context,
+        Colors.red.harmonizeWith(Theme.of(context).colorScheme.error),
+        amount: 0.12,
       );
       prefix = '-';
     } else {
@@ -610,6 +618,8 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
         Theme.of(context).colorScheme.primary,
       );
     }
+
+    Widget divider = Divider(color: Theme.of(context).colorScheme.outline);
 
     List<Widget> previewCards = [
       _previewCardItem(
@@ -623,7 +633,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     ];
 
     if (initialTransaction!.category != null) {
-      previewCards.add(Divider());
+      previewCards.add(divider);
       previewCards.add(
         _previewCardItem(
           context,
@@ -634,7 +644,9 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       );
     }
 
-    if (initialTransaction!.notes != null) {
+    if (initialTransaction!.notes != null &&
+        initialTransaction!.notes!.isNotEmpty) {
+      previewCards.add(divider);
       previewCards.add(
         _previewCardItem(
           context,
@@ -651,12 +663,13 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
         Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
+          spacing: 8.0,
           children: [
             Text(
               "$prefix\$${formatAmount(initialTransaction!.amount, exact: true)}",
               style: Theme.of(
                 context,
-              ).textTheme.headlineLarge!.copyWith(color: textColor),
+              ).textTheme.displayMedium!.copyWith(color: textColor),
             ),
             Text(
               initialTransaction!.title,
@@ -665,6 +678,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
           ],
         ),
         Card(
+          color: Theme.of(context).colorScheme.primaryContainer,
           margin: EdgeInsets.all(16.0),
           child: Padding(
             padding: EdgeInsets.all(8.0),
@@ -681,16 +695,33 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       if (_isEditing)
         IconButton(
           icon: const Icon(Icons.check),
-          onPressed: () {
+          onPressed: () async {
             if (_formKey.currentState!.validate()) {
               final database = context.read<AppDatabase>();
               final currentTransaction = _buildTransaction();
 
+              Transaction savedTran;
+
               try {
                 if (isViewing) {
-                  database.updatePartialTransaction(currentTransaction);
+                  savedTran = await database.updatePartialTransaction(
+                    currentTransaction,
+                  );
                 } else {
-                  database.createTransaction(currentTransaction);
+                  savedTran = await database.createTransaction(
+                    currentTransaction,
+                  );
+                }
+
+                if (context.mounted) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder:
+                          (_) => ManageTransactionPage(
+                            initialTransaction: savedTran,
+                          ),
+                    ),
+                  );
                 }
 
                 setState(() => _isEditing = false);
@@ -728,7 +759,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(12.0),
-        child: _getPreview(context),
+        child: _isEditing ? _getForm(context) : _getPreview(context),
       ),
     );
   }
