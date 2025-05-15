@@ -600,16 +600,9 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
           ..pop();
       },
       header: TextOverviewHeader(
-        title: Text(
-          '$prefix\$${formatAmount(initialTransaction!.amount, exact: true)}',
-          style: Theme.of(
-            context,
-          ).textTheme.displayMedium!.copyWith(color: textColor),
-        ),
-        description: Text(
-          initialTransaction!.title,
-          style: Theme.of(context).textTheme.titleLarge!,
-        ),
+        textColor: textColor,
+        title: '$prefix\$${formatAmount(initialTransaction!.amount, exact: true)}',
+        description: initialTransaction!.title,
       ),
       body: ObjectPropertiesList(properties: objectProperties),
     );

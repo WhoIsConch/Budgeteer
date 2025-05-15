@@ -1,14 +1,17 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 
 class TextOverviewHeader extends StatelessWidget {
-  final Widget title;
-  final Widget description;
+  final String? title;
+  final String? description;
+  final Color? textColor;
 
   const TextOverviewHeader({
     super.key,
     required this.title,
     required this.description,
+    this.textColor
   });
 
   @override
@@ -16,8 +19,17 @@ class TextOverviewHeader extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
-      spacing: 8.0,
-      children: [title, description],
+      spacing: 4.0,
+      children: [
+        if (title != null) Text(
+          title!,
+          style: Theme.of(
+            context,
+          ).textTheme.displayMedium!.copyWith(color: textColor, fontWeight: FontWeight.bold),
+        ), if (description != null) Text(
+          description!,
+          style: Theme.of(context).textTheme.titleLarge!,
+        )],
     );
   }
 }
@@ -55,15 +67,20 @@ class ProgressOverviewHeader extends StatelessWidget {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (insidePrimary != null) Text(
-                    insidePrimary!,
-                    style: Theme.of(context).textTheme.displaySmall,
-                  ),
-                  if (insideSecondary != null) Text(insideSecondary!),
-                ],
+              SizedBox(
+                width: 96,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (insidePrimary != null) AutoSizeText(
+                      insidePrimary!,
+                      maxLines: 1,
+                      minFontSize: 28,
+                      style: Theme.of(context).textTheme.displaySmall!.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    if (insideSecondary != null) Text(insideSecondary!),
+                  ],
+                ),
               ),
               SizedBox.expand(
                 child: TweenAnimationBuilder<double>(
@@ -86,7 +103,7 @@ class ProgressOverviewHeader extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
 
           children: [
-            if (title != null) Text(title!, style: Theme.of(context).textTheme.displaySmall),
+            if (title != null) Text(title!, style: Theme.of(context).textTheme.displaySmall!.copyWith(fontWeight: FontWeight.bold)),
             if (description != null) Text(description!, style: Theme.of(context).textTheme.titleMedium),
           ],
         ),
