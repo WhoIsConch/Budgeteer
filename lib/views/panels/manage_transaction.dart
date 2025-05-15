@@ -35,7 +35,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   late final Map<String, TextEditingController> controllers;
 
   DateTime _selectedDate = DateTime.now();
-  TransactionType _selectedType = TransactionType.expense;
+  TransactionType _selectedType = TransactionType.income;
   CategoryWithAmount? _selectedCategoryPair;
   Account? _selectedAccount;
   GoalWithAchievedAmount? _selectedGoal;
@@ -158,6 +158,31 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     return adjustedBalance;
   }
 
+  double? _getTotalGoalBalance() {
+    if (_selectedGoal == null) return null;
+
+    double totalRemaining =
+        _selectedGoal!.goal.cost - (_selectedGoal!.achievedAmount ?? 0);
+
+    if (isEditing && initialTransaction!.goalId == _selectedGoal!.goal.id) {
+      if (initialTransaction!.type == TransactionType.expense) {
+        totalRemaining += initialTransaction!.amount;
+      } else {
+        totalRemaining -= initialTransaction!.amount;
+      }
+    }
+
+    double currentAmount = _getCurrentAmount();
+
+    if (_selectedType == TransactionType.expense) {
+      totalRemaining += currentAmount;
+    } else {
+      totalRemaining -= currentAmount;
+    }
+
+    return totalRemaining;
+  }
+
   String? _getCategorySubtext() {
     if (_selectedCategoryPair == null) return null;
 
@@ -174,6 +199,26 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     }
 
     return 'Balance: \$$formattedBalance | $resetText';
+  }
+
+  String? _getGoalSubtext() {
+    if (_selectedGoal == null) return null;
+
+    final amountRemaining = _getTotalGoalBalance() ?? 0;
+    final formattedAmount = formatAmount(amountRemaining ?? 0);
+
+    String? helperText;
+
+    if (amountRemaining < 0) {
+      // substring(1) to remove the minus symbol
+      helperText = "You're \$${formattedAmount.substring(1)} past your goal!";
+    } else if (amountRemaining == 0) {
+      helperText = "You've met your goal! Congrats!";
+    } else {
+      helperText = '\$$formattedAmount remaining';
+    }
+
+    return helperText;
   }
 
   @override
@@ -212,7 +257,8 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
             if (value == null) return null;
             if (value.category.allowNegatives) return null;
 
-            final totalAmount = (value.remainingAmount ?? 0) - _getCurrentAmount();
+            final totalAmount =
+                (value.remainingAmount ?? 0) - _getCurrentAmount();
 
             if (totalAmount < 0) {
               print("negatory");
@@ -293,7 +339,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                             category: _selectedCategoryPair,
                           ),
                     );
-                
+
                     if (result is String && result.isEmpty) {
                       setState(() {
                         _selectedCategoryPair = null;
@@ -303,9 +349,64 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                         _selectedCategoryPair = result;
                       });
                     }
-                
+
                     return result;
                   },
+                ),
+              ],
+            );
+          },
+        ),
+        FormField<GoalWithAchievedAmount?>(
+          builder: (fieldState) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: StreamBuilder(
+                    stream: context.read<GoalDao>().watchGoals(),
+                    builder: (context, snapshot) {
+                      final List<GoalWithAchievedAmount?> goals =
+                          snapshot.hasData ? [...snapshot.data!, null] : [];
+                      final labels =
+                          goals.map((e) => e?.goal.name ?? 'No goal').toList();
+
+                      String dropdownLabel = 'Goal';
+                      if (!snapshot.hasData) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          dropdownLabel = 'Loading';
+                        } else {
+                          dropdownLabel = 'No goals';
+                        }
+                      }
+
+                      String? helperText = _getGoalSubtext();
+
+                      return CustomDropDownFormField(
+                        fieldState: fieldState,
+                        title: dropdownLabel,
+                        initialSelection: _selectedGoal,
+                        onChanged:
+                            (newGoal) =>
+                                setState(() => _selectedGoal = newGoal),
+                        values: goals,
+                        labels: labels,
+                        helperText: helperText,
+                      );
+                    },
+                  ),
+                ),
+                HybridManagerButton(
+                  formFieldState: fieldState,
+                  icon: Icon(
+                    _selectedGoal == null
+                        ? Icons.add_circle_outline
+                        : Icons.edit,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  tooltip: _selectedGoal == null ? 'New goal' : 'Edit goal',
+                  onPressed: () {},
                 ),
               ],
             );
