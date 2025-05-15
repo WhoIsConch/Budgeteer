@@ -1,3 +1,4 @@
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 
 class TextOverviewHeader extends StatelessWidget {
@@ -17,6 +18,79 @@ class TextOverviewHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       spacing: 8.0,
       children: [title, description],
+    );
+  }
+}
+
+class ProgressOverviewHeader extends StatelessWidget {
+  final String? title;
+  final String? description;
+  final String? insidePrimary;
+  final String? insideSecondary;
+  final Color? foregroundColor;
+  final double progress;
+
+  const ProgressOverviewHeader({
+    super.key,
+    required this.progress,
+    this.title,
+    this.description,
+    this.insidePrimary,
+    this.insideSecondary,
+    this.foregroundColor
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final foreground = foregroundColor?.harmonizeWith(primary) ?? primary;
+    final background = foreground.withAlpha(68);
+
+    return Row(
+      spacing: 20.0,
+      children: [
+        SizedBox(
+          height: 125,
+          width: 125,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (insidePrimary != null) Text(
+                    insidePrimary!,
+                    style: Theme.of(context).textTheme.displaySmall,
+                  ),
+                  if (insideSecondary != null) Text(insideSecondary!),
+                ],
+              ),
+              SizedBox.expand(
+                child: TweenAnimationBuilder<double>(
+                  curve: Curves.easeInOutQuart,
+                  tween: Tween<double>(begin: 0, end: progress),
+                  duration: Duration(milliseconds: 1000),
+                  builder: (context, value, _) => CircularProgressIndicator(
+                    strokeWidth: 16,
+                    value: value,
+                    color: foreground,
+                    backgroundColor: background,
+                    strokeCap: StrokeCap.round,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+
+          children: [
+            if (title != null) Text(title!, style: Theme.of(context).textTheme.displaySmall),
+            if (description != null) Text(description!, style: Theme.of(context).textTheme.titleMedium),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -76,7 +150,7 @@ class ObjectPropertiesList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       color: Theme.of(context).colorScheme.primaryContainer,
-      margin: EdgeInsets.all(16.0),
+      margin: EdgeInsets.zero,
       child: Padding(
         padding: EdgeInsets.all(8.0),
         child: ListView.separated(
@@ -199,8 +273,8 @@ class ViewerScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(title), actions: actions),
       body: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(spacing: 16.0, children: [header, body]),
+        padding: const EdgeInsets.all(28.0),
+        child: Column(spacing: 28.0, children: [header, body]),
       ),
     );
   }
