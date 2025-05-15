@@ -5,6 +5,7 @@ import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/enums.dart';
 import 'package:budget/utils/tools.dart';
 import 'package:budget/utils/validators.dart';
+import 'package:budget/views/components/edit_screen.dart';
 import 'package:budget/views/components/viewer_screen.dart';
 import 'package:budget/views/panels/manage_category.dart';
 import 'package:drift/drift.dart' show Value;
@@ -23,8 +24,6 @@ class ManageTransactionPage extends StatefulWidget {
 }
 
 class _ManageTransactionPageState extends State<ManageTransactionPage> {
-  final _formKey = GlobalKey<FormState>();
-
   final List<String> _validControllers = [
     'amount',
     'title',
@@ -40,71 +39,19 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   CategoryWithAmount? _selectedCategoryPair;
   Account? _selectedAccount;
   GoalWithAchievedAmount? _selectedGoal;
-  bool _isEditing = false;
-  double _currentAmount = 0;
 
   HydratedTransaction? hydratedTransaction;
 
   Transaction? get initialTransaction => widget.initialTransaction;
-  bool get isViewing => widget.initialTransaction != null;
-
-  String get pageTitle {
-    if (_isEditing) return 'Edit transation';
-    if (isViewing) return 'View transaction';
-    return 'Create transaction';
-  }
-
-  void _pickDate(context) async {
-    final DateTime? selectedDate = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 365 * 100)),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 100)),
-    );
-
-    if (selectedDate != null) {
-      setState(() => _selectedDate = selectedDate);
-    }
-  }
+  bool get isEditing => initialTransaction != null;
 
   Value<String> getControllerValue(String id) =>
       controllers[id] != null
           ? Value(controllers[id]!.text)
           : const Value.absent();
 
-  Widget _buildDropdownMenu<T>({
-    required String label,
-    required List<T> values,
-    required List<String> labels,
-    required ValueChanged<T?> onChanged,
-    TextEditingController? controller,
-    bool enabled = true,
-    String? errorText,
-    String? helperText,
-    T? initialSelection,
-  }) => DropdownMenu<T>(
-    errorText: errorText,
-    helperText: helperText,
-    enabled: controller != null && enabled,
-    controller: controller,
-    initialSelection: initialSelection,
-    expandedInsets: EdgeInsets.zero,
-    dropdownMenuEntries:
-        values
-            .map(
-              (e) =>
-                  DropdownMenuEntry(value: e, label: labels[values.indexOf(e)]),
-            )
-            .toList(),
-    label: Text(label),
-    onSelected: onChanged,
-    inputDecorationTheme: const InputDecorationTheme(
-      border: OutlineInputBorder(),
-    ),
-  );
-
   TransactionsCompanion _buildTransaction() => TransactionsCompanion(
-    id: isViewing ? Value(initialTransaction!.id) : const Value.absent(),
+    id: isEditing ? Value(initialTransaction!.id) : const Value.absent(),
     title: getControllerValue('title'),
     amount: Value(double.parse(controllers['amount']!.text)),
     date: Value(_selectedDate),
@@ -117,7 +64,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
 
   void _loadCategory() async {
     // Load the currently selected category into the form
-    if (!isViewing) return;
+    if (!isEditing) return;
     if (initialTransaction!.category == null) return;
 
     final categoryPair = await context.read<AppDatabase>().getCategoryById(
@@ -130,21 +77,6 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     });
   }
 
-  // void _loadGoal() async {
-  //   // Load the currently selected goal into the form
-  //   if (!isViewing) return;
-  //   if (initialTransaction!.goalId == null) return;
-
-  //   final goal = await context.read<GoalDao>().getGoalById(
-  //     initialTransaction!.goalId!,
-  //   );
-
-  //   setState(() {
-  //     _selectedGoal = goal;
-  //     controllers['goal']!.text = goal.goal.name;
-  //   });
-  // }
-
   void _hydrateTransaction() async {
     if (initialTransaction == null) return;
 
@@ -155,9 +87,8 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     setState(() => hydratedTransaction = hydrated);
   }
 
-  void _updateAmount() => setState(
-    () => _currentAmount = double.tryParse(controllers['amount']!.text) ?? 0,
-  );
+  double _getCurrentAmount() =>
+      double.tryParse(controllers['amount']!.text) ?? 0;
 
   @override
   void initState() {
@@ -169,14 +100,13 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       tempControllers[id] = TextEditingController();
     }
 
-    if (isViewing) {
+    if (isEditing) {
       tempControllers['title']!.text = initialTransaction!.title;
       tempControllers['amount']!.text = initialTransaction!.amount
           .toStringAsFixed(2);
       tempControllers['notes']!.text = initialTransaction!.notes ?? '';
       _selectedDate = initialTransaction!.date;
       _selectedType = initialTransaction!.type;
-      _currentAmount = initialTransaction!.amount;
 
       // Ensure we don't call setState while initState is still working
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -206,7 +136,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
 
     double adjustedBalance = originalBalance;
 
-    if (isViewing &&
+    if (isEditing &&
         initialTransaction!.category == _selectedCategoryPair!.category.id) {
       // This means we're editing the category and the transaction's amount still
       // exists within the balance. Therefore, we negate it.
@@ -217,7 +147,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       }
     }
 
-    double currentAmount = _currentAmount;
+    double currentAmount = _getCurrentAmount();
 
     if (_selectedType == TransactionType.expense) {
       adjustedBalance -= currentAmount;
@@ -246,441 +176,142 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     return 'Balance: \$$formattedBalance | $resetText';
   }
 
-  Widget _getCategoryButton(BuildContext context) {
-    return StreamBuilder<List<CategoryWithAmount?>>(
-      stream: context.read<AppDatabase>().watchCategories(),
-      builder: (context, snapshot) {
-        final List<CategoryWithAmount?> values =
-            snapshot.hasData ? [...snapshot.data!, null] : [];
-        final labels =
-            values.map((e) => e?.category.name ?? 'No Category').toList();
+  @override
+  Widget build(BuildContext context) {
+    return EditFormScreen(
+      title: 'Edit transaction',
+      onConfirm: () {},
+      formFields: [
+        CustomInputFormField(text: 'Title', controller: controllers['title']),
+        Row(
+          spacing: 16.0,
+          children: [
+            Expanded(
+              child: CustomAmountFormField(
+                title: 'Amount',
+                controller: controllers['amount'],
+              ),
+            ),
+            Expanded(
+              child: CustomDatePickerFormField(
+                title: 'Date',
+                selectedDate: _selectedDate,
+                onChanged: (newDate) {
+                  if (newDate == null) return;
 
-        final bool isDropdownEnabled = snapshot.hasData && values.isNotEmpty;
-
-        String dropdownLabel = 'Category';
-        if (!snapshot.hasData) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            dropdownLabel = 'Loading';
-          } else {
-            dropdownLabel = 'No categories';
-          }
-        }
-
-        return FormField<CategoryWithAmount?>(
-          initialValue: _selectedCategoryPair,
+                  setState(() => _selectedDate = newDate);
+                },
+              ),
+            ),
+          ],
+        ),
+        FormField<CategoryWithAmount?>(
           autovalidateMode: AutovalidateMode.always,
           validator: (value) {
+            print(value);
             if (value == null) return null;
+            if (value.category.allowNegatives) return null;
 
-            double? totalBalance = _getTotalBalance();
+            final totalAmount = (value.remainingAmount ?? 0) - _getCurrentAmount();
 
-            if (totalBalance == null) return null;
-
-            if (totalBalance < 0 && !value.category.allowNegatives) {
-              return "Balance can't be negative";
+            if (totalAmount < 0) {
+              print("negatory");
+              return "Balance can't be negative!";
             }
 
             return null;
           },
-          builder: (formState) {
-            // Ensure the state represents the actual selected value.
-            // needed in case the selected pair is changed by something other than the dropdown menu,
-            // like _loadCategory or the edit/add category button.
-            // Use Future.microtask to avoid calling didChange during build.
-            if (formState.value != _selectedCategoryPair) {
-              Future.microtask(
-                () => formState.didChange(_selectedCategoryPair),
-              );
-            }
-
-            String? errorText = formState.errorText;
-            String? helperText = _getCategorySubtext();
-
-            if (errorText != null && helperText != null) {
-              errorText = '$helperText\n$errorText';
-            }
-
+          builder: (state) {
             return Row(
-              spacing: 4.0,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: _buildDropdownMenu<CategoryWithAmount?>(
-                    label: dropdownLabel,
-                    values: values,
-                    labels: labels,
-                    errorText: errorText,
-                    helperText: helperText,
-                    enabled: isDropdownEnabled,
-                    initialSelection: formState.value,
-                    controller: controllers['category'],
-                    onChanged: (pair) {
-                      setState(() {
-                        _selectedCategoryPair = pair;
-                        controllers['category']!.text =
-                            pair?.category.name ?? 'No category';
-                      });
-                      formState.didChange(pair);
+                  child: StreamBuilder(
+                    stream: context.read<AppDatabase>().watchCategories(),
+                    builder: (context, snapshot) {
+                      final List<CategoryWithAmount?> values =
+                          snapshot.hasData ? [...snapshot.data!, null] : [];
+                      final labels =
+                          values
+                              .map((e) => e?.category.name ?? 'No Category')
+                              .toList();
+
+                      final bool isDropdownEnabled =
+                          snapshot.hasData && values.isNotEmpty;
+
+                      String dropdownLabel = 'Category';
+                      if (!snapshot.hasData) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          dropdownLabel = 'Loading';
+                        } else {
+                          dropdownLabel = 'No categories';
+                        }
+                      }
+
+                      String? errorText = state.errorText;
+                      String? helperText = _getCategorySubtext();
+
+                      if (errorText != null && helperText != null) {
+                        errorText = '$errorText\n$helperText';
+                        helperText = null;
+                      }
+
+                      return CustomDropDownFormField<CategoryWithAmount>(
+                        fieldState: state,
+                        title: dropdownLabel,
+                        initialSelection: _selectedCategoryPair,
+                        onChanged:
+                            (newCategory) => setState(
+                              () => _selectedCategoryPair = newCategory,
+                            ),
+                        values: values,
+                        labels: labels,
+                        errorText: errorText,
+                        helperText: helperText,
+                      );
                     },
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: IconButton(
-                    icon: Icon(
-                      _selectedCategoryPair == null
-                          ? Icons.add_circle_outline
-                          : Icons.edit,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    tooltip:
-                        _selectedCategoryPair == null
-                            ? 'New category'
-                            : 'Edit category',
-                    onPressed: () async {
-                      final result = await showDialog(
-                        context: context,
-                        builder:
-                            (context) => ManageCategoryDialog(
-                              category: _selectedCategoryPair,
-                            ),
-                      );
-
-                      if (result is String && result.isEmpty) {
-                        setState(() {
-                          _selectedCategoryPair = null;
-                        });
-                        formState.didChange(null);
-                      } else if (result is CategoryWithAmount) {
-                        setState(() {
-                          _selectedCategoryPair = result;
-                        });
-                        formState.didChange(result);
-                      }
-                    },
+                HybridManagerButton(
+                  formFieldState: state,
+                  icon: Icon(
+                    _selectedCategoryPair == null
+                        ? Icons.add_circle_outline
+                        : Icons.edit,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
+                  tooltip:
+                      _selectedCategoryPair == null
+                          ? 'New category'
+                          : 'Edit category',
+                  onPressed: () async {
+                    final result = await showDialog(
+                      context: context,
+                      builder:
+                          (context) => ManageCategoryDialog(
+                            category: _selectedCategoryPair,
+                          ),
+                    );
+                
+                    if (result is String && result.isEmpty) {
+                      setState(() {
+                        _selectedCategoryPair = null;
+                      });
+                    } else if (result is CategoryWithAmount) {
+                      setState(() {
+                        _selectedCategoryPair = result;
+                      });
+                    }
+                
+                    return result;
+                  },
                 ),
               ],
             );
           },
-        );
-      },
-    );
-  }
-
-  Widget _getGoalDropdown(BuildContext context) =>
-      StreamBuilder<List<GoalWithAchievedAmount>>(
-        stream: context.read<GoalDao>().watchGoals(),
-        builder: (context, snapshot) {
-          final List<GoalWithAchievedAmount?> values =
-              snapshot.hasData ? [...snapshot.data!, null] : [];
-
-          String dropdownLabel = 'Goal';
-
-          if (values.isEmpty) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              dropdownLabel = 'Loading';
-            } else {
-              dropdownLabel = 'No goals';
-            }
-          }
-
-          return _buildDropdownMenu<GoalWithAchievedAmount?>(
-            label: dropdownLabel,
-            values: values,
-            labels: values.map((e) => e?.goal.name ?? 'No goal').toList(),
-            initialSelection: _selectedGoal,
-            controller: controllers['goal'],
-            enabled: values.isNotEmpty,
-            onChanged: (goal) {
-              setState(() {
-                _selectedGoal = goal;
-                controllers['goal']!.text = goal?.goal.name ?? '';
-              });
-            },
-          );
-        },
-      );
-
-  Widget _getForm(BuildContext context) => SingleChildScrollView(
-    child: Form(
-      autovalidateMode: AutovalidateMode.onUnfocus,
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: 16.0,
-        children: [
-          SegmentedButton(
-            onSelectionChanged:
-                (p0) => setState(() => _selectedType = p0.first),
-            selected: {_selectedType},
-            segments: const [
-              ButtonSegment(
-                value: TransactionType.expense,
-                label: Text('Expense'),
-              ),
-              ButtonSegment(
-                value: TransactionType.income,
-                label: Text('Income'),
-              ),
-            ],
-          ),
-          Row(
-            spacing: 8.0,
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: controllers['title'],
-                  decoration: const InputDecoration(
-                    labelText: 'Title',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: validateTitle,
-                ),
-              ),
-            ],
-          ),
-          Row(
-            spacing: 16.0,
-            children: [
-              Expanded(
-                child: TextFormField(
-                  onChanged: (_) => _updateAmount(),
-                  controller: controllers['amount'],
-                  decoration: InputDecoration(
-                    labelText: 'Amount',
-                    prefixIcon: Icon(
-                      Icons.attach_money,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    border: const OutlineInputBorder(),
-                  ),
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  validator: const AmountValidator().validateAmount,
-                ),
-              ),
-              Expanded(
-                child: TextFormField(
-                  readOnly: true,
-                  decoration: InputDecoration(
-                    labelText: 'Date',
-                    border: const OutlineInputBorder(),
-                    suffixIcon: Icon(
-                      Icons.calendar_today,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                  controller: TextEditingController(
-                    text: DateFormat('MM/dd/yyyy').format(_selectedDate),
-                  ),
-                  onTap: () => _pickDate(context),
-                ),
-              ),
-            ],
-          ),
-          _getCategoryButton(context),
-          _buildDropdownMenu(
-            label: 'Account',
-            values: [],
-            labels: [],
-            onChanged: (_) {},
-          ),
-          _getGoalDropdown(context),
-          TextFormField(
-            controller: controllers['notes'],
-            decoration: const InputDecoration(
-              labelText: 'Notes (optional)',
-              border: OutlineInputBorder(),
-              alignLabelWithHint: true,
-            ),
-            maxLines: 3,
-            textInputAction: TextInputAction.done,
-          ),
-        ],
-      ),
-    ),
-  );
-
-  Widget _getPreview(BuildContext context) {
-    if (hydratedTransaction == null) {
-      return Center(child: CircularProgressIndicator());
-    }
-
-    Color textColor;
-    String prefix = '+';
-
-    if (hydratedTransaction!.transaction.type == TransactionType.expense) {
-      textColor = getAdjustedColor(
-        context,
-        Colors.red.harmonizeWith(Theme.of(context).colorScheme.error),
-        amount: 0.12,
-      );
-      prefix = '-';
-    } else {
-      textColor = Colors.green.harmonizeWith(
-        Theme.of(context).colorScheme.primary,
-      );
-    }
-
-    List<ObjectPropertyData> objectProperties = [
-      ObjectPropertyData(
-        icon: Icons.calendar_today,
-        title: 'Date',
-        description: DateFormat(
-          DateFormat.YEAR_ABBR_MONTH_DAY,
-        ).format(hydratedTransaction!.transaction.date),
-      ),
-    ];
-
-    if (hydratedTransaction!.category != null) {
-      objectProperties.add(
-        ObjectPropertyData(
-          icon: Icons.category,
-          title: 'Category',
-          description: hydratedTransaction!.category!.name,
         ),
-      );
-    }
-
-    if (hydratedTransaction!.goal != null) {
-      objectProperties.add(
-        ObjectPropertyData(
-          icon: Icons.flag,
-          title: 'Goal',
-          description: hydratedTransaction!.goal!.name,
-        ),
-      );
-    }
-
-    if (hydratedTransaction!.transaction.notes != null &&
-        hydratedTransaction!.transaction.notes!.isNotEmpty) {
-      objectProperties.add(
-        ObjectPropertyData(
-          icon: Icons.note,
-          title: 'Notes',
-          description: hydratedTransaction!.transaction.notes!,
-        ),
-      );
-    }
-
-    bool isArchived =
-        initialTransaction!.isArchived != null &&
-        initialTransaction!.isArchived!;
-
-    return ViewerScreen(
-      title: 'View transaction',
-      isArchived: isArchived,
-      onEdit: () => setState(() => _isEditing = true),
-      onDelete: () {
-        final manager = DeletionManager(context);
-
-        manager.stageObjectsForDeletion<Transaction>([initialTransaction!.id]);
-        Navigator.of(context)
-          ..pop()
-          ..pop();
-      },
-      onArchive: () {
-        if (!isArchived) {
-          final manager = DeletionManager(context);
-
-          manager.stageObjectsForArchival<Transaction>([
-            initialTransaction!.id,
-          ]);
-        } else {
-          final transactionDao = context.read<TransactionDao>();
-
-          transactionDao.setArchiveTransactions([
-            initialTransaction!.id,
-          ], false);
-        }
-        Navigator.of(context)
-          ..pop()
-          ..pop();
-      },
-      header: TextOverviewHeader(
-        textColor: textColor,
-        title: '$prefix\$${formatAmount(initialTransaction!.amount, exact: true)}',
-        description: initialTransaction!.title,
-      ),
-      body: ObjectPropertiesList(properties: objectProperties),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    List<Widget> appBarActions = [
-      if (_isEditing)
-        IconButton(
-          icon: const Icon(Icons.check),
-          onPressed: () async {
-            if (_formKey.currentState!.validate()) {
-              final database = context.read<AppDatabase>();
-              final currentTransaction = _buildTransaction();
-
-              Transaction savedTran;
-
-              try {
-                if (isViewing) {
-                  savedTran = await database.updatePartialTransaction(
-                    currentTransaction,
-                  );
-                } else {
-                  savedTran = await database.createTransaction(
-                    currentTransaction,
-                  );
-                }
-
-                if (context.mounted) {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                      builder:
-                          (_) => ManageTransactionPage(
-                            initialTransaction: savedTran,
-                          ),
-                    ),
-                  );
-                }
-
-                setState(() => _isEditing = false);
-              } catch (e) {
-                AppLogger().logger.e('Unable to save transaction: $e');
-                context.read<SnackbarProvider>().showSnackBar(
-                  const SnackBar(content: Text('Unable to save transaction')),
-                );
-              }
-            }
-          },
-        ),
-      if (!_isEditing)
-        IconButton(
-          icon: Icon(Icons.edit),
-          onPressed: () => setState(() => _isEditing = true),
-        ),
-    ];
-
-    Widget? leading;
-
-    if (_isEditing) {
-      leading = IconButton(
-        icon: const Icon(Icons.arrow_back),
-        onPressed: () => setState(() => _isEditing = false),
-      );
-    }
-
-    return _getPreview(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        leading: leading,
-        title: Text(pageTitle),
-        actions: appBarActions,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: _isEditing ? _getForm(context) : _getPreview(context),
-      ),
+      ],
     );
   }
 }

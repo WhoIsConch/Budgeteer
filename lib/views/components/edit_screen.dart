@@ -206,8 +206,9 @@ class CustomDropDownFormField<T> extends StatelessWidget {
   final ValueChanged<T?> onChanged;
   final TextEditingController? controller;
   final T? initialSelection;
+  final FormFieldState? fieldState;
 
-  final List<T> values;
+  final List<T?> values;
   final List<String> labels;
   final String? errorText;
   final String? helperText;
@@ -222,11 +223,12 @@ class CustomDropDownFormField<T> extends StatelessWidget {
     this.controller,
     this.errorText,
     this.helperText,
+    this.fieldState,
   });
 
   @override
   Widget build(BuildContext context) {
-    return DropdownMenu<T>(
+    return DropdownMenu<T?>(
       errorText: errorText,
       helperText: helperText,
       controller: controller,
@@ -242,11 +244,48 @@ class CustomDropDownFormField<T> extends StatelessWidget {
               )
               .toList(),
       label: Text(title),
-      onSelected: onChanged,
+      onSelected: (value) {
+        onChanged(value);
+
+        if (fieldState != null) fieldState!.didChange(value);
+      },
       inputDecorationTheme: const InputDecorationTheme(
         border: OutlineInputBorder(),
       ),
     );
+  }
+}
+
+class HybridManagerButton extends StatelessWidget {
+  final FormFieldState? formFieldState;
+  final String? tooltip;
+  final Icon icon;
+  final dynamic Function()? onPressed;
+
+  const HybridManagerButton({super.key, this.formFieldState, this.tooltip, required this.icon, this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(4.0),
+      child: IconButton(
+        icon: icon,
+        tooltip:tooltip,
+        onPressed: () async {
+          if (onPressed == null) return;
+
+          dynamic result = onPressed!();
+
+          if (result is Future) {
+            result = await result;
+          }
+
+          if (result != null && formFieldState != null) {
+            print("Change");
+            formFieldState!.didChange(result);
+          }
+        }
+      ));
   }
 }
 
