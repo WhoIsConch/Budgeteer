@@ -49,9 +49,9 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   bool get isViewing => widget.initialTransaction != null;
 
   String get pageTitle {
-    if (_isEditing) return "Edit transation";
-    if (isViewing) return "View transaction";
-    return "Create transaction";
+    if (_isEditing) return 'Edit transation';
+    if (isViewing) return 'View transaction';
+    return 'Create transaction';
   }
 
   void _pickDate(context) async {
@@ -375,20 +375,20 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
           final List<GoalWithAchievedAmount?> values =
               snapshot.hasData ? [...snapshot.data!, null] : [];
 
-          String dropdownLabel = "Goal";
+          String dropdownLabel = 'Goal';
 
           if (values.isEmpty) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              dropdownLabel = "Loading";
+              dropdownLabel = 'Loading';
             } else {
-              dropdownLabel = "No goals";
+              dropdownLabel = 'No goals';
             }
           }
 
           return _buildDropdownMenu<GoalWithAchievedAmount?>(
             label: dropdownLabel,
             values: values,
-            labels: values.map((e) => e?.goal.name ?? "No goal").toList(),
+            labels: values.map((e) => e?.goal.name ?? 'No goal').toList(),
             initialSelection: _selectedGoal,
             controller: controllers['goal'],
             enabled: values.isNotEmpty,
@@ -527,7 +527,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     List<ObjectPropertyData> objectProperties = [
       ObjectPropertyData(
         icon: Icons.calendar_today,
-        title: "Date",
+        title: 'Date',
         description: DateFormat(
           DateFormat.YEAR_ABBR_MONTH_DAY,
         ).format(hydratedTransaction!.transaction.date),
@@ -538,7 +538,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       objectProperties.add(
         ObjectPropertyData(
           icon: Icons.category,
-          title: "Category",
+          title: 'Category',
           description: hydratedTransaction!.category!.name,
         ),
       );
@@ -548,7 +548,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       objectProperties.add(
         ObjectPropertyData(
           icon: Icons.flag,
-          title: "Goal",
+          title: 'Goal',
           description: hydratedTransaction!.goal!.name,
         ),
       );
@@ -559,7 +559,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       objectProperties.add(
         ObjectPropertyData(
           icon: Icons.note,
-          title: "Notes",
+          title: 'Notes',
           description: hydratedTransaction!.transaction.notes!,
         ),
       );

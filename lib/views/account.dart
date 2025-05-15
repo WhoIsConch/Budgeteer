@@ -1,5 +1,3 @@
-import 'package:budget/views/components/edit_screen.dart';
-import 'package:budget/views/panels/manage_transaction.dart';
 import 'package:flutter/material.dart';
 
 class Account extends StatelessWidget {
@@ -59,13 +57,13 @@ class Account extends StatelessWidget {
             //   },
             //   child: Text("Send Firestore Data"),
             // )
-            TextButton(
-              onPressed:
-                  () => Navigator.of(
-                    context,
-                  ).push(MaterialPageRoute(builder: (_) => TestEditScreen())),
-              child: Text('Open new transaction manager'),
-            ),
+            // TextButton(
+            //   onPressed:
+            //       () => Navigator.of(
+            //         context,
+            //       ).push(MaterialPageRoute(builder: (_) => TestEditScreen())),
+            //   child: Text('Open new transaction manager'),
+            // ),
           ],
         ),
         Divider(),

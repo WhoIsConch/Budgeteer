@@ -1,7 +1,7 @@
 import 'package:budget/models/database_extensions.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/validators.dart';
-import 'package:budget/views/panels/manage_goal.dart';
+import 'package:budget/views/panels/view_goal.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -23,9 +23,7 @@ class GoalPreviewButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       onTap:
           () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ManageGoalPage(initialGoal: goalPair),
-            ),
+            MaterialPageRoute(builder: (_) => GoalViewer(goalPair: goalPair)),
           ),
       child: Padding(
         padding: const EdgeInsets.all(4.0),
