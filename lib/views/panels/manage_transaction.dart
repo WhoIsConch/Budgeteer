@@ -32,6 +32,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     'category',
     'account',
     'goal',
+    'date'
   ];
   late final Map<String, TextEditingController> controllers;
 
@@ -118,6 +119,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     }
 
     controllers = tempControllers;
+    _updateDateControllerText();
   }
 
   @override
@@ -126,6 +128,10 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       c.dispose();
     }
     super.dispose();
+  }
+
+  void _updateDateControllerText() {
+    controllers['date']!.text = DateFormat('MM/dd/yyyy').format(_selectedDate);
   }
 
   double? _getTotalBalance() {
@@ -228,6 +234,13 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       title: 'Edit transaction',
       onConfirm: () {},
       formFields: [
+        MultisegmentButton(
+          selected: _selectedType,
+          onChanged: (value) => setState(() => _selectedType = value),
+          data: [
+          SegmentButtonData(label: 'Expense', value: TransactionType.expense),
+          SegmentButtonData(label: 'Income', value: TransactionType.income),
+        ]),
         CustomInputFormField(label: 'Title', controller: controllers['title']),
         Row(
           spacing: 16.0,
@@ -241,11 +254,13 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
             Expanded(
               child: CustomDatePickerFormField(
                 label: 'Date',
+                controller: controllers['date'],
                 selectedDate: _selectedDate,
                 onChanged: (newDate) {
                   if (newDate == null) return;
 
                   setState(() => _selectedDate = newDate);
+                  _updateDateControllerText();
                 },
               ),
             ),
@@ -435,6 +450,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
             );
           },
         ),
+        CustomInputFormField(label: 'Notes', controller: controllers['notes'], maxLines: 3,)
       ],
     );
   }

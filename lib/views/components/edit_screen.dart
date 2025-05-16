@@ -297,6 +297,39 @@ class HybridManagerButton extends StatelessWidget {
   }
 }
 
+class SegmentButtonData<T> {
+  final String label;
+  final T value;
+
+  const SegmentButtonData({required this.label, required this.value});
+}
+
+class MultisegmentButton<T> extends StatelessWidget {
+  final List<SegmentButtonData<T>> data;
+  final ValueChanged<T>? onChanged;
+  final T? selected;
+
+  const MultisegmentButton({
+    super.key,
+    required this.data,
+    this.selected,
+    this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SegmentedButton<T>(
+      onSelectionChanged:
+          onChanged != null ? (contents) => onChanged!(contents.first) : null,
+      selected: {selected ?? data.first.value},
+      segments:
+          data
+              .map((d) => ButtonSegment(value: d.value, label: Text(d.label)))
+              .toList(),
+    );
+  }
+}
+
 class EditFormScreen extends StatefulWidget {
   final String title;
   final Function() onConfirm;
