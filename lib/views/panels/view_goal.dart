@@ -1,4 +1,5 @@
 import 'package:budget/models/database_extensions.dart';
+import 'package:budget/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:budget/views/components/viewer_screen.dart';
@@ -60,6 +61,13 @@ class GoalViewer extends StatelessWidget {
               builder: (_) => ManageGoalPage(initialGoal: goalPair),
             ),
           ),
+      onDelete: () {
+        final deletionManager = DeletionManager(context);
+
+        deletionManager.stageObjectsForDeletion<Goal>([goal.id]);
+
+        Navigator.of(context).pop();
+      },
       header: ProgressOverviewHeader(
         title: goal.name,
         description: '\$${formatAmount(total - achieved, round: true)} to go!',

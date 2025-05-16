@@ -11,7 +11,7 @@ class TextOverviewHeader extends StatelessWidget {
     super.key,
     required this.title,
     required this.description,
-    this.textColor
+    this.textColor,
   });
 
   @override
@@ -21,15 +21,17 @@ class TextOverviewHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       spacing: 4.0,
       children: [
-        if (title != null) Text(
-          title!,
-          style: Theme.of(
-            context,
-          ).textTheme.displayMedium!.copyWith(color: textColor, fontWeight: FontWeight.bold),
-        ), if (description != null) Text(
-          description!,
-          style: Theme.of(context).textTheme.titleLarge!,
-        )],
+        if (title != null)
+          Text(
+            title!,
+            style: Theme.of(context).textTheme.displayMedium!.copyWith(
+              color: textColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        if (description != null)
+          Text(description!, style: Theme.of(context).textTheme.titleLarge!),
+      ],
     );
   }
 }
@@ -49,7 +51,7 @@ class ProgressOverviewHeader extends StatelessWidget {
     this.description,
     this.insidePrimary,
     this.insideSecondary,
-    this.foregroundColor
+    this.foregroundColor,
   });
 
   @override
@@ -72,12 +74,14 @@ class ProgressOverviewHeader extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (insidePrimary != null) AutoSizeText(
-                      insidePrimary!,
-                      maxLines: 1,
-                      minFontSize: 28,
-                      style: Theme.of(context).textTheme.displaySmall!.copyWith(fontWeight: FontWeight.bold),
-                    ),
+                    if (insidePrimary != null)
+                      AutoSizeText(
+                        insidePrimary!,
+                        maxLines: 1,
+                        minFontSize: 28,
+                        style: Theme.of(context).textTheme.displaySmall!
+                            .copyWith(fontWeight: FontWeight.bold),
+                      ),
                     if (insideSecondary != null) Text(insideSecondary!),
                   ],
                 ),
@@ -87,13 +91,14 @@ class ProgressOverviewHeader extends StatelessWidget {
                   curve: Curves.easeInOutQuart,
                   tween: Tween<double>(begin: 0, end: progress),
                   duration: Duration(milliseconds: 1000),
-                  builder: (context, value, _) => CircularProgressIndicator(
-                    strokeWidth: 16,
-                    value: value,
-                    color: foreground,
-                    backgroundColor: background,
-                    strokeCap: StrokeCap.round,
-                  ),
+                  builder:
+                      (context, value, _) => CircularProgressIndicator(
+                        strokeWidth: 16,
+                        value: value,
+                        color: foreground,
+                        backgroundColor: background,
+                        strokeCap: StrokeCap.round,
+                      ),
                 ),
               ),
             ],
@@ -103,8 +108,18 @@ class ProgressOverviewHeader extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
 
           children: [
-            if (title != null) Text(title!, style: Theme.of(context).textTheme.displaySmall!.copyWith(fontWeight: FontWeight.bold)),
-            if (description != null) Text(description!, style: Theme.of(context).textTheme.titleMedium),
+            if (title != null)
+              Text(
+                title!,
+                style: Theme.of(
+                  context,
+                ).textTheme.displaySmall!.copyWith(fontWeight: FontWeight.bold),
+              ),
+            if (description != null)
+              Text(
+                description!,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
           ],
         ),
       ],
@@ -220,66 +235,66 @@ class ViewerScreen extends StatelessWidget {
         MenuAnchor(
           alignmentOffset: const Offset(-24, 0),
           menuChildren: [
-            MenuItemButton(
-              child: Text(isArchived ? 'Unarchive' : 'Archive'),
-              onPressed:
-                  () => showDialog(
-                    context: context,
-                    builder:
-                        (context) => AlertDialog(
-                          title: Text(
-                            "${isArchived ? 'Una' : 'A'}rchive item?",
-                          ),
-                          content: const Text(
-                            "Archived items don't affect balances and statistics",
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: const Text('Cancel'),
+            if (onArchive != null)
+              MenuItemButton(
+                child: Text(isArchived ? 'Unarchive' : 'Archive'),
+                onPressed:
+                    () => showDialog(
+                      context: context,
+                      builder:
+                          (context) => AlertDialog(
+                            title: Text(
+                              "${isArchived ? 'Una' : 'A'}rchive item?",
                             ),
-                            TextButton(
-                              onPressed: () {
-                                if (onArchive != null) {
+                            content: const Text(
+                              "Archived items don't affect balances and statistics",
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () {
                                   onArchive!();
-                                }
-                                Navigator.of(context).pop();
-                              },
-                              child: Text("${isArchived ? 'Una' : 'A'}rchive"),
-                            ),
-                          ],
-                        ),
-                  ),
-            ),
-            MenuItemButton(
-              child: const Text('Delete'),
-              onPressed:
-                  () => showDialog(
-                    context: context,
-                    builder:
-                        (context) => AlertDialog(
-                          title: const Text('Delete transaction?'),
-                          content: const Text(
-                            'Are you sure you want to delete this transaction?',
+                                  Navigator.of(context).pop();
+                                },
+                                child: Text(
+                                  "${isArchived ? 'Una' : 'A'}rchive",
+                                ),
+                              ),
+                            ],
                           ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: const Text('Cancel'),
+                    ),
+              ),
+            if (onDelete != null)
+              MenuItemButton(
+                child: const Text('Delete'),
+                onPressed:
+                    () => showDialog(
+                      context: context,
+                      builder:
+                          (context) => AlertDialog(
+                            title: const Text('Delete transaction?'),
+                            content: const Text(
+                              'Are you sure you want to delete this transaction?',
                             ),
-                            TextButton(
-                              onPressed: () {
-                                if (onDelete != null) {
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () {
                                   onDelete!();
-                                }
-                                Navigator.of(context).pop();
-                              },
-                              child: const Text('Delete'),
-                            ),
-                          ],
-                        ),
-                  ),
-            ),
+                                  Navigator.of(context).pop();
+                                },
+                                child: const Text('Delete'),
+                              ),
+                            ],
+                          ),
+                    ),
+              ),
           ],
           builder:
               (BuildContext context, MenuController controller, _) =>

@@ -108,7 +108,9 @@ class ViewTransaction extends StatelessWidget {
           transactionDao.setArchiveTransactions([transaction.id], false);
         } else {
           final deletionManager = DeletionManager(context);
-          deletionManager.stageObjectsForArchival<Transaction>([transaction.id]);
+          deletionManager.stageObjectsForArchival<Transaction>([
+            transaction.id,
+          ]);
         }
         Navigator.of(context).pop();
       },

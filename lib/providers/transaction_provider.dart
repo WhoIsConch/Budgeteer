@@ -48,6 +48,7 @@ class TransactionProvider extends ChangeNotifier {
 
 class DeletionManager {
   late final TransactionDao dao;
+  late final GoalDao goalDao;
   late final SnackbarProvider snackbarProvider;
 
   // The int represents the list's hash code.
@@ -55,6 +56,7 @@ class DeletionManager {
 
   DeletionManager(BuildContext context) {
     dao = context.read<TransactionDao>();
+    goalDao = context.read<GoalDao>();
     snackbarProvider = context.read<SnackbarProvider>();
   }
 
@@ -80,6 +82,8 @@ class DeletionManager {
       case Category:
         dao.setCategoriesDeleted(objectIds, false);
         break;
+      case Goal:
+        goalDao.setGoalsDeleted(objectIds, false);
       case _:
         throw 'Unexpected Type $T';
     }
@@ -104,11 +108,20 @@ class DeletionManager {
   }
 
   void _deletePermanently<T>(List<String> objectIds) {
-    if (T == Transaction) {
-      dao.permanentlyDeleteTransactions(objectIds);
-    } else if (T == Category) {
-      dao.permanentlyDeleteCategories(objectIds);
+    switch (T) {
+      case Transaction:
+        dao.permanentlyDeleteTransactions(objectIds);
+        break;
+      case Category:
+        dao.permanentlyDeleteCategories(objectIds);
+        break;
+      case Goal:
+        goalDao.permanentlyDeleteGoals(objectIds);
+        break;
+      case _:
+        throw 'Unexpected type $T';
     }
+
     _activeDeleteTimers.remove(objectIds);
   }
 
@@ -118,12 +131,20 @@ class DeletionManager {
     // "Make deletion manager DRYer,"" I write in a commit message, knowing
     // I reused just about the same exact switch statement in at least four
     // different methods
+    String name;
+
     switch (T) {
-      case Transaction _:
+      case Transaction:
         deletionFuture = dao.setTransactionsDeleted(objectIds, true);
+        name = objectIds.length == 1 ? 'Transaction' : 'Transactions';
         break;
-      case Category _:
+      case Category:
         deletionFuture = dao.setCategoriesDeleted(objectIds, true);
+        name = objectIds.length == 1 ? 'Category' : 'Categories';
+        break;
+      case Goal:
+        deletionFuture = goalDao.setGoalsDeleted(objectIds, true);
+        name = objectIds.length == 1 ? 'Goal' : 'Goals';
         break;
       case _:
         throw 'Unexpected type $T';
@@ -140,13 +161,7 @@ class DeletionManager {
 
       snackbarProvider.showSnackBar(
         SnackBar(
-          content: Text(
-            "${T == Transaction
-                ? objectIds.length == 1
-                    ? 'Transaction'
-                    : 'Transactions'
-                : 'Category'} deleted",
-          ),
+          content: Text('$name deleted'),
           duration: const Duration(seconds: 3),
           action: SnackBarAction(
             label: 'UNDO',
