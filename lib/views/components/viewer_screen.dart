@@ -239,7 +239,12 @@ class ViewerScreen extends StatelessWidget {
                               child: const Text('Cancel'),
                             ),
                             TextButton(
-                              onPressed: onArchive,
+                              onPressed: () {
+                                if (onArchive != null) {
+                                  onArchive!();
+                                }
+                                Navigator.of(context).pop();
+                              },
                               child: Text("${isArchived ? 'Una' : 'A'}rchive"),
                             ),
                           ],
@@ -263,7 +268,12 @@ class ViewerScreen extends StatelessWidget {
                               child: const Text('Cancel'),
                             ),
                             TextButton(
-                              onPressed: onDelete,
+                              onPressed: () {
+                                if (onDelete != null) {
+                                  onDelete!();
+                                }
+                                Navigator.of(context).pop();
+                              },
                               child: const Text('Delete'),
                             ),
                           ],

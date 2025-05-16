@@ -74,10 +74,10 @@ class DeletionManager {
     _cancelTimer(objectIds);
 
     switch (T) {
-      case Transaction _:
+      case Transaction:
         dao.setTransactionsDeleted(objectIds, false);
         break;
-      case Category _:
+      case Category:
         dao.setCategoriesDeleted(objectIds, false);
         break;
       case _:
@@ -89,13 +89,13 @@ class DeletionManager {
     _cancelTimer(objectIds);
 
     switch (T) {
-      case Transaction _:
+      case Transaction:
         dao.setArchiveTransactions(objectIds, false);
         break;
-      case Category _:
+      case Category:
         dao.setArchiveCategories(objectIds, false);
         break;
-      case Accounts _:
+      case Accounts:
         dao.setArchiveAccounts(objectIds, false);
         break;
       case _:
@@ -171,17 +171,17 @@ class DeletionManager {
     bool isSingle = objectIds.length == 1;
 
     switch (T) {
-      case Transaction _:
+      case Transaction:
         deletedItemString = isSingle ? 'Transaction' : 'Transactions';
         archivalFuture = dao.setArchiveTransactions(objectIds, true);
         break;
 
-      case Category _:
+      case Category:
         deletedItemString = isSingle ? 'Category' : 'Categories';
         archivalFuture = dao.setArchiveCategories(objectIds, true);
         break;
 
-      case Account _:
+      case Account:
         deletedItemString = isSingle ? 'Account' : 'Accounts';
         archivalFuture = dao.setArchiveAccounts(objectIds, true);
         break;

@@ -1,4 +1,5 @@
 import 'package:budget/models/database_extensions.dart';
+import 'package:budget/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/enums.dart';
 import 'package:budget/utils/validators.dart';
@@ -7,6 +8,7 @@ import 'package:budget/views/panels/manage_transaction.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 class ViewTransaction extends StatelessWidget {
   final HydratedTransaction transactionData;
@@ -81,15 +83,40 @@ class ViewTransaction extends StatelessWidget {
     final description = transaction.title;
 
     if (transaction.type == TransactionType.expense) {
-      textColor = Colors.red.harmonizeWith(Theme.of(context).colorScheme.primary);
+      textColor = Colors.red.harmonizeWith(
+        Theme.of(context).colorScheme.primary,
+      );
       prefix = '-';
     } else {
-      textColor = Colors.green.harmonizeWith(Theme.of(context).colorScheme.primary);
+      textColor = Colors.green.harmonizeWith(
+        Theme.of(context).colorScheme.primary,
+      );
       prefix = '+';
     }
 
     return ViewerScreen(
-      onEdit: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => ManageTransactionPage(initialTransaction: transaction,))),
+      onEdit:
+          () => Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder:
+                  (_) => ManageTransactionPage(initialTransaction: transaction),
+            ),
+          ),
+      onArchive: () {
+        if (transaction.isArchived ?? false) {
+          final transactionDao = context.read<TransactionDao>();
+          transactionDao.setArchiveTransactions([transaction.id], false);
+        } else {
+          final deletionManager = DeletionManager(context);
+          deletionManager.stageObjectsForArchival<Transaction>([transaction.id]);
+        }
+        Navigator.of(context).pop();
+      },
+      onDelete: () {
+        final deletionManager = DeletionManager(context);
+        deletionManager.stageObjectsForDeletion<Transaction>([transaction.id]);
+        Navigator.of(context).pop();
+      },
       title: 'View transaction',
       header: TextOverviewHeader(
         title: '$prefix\$$title',
