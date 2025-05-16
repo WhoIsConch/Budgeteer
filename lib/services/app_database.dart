@@ -120,7 +120,7 @@ class Categories extends Table {
 }
 
 extension CategoriesExtension on Category {
-  String getTimeUntilNextReset({DateTime? fromDate}) {
+  DateTime? getNextResetDate({DateTime? fromDate}) {
     DateTime now = fromDate ?? DateTime.now();
     DateTime nextReset;
 
@@ -146,13 +146,24 @@ extension CategoriesExtension on Category {
         nextReset = DateTime(now.year + 1, 1, 1);
         break;
       default:
-        return '';
+        return null;
     }
+
+    return nextReset;
+  }
+
+  String getTimeUntilNextReset({DateTime? fromDate}) {
+    final now = fromDate ?? DateTime.now();
+    final nextReset = getNextResetDate(fromDate: fromDate);
+
+    if (nextReset == null) return '';
 
     Duration timeLeft = nextReset.difference(now);
     int days = timeLeft.inDays;
     int hours = timeLeft.inHours % 24;
     int minutes = timeLeft.inMinutes % 60;
+
+    if (timeLeft.isNegative) return 'Now';
 
     if (days > 30) {
       int months = days ~/ 30;

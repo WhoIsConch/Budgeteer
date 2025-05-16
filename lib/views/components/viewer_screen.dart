@@ -148,47 +148,51 @@ class ObjectPropertiesList extends StatelessWidget {
 
   Widget _getListItem(BuildContext context, ObjectPropertyData property) =>
       InkWell(
+        borderRadius: BorderRadius.circular(8.0),
         onTap: property.action,
-        child: Row(
-          spacing: 8.0,
-          children: [
-            Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Icon(
-                property.icon,
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
-              ),
-            ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    property.title,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                  Text(
-                    property.description,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
-                    maxLines: 5,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            if (property.action != null)
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Row(
+            spacing: 8.0,
+            children: [
               Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Icon(Icons.chevron_right),
+                padding: EdgeInsets.all(8.0),
+                child: Icon(
+                  property.icon,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
               ),
-          ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      property.title,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    Text(
+                      property.description,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                      maxLines: 5,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              if (property.action != null)
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Icon(Icons.chevron_right),
+                ),
+            ],
+          ),
         ),
       );
 
@@ -208,10 +212,7 @@ class ObjectPropertiesList extends StatelessWidget {
               (context, index) =>
                   Divider(color: Theme.of(context).colorScheme.outline),
           itemBuilder:
-              (context, index) => Padding(
-                padding: EdgeInsets.symmetric(vertical: 8.0),
-                child: _getListItem(context, properties[index]),
-              ),
+              (context, index) => _getListItem(context, properties[index]),
         ),
       ),
     );

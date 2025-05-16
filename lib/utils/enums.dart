@@ -83,18 +83,25 @@ enum RelativeDateRange {
 }
 
 enum CategoryResetIncrement {
-  daily(1),
-  weekly(2),
+  daily(1, 'Day'),
+  weekly(2, 'Week'),
   // biweekly(3), // This is not currently usable
-  monthly(4),
-  yearly(5),
-  never(0);
+  monthly(4, 'Month'),
+  yearly(5, 'Year'),
+  never(0, 'Never Reset');
 
-  const CategoryResetIncrement(this.value);
+  const CategoryResetIncrement(this.value, this.text);
   final num value;
+  final String text;
 
   factory CategoryResetIncrement.fromValue(int value) {
     return values.firstWhere((e) => e.value == value);
+  }
+
+  String capitalizedName() {
+    if (value == 0) return 'Forever';
+
+    return '${name[0].toUpperCase()}${name.substring(1)}';
   }
 
   RelativeDateRange? get relativeDateRange => switch (value) {
@@ -103,16 +110,6 @@ enum CategoryResetIncrement {
     4 => RelativeDateRange.thisMonth,
     5 => RelativeDateRange.thisYear,
     _ => null,
-  };
-
-  String get text => switch (value) {
-    1 => 'Day',
-    2 => 'Week',
-    3 => 'Two Weeks',
-    4 => 'Month',
-    5 => 'Year',
-    0 => 'Never Reset',
-    _ => 'Error',
   };
 }
 

@@ -1,17 +1,13 @@
 import 'package:budget/models/database_extensions.dart';
-import 'package:budget/providers/snackbar_provider.dart';
-import 'package:budget/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/enums.dart';
-import 'package:budget/utils/tools.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:budget/views/components/edit_screen.dart';
-import 'package:budget/views/components/viewer_screen.dart';
 import 'package:budget/views/panels/manage_category.dart';
 import 'package:budget/views/panels/manage_goal.dart';
+import 'package:budget/views/panels/view_category.dart';
 import 'package:budget/views/panels/view_transaction.dart';
 import 'package:drift/drift.dart' show Value;
-import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -20,7 +16,11 @@ class ManageTransactionPage extends StatefulWidget {
   final bool returnResult;
   final Transaction? initialTransaction;
 
-  const ManageTransactionPage({super.key, this.initialTransaction, this.returnResult = false});
+  const ManageTransactionPage({
+    super.key,
+    this.initialTransaction,
+    this.returnResult = false,
+  });
 
   @override
   State<ManageTransactionPage> createState() => _ManageTransactionPageState();
@@ -34,7 +34,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     'category',
     'account',
     'goal',
-    'date'
+    'date',
   ];
   late final Map<String, TextEditingController> controllers;
 
@@ -207,7 +207,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       resetText = _selectedCategoryPair!.category.getTimeUntilNextReset();
     }
 
-    return 'Balance: \$$formattedBalance | $resetText';
+    return 'Remaining: \$$formattedBalance | $resetText';
   }
 
   String? _getGoalSubtext() {
@@ -252,7 +252,11 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
 
         if (context.mounted) {
           if (!widget.returnResult) {
-            Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => ViewTransaction(transactionData: result)));
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => ViewTransaction(transactionData: result),
+              ),
+            );
           } else {
             Navigator.of(context).pop(result);
           }
@@ -263,9 +267,10 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
           selected: _selectedType,
           onChanged: (value) => setState(() => _selectedType = value),
           data: [
-          SegmentButtonData(label: 'Expense', value: TransactionType.expense),
-          SegmentButtonData(label: 'Income', value: TransactionType.income),
-        ]),
+            SegmentButtonData(label: 'Expense', value: TransactionType.expense),
+            SegmentButtonData(label: 'Income', value: TransactionType.income),
+          ],
+        ),
         CustomInputFormField(label: 'Title', controller: controllers['title']),
         Row(
           spacing: 16.0,
@@ -323,9 +328,6 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                               .map((e) => e?.category.name ?? 'No Category')
                               .toList();
 
-                      final bool isDropdownEnabled =
-                          snapshot.hasData && values.isNotEmpty;
-
                       String dropdownLabel = 'Category';
                       if (!snapshot.hasData) {
                         if (snapshot.connectionState ==
@@ -378,6 +380,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                       builder:
                           (context) => ManageCategoryDialog(
                             category: _selectedCategoryPair,
+                            returnResult: true,
                           ),
                     );
 
@@ -475,7 +478,11 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
             );
           },
         ),
-        CustomInputFormField(label: 'Notes', controller: controllers['notes'], maxLines: 3,)
+        CustomInputFormField(
+          label: 'Notes',
+          controller: controllers['notes'],
+          maxLines: 3,
+        ),
       ],
     );
   }

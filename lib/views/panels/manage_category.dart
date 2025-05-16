@@ -1,288 +1,178 @@
-import 'dart:math';
-
 import 'package:budget/models/database_extensions.dart';
+import 'package:budget/providers/snackbar_provider.dart';
 import 'package:budget/services/app_database.dart';
+import 'package:budget/utils/tools.dart';
+import 'package:budget/views/components/edit_screen.dart';
+import 'package:budget/views/panels/view_category.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:provider/provider.dart';
-import 'package:budget/providers/transaction_provider.dart';
 import 'package:budget/utils/enums.dart';
-import 'package:budget/utils/validators.dart';
 
 class ManageCategoryDialog extends StatefulWidget {
-  const ManageCategoryDialog({super.key, this.category});
-
+  final bool returnResult;
   final CategoryWithAmount? category;
+
+  const ManageCategoryDialog({
+    super.key,
+    this.category,
+    this.returnResult = false,
+  });
 
   @override
   State<ManageCategoryDialog> createState() => _ManageCategoryDialogState();
 }
 
 class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController amountController = TextEditingController();
+  final List<String> _validControllers = ['name', 'amount', 'notes'];
 
-  final _formKey = GlobalKey<FormState>();
+  bool _allowNegatives = true;
+  CategoryResetIncrement _resetIncrement = CategoryResetIncrement.never;
+  Color? _selectedColor;
 
-  bool allowNegatives = true;
-  CategoryResetIncrement resetIncrement = CategoryResetIncrement.never;
-  Color? selectedColor;
+  late final Map<String, TextEditingController> _controllers;
 
-  CategoriesCompanion getCategory() {
+  CategoryWithAmount? get initialCategory => widget.category;
+  bool get isEditing => initialCategory != null;
+
+  CategoriesCompanion _buildCategory() {
     return CategoriesCompanion(
       id: Value.absentIfNull(widget.category?.category.id),
-      name: Value(nameController.text),
-      balance: Value.absentIfNull(double.tryParse(amountController.text)),
-      resetIncrement: Value(resetIncrement),
-      allowNegatives: Value(allowNegatives),
-      color: Value.absentIfNull(selectedColor),
+      name: Value(_controllers['name']!.text),
+      balance: Value.absentIfNull(
+        double.tryParse(_controllers['amount']!.text),
+      ),
+      notes:
+          _controllers['notes']!.text.trim().isEmpty
+              ? const Value.absent()
+              : Value(_controllers['notes']!.text),
+      resetIncrement: Value(_resetIncrement),
+      allowNegatives: Value(_allowNegatives),
+      color: Value.absentIfNull(_selectedColor),
     );
   }
-
-  bool get isEditing => widget.category != null;
 
   @override
   void initState() {
     super.initState();
 
-    if (isEditing) {
-      var category = widget.category!.category;
+    Map<String, TextEditingController> tempControllers = {};
 
-      nameController.text = category.name;
-      amountController.text = category.balance?.toStringAsFixed(2) ?? '0';
-      allowNegatives = category.allowNegatives;
-      resetIncrement = category.resetIncrement;
-      selectedColor = category.color;
+    for (var id in _validControllers) {
+      tempControllers[id] = TextEditingController();
     }
+
+    if (isEditing) {
+      var category = initialCategory!.category;
+
+      tempControllers['name']!.text = category.name;
+      tempControllers['amount']!.text =
+          category.balance?.toStringAsFixed(2) ?? '0';
+      tempControllers['resetIncrement']!.text =
+          category.resetIncrement.capitalizedName();
+      tempControllers['notes']!.text = category.notes ?? '';
+
+      _allowNegatives = category.allowNegatives;
+      _resetIncrement = category.resetIncrement;
+      _selectedColor = category.color;
+    }
+
+    _controllers = tempControllers;
   }
 
   @override
   Widget build(BuildContext context) {
     String title = 'Create Category';
 
-    // Random category hints for fun
-    List<String> categoryHints = [
-      'CD Collection',
-      'Eating Out',
-      'Phone Bill',
-      'Video Games',
-      'Entertainment',
-      'Streaming Services',
-      'ChatGPT Credits',
-      'Clothes',
-      'Car',
-    ];
-
-    Random random = Random();
-    String categoryHint =
-        categoryHints[random.nextInt(categoryHints.length - 1)];
-
     if (widget.category != null) {
       title = 'Edit Category';
     }
 
-    TextButton okButton = TextButton(
-      child: const Text('Ok'),
-      onPressed: () async {
-        if (!_formKey.currentState!.validate()) {
-          return;
-        }
+    return EditFormScreen(
+      title: title,
+      onConfirm: () async {
+        final partialCategory = _buildCategory();
+        final db = context.read<AppDatabase>();
 
-        final provider = Provider.of<AppDatabase>(context, listen: false);
-        CategoryWithAmount savedCategory;
+        CategoryWithAmount newCategory;
 
         try {
           if (isEditing) {
-            // There is no way this shouldn't be a valid category with a valid
-            // ID. If it isn't, I'll let the try-catch handle it for now.
-            // I'll think of something else if it becomes a problem.
-            savedCategory = await provider.updatePartialCategory(getCategory());
+            newCategory = await db.updatePartialCategory(partialCategory);
           } else {
-            savedCategory = await provider.createCategory(getCategory());
+            newCategory = await db.createCategory(partialCategory);
           }
 
           if (context.mounted) {
-            Navigator.of(context).pop(savedCategory);
+            if (!widget.returnResult) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (_) => CategoryViewer(categoryPair: newCategory),
+                ),
+              );
+            } else {
+              Navigator.of(context).pop(newCategory);
+            }
           }
         } catch (e) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Failed to save transaction: $e')),
-            );
-          }
+          AppLogger().logger.e('Unable to save category: $e');
+          context.read<SnackbarProvider>().showSnackBar(
+            const SnackBar(content: Text('Unable to save category')),
+          );
         }
       },
-    );
-
-    List<Widget> formActions;
-
-    if (isEditing) {
-      formActions = [okButton];
-    } else {
-      formActions = [
+      formFields: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          spacing: 16.0,
           children: [
-            TextButton(
-              child: Text(
-                'Delete',
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+            Expanded(
+              child: CustomInputFormField(
+                label: 'Name',
+                controller: _controllers['name'],
+                validate: true,
               ),
-              onPressed: () {
-                final deletionManager = DeletionManager(context);
-
-                deletionManager.stageObjectsForDeletion<Category>([
-                  widget.category!.category.id,
-                ]);
-                Navigator.of(context).pop(true);
-              },
             ),
-            Row(children: [okButton]),
-          ],
-        ),
-      ];
-    }
-
-    return Form(
-      key: _formKey,
-      child: AlertDialog(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(title),
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.pop(context),
+            CustomColorPickerFormField(
+              label: 'Color',
+              selectedColor: _selectedColor ?? Colors.white,
+              onChanged: (color) => setState(() => _selectedColor = color),
             ),
           ],
         ),
-        actions: formActions,
-        content: StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: nameController,
-                    decoration: InputDecoration(
-                      labelText: 'Category Name',
-                      hintText: categoryHint,
-                    ),
-                    validator: validateTitle,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                      signed: false,
-                    ),
-                    validator:
-                        const AmountValidator(allowZero: true).validateAmount,
-                    inputFormatters: [DecimalTextInputFormatter()],
-                    controller: amountController,
-                    decoration: const InputDecoration(
-                      prefixText: '\$',
-                      hintText: '500.00',
-                      labelText: 'Maximum Balance',
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: GestureDetector(
-                      onTap:
-                          () =>
-                              setState(() => allowNegatives = !allowNegatives),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: Checkbox(
-                              semanticLabel: 'Allow negative balance',
-                              value: allowNegatives,
-                              onChanged: (value) {
-                                if (value != null) {
-                                  setState(() => allowNegatives = value);
-                                }
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Text('Allow negative balance'),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('Reset every', style: TextStyle(fontSize: 16)),
-                  const SizedBox(height: 4),
-                  DropdownMenu(
-                    expandedInsets: EdgeInsets.zero,
-                    textStyle: const TextStyle(fontSize: 16),
-                    initialSelection:
-                        widget.category?.category.resetIncrement ??
-                        CategoryResetIncrement.never,
-                    dropdownMenuEntries:
-                        CategoryResetIncrement.values
-                            .map(
-                              (e) => DropdownMenuEntry(label: e.text, value: e),
-                            )
-                            .toList(),
-                    onSelected: (value) {
-                      if (value != null) {
-                        setState(() => resetIncrement = value);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  GestureDetector(
-                    onTap:
-                        () => showDialog(
-                          context: context,
-                          builder:
-                              (context) => AlertDialog(
-                                title: const Text('Pick a color'),
-                                content: MaterialPicker(
-                                  pickerColor: selectedColor ?? Colors.white,
-                                  onColorChanged:
-                                      (newColor) => setState(
-                                        () => selectedColor = newColor,
-                                      ),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    child: const Text('Ok'),
-                                    onPressed: () => Navigator.pop(context),
-                                  ),
-                                ],
-                              ),
-                        ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const Text('Color: ', style: TextStyle(fontSize: 18)),
-                        Expanded(
-                          child: Container(
-                            height: 30,
-                            decoration: BoxDecoration(
-                              color: selectedColor ?? Colors.white,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+        Row(
+          spacing: 16.0,
+          children: [
+            Expanded(
+              child: CustomAmountFormField(
+                label: 'Amount',
+                controller: _controllers['amount'],
               ),
-            );
-          },
+            ),
+            Expanded(
+              child: CustomDropDownFormField<CategoryResetIncrement>(
+                initialSelection: _resetIncrement,
+                label: 'Reset',
+                onChanged:
+                    (value) => setState(
+                      () =>
+                          _resetIncrement =
+                              value ?? CategoryResetIncrement.never,
+                    ),
+                values: CategoryResetIncrement.values,
+                labels:
+                    CategoryResetIncrement.values
+                        .map((v) => v.capitalizedName())
+                        .toList(),
+              ),
+            ),
+          ],
         ),
-      ),
+        CustomInputFormField(
+          label: 'Notes',
+          controller: _controllers['notes'],
+          maxLines: 3,
+        ),
+      ],
     );
   }
 }
