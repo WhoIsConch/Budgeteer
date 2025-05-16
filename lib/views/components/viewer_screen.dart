@@ -24,7 +24,7 @@ class TextOverviewHeader extends StatelessWidget {
         if (title != null)
           Text(
             title!,
-            style: Theme.of(context).textTheme.displayMedium!.copyWith(
+            style: Theme.of(context).textTheme.displaySmall!.copyWith(
               color: textColor,
               fontWeight: FontWeight.bold,
             ),
@@ -146,37 +146,51 @@ class ObjectPropertiesList extends StatelessWidget {
 
   const ObjectPropertiesList({super.key, required this.properties});
 
-  Widget _getListItem(ObjectPropertyData property) => InkWell(
-    onTap: property.action,
-    child: Row(
-      spacing: 8.0,
-      children: [
-        Padding(padding: EdgeInsets.all(8.0), child: Icon(property.icon)),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                property.title,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+  Widget _getListItem(BuildContext context, ObjectPropertyData property) =>
+      InkWell(
+        onTap: property.action,
+        child: Row(
+          spacing: 8.0,
+          children: [
+            Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Icon(
+                property.icon,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
               ),
-              Text(
-                property.description,
-                style: TextStyle(fontSize: 16),
-                maxLines: 5,
-                overflow: TextOverflow.ellipsis,
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    property.title,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  Text(
+                    property.description,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                    maxLines: 5,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            if (property.action != null)
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Icon(Icons.chevron_right),
+              ),
+          ],
         ),
-        if (property.action != null)
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Icon(Icons.chevron_right),
-          ),
-      ],
-    ),
-  );
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -184,7 +198,7 @@ class ObjectPropertiesList extends StatelessWidget {
       color: Theme.of(context).colorScheme.primaryContainer,
       margin: EdgeInsets.zero,
       child: Padding(
-        padding: EdgeInsets.all(8.0),
+        padding: EdgeInsets.all(12.0),
         child: ListView.separated(
           padding: EdgeInsets.zero,
           physics: NeverScrollableScrollPhysics(),
@@ -193,7 +207,11 @@ class ObjectPropertiesList extends StatelessWidget {
           separatorBuilder:
               (context, index) =>
                   Divider(color: Theme.of(context).colorScheme.outline),
-          itemBuilder: (context, index) => _getListItem(properties[index]),
+          itemBuilder:
+              (context, index) => Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.0),
+                child: _getListItem(context, properties[index]),
+              ),
         ),
       ),
     );
@@ -316,7 +334,7 @@ class ViewerScreen extends StatelessWidget {
       appBar: AppBar(title: Text(title), actions: actions),
       body: Padding(
         padding: const EdgeInsets.all(28.0),
-        child: Column(spacing: 40.0, children: [header, body]),
+        child: Column(spacing: 56.0, children: [header, body]),
       ),
     );
   }

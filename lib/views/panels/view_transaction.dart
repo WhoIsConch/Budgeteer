@@ -83,9 +83,7 @@ class ViewTransaction extends StatelessWidget {
     final description = transaction.title;
 
     if (transaction.type == TransactionType.expense) {
-      textColor = Colors.red.harmonizeWith(
-        Theme.of(context).colorScheme.primary,
-      );
+      textColor = Theme.of(context).colorScheme.error;
       prefix = '-';
     } else {
       textColor = Colors.green.harmonizeWith(
