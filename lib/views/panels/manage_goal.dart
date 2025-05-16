@@ -13,7 +13,7 @@ class ManageGoalPage extends StatefulWidget {
   final bool returnResult;
   final GoalWithAchievedAmount? initialGoal;
 
-  const ManageGoalPage({super.key, this.initialGoal, this.returnResult = true});
+  const ManageGoalPage({super.key, this.initialGoal, this.returnResult = false});
 
   @override
   State<ManageGoalPage> createState() => _ManageGoalPageState();
@@ -100,7 +100,7 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
           );
 
           if (context.mounted) {
-            if (widget.returnResult) {
+            if (!widget.returnResult) {
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
                   builder: (_) => GoalViewer(goalPair: goalPair),

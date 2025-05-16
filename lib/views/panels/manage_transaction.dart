@@ -9,6 +9,7 @@ import 'package:budget/views/components/edit_screen.dart';
 import 'package:budget/views/components/viewer_screen.dart';
 import 'package:budget/views/panels/manage_category.dart';
 import 'package:budget/views/panels/manage_goal.dart';
+import 'package:budget/views/panels/view_transaction.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
@@ -16,9 +17,10 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class ManageTransactionPage extends StatefulWidget {
-  const ManageTransactionPage({super.key, this.initialTransaction});
-
+  final bool returnResult;
   final Transaction? initialTransaction;
+
+  const ManageTransactionPage({super.key, this.initialTransaction, this.returnResult = false});
 
   @override
   State<ManageTransactionPage> createState() => _ManageTransactionPageState();
@@ -232,7 +234,30 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   Widget build(BuildContext context) {
     return EditFormScreen(
       title: 'Edit transaction',
-      onConfirm: () {},
+      onConfirm: () async {
+        final newTransaction = _buildTransaction();
+
+        final db = context.read<AppDatabase>();
+        final dao = context.read<TransactionDao>();
+        HydratedTransaction result;
+        Transaction raw;
+
+        if (isEditing) {
+          raw = await db.updatePartialTransaction(newTransaction);
+        } else {
+          raw = await db.createTransaction(newTransaction);
+        }
+
+        result = await dao.hydrateTransaction(raw);
+
+        if (context.mounted) {
+          if (!widget.returnResult) {
+            Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => ViewTransaction(transactionData: result)));
+          } else {
+            Navigator.of(context).pop(result);
+          }
+        }
+      },
       formFields: [
         MultisegmentButton(
           selected: _selectedType,
@@ -428,7 +453,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                         builder:
                             (_) => ManageGoalPage(
                               initialGoal: _selectedGoal,
-                              returnResult: false,
+                              returnResult: true,
                             ),
                       ),
                     );
