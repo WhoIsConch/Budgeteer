@@ -34,7 +34,7 @@ class GoalViewer extends StatelessWidget {
       );
     }
 
-    if (goal.notes != null) {
+    if (goal.notes != null && goal.notes!.isNotEmpty) {
       properties.add(
         ObjectPropertyData(
           icon: Icons.notes,
@@ -64,7 +64,8 @@ class GoalViewer extends StatelessWidget {
         title: goal.name,
         description: '\$${formatAmount(total - achieved, round: true)} to go!',
         insidePrimary: '\$${formatAmount(achieved, round: true)}',
-        insideSecondary: '\$${formatAmount(achieved, round: true)}/\$${formatAmount(total, round: true)}',
+        insideSecondary:
+            '\$${formatAmount(achieved, round: true)}/\$${formatAmount(total, round: true)}',
         progress: achieved / total,
         foregroundColor: goal.color,
       ),

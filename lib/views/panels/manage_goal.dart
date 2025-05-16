@@ -10,9 +10,10 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class ManageGoalPage extends StatefulWidget {
-  const ManageGoalPage({super.key, this.initialGoal});
-
+  final bool returnResult;
   final GoalWithAchievedAmount? initialGoal;
+
+  const ManageGoalPage({super.key, this.initialGoal, this.returnResult = true});
 
   @override
   State<ManageGoalPage> createState() => _ManageGoalPageState();
@@ -37,6 +38,7 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
     dueDate: Value(_selectedDate),
     notes: getControllerValue('notes'),
     color: Value.absentIfNull(_selectedColor),
+    isDeleted: Value(false),
     isFinished: Value(_isFinished),
   );
 
@@ -78,7 +80,7 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
   @override
   Widget build(BuildContext context) {
     return EditFormScreen(
-      title: 'Edit Goal',
+      title: isEditing ? 'Edit Goal' : 'Create goal',
       onConfirm: () async {
         final goalDao = context.read<GoalDao>();
         final currentGoal = _buildGoal();
@@ -92,23 +94,26 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
             newGoal = await goalDao.createGoal(currentGoal);
           }
 
+          final goalPair = GoalWithAchievedAmount(
+            goal: newGoal,
+            achievedAmount: initialGoal?.achievedAmount ?? 0,
+          );
+
           if (context.mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder:
-                    (_) => GoalViewer(
-                      goalPair: GoalWithAchievedAmount(
-                        goal: newGoal,
-                        achievedAmount: initialGoal?.achievedAmount ?? 0,
-                      ),
-                    ),
-              ),
-            );
+            if (widget.returnResult) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (_) => GoalViewer(goalPair: goalPair),
+                ),
+              );
+            } else {
+              Navigator.of(context).pop(goalPair);
+            }
           }
         } catch (e) {
           AppLogger().logger.e('Unable to save goal: $e');
           context.read<SnackbarProvider>().showSnackBar(
-            const SnackBar(content: Text('Unable to save transaction')),
+            const SnackBar(content: Text('Unable to save goal')),
           );
         }
       },
@@ -118,29 +123,26 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
           children: [
             Expanded(
               child: CustomInputFormField(
-                // key: const ValueKey('goal_name'),
                 controller: _controllers['name'],
-                text: 'Name',
+                label: 'Name',
                 validate: true,
+              ),
+            ),
+            Expanded(
+              child: CustomAmountFormField(
+                label: 'Amount',
+                controller: _controllers['amount'],
               ),
             ),
           ],
         ),
         Row(
-          spacing: 16.0,
+          spacing: 8.0,
           children: [
             Expanded(
-              child: CustomInputFormField(
-                // key: const ValueKey('goal_amount'),
-                text: 'Amount',
-                controller: _controllers['amount'],
-              ),
-            ),
-            Expanded(
               child: CustomDatePickerFormField(
-                // key: const ValueKey('goal_date'),
                 selectedDate: _selectedDate,
-                title: 'Date',
+                label: 'Date',
                 controller: _controllers['date'],
                 onChanged: (selectedDate) {
                   if (selectedDate != null) {
@@ -152,16 +154,20 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
                 },
               ),
             ),
+            CustomColorPickerFormField(
+              label: 'Color',
+              selectedColor: _selectedColor ?? Colors.white,
+              onChanged: (color) => setState(() => _selectedColor = color),
+            ),
           ],
         ),
         CustomToggleFormField(
-          title: 'Mark as finished',
+          label: 'Mark as finished',
           value: _isFinished,
           onChanged: (_) => setState(() => _isFinished = !_isFinished),
         ),
         CustomInputFormField(
-          // key: const ValueKey('goal_notes'),
-          text: 'Notes (optional)',
+          label: 'Notes (optional)',
           controller: _controllers['notes'],
           maxLines: 3,
         ),

@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class CustomInputFormField extends StatelessWidget {
-  final String text;
+  final String label;
   final TextEditingController? controller;
   final int? maxLines;
   final bool validate;
 
   const CustomInputFormField({
     super.key,
-    required this.text,
+    required this.label,
     this.controller,
     this.maxLines,
     this.validate = false,
@@ -20,7 +20,7 @@ class CustomInputFormField extends StatelessWidget {
     return TextFormField(
       controller: controller,
       decoration: InputDecoration(
-        labelText: text,
+        labelText: label,
         border: OutlineInputBorder(),
         alignLabelWithHint: true,
       ),
@@ -31,13 +31,13 @@ class CustomInputFormField extends StatelessWidget {
 }
 
 class CustomToggleFormField extends StatelessWidget {
-  final String title;
+  final String label;
   final ValueChanged<bool?> onChanged;
   final bool value;
 
   const CustomToggleFormField({
     super.key,
-    required this.title,
+    required this.label,
     required this.onChanged,
     this.value = false,
   });
@@ -54,7 +54,7 @@ class CustomToggleFormField extends StatelessWidget {
         ),
         GestureDetector(
           onTap: () => onChanged(!value),
-          child: Text(title, style: TextStyle(fontSize: 18)),
+          child: Text(label, style: TextStyle(fontSize: 18)),
         ),
       ],
     );
@@ -62,14 +62,14 @@ class CustomToggleFormField extends StatelessWidget {
 }
 
 class CustomDatePickerFormField extends StatelessWidget {
-  final String title;
+  final String label;
   final DateTime selectedDate;
   final TextEditingController? controller;
   final ValueChanged<DateTime?> onChanged;
 
   const CustomDatePickerFormField({
     super.key,
-    required this.title,
+    required this.label,
     required this.selectedDate,
     required this.onChanged,
     this.controller,
@@ -92,7 +92,7 @@ class CustomDatePickerFormField extends StatelessWidget {
       controller: controller,
       readOnly: true,
       decoration: InputDecoration(
-        labelText: title,
+        labelText: label,
         border: const OutlineInputBorder(),
         suffixIcon: Icon(
           Icons.calendar_today,
@@ -105,12 +105,12 @@ class CustomDatePickerFormField extends StatelessWidget {
 }
 
 class CustomAmountFormField extends StatelessWidget {
-  final String title;
+  final String label;
   final TextEditingController? controller;
 
   const CustomAmountFormField({
     super.key,
-    required this.title,
+    required this.label,
     required this.controller,
   });
 
@@ -118,8 +118,9 @@ class CustomAmountFormField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
+      inputFormatters: [DecimalTextInputFormatter()],
       decoration: InputDecoration(
-        labelText: title,
+        labelText: label,
         prefixIcon: Icon(
           Icons.attach_money,
           color: Theme.of(context).colorScheme.primary,
@@ -133,13 +134,13 @@ class CustomAmountFormField extends StatelessWidget {
 }
 
 class CustomColorPickerFormField extends StatelessWidget {
-  final String title;
+  final String label;
   final Color selectedColor;
   final ValueChanged<Color> onChanged;
 
   const CustomColorPickerFormField({
     super.key,
-    required this.title,
+    required this.label,
     required this.selectedColor,
     required this.onChanged,
   });
@@ -174,7 +175,7 @@ class CustomColorPickerFormField extends StatelessWidget {
           borderRadius: BorderRadius.circular(4.0),
         ),
         child: Padding(
-          padding: EdgeInsets.all(4.0),
+          padding: EdgeInsets.all(3.0),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -202,7 +203,7 @@ class CustomColorPickerFormField extends StatelessWidget {
 }
 
 class CustomDropDownFormField<T> extends StatelessWidget {
-  final String title;
+  final String label;
   final ValueChanged<T?> onChanged;
   final TextEditingController? controller;
   final T? initialSelection;
@@ -215,7 +216,7 @@ class CustomDropDownFormField<T> extends StatelessWidget {
 
   const CustomDropDownFormField({
     super.key,
-    required this.title,
+    required this.label,
     required this.onChanged,
     required this.values,
     required this.labels,
@@ -243,7 +244,7 @@ class CustomDropDownFormField<T> extends StatelessWidget {
                 ),
               )
               .toList(),
-      label: Text(title),
+      label: Text(label),
       onSelected: (value) {
         onChanged(value);
 
@@ -262,7 +263,13 @@ class HybridManagerButton extends StatelessWidget {
   final Icon icon;
   final dynamic Function()? onPressed;
 
-  const HybridManagerButton({super.key, this.formFieldState, this.tooltip, required this.icon, this.onPressed});
+  const HybridManagerButton({
+    super.key,
+    this.formFieldState,
+    this.tooltip,
+    required this.icon,
+    this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -270,7 +277,7 @@ class HybridManagerButton extends StatelessWidget {
       padding: const EdgeInsets.all(4.0),
       child: IconButton(
         icon: icon,
-        tooltip:tooltip,
+        tooltip: tooltip,
         onPressed: () async {
           if (onPressed == null) return;
 
@@ -284,8 +291,9 @@ class HybridManagerButton extends StatelessWidget {
             print("Change");
             formFieldState!.didChange(result);
           }
-        }
-      ));
+        },
+      ),
+    );
   }
 }
 

@@ -8,6 +8,7 @@ import 'package:budget/utils/validators.dart';
 import 'package:budget/views/components/edit_screen.dart';
 import 'package:budget/views/components/viewer_screen.dart';
 import 'package:budget/views/panels/manage_category.dart';
+import 'package:budget/views/panels/manage_goal.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
@@ -205,7 +206,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     if (_selectedGoal == null) return null;
 
     final amountRemaining = _getTotalGoalBalance() ?? 0;
-    final formattedAmount = formatAmount(amountRemaining ?? 0);
+    final formattedAmount = formatAmount(amountRemaining);
 
     String? helperText;
 
@@ -227,19 +228,19 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       title: 'Edit transaction',
       onConfirm: () {},
       formFields: [
-        CustomInputFormField(text: 'Title', controller: controllers['title']),
+        CustomInputFormField(label: 'Title', controller: controllers['title']),
         Row(
           spacing: 16.0,
           children: [
             Expanded(
               child: CustomAmountFormField(
-                title: 'Amount',
+                label: 'Amount',
                 controller: controllers['amount'],
               ),
             ),
             Expanded(
               child: CustomDatePickerFormField(
-                title: 'Date',
+                label: 'Date',
                 selectedDate: _selectedDate,
                 onChanged: (newDate) {
                   if (newDate == null) return;
@@ -305,7 +306,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
 
                       return CustomDropDownFormField<CategoryWithAmount>(
                         fieldState: state,
-                        title: dropdownLabel,
+                        label: dropdownLabel,
                         initialSelection: _selectedCategoryPair,
                         onChanged:
                             (newCategory) => setState(
@@ -385,7 +386,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
 
                       return CustomDropDownFormField(
                         fieldState: fieldState,
-                        title: dropdownLabel,
+                        label: dropdownLabel,
                         initialSelection: _selectedGoal,
                         onChanged:
                             (newGoal) =>
@@ -406,7 +407,29 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                     color: Theme.of(context).colorScheme.primary,
                   ),
                   tooltip: _selectedGoal == null ? 'New goal' : 'Edit goal',
-                  onPressed: () {},
+                  onPressed: () async {
+                    final result = await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder:
+                            (_) => ManageGoalPage(
+                              initialGoal: _selectedGoal,
+                              returnResult: false,
+                            ),
+                      ),
+                    );
+
+                    if (result is String && result.isEmpty) {
+                      setState(() {
+                        _selectedGoal = null;
+                      });
+                    } else if (result is GoalWithAchievedAmount) {
+                      setState(() {
+                        _selectedGoal = result;
+                      });
+                    }
+
+                    return result;
+                  },
                 ),
               ],
             );
