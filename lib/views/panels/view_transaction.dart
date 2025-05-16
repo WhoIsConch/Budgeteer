@@ -21,15 +21,6 @@ class ViewTransaction extends StatelessWidget {
   List<ObjectPropertyData> _getProperties() {
     final List<ObjectPropertyData> properties = [
       ObjectPropertyData(
-        icon:
-            transaction.type == TransactionType.expense
-                ? Icons.remove
-                : Icons.add,
-        title: 'Type',
-        description:
-            transaction.type == TransactionType.expense ? 'Expense' : 'Income',
-      ),
-      ObjectPropertyData(
         icon: Icons.calendar_today,
         title: 'Date',
         description: DateFormat(

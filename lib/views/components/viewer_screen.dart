@@ -291,7 +291,7 @@ class ViewerScreen extends StatelessWidget {
       appBar: AppBar(title: Text(title), actions: actions),
       body: Padding(
         padding: const EdgeInsets.all(28.0),
-        child: Column(spacing: 28.0, children: [header, body]),
+        child: Column(spacing: 40.0, children: [header, body]),
       ),
     );
   }
