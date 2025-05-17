@@ -30,7 +30,11 @@ class TextOverviewHeader extends StatelessWidget {
             ),
           ),
         if (description != null)
-          Text(description!, style: Theme.of(context).textTheme.titleLarge!),
+          Text(
+            description!,
+            style: Theme.of(context).textTheme.titleLarge!,
+            softWrap: true,
+          ),
       ],
     );
   }
@@ -104,23 +108,25 @@ class ProgressOverviewHeader extends StatelessWidget {
             ],
           ),
         ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
 
-          children: [
-            if (title != null)
-              Text(
-                title!,
-                style: Theme.of(
-                  context,
-                ).textTheme.displaySmall!.copyWith(fontWeight: FontWeight.bold),
-              ),
-            if (description != null)
-              Text(
-                description!,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-          ],
+            children: [
+              if (title != null)
+                Text(
+                  title!,
+                  style: Theme.of(context).textTheme.displaySmall!.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              if (description != null)
+                Text(
+                  description!,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+            ],
+          ),
         ),
       ],
     );

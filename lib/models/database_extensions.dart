@@ -68,7 +68,7 @@ class HydratedTransaction {
   final Transaction transaction;
   final CategoryWithAmount? category;
   final Account? account;
-  final Goal? goal;
+  final GoalWithAchievedAmount? goal;
 
   HydratedTransaction({
     required this.transaction,
@@ -88,6 +88,7 @@ class HydratedTransaction {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is HydratedTransaction &&
+          transaction.id == other.transaction.id &&
           category == other.category &&
           account == other.account &&
           goal == other.goal;

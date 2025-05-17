@@ -13,7 +13,11 @@ class ManageGoalPage extends StatefulWidget {
   final bool returnResult;
   final GoalWithAchievedAmount? initialGoal;
 
-  const ManageGoalPage({super.key, this.initialGoal, this.returnResult = false});
+  const ManageGoalPage({
+    super.key,
+    this.initialGoal,
+    this.returnResult = false,
+  });
 
   @override
   State<ManageGoalPage> createState() => _ManageGoalPageState();
@@ -85,29 +89,24 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
         final goalDao = context.read<GoalDao>();
         final currentGoal = _buildGoal();
 
-        Goal newGoal;
+        GoalWithAchievedAmount newGoalPair;
 
         try {
           if (isEditing) {
-            newGoal = await goalDao.updateGoal(currentGoal);
+            newGoalPair = await goalDao.updateGoal(currentGoal);
           } else {
-            newGoal = await goalDao.createGoal(currentGoal);
+            newGoalPair = await goalDao.createGoal(currentGoal);
           }
-
-          final goalPair = GoalWithAchievedAmount(
-            goal: newGoal,
-            achievedAmount: initialGoal?.achievedAmount ?? 0,
-          );
 
           if (context.mounted) {
             if (!widget.returnResult) {
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
-                  builder: (_) => GoalViewer(goalPair: goalPair),
+                  builder: (_) => GoalViewer(goalPair: newGoalPair),
                 ),
               );
             } else {
-              Navigator.of(context).pop(goalPair);
+              Navigator.of(context).pop(newGoalPair);
             }
           }
         } catch (e) {

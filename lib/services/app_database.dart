@@ -305,7 +305,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     await db.executeQuery(query.constructQuery());
   }
 
-  Future<Goal> createGoal(GoalsCompanion entry) async {
+  Future<GoalWithAchievedAmount> createGoal(GoalsCompanion entry) async {
     // Generate the SQL with Drift, then write the SQL to the database.
     final id = entry.id.present ? entry.id.value : uuid.v4();
     // 2. Create a companion that definitely includes the ID
@@ -320,10 +320,27 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     return goal;
   }
 
-  Future<Goal> getGoalById(String id) =>
-      (select(goals)..where((g) => g.id.equals(id))).getSingle();
+  Future<GoalWithAchievedAmount> getGoalById(
+    String id, {
+    bool includeFinished = true,
+  }) {
+    final queryWithSum = getCombinedQuery(includeFinished: includeFinished);
 
-  Future<Goal> updateGoal(GoalsCompanion entry) async {
+    final filteredQuery = queryWithSum.query..where(goals.id.equals(id));
+
+    final mappedSelectable = filteredQuery.map((row) {
+      final goal = row.readTable(goals);
+      final achievedAmount = row.read<double>(queryWithSum.conditionalSum) ?? 0;
+
+      return GoalWithAchievedAmount(goal: goal, achievedAmount: achievedAmount);
+    });
+
+    return mappedSelectable.getSingle();
+  }
+
+  Future<GoalWithAchievedAmount> updateGoal(GoalsCompanion entry) async {
+    assert(entry.id.present, '`id` must be supplied when updating a Goal');
+
     final query =
         (update(goals)
               ..where((g) => g.id.equals(entry.id.value))
@@ -497,8 +514,8 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     Transaction transaction,
   ) async {
     // TODO: Optimize this
-    Goal? goal;
-    Category? category;
+    GoalWithAchievedAmount? goal;
+    CategoryWithAmount? category;
     Account? account;
 
     if (transaction.goalId != null) {
@@ -510,7 +527,7 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
         transaction.category!,
       );
 
-      category = categoryWithAmount?.category;
+      category = categoryWithAmount;
     }
 
     return HydratedTransaction(

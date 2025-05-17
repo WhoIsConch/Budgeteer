@@ -31,9 +31,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     'amount',
     'title',
     'notes',
-    'category',
     'account',
-    'goal',
     'date',
   ];
   late final Map<String, TextEditingController> controllers;
@@ -66,27 +64,24 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     goalId: Value(_selectedGoal?.goal.id),
   );
 
-  void _loadCategory() async {
-    // Load the currently selected category into the form
-    if (!isEditing) return;
-    if (initialTransaction!.category == null) return;
-
-    final categoryPair = await context.read<AppDatabase>().getCategoryById(
-      initialTransaction!.category!,
-    );
-
-    setState(() {
-      _selectedCategoryPair = categoryPair;
-      controllers['category']!.text = categoryPair!.category.name;
-    });
-  }
-
   void _hydrateTransaction() async {
-    if (initialTransaction == null) return;
+    if (!isEditing) return;
 
     var hydrated = await context.read<TransactionDao>().hydrateTransaction(
       initialTransaction!,
     );
+
+    if (hydrated.category != null) {
+      setState(() {
+        _selectedCategoryPair = hydrated.category;
+      });
+    }
+
+    if (hydrated.goal != null) {
+      setState(() {
+        _selectedGoal = hydrated.goal;
+      });
+    }
 
     setState(() => hydratedTransaction = hydrated);
   }
@@ -114,8 +109,6 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
 
       // Ensure we don't call setState while initState is still working
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _loadCategory();
-        // _loadGoal();
         _hydrateTransaction();
       });
     }
@@ -171,7 +164,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     if (_selectedGoal == null) return null;
 
     double totalRemaining =
-        _selectedGoal!.goal.cost - (_selectedGoal!.achievedAmount ?? 0);
+        _selectedGoal!.goal.cost - (_selectedGoal!.achievedAmount);
 
     if (isEditing && initialTransaction!.goalId == _selectedGoal!.goal.id) {
       if (initialTransaction!.type == TransactionType.expense) {
@@ -287,7 +280,6 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                 (value.remainingAmount ?? 0) - _getCurrentAmount();
 
             if (totalAmount < 0) {
-              print("negatory");
               return "Balance can't be negative!";
             }
 
@@ -309,6 +301,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                               .toList();
 
                       String dropdownLabel = 'Category';
+
                       if (!snapshot.hasData) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
