@@ -210,26 +210,6 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     return 'Remaining: \$$formattedBalance | $resetText';
   }
 
-  String? _getGoalSubtext() {
-    if (_selectedGoal == null) return null;
-
-    final amountRemaining = _getTotalGoalBalance() ?? 0;
-    final formattedAmount = formatAmount(amountRemaining);
-
-    String? helperText;
-
-    if (amountRemaining < 0) {
-      // substring(1) to remove the minus symbol
-      helperText = "You're \$${formattedAmount.substring(1)} past your goal!";
-    } else if (amountRemaining == 0) {
-      helperText = "You've met your goal! Congrats!";
-    } else {
-      helperText = '\$$formattedAmount remaining';
-    }
-
-    return helperText;
-  }
-
   @override
   Widget build(BuildContext context) {
     return EditFormScreen(
@@ -425,7 +405,9 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                         }
                       }
 
-                      String? helperText = _getGoalSubtext();
+                      String? helperText = _selectedGoal?.getStatus(
+                        totalBalance: _getTotalGoalBalance(),
+                      );
 
                       return CustomDropDownFormField(
                         fieldState: fieldState,

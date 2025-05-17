@@ -1,10 +1,29 @@
 import 'package:budget/services/app_database.dart';
+import 'package:budget/utils/validators.dart';
 
 class GoalWithAchievedAmount {
   final Goal goal;
-  final double? achievedAmount;
+  final double achievedAmount;
 
-  GoalWithAchievedAmount({required this.goal, this.achievedAmount});
+  GoalWithAchievedAmount({required this.goal, this.achievedAmount = 0});
+
+  String? getStatus({double? totalBalance}) {
+    final amountRemaining = totalBalance ?? (goal.cost - achievedAmount);
+    final formattedAmount = formatAmount(amountRemaining);
+
+    String? helperText;
+
+    if (amountRemaining.isNegative) {
+      // substring(1) to remove the minus symbol
+      helperText = "You're \$${formattedAmount.substring(1)} past your goal!";
+    } else if (amountRemaining == 0) {
+      helperText = "You've met your goal! Congrats!";
+    } else {
+      helperText = '\$$formattedAmount remaining';
+    }
+
+    return helperText;
+  }
 }
 
 class CategoryWithAmount {

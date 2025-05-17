@@ -50,8 +50,17 @@ class GoalViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final achieved = goalPair.achievedAmount ?? 0;
+    final achieved = goalPair.achievedAmount;
     final total = goal.cost;
+
+    String prefix = '';
+
+    if (achieved.isNegative) {
+      prefix = '-';
+    }
+
+    final formattedAchieved = formatAmount(achieved.abs(), round: true);
+    final formattedTotal = formatAmount(total, round: true);
 
     return ViewerScreen(
       title: 'View goal',
@@ -70,10 +79,9 @@ class GoalViewer extends StatelessWidget {
       },
       header: ProgressOverviewHeader(
         title: goal.name,
-        description: '\$${formatAmount(total - achieved, round: true)} to go!',
-        insidePrimary: '\$${formatAmount(achieved, round: true)}',
-        insideSecondary:
-            '\$${formatAmount(achieved, round: true)}/\$${formatAmount(total, round: true)}',
+        description: goalPair.getStatus(),
+        insidePrimary: '$prefix\$$formattedAchieved',
+        insideSecondary: '$prefix\$$formattedAchieved/\$$formattedTotal',
         progress: achieved / total,
         foregroundColor: goal.color,
       ),
