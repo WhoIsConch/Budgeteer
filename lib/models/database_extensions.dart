@@ -24,6 +24,17 @@ class GoalWithAchievedAmount {
 
     return helperText;
   }
+
+  @override
+  int get hashCode => goal.id.hashCode ^ achievedAmount.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GoalWithAchievedAmount &&
+          runtimeType == other.runtimeType &&
+          goal.id == other.goal.id &&
+          achievedAmount == other.achievedAmount;
 }
 
 class CategoryWithAmount {
@@ -40,11 +51,22 @@ class CategoryWithAmount {
   // an income transaction to a category.
   double? get remainingAmount =>
       category.balance == null ? null : category.balance! + (amount ?? 0);
+
+  @override
+  int get hashCode => category.id.hashCode ^ amount.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CategoryWithAmount &&
+          runtimeType == other.runtimeType &&
+          category.id == other.category.id &&
+          amount == other.amount;
 }
 
 class HydratedTransaction {
   final Transaction transaction;
-  final Category? category;
+  final CategoryWithAmount? category;
   final Account? account;
   final Goal? goal;
 
@@ -54,4 +76,19 @@ class HydratedTransaction {
     this.account,
     this.goal,
   });
+
+  @override
+  int get hashCode =>
+      transaction.id.hashCode ^
+      category.hashCode ^
+      account.hashCode ^
+      goal.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HydratedTransaction &&
+          category == other.category &&
+          account == other.account &&
+          goal == other.goal;
 }
