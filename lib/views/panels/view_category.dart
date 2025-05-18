@@ -45,24 +45,32 @@ class CategoryViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formattedProgress = formatAmount(
-      categoryPair.amount?.abs() ?? 0,
-      round: true,
-    );
-    final formattedTotal = formatAmount(category.balance ?? 0, round: true);
-    final formattedRemaining = formatAmount(
-      categoryPair.remainingAmount ?? 0,
-      round: true,
-    );
+    double progress = categoryPair.amount ?? 0;
+    double remaining = categoryPair.remainingAmount ?? 0;
+    double total = category.balance ?? 0;
+    String remainingText;
+
+    final progressPrefix = progress < 0 ? '-' : '';
+
+    final formattedProgress = formatAmount(progress.abs(), round: true);
+    final formattedTotal = formatAmount(total, round: true);
+    final formattedRemaining = formatAmount(remaining.abs(), round: true);
+
+    if ((categoryPair.remainingAmount ?? 0) < 0) {
+      remainingText = '\$$formattedRemaining over budget';
+    } else {
+      remainingText = '\$$formattedRemaining remaining';
+    }
 
     final Widget header;
 
     if (category.balance != null) {
       header = ProgressOverviewHeader(
         title: category.name,
-        description: '\$$formattedRemaining remaining',
-        insidePrimary: '\$$formattedProgress',
-        insideSecondary: '\$$formattedProgress/\$$formattedTotal',
+        description: remainingText,
+        insidePrimary: '$progressPrefix\$$formattedProgress',
+        insideSecondary:
+            '$progressPrefix\$$formattedProgress/\$$formattedTotal',
         progress: (categoryPair.amount?.abs() ?? 0) / (category.balance ?? 1),
       );
     } else {

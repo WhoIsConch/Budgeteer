@@ -68,12 +68,13 @@ class CategoryWithAmount {
 
   // Get the remaining amount that can be used in a category over a certain time
   // The amount field was already grabbed with the relative date range in mind,
-  // so we just need to add it to the category.
-  // We add it because the database call returns negative numbers for expenses and
-  // positive for income, so the balance in a category would increase if you add
-  // an income transaction to a category.
-  double? get remainingAmount =>
-      category.balance == null ? null : category.balance! + (amount ?? 0);
+  // so we subtract it from the category balance to get remaining amount.
+  // This gives us how much budget is remaining in the category.
+  double? get remainingAmount {
+    if (amount == null || category.balance == 0) return null;
+
+    return category.balance! - amount!;
+  }
 
   @override
   int get hashCode => category.id.hashCode ^ amount.hashCode;

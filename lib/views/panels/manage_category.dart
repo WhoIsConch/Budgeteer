@@ -68,8 +68,6 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
       tempControllers['name']!.text = category.name;
       tempControllers['amount']!.text =
           category.balance?.toStringAsFixed(2) ?? '0';
-      tempControllers['resetIncrement']!.text =
-          category.resetIncrement.capitalizedName();
       tempControllers['notes']!.text = category.notes ?? '';
 
       _allowNegatives = category.allowNegatives;
