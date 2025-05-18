@@ -1,4 +1,5 @@
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:budget/utils/tools.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 
@@ -133,17 +134,26 @@ class ProgressOverviewHeader extends StatelessWidget {
   }
 }
 
+class PropertyAction {
+  final String title;
+  final Function() onPressed;
+
+  const PropertyAction({required this.title, required this.onPressed});
+}
+
 class ObjectPropertyData {
   final IconData icon;
   final String title;
   final String description;
-  final Function()? action;
+  final void Function()? action;
+  final List<PropertyAction>? actionButtons;
 
   const ObjectPropertyData({
     required this.icon,
     required this.title,
     required this.description,
     this.action,
+    this.actionButtons,
   });
 }
 
@@ -152,13 +162,17 @@ class ObjectPropertiesList extends StatelessWidget {
 
   const ObjectPropertiesList({super.key, required this.properties});
 
-  Widget _getListItem(BuildContext context, ObjectPropertyData property) =>
-      InkWell(
-        borderRadius: BorderRadius.circular(8.0),
-        onTap: property.action,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Row(
+  Widget _getListItem(
+    BuildContext context,
+    ObjectPropertyData property,
+  ) => InkWell(
+    borderRadius: BorderRadius.circular(8.0),
+    onTap: property.action,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        children: [
+          Row(
             spacing: 8.0,
             children: [
               Padding(
@@ -199,8 +213,27 @@ class ObjectPropertiesList extends StatelessWidget {
                 ),
             ],
           ),
-        ),
-      );
+          if (property.actionButtons != null &&
+              property.actionButtons!.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.only(top: 8, right: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children:
+                    property.actionButtons!
+                        .map(
+                          (d) => ElevatedButton(
+                            onPressed: d.onPressed,
+                            child: Text(d.title),
+                          ),
+                        )
+                        .toList(),
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {

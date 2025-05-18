@@ -77,7 +77,7 @@ class ViewTransaction extends StatelessWidget {
               MaterialPageRoute(
                 builder:
                     (_) => GoalViewer(
-                      goalPair: GoalWithAchievedAmount(
+                      initialGoalPair: GoalWithAchievedAmount(
                         goal: goal!,
                         achievedAmount: fulfillmentAmount,
                       ),

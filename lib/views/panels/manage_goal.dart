@@ -102,7 +102,7 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
             if (!widget.returnResult) {
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
-                  builder: (_) => GoalViewer(goalPair: newGoalPair),
+                  builder: (_) => GoalViewer(initialGoalPair: newGoalPair),
                 ),
               );
             } else {

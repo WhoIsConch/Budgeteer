@@ -27,7 +27,9 @@ class GoalPreviewButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       onTap:
           () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => GoalViewer(goalPair: goalPair)),
+            MaterialPageRoute(
+              builder: (_) => GoalViewer(initialGoalPair: goalPair),
+            ),
           ),
       child: Padding(
         padding: const EdgeInsets.all(4.0),

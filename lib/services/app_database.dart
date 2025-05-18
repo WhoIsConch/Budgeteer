@@ -353,6 +353,24 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     return mappedSelectable.getSingle();
   }
 
+  Stream<GoalWithAchievedAmount> streamGoalById(
+    String id, {
+    bool includeFinished = true,
+  }) {
+    final queryWithSum = _getCombinedQuery(includeFinished: includeFinished);
+
+    final filteredQuery = queryWithSum.query..where(goals.id.equals(id));
+
+    final mappedSelectable = filteredQuery.map((row) {
+      final goal = row.readTable(goals);
+      final achievedAmount = row.read<double>(queryWithSum.conditionalSum) ?? 0;
+
+      return GoalWithAchievedAmount(goal: goal, achievedAmount: achievedAmount);
+    });
+
+    return mappedSelectable.watchSingle();
+  }
+
   Future<GoalWithAchievedAmount> updateGoal(GoalsCompanion entry) async {
     assert(entry.id.present, '`id` must be supplied when updating a Goal');
 
