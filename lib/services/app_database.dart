@@ -353,7 +353,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     return mappedSelectable.getSingle();
   }
 
-  Stream<GoalWithAchievedAmount> streamGoalById(
+  Stream<GoalWithAchievedAmount> watchGoalById(
     String id, {
     bool includeFinished = true,
   }) {

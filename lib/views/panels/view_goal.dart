@@ -86,7 +86,7 @@ class _GoalViewerState extends State<GoalViewer> {
 
     return StreamBuilder<GoalWithAchievedAmount>(
       initialData: widget.initialGoalPair,
-      stream: goalDao.streamGoalById(widget.initialGoalPair.goal.id),
+      stream: goalDao.watchGoalById(widget.initialGoalPair.goal.id),
       builder: (context, snapshot) {
         final goalPair = snapshot.data!;
         final goal = goalPair.goal;
