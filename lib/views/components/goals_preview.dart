@@ -36,7 +36,7 @@ class GoalPreviewButton extends StatelessWidget {
           children: [
             GestureDetector(
               onTap: () {
-                if (percentage < 100) return;
+                if (percentage < 1) return;
 
                 final manager = DeletionManager(context);
 
