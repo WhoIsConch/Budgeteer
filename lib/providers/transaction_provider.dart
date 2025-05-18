@@ -99,9 +99,11 @@ class DeletionManager {
       case Category:
         dao.setArchiveCategories(objectIds, false);
         break;
-      case Accounts:
+      case Account:
         dao.setArchiveAccounts(objectIds, false);
         break;
+      case Goal:
+        goalDao.setGoalsFinished(objectIds, false);
       case _:
         throw 'Unexpected Type $T';
     }
@@ -201,6 +203,10 @@ class DeletionManager {
         archivalFuture = dao.setArchiveAccounts(objectIds, true);
         break;
 
+      case Goal:
+        deletedItemString = isSingle ? 'Goal' : 'Goals';
+        archivalFuture = goalDao.setGoalsFinished(objectIds, true);
+
       case _:
         throw 'Unexpected Type $T';
     }
@@ -216,7 +222,9 @@ class DeletionManager {
 
       snackbarProvider.showSnackBar(
         SnackBar(
-          content: Text('$deletedItemString archived'),
+          content: Text(
+            "$deletedItemString ${T == Goal ? 'marked as finished' : 'archived'}",
+          ),
           duration: const Duration(seconds: 3),
           action: SnackBarAction(
             label: 'UNDO',

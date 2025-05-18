@@ -1,8 +1,10 @@
 import 'package:budget/models/database_extensions.dart';
+import 'package:budget/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:budget/views/panels/view_goal.dart';
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 
 class GoalPreviewButton extends StatelessWidget {
@@ -19,6 +21,8 @@ class GoalPreviewButton extends StatelessWidget {
     final formattedAmount = formatAmount(achievedAmount);
     final formattedGoalCost = formatAmount(goalCost);
 
+    final percentage = goalPair.calculatePercentage();
+
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap:
@@ -30,12 +34,33 @@ class GoalPreviewButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            CircularProgressIndicator(
-              value: achievedAmount / goalCost,
-              backgroundColor: Theme.of(
-                context,
-              ).colorScheme.onSecondaryContainer.withAlpha(68),
-              strokeCap: StrokeCap.round,
+            GestureDetector(
+              onTap: () {
+                if (percentage < 100) return;
+
+                final manager = DeletionManager(context);
+
+                manager.stageObjectsForArchival<Goal>([goalPair.goal.id]);
+              },
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  if (percentage >= 1)
+                    Icon(
+                      size: 28,
+                      Symbols.check,
+                      color: Theme.of(context).colorScheme.primary,
+                      weight: 900,
+                    ),
+                  CircularProgressIndicator(
+                    value: percentage,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.onSecondaryContainer.withAlpha(68),
+                    strokeCap: StrokeCap.round,
+                  ),
+                ],
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(

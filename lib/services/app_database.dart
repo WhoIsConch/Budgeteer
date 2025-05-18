@@ -220,26 +220,6 @@ class Goals extends Table {
 class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
   GoalDao(super.db);
 
-  double _calculatePercentage(double achieved, double cost) {
-    if (cost.isNegative) {
-      return -1.0;
-    }
-
-    if (cost == 0) {
-      // Can't divide by zero, so:
-      if (achieved == 0) {
-        return 1; // Return one if achieved is also zero (100% completion)
-      } else if (achieved > 0) {
-        return double
-            .infinity; // Let's assume anything toward a zero-cost goal is infinitely completed
-      } else {
-        return 0;
-      }
-    }
-
-    return achieved / cost;
-  }
-
   CategoryQueryWithConditionalSum _getCombinedQuery({
     bool includeFinished = false,
   }) {
@@ -286,14 +266,8 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
           }).toList();
 
       goalsWithAmounts.sort((a, b) {
-        final double percentageA = _calculatePercentage(
-          a.achievedAmount,
-          a.goal.cost,
-        );
-        final double percentageB = _calculatePercentage(
-          b.achievedAmount,
-          b.goal.cost,
-        );
+        final double percentageA = a.calculatePercentage();
+        final double percentageB = b.calculatePercentage();
 
         if (sortDescending) {
           return percentageB.compareTo(percentageA);
