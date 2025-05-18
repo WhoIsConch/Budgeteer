@@ -10,7 +10,7 @@ class GoalPreviewButton extends StatelessWidget {
 
   const GoalPreviewButton({super.key, required this.goalPair});
 
-  double get achievedAmount => goalPair.achievedAmount ?? 0;
+  double get achievedAmount => goalPair.achievedAmount;
   double get goalCost => goalPair.goal.cost;
   String get title => goalPair.goal.name;
 
@@ -110,7 +110,7 @@ class _GoalPreviewCardState extends State<GoalPreviewCard> {
             ),
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 200),
-              child: StreamBuilder(
+              child: StreamBuilder<List<GoalWithAchievedAmount>>(
                 stream: goalDao.watchGoals(includeFinished: false),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {

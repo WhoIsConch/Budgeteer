@@ -220,6 +220,26 @@ class Goals extends Table {
 class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
   GoalDao(super.db);
 
+  double _calculatePercentage(double achieved, double cost) {
+    if (cost.isNegative) {
+      return -1.0;
+    }
+
+    if (cost == 0) {
+      // Can't divide by zero, so:
+      if (achieved == 0) {
+        return 1; // Return one if achieved is also zero (100% completion)
+      } else if (achieved > 0) {
+        return double
+            .infinity; // Let's assume anything toward a zero-cost goal is infinitely completed
+      } else {
+        return 0;
+      }
+    }
+
+    return achieved / cost;
+  }
+
   CategoryQueryWithConditionalSum _getCombinedQuery({
     bool includeFinished = false,
   }) {
@@ -247,21 +267,42 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
 
   Stream<List<GoalWithAchievedAmount>> watchGoals({
     bool includeFinished = true,
+    bool sortDescending = true,
   }) {
     final queryWithSum = _getCombinedQuery(includeFinished: includeFinished);
 
     // View all of the goals in the database
     return queryWithSum.query.watch().map((rows) {
-      return rows.map((row) {
-        final goal = row.readTable(goals);
-        final achievedAmount =
-            row.read<double>(queryWithSum.conditionalSum) ?? 0.0;
+      final List<GoalWithAchievedAmount> goalsWithAmounts =
+          rows.map((row) {
+            final goal = row.readTable(goals);
+            final achievedAmount =
+                row.read<double>(queryWithSum.conditionalSum) ?? 0.0;
 
-        return GoalWithAchievedAmount(
-          goal: goal,
-          achievedAmount: achievedAmount,
+            return GoalWithAchievedAmount(
+              goal: goal,
+              achievedAmount: achievedAmount,
+            );
+          }).toList();
+
+      goalsWithAmounts.sort((a, b) {
+        final double percentageA = _calculatePercentage(
+          a.achievedAmount,
+          a.goal.cost,
         );
-      }).toList();
+        final double percentageB = _calculatePercentage(
+          b.achievedAmount,
+          b.goal.cost,
+        );
+
+        if (sortDescending) {
+          return percentageB.compareTo(percentageA);
+        } else {
+          return percentageA.compareTo(percentageB);
+        }
+      });
+
+      return goalsWithAmounts;
     });
   }
 
