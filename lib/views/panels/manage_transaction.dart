@@ -547,7 +547,6 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                         builder:
                             (_) => ManageAccountForm(
                               initialAccount: _selectedAccount,
-                              returnResult: true,
                             ),
                       ),
                     );

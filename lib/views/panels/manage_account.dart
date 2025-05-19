@@ -2,20 +2,14 @@ import 'package:budget/models/database_extensions.dart';
 import 'package:budget/providers/snackbar_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/views/components/edit_screen.dart';
-import 'package:budget/views/panels/view_account.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class ManageAccountForm extends StatefulWidget {
-  final bool returnResult;
   final AccountWithTotal? initialAccount;
 
-  const ManageAccountForm({
-    super.key,
-    this.initialAccount,
-    this.returnResult = false,
-  });
+  const ManageAccountForm({super.key, this.initialAccount});
 
   @override
   State<ManageAccountForm> createState() => _ManageAccountFormState();
@@ -102,15 +96,7 @@ class _ManageAccountFormState extends State<ManageAccountForm> {
         );
 
         if (context.mounted) {
-          if (widget.returnResult) {
-            Navigator.of(context).pop(withTotal);
-          } else {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => AccountViewer(accountPair: withTotal),
-              ),
-            );
-          }
+          Navigator.of(context).pop(withTotal);
         }
       },
       formFields: [

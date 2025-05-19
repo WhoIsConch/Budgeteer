@@ -36,29 +36,7 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const WelcomeHeader(),
-            StreamBuilder(
-              stream: db.transactionDao.watchTotalAmount(),
-              initialData: 0.0,
-              builder: (context, snapshot) {
-                bool isNegative = (snapshot.data ?? 0) < 0;
-                String formattedAmount = formatAmount(
-                  (snapshot.data ?? 0).abs(),
-                  exact: true,
-                );
-
-                return AccountsCarousel(
-                  items: [
-                    CarouselCardPair(
-                      'Total balance',
-                      "${isNegative ? '-' : ''}\$$formattedAmount",
-                      isNegative: isNegative,
-                    ),
-                    const CarouselCardPair('Checking', '\$4,182.33'),
-                    const CarouselCardPair('Cash', '\$130.50'),
-                  ],
-                );
-              },
-            ),
+            AccountsCarousel(),
             Padding(
               padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 0),
               child: Row(
