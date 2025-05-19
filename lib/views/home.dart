@@ -5,7 +5,6 @@ import 'package:budget/utils/tools.dart';
 import 'package:budget/views/components/accounts_carousel.dart';
 import 'package:budget/views/components/goals_preview.dart';
 import 'package:budget/views/components/misc.dart';
-import 'package:budget/views/panels/manage_transaction.dart';
 import 'package:budget/utils/enums.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:budget/views/panels/view_transaction.dart';
@@ -194,7 +193,7 @@ class TransactionPreviewCard extends StatelessWidget {
         color: getAdjustedColor(context, Theme.of(context).colorScheme.surface),
         child: InkWell(
           borderRadius: BorderRadius.circular(12), // To match the card's radius
-          onTap: ()  async {
+          onTap: () async {
             final dao = context.read<TransactionDao>();
             final hydrated = await dao.hydrateTransaction(transaction);
 
@@ -202,10 +201,7 @@ class TransactionPreviewCard extends StatelessWidget {
 
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder:
-                    (_) =>
-                      ViewTransaction(transactionData: hydrated)
-                      ,
+                builder: (_) => ViewTransaction(transactionData: hydrated),
               ),
             );
           },

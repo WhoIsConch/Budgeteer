@@ -220,9 +220,7 @@ class Goals extends Table {
 class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
   AccountDao(super.db);
 
-  CategoryQueryWithConditionalSum _getCombinedQuery({
-    bool includeArchived = false,
-  }) {
+  QueryWithSum _getCombinedQuery({bool includeArchived = false}) {
     var query = select(accounts).join([
       leftOuterJoin(
         db.transactions,
@@ -249,7 +247,7 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
           ..addColumns([signedSumQuery])
           ..groupBy([accounts.id]);
 
-    return CategoryQueryWithConditionalSum(query, signedSumQuery);
+    return QueryWithSum(query, signedSumQuery);
   }
 
   Stream<List<AccountWithTotal>> watchAccounts({
@@ -262,7 +260,7 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
       final List<AccountWithTotal> accountsWithTotals =
           rows.map((row) {
             final account = row.readTable(accounts);
-            final total = row.read<double>(queryWithSum.conditionalSum);
+            final total = row.read<double>(queryWithSum.sum);
 
             return AccountWithTotal(account: account, total: total ?? 0);
           }).toList();
@@ -288,7 +286,7 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
 
     final mappedSelectable = filteredQuery.map((row) {
       final account = row.readTable(accounts);
-      final total = row.read<double>(queryWithSum.conditionalSum) ?? 0;
+      final total = row.read<double>(queryWithSum.sum) ?? 0;
 
       return AccountWithTotal(account: account, total: total);
     });
@@ -305,7 +303,7 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
 
     final mappedSelectable = filteredQuery.map((row) {
       final account = row.readTable(accounts);
-      final total = row.read<double>(queryWithSum.conditionalSum) ?? 0;
+      final total = row.read<double>(queryWithSum.sum) ?? 0;
 
       return AccountWithTotal(account: account, total: total);
     });
@@ -313,66 +311,43 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     return mappedSelectable.getSingle();
   }
 
-  Future<AccountWithTotal> createAccount(AccountsCompanion entry) async {
+  Future<Account> createAccount(AccountsCompanion entry) async {
     final id = entry.id.present ? entry.id.value : uuid.v4();
 
     final entryWithId = entry.copyWith(id: Value(id));
-    final statement = into(
-      accounts,
-    ).createContext(entryWithId, InsertMode.insert);
+    final account = into(accounts).insertReturning(entryWithId);
 
-    await db.executeQuery(statement);
-
-    var account = await getAccountById(id);
     return account;
   }
 
-  Future<AccountWithTotal> updateAccount(AccountsCompanion entry) async {
+  Future<Account> updateAccount(AccountsCompanion entry) async {
     assert(entry.id.present, '`id` must be supplied when updating an Account');
 
-    final query =
-        (update(accounts)
-              ..where((a) => a.id.equals(entry.id.value))
-              ..write(entry))
-            .constructQuery();
+    final account = await (update(accounts)
+      ..where((a) => a.id.equals(entry.id.value))).writeReturning(entry);
 
-    await db.executeQuery(query);
-
-    return await getAccountById(entry.id.value);
+    return account.single;
   }
 
-  Future<void> setAccountsDeleted(List<String> ids, bool status) async {
-    var query =
-        update(accounts)
-          ..where((a) => a.id.isIn(ids))
-          ..write(AccountsCompanion(isDeleted: Value(status)));
+  Future<int> setAccountsDeleted(List<String> ids, bool status) =>
+      (update(accounts)..where(
+        (a) => a.id.isIn(ids),
+      )).write(AccountsCompanion(isDeleted: Value(status)));
 
-    await db.executeQuery(query.constructQuery());
-  }
+  Future<int> setAccountsArchived(List<String> ids, bool status) =>
+      (update(accounts)..where(
+        (a) => a.id.isIn(ids),
+      )).write(AccountsCompanion(isArchived: Value(status)));
 
-  Future<void> setAccountsArchived(List<String> ids, bool status) async {
-    var query =
-        update(accounts)
-          ..where((a) => a.id.isIn(ids))
-          ..write(AccountsCompanion(isArchived: Value(status)));
-
-    await db.executeQuery(query.constructQuery());
-  }
-
-  Future<void> permanentlyDeleteAccounts(List<String> ids) async {
-    var query = delete(accounts)..where((a) => a.id.isIn(ids));
-
-    await db.executeQuery(query.constructQuery());
-  }
+  Future<int> permanentlyDeleteAccounts(List<String> ids) =>
+      (delete(accounts)..where((a) => a.id.isIn(ids))).go();
 }
 
 @DriftAccessor(tables: [Goals])
 class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
   GoalDao(super.db);
 
-  CategoryQueryWithConditionalSum _getCombinedQuery({
-    bool includeFinished = false,
-  }) {
+  QueryWithSum _getCombinedQuery({bool includeFinished = false}) {
     var query = select(goals).join([
       leftOuterJoin(
         db.transactions,
@@ -392,7 +367,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
           ..addColumns([signedSumQuery])
           ..groupBy([goals.id]);
 
-    return CategoryQueryWithConditionalSum(query, signedSumQuery);
+    return QueryWithSum(query, signedSumQuery);
   }
 
   Stream<List<GoalWithAchievedAmount>> watchGoals({
@@ -406,8 +381,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
       final List<GoalWithAchievedAmount> goalsWithAmounts =
           rows.map((row) {
             final goal = row.readTable(goals);
-            final achievedAmount =
-                row.read<double>(queryWithSum.conditionalSum) ?? 0.0;
+            final achievedAmount = row.read<double>(queryWithSum.sum) ?? 0.0;
 
             return GoalWithAchievedAmount(
               goal: goal,
@@ -446,41 +420,26 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
         .watchSingle();
   }
 
-  Future<void> setGoalsDeleted(List<String> ids, bool status) async {
-    var query =
-        update(goals)
-          ..where((g) => g.id.isIn(ids))
-          ..write(GoalsCompanion(isDeleted: Value(status)));
+  Future<void> setGoalsDeleted(List<String> ids, bool status) => (update(goals)
+    ..where(
+      (g) => g.id.isIn(ids),
+    )).write(GoalsCompanion(isDeleted: Value(status)));
 
-    await db.executeQuery(query.constructQuery());
-  }
+  Future<void> setGoalsFinished(List<String> ids, bool status) => (update(goals)
+    ..where(
+      (g) => g.id.isIn(ids),
+    )).write(GoalsCompanion(isFinished: Value(status)));
 
-  Future<void> setGoalsFinished(List<String> ids, bool status) async {
-    var query =
-        update(goals)
-          ..where((g) => g.id.isIn(ids))
-          ..write(GoalsCompanion(isFinished: Value(status)));
+  Future<int> permanentlyDeleteGoals(List<String> ids) =>
+      (delete(goals)..where((g) => g.id.isIn(ids))).go();
 
-    await db.executeQuery(query.constructQuery());
-  }
-
-  Future<void> permanentlyDeleteGoals(List<String> ids) async {
-    var query = delete(goals)..where((g) => g.id.isIn(ids));
-
-    await db.executeQuery(query.constructQuery());
-  }
-
-  Future<GoalWithAchievedAmount> createGoal(GoalsCompanion entry) async {
+  Future<Goal> createGoal(GoalsCompanion entry) async {
     // Generate the SQL with Drift, then write the SQL to the database.
     final id = entry.id.present ? entry.id.value : uuid.v4();
     // 2. Create a companion that definitely includes the ID
     final entryWithId = entry.copyWith(id: Value(id));
 
-    final statement = into(goals).createContext(entryWithId, InsertMode.insert);
-
-    await db.executeQuery(statement);
-
-    var goal = await getGoalById(id);
+    final goal = into(goals).insertReturning(entryWithId);
 
     return goal;
   }
@@ -495,7 +454,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
 
     final mappedSelectable = filteredQuery.map((row) {
       final goal = row.readTable(goals);
-      final achievedAmount = row.read<double>(queryWithSum.conditionalSum) ?? 0;
+      final achievedAmount = row.read<double>(queryWithSum.sum) ?? 0;
 
       return GoalWithAchievedAmount(goal: goal, achievedAmount: achievedAmount);
     });
@@ -513,7 +472,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
 
     final mappedSelectable = filteredQuery.map((row) {
       final goal = row.readTable(goals);
-      final achievedAmount = row.read<double>(queryWithSum.conditionalSum) ?? 0;
+      final achievedAmount = row.read<double>(queryWithSum.sum) ?? 0;
 
       return GoalWithAchievedAmount(goal: goal, achievedAmount: achievedAmount);
     });
@@ -521,18 +480,13 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     return mappedSelectable.watchSingle();
   }
 
-  Future<GoalWithAchievedAmount> updateGoal(GoalsCompanion entry) async {
+  Future<Goal> updateGoal(GoalsCompanion entry) async {
     assert(entry.id.present, '`id` must be supplied when updating a Goal');
 
-    final query =
-        (update(goals)
-              ..where((g) => g.id.equals(entry.id.value))
-              ..write(entry))
-            .constructQuery();
+    final goal = await (update(goals)
+      ..where((g) => g.id.equals(entry.id.value))).writeReturning(entry);
 
-    await db.executeQuery(query);
-
-    return await getGoalById(entry.id.value);
+    return goal.single;
   }
 }
 
@@ -809,69 +763,43 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     return points;
   }
 
-  Future<void> setArchiveTransactions(List<String> ids, bool status) async {
-    var query =
-        update(transactions)
-          ..where((t) => t.id.isIn(ids))
-          ..write(TransactionsCompanion(isArchived: Value(status)));
+  Future<int> setTransactionsArchived(List<String> ids, bool status) =>
+      (update(transactions)..where(
+        (t) => t.id.isIn(ids),
+      )).write(TransactionsCompanion(isArchived: Value(status)));
 
-    await db.executeQuery(query.constructQuery());
-  }
+  Future<int> setCategoriesArchived(List<String> ids, bool status) =>
+      (update(categories)..where(
+        (t) => t.id.isIn(ids),
+      )).write(CategoriesCompanion(isArchived: Value(status)));
 
-  Future<void> setArchiveCategories(List<String> ids, bool status) async {
-    var query =
-        update(categories)
-          ..where((t) => t.id.isIn(ids))
-          ..write(CategoriesCompanion(isArchived: Value(status)));
+  Future<int> setAccountsArchived(List<String> ids, bool status) =>
+      (update(accounts)..where(
+        (t) => t.id.isIn(ids),
+      )).write(AccountsCompanion(isArchived: Value(status)));
 
-    await db.executeQuery(query.constructQuery());
-  }
+  Future<int> setTransactionsDeleted(List<String> ids, bool status) =>
+      (update(transactions)..where(
+        (t) => t.id.isIn(ids),
+      )).write(TransactionsCompanion(isDeleted: Value(status)));
 
-  Future<void> setArchiveAccounts(List<String> ids, bool status) async {
-    var query =
-        update(accounts)
-          ..where((t) => t.id.isIn(ids))
-          ..write(AccountsCompanion(isArchived: Value(status)));
+  Future<int> setCategoriesDeleted(List<String> ids, bool status) =>
+      (update(categories)..where(
+        (c) => c.id.isIn(ids),
+      )).write(CategoriesCompanion(isDeleted: Value(status)));
 
-    await db.executeQuery(query.constructQuery());
-  }
+  Future<int> permanentlyDeleteTransactions(List<String> ids) =>
+      (delete(transactions)..where((t) => t.id.isIn(ids))).go();
 
-  Future<void> setTransactionsDeleted(List<String> ids, bool status) async {
-    var query =
-        update(transactions)
-          ..where((t) => t.id.isIn(ids))
-          ..write(TransactionsCompanion(isDeleted: Value(status)));
-
-    await db.executeQuery(query.constructQuery());
-  }
-
-  Future<void> setCategoriesDeleted(List<String> ids, bool status) async {
-    var query =
-        update(categories)
-          ..where((c) => c.id.isIn(ids))
-          ..write(CategoriesCompanion(isDeleted: Value(status)));
-
-    await db.executeQuery(query.constructQuery());
-  }
-
-  Future<void> permanentlyDeleteTransactions(List<String> ids) async {
-    var query = delete(transactions)..where((t) => t.id.isIn(ids));
-
-    await db.executeQuery(query.constructQuery());
-  }
-
-  Future<void> permanentlyDeleteCategories(List<String> ids) async {
-    var query = delete(categories)..where((c) => c.id.isIn(ids));
-
-    await db.executeQuery(query.constructQuery());
-  }
+  Future<int> permanentlyDeleteCategories(List<String> ids) =>
+      (delete(categories)..where((c) => c.id.isIn(ids))).go();
 }
 
-class CategoryQueryWithConditionalSum {
+class QueryWithSum {
   final JoinedSelectStatement query;
-  final Expression<double> conditionalSum;
+  final Expression<double> sum;
 
-  CategoryQueryWithConditionalSum(this.query, this.conditionalSum);
+  QueryWithSum(this.query, this.sum);
 }
 
 @DriftDatabase(
@@ -924,7 +852,7 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
-  CategoryQueryWithConditionalSum getCategoriesWithAmountsQuery() {
+  QueryWithSum getCategoriesWithAmountsQuery() {
     // Get the start and end date to look for the values
     Expression<String> startDate = CaseWhenExpression<String>(
       cases:
@@ -986,7 +914,7 @@ class AppDatabase extends _$AppDatabase {
           ..addColumns([conditionalSum])
           ..groupBy([categories.id]);
 
-    return CategoryQueryWithConditionalSum(queryWithSum, conditionalSum);
+    return QueryWithSum(queryWithSum, conditionalSum);
   }
 
   Stream<List<CategoryWithAmount>> watchCategories() {
@@ -998,20 +926,11 @@ class AppDatabase extends _$AppDatabase {
               .map(
                 (row) => CategoryWithAmount(
                   category: row.readTable(categories),
-                  amount: row.read<double>(queryWithSum.conditionalSum),
+                  amount: row.read<double>(queryWithSum.sum),
                 ),
               )
               .toList(),
     );
-  }
-
-  List<dynamic> convertVariables(List<dynamic> variables) =>
-      variables.map((v) => v.value).toList();
-
-  Future<void> executeQuery(GenerationContext query) async {
-    final args = convertVariables(query.introducedVariables);
-
-    await db.writeTransaction((tx) => tx.execute(query.sql, args));
   }
 
   // Transaction methods
@@ -1021,55 +940,28 @@ class AppDatabase extends _$AppDatabase {
     // 2. Create a companion that definitely includes the ID
     final entryWithId = entry.copyWith(id: Value(id));
 
-    final statement = into(
-      transactions,
-    ).createContext(entryWithId, InsertMode.insert);
-
-    await db.writeTransaction(
-      (tx) => tx.execute(statement.sql, statement.boundVariables),
-    );
-
-    var transaction = await getTransactionById(id);
+    final transaction = await into(transactions).insertReturning(entryWithId);
 
     return transaction;
   }
 
-  Future<void> updateTransaction(Transaction entry) async {
-    final query = (update(transactions)..replace(entry)).constructQuery();
+  Future<Transaction> updateTransaction(TransactionsCompanion entry) async {
+    final query = update(transactions)
+      ..where((t) => t.id.equals(entry.id.value));
 
-    await executeQuery(query);
+    return (await query.writeReturning(entry)).single;
   }
 
-  Future<Transaction> updatePartialTransaction(
-    TransactionsCompanion entry,
-  ) async {
-    final query =
-        (update(transactions)
-              ..where((t) => t.id.equals(entry.id.value))
-              ..write(entry))
-            .constructQuery();
+  Future<int> deleteTransaction(Transaction entry) =>
+      delete(transactions).delete(entry);
 
-    await executeQuery(query);
-
-    return await getTransactionById(entry.id.value);
-  }
-
-  Future<void> deleteTransaction(Transaction entry) async {
-    final query = (delete(transactions)..delete(entry)).constructQuery();
-
-    await executeQuery(query);
-  }
-
-  Future<void> deleteTransactionById(String id) async {
-    final query =
-        (delete(transactions)..where((t) => t.id.equals(id))).constructQuery();
-
-    await executeQuery(query);
-  }
+  Future<int> deleteTransactionById(String id) =>
+      (delete(transactions)..where((t) => t.id.equals(id))).go();
 
   Future<Transaction> getTransactionById(String id) =>
       (select(transactions)..where((tbl) => tbl.id.equals(id))).getSingle();
 
+  // Category methods
   Future<CategoryWithAmount?> getCategoryById(String id) async {
     final categorySumQuery = getCategoriesWithAmountsQuery();
 
@@ -1080,7 +972,7 @@ class AppDatabase extends _$AppDatabase {
 
     if (row != null) {
       final category = row.readTable(categories);
-      final amount = row.read<double>(categorySumQuery.conditionalSum);
+      final amount = row.read<double>(categorySumQuery.sum);
 
       return CategoryWithAmount(category: category, amount: amount);
     } else {
@@ -1088,59 +980,25 @@ class AppDatabase extends _$AppDatabase {
     }
   }
 
-  // Category methods
-  Future<CategoryWithAmount> createCategory(CategoriesCompanion entry) async {
+  Future<Category> createCategory(CategoriesCompanion entry) async {
     final id = entry.id.present ? entry.id.value : uuid.v4();
     // 2. Create a companion that definitely includes the ID
     final entryWithId = entry.copyWith(id: Value(id));
 
-    final statement = into(
-      categories,
-    ).createContext(entryWithId, InsertMode.insert);
+    final category = await into(categories).insertReturning(entryWithId);
 
-    await db.writeTransaction((tx) async {
-      await tx.execute(statement.sql, statement.boundVariables);
-    });
-
-    var category = await getCategoryById(id);
-
-    // There's something wrong if we can't get the ID of this category for
-    // some reason, so I guess it's okay if I make the program crash
-    // in that case.
-    return category!;
+    return category;
   }
 
-  Future<void> updateCategory(Category entry) async {
-    final query = (update(categories)..replace(entry)).constructQuery();
+  Future<Category> updateCategory(CategoriesCompanion entry) async {
+    final query = update(categories)..where((t) => t.id.equals(entry.id.value));
 
-    await executeQuery(query);
+    return (await query.writeReturning(entry)).single;
   }
 
-  Future<CategoryWithAmount> updatePartialCategory(
-    CategoriesCompanion entry,
-  ) async {
-    final query =
-        (update(categories)
-              ..where((t) => t.id.equals(entry.id.value))
-              ..write(entry))
-            .constructQuery();
+  Future<int> deleteCategory(Category entry) =>
+      delete(categories).delete(entry);
 
-    await executeQuery(query);
-
-    // Same logic as with createCategory
-    return (await getCategoryById(entry.id.value))!;
-  }
-
-  Future<void> deleteCategory(Category entry) async {
-    final query = (delete(categories)..delete(entry)).constructQuery();
-
-    await executeQuery(query);
-  }
-
-  Future<void> deleteCategoryById(String id) async {
-    final query =
-        (delete(categories)..where((c) => c.id.equals(id))).constructQuery();
-
-    await executeQuery(query);
-  }
+  Future<int> deleteCategoryById(String id) =>
+      (delete(categories)..where((c) => c.id.equals(id))).go();
 }

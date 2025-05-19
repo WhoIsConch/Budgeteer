@@ -92,24 +92,29 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
         final partialCategory = _buildCategory();
         final db = context.read<AppDatabase>();
 
-        CategoryWithAmount newCategory;
+        Category newCategory;
 
         try {
           if (isEditing) {
-            newCategory = await db.updatePartialCategory(partialCategory);
+            newCategory = await db.updateCategory(partialCategory);
           } else {
             newCategory = await db.createCategory(partialCategory);
           }
+
+          final CategoryWithAmount withAmount = CategoryWithAmount(
+            category: newCategory,
+            amount: initialCategory?.amount ?? 0,
+          );
 
           if (context.mounted) {
             if (!widget.returnResult) {
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
-                  builder: (_) => CategoryViewer(categoryPair: newCategory),
+                  builder: (_) => CategoryViewer(categoryPair: withAmount),
                 ),
               );
             } else {
-              Navigator.of(context).pop(newCategory);
+              Navigator.of(context).pop(withAmount);
             }
           }
         } catch (e) {

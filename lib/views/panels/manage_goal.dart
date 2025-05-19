@@ -89,24 +89,29 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
         final goalDao = context.read<GoalDao>();
         final currentGoal = _buildGoal();
 
-        GoalWithAchievedAmount newGoalPair;
+        Goal newGoal;
 
         try {
           if (isEditing) {
-            newGoalPair = await goalDao.updateGoal(currentGoal);
+            newGoal = await goalDao.updateGoal(currentGoal);
           } else {
-            newGoalPair = await goalDao.createGoal(currentGoal);
+            newGoal = await goalDao.createGoal(currentGoal);
           }
+
+          final GoalWithAchievedAmount goalPair = GoalWithAchievedAmount(
+            goal: newGoal,
+            achievedAmount: initialGoal?.achievedAmount ?? 0,
+          );
 
           if (context.mounted) {
             if (!widget.returnResult) {
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
-                  builder: (_) => GoalViewer(initialGoalPair: newGoalPair),
+                  builder: (_) => GoalViewer(initialGoalPair: goalPair),
                 ),
               );
             } else {
-              Navigator.of(context).pop(newGoalPair);
+              Navigator.of(context).pop(goalPair);
             }
           }
         } catch (e) {

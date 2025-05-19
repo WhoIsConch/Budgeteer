@@ -87,7 +87,7 @@ class _ManageAccountFormState extends State<ManageAccountForm> {
 
         final db = context.read<AppDatabase>();
 
-        AccountWithTotal account;
+        Account account;
 
         if (isEditing) {
           // bruh
@@ -96,13 +96,18 @@ class _ManageAccountFormState extends State<ManageAccountForm> {
           account = await db.accountDao.createAccount(newAccount!);
         }
 
+        final AccountWithTotal withTotal = AccountWithTotal(
+          account: account,
+          total: initialAccount?.total ?? 0,
+        );
+
         if (context.mounted) {
           if (widget.returnResult) {
-            Navigator.of(context).pop(account);
+            Navigator.of(context).pop(withTotal);
           } else {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
-                builder: (_) => AccountViewer(accountPair: account),
+                builder: (_) => AccountViewer(accountPair: withTotal),
               ),
             );
           }

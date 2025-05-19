@@ -6,7 +6,6 @@ import 'package:budget/views/components/edit_screen.dart';
 import 'package:budget/views/panels/manage_account.dart';
 import 'package:budget/views/panels/manage_category.dart';
 import 'package:budget/views/panels/manage_goal.dart';
-import 'package:budget/views/panels/view_category.dart';
 import 'package:budget/views/panels/view_transaction.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
@@ -242,7 +241,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
         Transaction raw;
 
         if (isEditing) {
-          raw = await db.updatePartialTransaction(newTransaction);
+          raw = await db.updateTransaction(newTransaction);
         } else {
           raw = await db.createTransaction(newTransaction);
         }

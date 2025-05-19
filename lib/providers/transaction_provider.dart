@@ -94,13 +94,13 @@ class DeletionManager {
 
     switch (T) {
       case Transaction:
-        dao.setArchiveTransactions(objectIds, false);
+        dao.setTransactionsArchived(objectIds, false);
         break;
       case Category:
-        dao.setArchiveCategories(objectIds, false);
+        dao.setCategoriesArchived(objectIds, false);
         break;
       case Account:
-        dao.setArchiveAccounts(objectIds, false);
+        dao.setAccountsArchived(objectIds, false);
         break;
       case Goal:
         goalDao.setGoalsFinished(objectIds, false);
@@ -190,17 +190,17 @@ class DeletionManager {
     switch (T) {
       case Transaction:
         deletedItemString = isSingle ? 'Transaction' : 'Transactions';
-        archivalFuture = dao.setArchiveTransactions(objectIds, true);
+        archivalFuture = dao.setTransactionsArchived(objectIds, true);
         break;
 
       case Category:
         deletedItemString = isSingle ? 'Category' : 'Categories';
-        archivalFuture = dao.setArchiveCategories(objectIds, true);
+        archivalFuture = dao.setCategoriesArchived(objectIds, true);
         break;
 
       case Account:
         deletedItemString = isSingle ? 'Account' : 'Accounts';
-        archivalFuture = dao.setArchiveAccounts(objectIds, true);
+        archivalFuture = dao.setAccountsArchived(objectIds, true);
         break;
 
       case Goal:
