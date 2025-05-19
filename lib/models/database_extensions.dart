@@ -88,32 +88,39 @@ class CategoryWithAmount {
           amount == other.amount;
 }
 
+class AccountWithTotal {
+  final Account account;
+  final double total;
+
+  AccountWithTotal({required this.account, this.total = 0});
+}
+
 class HydratedTransaction {
   final Transaction transaction;
-  final CategoryWithAmount? category;
-  final Account? account;
-  final GoalWithAchievedAmount? goal;
+  final CategoryWithAmount? categoryPair;
+  final AccountWithTotal? accountPair;
+  final GoalWithAchievedAmount? goalPair;
 
   HydratedTransaction({
     required this.transaction,
-    this.category,
-    this.account,
-    this.goal,
+    this.categoryPair,
+    this.accountPair,
+    this.goalPair,
   });
 
   @override
   int get hashCode =>
       transaction.id.hashCode ^
-      category.hashCode ^
-      account.hashCode ^
-      goal.hashCode;
+      categoryPair.hashCode ^
+      accountPair.hashCode ^
+      goalPair.hashCode;
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is HydratedTransaction &&
           transaction.id == other.transaction.id &&
-          category == other.category &&
-          account == other.account &&
-          goal == other.goal;
+          categoryPair == other.categoryPair &&
+          accountPair == other.accountPair &&
+          goalPair == other.goalPair;
 }

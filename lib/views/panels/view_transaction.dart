@@ -18,9 +18,9 @@ class ViewTransaction extends StatelessWidget {
   const ViewTransaction({super.key, required this.transactionData});
 
   Transaction get transaction => transactionData.transaction;
-  Category? get category => transactionData.category?.category;
-  Goal? get goal => transactionData.goal?.goal;
-  Account? get account => transactionData.account;
+  Category? get category => transactionData.categoryPair?.category;
+  Goal? get goal => transactionData.goalPair?.goal;
+  Account? get account => transactionData.accountPair?.account;
 
   List<ObjectPropertyData> _getProperties(BuildContext context) {
     final List<ObjectPropertyData> properties = [

@@ -3,6 +3,9 @@
 part of 'app_database.dart';
 
 // ignore_for_file: type=lint
+mixin _$AccountDaoMixin on DatabaseAccessor<AppDatabase> {
+  $AccountsTable get accounts => attachedDatabase.accounts;
+}
 mixin _$GoalDaoMixin on DatabaseAccessor<AppDatabase> {
   $GoalsTable get goals => attachedDatabase.goals;
 }
@@ -2207,6 +2210,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this as AppDatabase,
   );
   late final GoalDao goalDao = GoalDao(this as AppDatabase);
+  late final AccountDao accountDao = AccountDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

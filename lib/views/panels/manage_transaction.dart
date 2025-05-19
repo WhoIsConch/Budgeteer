@@ -3,6 +3,7 @@ import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/enums.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:budget/views/components/edit_screen.dart';
+import 'package:budget/views/panels/manage_account.dart';
 import 'package:budget/views/panels/manage_category.dart';
 import 'package:budget/views/panels/manage_goal.dart';
 import 'package:budget/views/panels/view_category.dart';
@@ -39,7 +40,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   DateTime _selectedDate = DateTime.now();
   TransactionType _selectedType = TransactionType.income;
   CategoryWithAmount? _selectedCategoryPair;
-  Account? _selectedAccount;
+  AccountWithTotal? _selectedAccount;
   GoalWithAchievedAmount? _selectedGoal;
 
   HydratedTransaction? hydratedTransaction;
@@ -60,7 +61,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     type: Value(_selectedType),
     notes: getControllerValue('notes'),
     category: Value(_selectedCategoryPair?.category.id),
-    accountId: Value(_selectedAccount?.id),
+    accountId: Value(_selectedAccount?.account.id),
     goalId: Value(_selectedGoal?.goal.id),
   );
 
@@ -71,15 +72,15 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       initialTransaction!,
     );
 
-    if (hydrated.category != null) {
+    if (hydrated.categoryPair != null) {
       setState(() {
-        _selectedCategoryPair = hydrated.category;
+        _selectedCategoryPair = hydrated.categoryPair;
       });
     }
 
-    if (hydrated.goal != null) {
+    if (hydrated.goalPair != null) {
       setState(() {
-        _selectedGoal = hydrated.goal;
+        _selectedGoal = hydrated.goalPair;
       });
     }
 
@@ -129,7 +130,32 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     controllers['date']!.text = DateFormat('MM/dd/yyyy').format(_selectedDate);
   }
 
-  double? _getTotalBalance() {
+  double? _getTotalAccountBalance() {
+    if (_selectedAccount == null) return null;
+
+    double adjustedTotal = _selectedAccount!.total;
+
+    if (isEditing &&
+        initialTransaction!.accountId == _selectedAccount!.account.id) {
+      if (initialTransaction!.type == TransactionType.expense) {
+        adjustedTotal -= initialTransaction!.amount;
+      } else {
+        adjustedTotal += initialTransaction!.amount;
+      }
+    }
+
+    double currentAmount = _getCurrentAmount();
+
+    if (_selectedType == TransactionType.expense) {
+      adjustedTotal -= currentAmount;
+    } else {
+      adjustedTotal += currentAmount;
+    }
+
+    return adjustedTotal;
+  }
+
+  double? _getTotalCategoryBalance() {
     if (_selectedCategoryPair == null) return null;
 
     final originalBalance =
@@ -188,7 +214,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   String? _getCategorySubtext() {
     if (_selectedCategoryPair == null) return null;
 
-    final adjustedBalance = _getTotalBalance();
+    final adjustedBalance = _getTotalCategoryBalance();
     final formattedBalance = formatAmount(adjustedBalance ?? 0);
 
     String resetText;
@@ -443,6 +469,94 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                     } else if (result is GoalWithAchievedAmount) {
                       setState(() {
                         _selectedGoal = result;
+                      });
+                    }
+
+                    return result;
+                  },
+                ),
+              ],
+            );
+          },
+        ),
+        FormField<AccountWithTotal?>(
+          builder: (fieldState) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: StreamBuilder(
+                    stream:
+                        context.read<AppDatabase>().accountDao.watchAccounts(),
+                    builder: (context, snapshot) {
+                      final List<AccountWithTotal?> accounts =
+                          snapshot.hasData ? [...snapshot.data!, null] : [];
+                      final labels =
+                          accounts
+                              .map((a) => a?.account.name ?? 'No account')
+                              .toList();
+
+                      String dropdownLabel = 'Account';
+
+                      if (!snapshot.hasData) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          dropdownLabel = 'Loading';
+                        } else {
+                          dropdownLabel = 'No accounts';
+                        }
+                      }
+
+                      String? formattedAmount;
+                      final total = _getTotalAccountBalance();
+
+                      if (total != null) {
+                        formattedAmount =
+                            '\$${formatAmount(total, exact: true)}';
+                      }
+
+                      return CustomDropDownFormField(
+                        fieldState: fieldState,
+                        label: dropdownLabel,
+                        onChanged:
+                            (newAccount) =>
+                                setState(() => _selectedAccount = newAccount),
+                        values: accounts,
+                        labels: labels,
+                        helperText: formattedAmount,
+                      );
+                    },
+                  ),
+                ),
+                HybridManagerButton(
+                  formFieldState: fieldState,
+                  icon: Icon(
+                    _selectedAccount == null
+                        ? Icons.add_circle_outline
+                        : Icons.edit,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  tooltip:
+                      _selectedAccount == null ? 'New account' : 'Edit account',
+                  onPressed: () async {
+                    final result = await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder:
+                            (_) => ManageAccountForm(
+                              initialAccount: _selectedAccount,
+                              returnResult: true,
+                            ),
+                      ),
+                    );
+
+                    // TODO: Figure out wtf this condition is supposed to mean
+                    if (result is String && result.isEmpty) {
+                      setState(() {
+                        _selectedAccount = null;
+                      });
+                    } else if (result is AccountWithTotal) {
+                      setState(() {
+                        _selectedAccount = result;
                       });
                     }
 

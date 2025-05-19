@@ -216,6 +216,156 @@ class Goals extends Table {
       boolean().withDefault(const Constant(false)).named('is_deleted')();
 }
 
+@DriftAccessor(tables: [Accounts])
+class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
+  AccountDao(super.db);
+
+  CategoryQueryWithConditionalSum _getCombinedQuery({
+    bool includeArchived = false,
+  }) {
+    var query = select(accounts).join([
+      leftOuterJoin(
+        db.transactions,
+        db.transactions.accountId.equalsExp(accounts.id),
+      ),
+    ]);
+
+    final signedSumQuery = db.getSignedTransactionSumQuery();
+
+    if (!includeArchived) {
+      query =
+          query..where(
+            accounts.isArchived.isNotExp(const Constant(true)) &
+                db.transactions.isDeleted.isNotExp(
+                  const Constant(true) &
+                      db.transactions.isArchived.isNotExp(const Constant(true)),
+                ),
+          );
+    }
+
+    query =
+        query
+          ..where(accounts.isDeleted.equals(false))
+          ..addColumns([signedSumQuery])
+          ..groupBy([accounts.id]);
+
+    return CategoryQueryWithConditionalSum(query, signedSumQuery);
+  }
+
+  Stream<List<AccountWithTotal>> watchAccounts({
+    includeArchived = false,
+    sortDescending = true,
+  }) {
+    final queryWithSum = _getCombinedQuery(includeArchived: includeArchived);
+
+    return queryWithSum.query.watch().map((rows) {
+      final List<AccountWithTotal> accountsWithTotals =
+          rows.map((row) {
+            final account = row.readTable(accounts);
+            final total = row.read<double>(queryWithSum.conditionalSum);
+
+            return AccountWithTotal(account: account, total: total ?? 0);
+          }).toList();
+
+      accountsWithTotals.sort((a, b) {
+        if (sortDescending) {
+          return b.total.compareTo(a.total);
+        } else {
+          return a.total.compareTo(b.total);
+        }
+      });
+
+      return accountsWithTotals;
+    });
+  }
+
+  Stream<AccountWithTotal> watchAccountById(
+    String id, {
+    bool includeArchived = true,
+  }) {
+    final queryWithSum = _getCombinedQuery(includeArchived: includeArchived);
+    final filteredQuery = queryWithSum.query..where(accounts.id.equals(id));
+
+    final mappedSelectable = filteredQuery.map((row) {
+      final account = row.readTable(accounts);
+      final total = row.read<double>(queryWithSum.conditionalSum) ?? 0;
+
+      return AccountWithTotal(account: account, total: total);
+    });
+
+    return mappedSelectable.watchSingle();
+  }
+
+  Future<AccountWithTotal> getAccountById(
+    String id, {
+    bool includeArchived = true,
+  }) {
+    final queryWithSum = _getCombinedQuery(includeArchived: includeArchived);
+    final filteredQuery = queryWithSum.query..where(accounts.id.equals(id));
+
+    final mappedSelectable = filteredQuery.map((row) {
+      final account = row.readTable(accounts);
+      final total = row.read<double>(queryWithSum.conditionalSum) ?? 0;
+
+      return AccountWithTotal(account: account, total: total);
+    });
+
+    return mappedSelectable.getSingle();
+  }
+
+  Future<AccountWithTotal> createAccount(AccountsCompanion entry) async {
+    final id = entry.id.present ? entry.id.value : uuid.v4();
+
+    final entryWithId = entry.copyWith(id: Value(id));
+    final statement = into(
+      accounts,
+    ).createContext(entryWithId, InsertMode.insert);
+
+    await db.executeQuery(statement);
+
+    var account = await getAccountById(id);
+    return account;
+  }
+
+  Future<AccountWithTotal> updateAccount(AccountsCompanion entry) async {
+    assert(entry.id.present, '`id` must be supplied when updating an Account');
+
+    final query =
+        (update(accounts)
+              ..where((a) => a.id.equals(entry.id.value))
+              ..write(entry))
+            .constructQuery();
+
+    await db.executeQuery(query);
+
+    return await getAccountById(entry.id.value);
+  }
+
+  Future<void> setAccountsDeleted(List<String> ids, bool status) async {
+    var query =
+        update(accounts)
+          ..where((a) => a.id.isIn(ids))
+          ..write(AccountsCompanion(isDeleted: Value(status)));
+
+    await db.executeQuery(query.constructQuery());
+  }
+
+  Future<void> setAccountsArchived(List<String> ids, bool status) async {
+    var query =
+        update(accounts)
+          ..where((a) => a.id.isIn(ids))
+          ..write(AccountsCompanion(isArchived: Value(status)));
+
+    await db.executeQuery(query.constructQuery());
+  }
+
+  Future<void> permanentlyDeleteAccounts(List<String> ids) async {
+    var query = delete(accounts)..where((a) => a.id.isIn(ids));
+
+    await db.executeQuery(query.constructQuery());
+  }
+}
+
 @DriftAccessor(tables: [Goals])
 class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
   GoalDao(super.db);
@@ -549,24 +699,26 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     // TODO: Optimize this
     GoalWithAchievedAmount? goal;
     CategoryWithAmount? category;
-    Account? account;
+    AccountWithTotal? account;
 
     if (transaction.goalId != null) {
       goal = await db.goalDao.getGoalById(transaction.goalId!);
     }
 
     if (transaction.category != null) {
-      final categoryWithAmount = await db.getCategoryById(
-        transaction.category!,
-      );
+      category = await db.getCategoryById(transaction.category!);
+    }
 
-      category = categoryWithAmount;
+    if (transaction.accountId != null) {
+      account =
+          await db.accountDao.watchAccountById(transaction.accountId!).first;
     }
 
     return HydratedTransaction(
       transaction: transaction,
-      goal: goal,
-      category: category,
+      goalPair: goal,
+      categoryPair: category,
+      accountPair: account,
     );
   }
 
@@ -724,7 +876,7 @@ class CategoryQueryWithConditionalSum {
 
 @DriftDatabase(
   tables: [Categories, Transactions, Goals, Accounts],
-  daos: [TransactionDao, GoalDao],
+  daos: [TransactionDao, GoalDao, AccountDao],
 )
 class AppDatabase extends _$AppDatabase {
   PowerSyncDatabase db;
