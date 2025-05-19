@@ -96,9 +96,15 @@ class Accounts extends Table {
   IntColumn get color =>
       integer().clientDefault(genColor).map(const ColorConverter())();
   BoolColumn get isDeleted =>
-      boolean().withDefault(const Constant(false)).named('is_deleted')();
+      boolean()
+          .nullable()
+          .withDefault(const Constant(false))
+          .named('is_deleted')();
   BoolColumn get isArchived =>
-      boolean().withDefault(const Constant(false)).named('is_archived')();
+      boolean()
+          .nullable()
+          .withDefault(const Constant(false))
+          .named('is_archived')();
 }
 
 class Goals extends Table {

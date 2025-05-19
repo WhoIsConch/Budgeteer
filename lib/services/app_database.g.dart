@@ -659,7 +659,7 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
   late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
     'is_deleted',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.bool,
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
@@ -674,7 +674,7 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
   late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
     'is_archived',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.bool,
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
@@ -761,16 +761,14 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
           data['${effectivePrefix}color'],
         )!,
       ),
-      isDeleted:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.bool,
-            data['${effectivePrefix}is_deleted'],
-          )!,
-      isArchived:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.bool,
-            data['${effectivePrefix}is_archived'],
-          )!,
+      isDeleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_deleted'],
+      ),
+      isArchived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_archived'],
+      ),
     );
   }
 
@@ -787,15 +785,15 @@ class Account extends DataClass implements Insertable<Account> {
   final String name;
   final String? notes;
   final Color color;
-  final bool isDeleted;
-  final bool isArchived;
+  final bool? isDeleted;
+  final bool? isArchived;
   const Account({
     required this.id,
     required this.name,
     this.notes,
     required this.color,
-    required this.isDeleted,
-    required this.isArchived,
+    this.isDeleted,
+    this.isArchived,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -808,8 +806,12 @@ class Account extends DataClass implements Insertable<Account> {
     {
       map['color'] = Variable<int>($AccountsTable.$convertercolor.toSql(color));
     }
-    map['is_deleted'] = Variable<bool>(isDeleted);
-    map['is_archived'] = Variable<bool>(isArchived);
+    if (!nullToAbsent || isDeleted != null) {
+      map['is_deleted'] = Variable<bool>(isDeleted);
+    }
+    if (!nullToAbsent || isArchived != null) {
+      map['is_archived'] = Variable<bool>(isArchived);
+    }
     return map;
   }
 
@@ -820,8 +822,14 @@ class Account extends DataClass implements Insertable<Account> {
       notes:
           notes == null && nullToAbsent ? const Value.absent() : Value(notes),
       color: Value(color),
-      isDeleted: Value(isDeleted),
-      isArchived: Value(isArchived),
+      isDeleted:
+          isDeleted == null && nullToAbsent
+              ? const Value.absent()
+              : Value(isDeleted),
+      isArchived:
+          isArchived == null && nullToAbsent
+              ? const Value.absent()
+              : Value(isArchived),
     );
   }
 
@@ -835,8 +843,8 @@ class Account extends DataClass implements Insertable<Account> {
       name: serializer.fromJson<String>(json['name']),
       notes: serializer.fromJson<String?>(json['notes']),
       color: serializer.fromJson<Color>(json['color']),
-      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
-      isArchived: serializer.fromJson<bool>(json['isArchived']),
+      isDeleted: serializer.fromJson<bool?>(json['isDeleted']),
+      isArchived: serializer.fromJson<bool?>(json['isArchived']),
     );
   }
   @override
@@ -847,8 +855,8 @@ class Account extends DataClass implements Insertable<Account> {
       'name': serializer.toJson<String>(name),
       'notes': serializer.toJson<String?>(notes),
       'color': serializer.toJson<Color>(color),
-      'isDeleted': serializer.toJson<bool>(isDeleted),
-      'isArchived': serializer.toJson<bool>(isArchived),
+      'isDeleted': serializer.toJson<bool?>(isDeleted),
+      'isArchived': serializer.toJson<bool?>(isArchived),
     };
   }
 
@@ -857,15 +865,15 @@ class Account extends DataClass implements Insertable<Account> {
     String? name,
     Value<String?> notes = const Value.absent(),
     Color? color,
-    bool? isDeleted,
-    bool? isArchived,
+    Value<bool?> isDeleted = const Value.absent(),
+    Value<bool?> isArchived = const Value.absent(),
   }) => Account(
     id: id ?? this.id,
     name: name ?? this.name,
     notes: notes.present ? notes.value : this.notes,
     color: color ?? this.color,
-    isDeleted: isDeleted ?? this.isDeleted,
-    isArchived: isArchived ?? this.isArchived,
+    isDeleted: isDeleted.present ? isDeleted.value : this.isDeleted,
+    isArchived: isArchived.present ? isArchived.value : this.isArchived,
   );
   Account copyWithCompanion(AccountsCompanion data) {
     return Account(
@@ -912,8 +920,8 @@ class AccountsCompanion extends UpdateCompanion<Account> {
   final Value<String> name;
   final Value<String?> notes;
   final Value<Color> color;
-  final Value<bool> isDeleted;
-  final Value<bool> isArchived;
+  final Value<bool?> isDeleted;
+  final Value<bool?> isArchived;
   final Value<int> rowid;
   const AccountsCompanion({
     this.id = const Value.absent(),
@@ -958,8 +966,8 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     Value<String>? name,
     Value<String?>? notes,
     Value<Color>? color,
-    Value<bool>? isDeleted,
-    Value<bool>? isArchived,
+    Value<bool?>? isDeleted,
+    Value<bool?>? isArchived,
     Value<int>? rowid,
   }) {
     return AccountsCompanion(
@@ -2654,8 +2662,8 @@ typedef $$AccountsTableCreateCompanionBuilder =
       required String name,
       Value<String?> notes,
       Value<Color> color,
-      Value<bool> isDeleted,
-      Value<bool> isArchived,
+      Value<bool?> isDeleted,
+      Value<bool?> isArchived,
       Value<int> rowid,
     });
 typedef $$AccountsTableUpdateCompanionBuilder =
@@ -2664,8 +2672,8 @@ typedef $$AccountsTableUpdateCompanionBuilder =
       Value<String> name,
       Value<String?> notes,
       Value<Color> color,
-      Value<bool> isDeleted,
-      Value<bool> isArchived,
+      Value<bool?> isDeleted,
+      Value<bool?> isArchived,
       Value<int> rowid,
     });
 
@@ -2885,8 +2893,8 @@ class $$AccountsTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<Color> color = const Value.absent(),
-                Value<bool> isDeleted = const Value.absent(),
-                Value<bool> isArchived = const Value.absent(),
+                Value<bool?> isDeleted = const Value.absent(),
+                Value<bool?> isArchived = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AccountsCompanion(
                 id: id,
@@ -2903,8 +2911,8 @@ class $$AccountsTableTableManager
                 required String name,
                 Value<String?> notes = const Value.absent(),
                 Value<Color> color = const Value.absent(),
-                Value<bool> isDeleted = const Value.absent(),
-                Value<bool> isArchived = const Value.absent(),
+                Value<bool?> isDeleted = const Value.absent(),
+                Value<bool?> isArchived = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AccountsCompanion.insert(
                 id: id,

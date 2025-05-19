@@ -2,6 +2,7 @@ import 'package:budget/providers/snackbar_provider.dart';
 import 'package:budget/views/history.dart';
 import 'package:budget/views/login.dart';
 import 'package:budget/utils/enums.dart';
+import 'package:budget/views/panels/manage_account.dart';
 import 'package:budget/views/panels/manage_category.dart';
 import 'package:budget/views/panels/manage_goal.dart';
 import 'package:budget/views/panels/manage_transaction.dart';
@@ -58,7 +59,12 @@ class _NavManagerState extends State<NavManager>
     ExpandedButtonData(
       text: 'Account',
       icon: const Icon(Icons.wallet),
-      onPressed: () {},
+      onPressed: () {
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const ManageAccountForm()));
+        _toggleFabMenu();
+      },
     ),
     ExpandedButtonData(
       text: 'Goal',
