@@ -4,27 +4,30 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class CustomInputFormField extends StatelessWidget {
   final String label;
+  final TextInputType? textInputType;
   final TextEditingController? controller;
   final int? maxLines;
-  final bool validate;
+  final String? Function(String?)? validator;
 
   const CustomInputFormField({
     super.key,
     required this.label,
     this.controller,
     this.maxLines,
-    this.validate = false,
+    this.validator,
+    this.textInputType,
   });
   @override
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
+      keyboardType: textInputType,
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(),
         alignLabelWithHint: true,
       ),
-      validator: validate ? validateTitle : null,
+      validator: validator,
       maxLines: maxLines,
     );
   }

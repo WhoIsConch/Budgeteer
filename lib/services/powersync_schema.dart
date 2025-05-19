@@ -28,6 +28,7 @@ const powersyncAppSchema = Schema([
   Table('accounts', [
     Column.text('user_id'),
     Column.text('name'),
+    Column.integer('priority'),
     Column.integer('is_deleted'),
     Column.integer('is_archived'),
     Column.text('notes'),

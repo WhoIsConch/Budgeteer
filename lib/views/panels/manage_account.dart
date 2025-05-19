@@ -1,6 +1,7 @@
 import 'package:budget/models/database_extensions.dart';
 import 'package:budget/providers/snackbar_provider.dart';
 import 'package:budget/services/app_database.dart';
+import 'package:budget/utils/validators.dart';
 import 'package:budget/views/components/edit_screen.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
@@ -16,7 +17,7 @@ class ManageAccountForm extends StatefulWidget {
 }
 
 class _ManageAccountFormState extends State<ManageAccountForm> {
-  final List<String> _validControllers = ['name', 'notes'];
+  final List<String> _validControllers = ['name', 'notes', 'priority'];
   final Map<String, TextEditingController> _controllers = {};
 
   Color? _selectedColor;
@@ -27,6 +28,9 @@ class _ManageAccountFormState extends State<ManageAccountForm> {
   AccountsCompanion? _buildAccount() {
     final String? name = _controllers['name']?.text.trim();
     final String? notes = _controllers['notes']?.text.trim();
+    final int? priority = int.tryParse(
+      _controllers['priority']?.text.trim() ?? '',
+    );
 
     if (name == null) return null;
 
@@ -34,6 +38,7 @@ class _ManageAccountFormState extends State<ManageAccountForm> {
       id: Value.absentIfNull(initialAccount?.account.id),
       name: Value(name),
       notes: Value(notes),
+      priority: Value.absentIfNull(priority),
       color: Value.absentIfNull(_selectedColor),
     );
   }
@@ -49,6 +54,8 @@ class _ManageAccountFormState extends State<ManageAccountForm> {
     if (isEditing) {
       _controllers['name']!.text = initialAccount!.account.name;
       _controllers['notes']!.text = initialAccount!.account.notes ?? '';
+      _controllers['priority']!.text =
+          initialAccount!.account.priority?.toString() ?? '';
 
       _selectedColor = initialAccount!.account.color;
     }
@@ -100,14 +107,30 @@ class _ManageAccountFormState extends State<ManageAccountForm> {
         }
       },
       formFields: [
+        CustomInputFormField(
+          label: 'Name',
+          controller: _controllers['name'],
+          validator: validateTitle,
+        ),
         Row(
           spacing: 16.0,
           children: [
             Expanded(
               child: CustomInputFormField(
-                label: 'Name',
-                controller: _controllers['name'],
-                validate: true,
+                label: 'Priority',
+                controller: _controllers['priority'],
+                validator: (value) {
+                  if (value == null || value.isEmpty) return null;
+
+                  final checkedVal = int.tryParse(value.trim());
+
+                  if (checkedVal == null) {
+                    return 'Priority must be a number';
+                  } else {
+                    return null;
+                  }
+                },
+                textInputType: TextInputType.numberWithOptions(),
               ),
             ),
             CustomColorPickerFormField(

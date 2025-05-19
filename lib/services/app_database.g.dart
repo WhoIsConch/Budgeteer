@@ -642,6 +642,17 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _priorityMeta = const VerificationMeta(
+    'priority',
+  );
+  @override
+  late final GeneratedColumn<int> priority = GeneratedColumn<int>(
+    'priority',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   late final GeneratedColumnWithTypeConverter<Color, int> color =
       GeneratedColumn<int>(
@@ -687,6 +698,7 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
     id,
     name,
     notes,
+    priority,
     color,
     isDeleted,
     isArchived,
@@ -718,6 +730,12 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
       context.handle(
         _notesMeta,
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('priority')) {
+      context.handle(
+        _priorityMeta,
+        priority.isAcceptableOrUnknown(data['priority']!, _priorityMeta),
       );
     }
     if (data.containsKey('is_deleted')) {
@@ -755,6 +773,10 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      priority: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}priority'],
+      ),
       color: $AccountsTable.$convertercolor.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.int,
@@ -784,6 +806,7 @@ class Account extends DataClass implements Insertable<Account> {
   final String id;
   final String name;
   final String? notes;
+  final int? priority;
   final Color color;
   final bool? isDeleted;
   final bool? isArchived;
@@ -791,6 +814,7 @@ class Account extends DataClass implements Insertable<Account> {
     required this.id,
     required this.name,
     this.notes,
+    this.priority,
     required this.color,
     this.isDeleted,
     this.isArchived,
@@ -802,6 +826,9 @@ class Account extends DataClass implements Insertable<Account> {
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
+    }
+    if (!nullToAbsent || priority != null) {
+      map['priority'] = Variable<int>(priority);
     }
     {
       map['color'] = Variable<int>($AccountsTable.$convertercolor.toSql(color));
@@ -821,6 +848,10 @@ class Account extends DataClass implements Insertable<Account> {
       name: Value(name),
       notes:
           notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      priority:
+          priority == null && nullToAbsent
+              ? const Value.absent()
+              : Value(priority),
       color: Value(color),
       isDeleted:
           isDeleted == null && nullToAbsent
@@ -842,6 +873,7 @@ class Account extends DataClass implements Insertable<Account> {
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       notes: serializer.fromJson<String?>(json['notes']),
+      priority: serializer.fromJson<int?>(json['priority']),
       color: serializer.fromJson<Color>(json['color']),
       isDeleted: serializer.fromJson<bool?>(json['isDeleted']),
       isArchived: serializer.fromJson<bool?>(json['isArchived']),
@@ -854,6 +886,7 @@ class Account extends DataClass implements Insertable<Account> {
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
       'notes': serializer.toJson<String?>(notes),
+      'priority': serializer.toJson<int?>(priority),
       'color': serializer.toJson<Color>(color),
       'isDeleted': serializer.toJson<bool?>(isDeleted),
       'isArchived': serializer.toJson<bool?>(isArchived),
@@ -864,6 +897,7 @@ class Account extends DataClass implements Insertable<Account> {
     String? id,
     String? name,
     Value<String?> notes = const Value.absent(),
+    Value<int?> priority = const Value.absent(),
     Color? color,
     Value<bool?> isDeleted = const Value.absent(),
     Value<bool?> isArchived = const Value.absent(),
@@ -871,6 +905,7 @@ class Account extends DataClass implements Insertable<Account> {
     id: id ?? this.id,
     name: name ?? this.name,
     notes: notes.present ? notes.value : this.notes,
+    priority: priority.present ? priority.value : this.priority,
     color: color ?? this.color,
     isDeleted: isDeleted.present ? isDeleted.value : this.isDeleted,
     isArchived: isArchived.present ? isArchived.value : this.isArchived,
@@ -880,6 +915,7 @@ class Account extends DataClass implements Insertable<Account> {
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
       notes: data.notes.present ? data.notes.value : this.notes,
+      priority: data.priority.present ? data.priority.value : this.priority,
       color: data.color.present ? data.color.value : this.color,
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
       isArchived:
@@ -893,6 +929,7 @@ class Account extends DataClass implements Insertable<Account> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('notes: $notes, ')
+          ..write('priority: $priority, ')
           ..write('color: $color, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('isArchived: $isArchived')
@@ -902,7 +939,7 @@ class Account extends DataClass implements Insertable<Account> {
 
   @override
   int get hashCode =>
-      Object.hash(id, name, notes, color, isDeleted, isArchived);
+      Object.hash(id, name, notes, priority, color, isDeleted, isArchived);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -910,6 +947,7 @@ class Account extends DataClass implements Insertable<Account> {
           other.id == this.id &&
           other.name == this.name &&
           other.notes == this.notes &&
+          other.priority == this.priority &&
           other.color == this.color &&
           other.isDeleted == this.isDeleted &&
           other.isArchived == this.isArchived);
@@ -919,6 +957,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
   final Value<String> id;
   final Value<String> name;
   final Value<String?> notes;
+  final Value<int?> priority;
   final Value<Color> color;
   final Value<bool?> isDeleted;
   final Value<bool?> isArchived;
@@ -927,6 +966,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.notes = const Value.absent(),
+    this.priority = const Value.absent(),
     this.color = const Value.absent(),
     this.isDeleted = const Value.absent(),
     this.isArchived = const Value.absent(),
@@ -936,6 +976,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     this.id = const Value.absent(),
     required String name,
     this.notes = const Value.absent(),
+    this.priority = const Value.absent(),
     this.color = const Value.absent(),
     this.isDeleted = const Value.absent(),
     this.isArchived = const Value.absent(),
@@ -945,6 +986,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     Expression<String>? id,
     Expression<String>? name,
     Expression<String>? notes,
+    Expression<int>? priority,
     Expression<int>? color,
     Expression<bool>? isDeleted,
     Expression<bool>? isArchived,
@@ -954,6 +996,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (notes != null) 'notes': notes,
+      if (priority != null) 'priority': priority,
       if (color != null) 'color': color,
       if (isDeleted != null) 'is_deleted': isDeleted,
       if (isArchived != null) 'is_archived': isArchived,
@@ -965,6 +1008,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     Value<String>? id,
     Value<String>? name,
     Value<String?>? notes,
+    Value<int?>? priority,
     Value<Color>? color,
     Value<bool?>? isDeleted,
     Value<bool?>? isArchived,
@@ -974,6 +1018,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
       id: id ?? this.id,
       name: name ?? this.name,
       notes: notes ?? this.notes,
+      priority: priority ?? this.priority,
       color: color ?? this.color,
       isDeleted: isDeleted ?? this.isDeleted,
       isArchived: isArchived ?? this.isArchived,
@@ -992,6 +1037,9 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
+    }
+    if (priority.present) {
+      map['priority'] = Variable<int>(priority.value);
     }
     if (color.present) {
       map['color'] = Variable<int>(
@@ -1016,6 +1064,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('notes: $notes, ')
+          ..write('priority: $priority, ')
           ..write('color: $color, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('isArchived: $isArchived, ')
@@ -2661,6 +2710,7 @@ typedef $$AccountsTableCreateCompanionBuilder =
       Value<String> id,
       required String name,
       Value<String?> notes,
+      Value<int?> priority,
       Value<Color> color,
       Value<bool?> isDeleted,
       Value<bool?> isArchived,
@@ -2671,6 +2721,7 @@ typedef $$AccountsTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> name,
       Value<String?> notes,
+      Value<int?> priority,
       Value<Color> color,
       Value<bool?> isDeleted,
       Value<bool?> isArchived,
@@ -2721,6 +2772,11 @@ class $$AccountsTableFilterComposer
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get priority => $composableBuilder(
+    column: $table.priority,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2790,6 +2846,11 @@ class $$AccountsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get priority => $composableBuilder(
+    column: $table.priority,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get color => $composableBuilder(
     column: $table.color,
     builder: (column) => ColumnOrderings(column),
@@ -2823,6 +2884,9 @@ class $$AccountsTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<int> get priority =>
+      $composableBuilder(column: $table.priority, builder: (column) => column);
 
   GeneratedColumnWithTypeConverter<Color, int> get color =>
       $composableBuilder(column: $table.color, builder: (column) => column);
@@ -2892,6 +2956,7 @@ class $$AccountsTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<int?> priority = const Value.absent(),
                 Value<Color> color = const Value.absent(),
                 Value<bool?> isDeleted = const Value.absent(),
                 Value<bool?> isArchived = const Value.absent(),
@@ -2900,6 +2965,7 @@ class $$AccountsTableTableManager
                 id: id,
                 name: name,
                 notes: notes,
+                priority: priority,
                 color: color,
                 isDeleted: isDeleted,
                 isArchived: isArchived,
@@ -2910,6 +2976,7 @@ class $$AccountsTableTableManager
                 Value<String> id = const Value.absent(),
                 required String name,
                 Value<String?> notes = const Value.absent(),
+                Value<int?> priority = const Value.absent(),
                 Value<Color> color = const Value.absent(),
                 Value<bool?> isDeleted = const Value.absent(),
                 Value<bool?> isArchived = const Value.absent(),
@@ -2918,6 +2985,7 @@ class $$AccountsTableTableManager
                 id: id,
                 name: name,
                 notes: notes,
+                priority: priority,
                 color: color,
                 isDeleted: isDeleted,
                 isArchived: isArchived,
