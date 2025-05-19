@@ -2,12 +2,94 @@ import 'package:budget/utils/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
+class IconButtonWithTooltip extends StatefulWidget {
+  final String tooltipText;
+  final bool isFocused;
+
+  const IconButtonWithTooltip({super.key, required this.tooltipText, this.isFocused = false});
+
+  @override
+  State<IconButtonWithTooltip> createState() => _IconButtonWithTooltipState();
+}
+
+class _IconButtonWithTooltipState extends State<IconButtonWithTooltip> {
+  // TODO: Make this disappear on outside tap
+  OverlayEntry? _overlayEntry;
+  final LayerLink _layerLink = LayerLink();
+  bool _isTooltipVisible = false;
+
+  @override
+  void dispose() {
+    _removeTooltip();
+    super.dispose();
+  }
+
+  void _toggleTooltip() {
+    if (_isTooltipVisible) {
+      _removeTooltip();
+    } else {
+      _showTooltip();
+    }
+    setState(() {
+      _isTooltipVisible = !_isTooltipVisible;
+    });
+  }
+
+  void _removeTooltip() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  void _showTooltip() {
+    _overlayEntry = _createOverlayEntry();
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  OverlayEntry _createOverlayEntry() => OverlayEntry(
+    builder:
+        (context) => Positioned(
+          top: 50,
+          left: 50,
+          width: 250,
+          child: CompositedTransformFollower(
+            link: _layerLink,
+            showWhenUnlinked: false,
+            // offset: Offset(0, 0),
+            followerAnchor: Alignment.topCenter, // Make top-center of tooltip
+            targetAnchor: Alignment.bottomCenter, // align with bottom-center of icon
+            child: Material(
+              elevation: 4.0,
+              borderRadius: BorderRadius.circular(4),
+              child: Padding(
+                padding: EdgeInsets.all(4),
+                child: Text(
+                  widget.tooltipText,
+                  textAlign: TextAlign.center,
+                )
+              )
+            )
+          ),
+        ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return CompositedTransformTarget(link: _layerLink, child: IconButton(
+      icon: Icon(Icons.help, color: widget.isFocused ? Theme.of(context).colorScheme.primary : null),
+      tooltip: _isTooltipVisible ? '' : 'Tap for info',
+      onPressed: _toggleTooltip
+    ));
+  }
+}
+
 class CustomInputFormField extends StatelessWidget {
   final String label;
   final TextInputType? textInputType;
   final TextEditingController? controller;
   final int? maxLines;
   final String? Function(String?)? validator;
+  final String? helpText;
+  final Widget? suffixIcon;
 
   const CustomInputFormField({
     super.key,
@@ -16,6 +98,8 @@ class CustomInputFormField extends StatelessWidget {
     this.maxLines,
     this.validator,
     this.textInputType,
+    this.helpText,
+    this.suffixIcon,
   });
   @override
   Widget build(BuildContext context) {
@@ -26,6 +110,7 @@ class CustomInputFormField extends StatelessWidget {
         labelText: label,
         border: OutlineInputBorder(),
         alignLabelWithHint: true,
+        suffixIcon: suffixIcon
       ),
       validator: validator,
       maxLines: maxLines,
