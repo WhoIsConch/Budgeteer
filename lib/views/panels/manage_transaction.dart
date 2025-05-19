@@ -67,9 +67,10 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   void _hydrateTransaction() async {
     if (!isEditing) return;
 
-    var hydrated = await context.read<TransactionDao>().hydrateTransaction(
-      initialTransaction!,
-    );
+    var hydrated = await context
+        .read<AppDatabase>()
+        .transactionDao
+        .hydrateTransaction(initialTransaction!);
 
     if (hydrated.categoryPair != null) {
       setState(() {
@@ -236,17 +237,16 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
         final newTransaction = _buildTransaction();
 
         final db = context.read<AppDatabase>();
-        final dao = context.read<TransactionDao>();
         HydratedTransaction result;
         Transaction raw;
 
         if (isEditing) {
-          raw = await db.updateTransaction(newTransaction);
+          raw = await db.transactionDao.updateTransaction(newTransaction);
         } else {
-          raw = await db.createTransaction(newTransaction);
+          raw = await db.transactionDao.createTransaction(newTransaction);
         }
 
-        result = await dao.hydrateTransaction(raw);
+        result = await db.transactionDao.hydrateTransaction(raw);
 
         if (context.mounted) {
           if (!widget.returnResult) {
@@ -316,7 +316,11 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
               children: [
                 Expanded(
                   child: StreamBuilder(
-                    stream: context.read<AppDatabase>().watchCategories(),
+                    stream:
+                        context
+                            .read<AppDatabase>()
+                            .categoryDao
+                            .watchCategories(),
                     builder: (context, snapshot) {
                       final List<CategoryWithAmount?> values =
                           snapshot.hasData ? [...snapshot.data!, null] : [];
@@ -406,7 +410,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
               children: [
                 Expanded(
                   child: StreamBuilder(
-                    stream: context.read<GoalDao>().watchGoals(),
+                    stream: context.read<AppDatabase>().goalDao.watchGoals(),
                     builder: (context, snapshot) {
                       final List<GoalWithAchievedAmount?> goals =
                           snapshot.hasData ? [...snapshot.data!, null] : [];

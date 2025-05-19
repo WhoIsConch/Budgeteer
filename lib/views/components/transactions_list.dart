@@ -138,7 +138,7 @@ class _TransactionsListState extends State<TransactionsList> {
   Widget getList() {
     // Return a stack with a listview in it so we can put that floating
     // action button at the bottom right
-    final dao = context.read<TransactionDao>();
+    final db = context.read<AppDatabase>();
     List<Widget> stackChildren;
 
     if (widget.transactions == null) {
@@ -149,7 +149,7 @@ class _TransactionsListState extends State<TransactionsList> {
           // key: ValueKey(
           //     'tx_stream_${widget.filters.hashCode}_${widget.sort.hashCode}'),
           initialData: const [],
-          stream: dao.watchTransactionsPage(
+          stream: db.transactionDao.watchTransactionsPage(
             filters: widget.filters,
             sort: widget.sort,
             showArchived: true,

@@ -197,7 +197,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
     // Returns a list of selected categories.
     // This shows an AlertDialog with nothing in it other than a dropdown
     // which a user can select multiple categories from.
-    final dbProvider = context.read<AppDatabase>();
+    final db = context.read<AppDatabase>();
 
     List<CategoryWithAmount> selectedCategories =
         provider.getFilterValue<List<CategoryWithAmount>>() ?? [];
@@ -218,7 +218,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
                 width: double.maxFinite,
                 child: StreamBuilder<List<CategoryWithAmount>>(
                   initialData: const [],
-                  stream: dbProvider.watchCategories(),
+                  stream: db.categoryDao.watchCategories(),
                   builder:
                       (context, snapshot) => ListView.builder(
                         shrinkWrap: true,

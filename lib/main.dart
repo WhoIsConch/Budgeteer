@@ -50,14 +50,6 @@ void main() async {
     dispose: (_, db) => db.close(),
   );
 
-  final daoProvider = ProxyProvider<AppDatabase, TransactionDao>(
-    update: (_, db, _) => TransactionDao(db),
-  );
-
-  final goalDaoProvider = ProxyProvider<AppDatabase, GoalDao>(
-    update: (_, db, _) => GoalDao(db),
-  );
-
   final transactionProvider = ChangeNotifierProvider<TransactionProvider>(
     create: (context) => TransactionProvider(),
   );
@@ -70,13 +62,7 @@ void main() async {
 
   runApp(
     MultiProvider(
-      providers: [
-        dbProvider,
-        daoProvider,
-        goalDaoProvider,
-        transactionProvider,
-        snackBarProvider,
-      ],
+      providers: [dbProvider, transactionProvider, snackBarProvider],
       child: const BudgetApp(),
     ),
   );

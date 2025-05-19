@@ -115,7 +115,7 @@ class _GoalPreviewCardState extends State<GoalPreviewCard> {
 
   @override
   Widget build(BuildContext context) {
-    final goalDao = context.read<GoalDao>();
+    final db = context.read<AppDatabase>();
 
     return Card(
       color: Theme.of(context).colorScheme.secondaryContainer,
@@ -138,7 +138,7 @@ class _GoalPreviewCardState extends State<GoalPreviewCard> {
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 200),
               child: StreamBuilder<List<GoalWithAchievedAmount>>(
-                stream: goalDao.watchGoals(includeFinished: false),
+                stream: db.goalDao.watchGoals(includeFinished: false),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return const LinearProgressIndicator();

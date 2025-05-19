@@ -660,7 +660,7 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     }
 
     if (transaction.category != null) {
-      category = await db.getCategoryById(transaction.category!);
+      category = await db.categoryDao.getCategoryById(transaction.category!);
     }
 
     if (transaction.accountId != null) {
@@ -768,75 +768,43 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
         (t) => t.id.isIn(ids),
       )).write(TransactionsCompanion(isArchived: Value(status)));
 
-  Future<int> setCategoriesArchived(List<String> ids, bool status) =>
-      (update(categories)..where(
-        (t) => t.id.isIn(ids),
-      )).write(CategoriesCompanion(isArchived: Value(status)));
-
-  Future<int> setAccountsArchived(List<String> ids, bool status) =>
-      (update(accounts)..where(
-        (t) => t.id.isIn(ids),
-      )).write(AccountsCompanion(isArchived: Value(status)));
-
   Future<int> setTransactionsDeleted(List<String> ids, bool status) =>
       (update(transactions)..where(
         (t) => t.id.isIn(ids),
       )).write(TransactionsCompanion(isDeleted: Value(status)));
 
-  Future<int> setCategoriesDeleted(List<String> ids, bool status) =>
-      (update(categories)..where(
-        (c) => c.id.isIn(ids),
-      )).write(CategoriesCompanion(isDeleted: Value(status)));
-
   Future<int> permanentlyDeleteTransactions(List<String> ids) =>
       (delete(transactions)..where((t) => t.id.isIn(ids))).go();
 
-  Future<int> permanentlyDeleteCategories(List<String> ids) =>
-      (delete(categories)..where((c) => c.id.isIn(ids))).go();
-}
+  // Transaction methods
+  Future<Transaction> createTransaction(TransactionsCompanion entry) async {
+    // Generate the SQL with Drift, then write the SQL to the database.
+    final id = entry.id.present ? entry.id.value : uuid.v4();
+    // 2. Create a companion that definitely includes the ID
+    final entryWithId = entry.copyWith(id: Value(id));
 
-class QueryWithSum {
-  final JoinedSelectStatement query;
-  final Expression<double> sum;
+    final transaction = await into(transactions).insertReturning(entryWithId);
 
-  QueryWithSum(this.query, this.sum);
-}
-
-@DriftDatabase(
-  tables: [Categories, Transactions, Goals, Accounts],
-  daos: [TransactionDao, GoalDao, AccountDao],
-)
-class AppDatabase extends _$AppDatabase {
-  PowerSyncDatabase db;
-
-  AppDatabase(this.db) : super(SqliteAsyncDriftConnection(db));
-
-  @override
-  int get schemaVersion => 1;
-
-  Expression<double> getSignedTransactionSumQuery({bool summed = true}) {
-    // Mainly uses "summed" for backwards compatibility with code I wrote less
-    // than an hour ago
-    final expression = CaseWhenExpression(
-      cases: [
-        CaseWhen(
-          transactions.type.equalsValue(TransactionType.income),
-          then: transactions.amount,
-        ),
-        CaseWhen(
-          transactions.type.equalsValue(TransactionType.expense),
-          then: -transactions.amount,
-        ),
-      ],
-      orElse: const Constant(0.0),
-    );
-    if (summed) {
-      return expression.sum();
-    }
-    return expression;
+    return transaction;
   }
 
-  CaseWhen<bool, String> getCaseWhen(
+  Future<Transaction> updateTransaction(TransactionsCompanion entry) async {
+    final query = update(transactions)
+      ..where((t) => t.id.equals(entry.id.value));
+
+    return (await query.writeReturning(entry)).single;
+  }
+
+  Future<Transaction> getTransactionById(String id) =>
+      (select(transactions)..where((tbl) => tbl.id.equals(id))).getSingle();
+}
+
+@DriftAccessor(tables: [Categories])
+class CategoryDao extends DatabaseAccessor<AppDatabase>
+    with _$CategoryDaoMixin {
+  CategoryDao(super.db);
+
+  CaseWhen<bool, String> _getCaseWhen(
     CategoryResetIncrement increment,
     bool isStart,
   ) {
@@ -857,25 +825,25 @@ class AppDatabase extends _$AppDatabase {
     Expression<String> startDate = CaseWhenExpression<String>(
       cases:
           CategoryResetIncrement.values
-              .map((increment) => getCaseWhen(increment, true))
+              .map((increment) => _getCaseWhen(increment, true))
               .toList(),
     );
     Expression<String> endDate = CaseWhenExpression<String>(
       cases:
           CategoryResetIncrement.values
-              .map((increment) => getCaseWhen(increment, false))
+              .map((increment) => _getCaseWhen(increment, false))
               .toList(),
     );
 
     // A filter to check if the date is between these ranges.
-    final dateInRangeCondition = transactions.date.isBetween(
+    final dateInRangeCondition = db.transactions.date.isBetween(
       startDate,
       endDate,
     );
 
     // A filter to sign the amount, since we always want the total amount in
     // a category to be the net value
-    final signedAmount = getSignedTransactionSumQuery(summed: false);
+    final signedAmount = db.getSignedTransactionSumQuery(summed: false);
 
     // The actual condition we're going to filter by. If the reset increment is
     // never, we can't filter by dates so we ensure the filter is always true,
@@ -899,8 +867,8 @@ class AppDatabase extends _$AppDatabase {
 
     var query = select(categories).join([
       leftOuterJoin(
-        transactions,
-        transactions.category.equalsExp(categories.id),
+        db.transactions,
+        db.transactions.category.equalsExp(categories.id),
       ),
     ]);
 
@@ -933,35 +901,6 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
-  // Transaction methods
-  Future<Transaction> createTransaction(TransactionsCompanion entry) async {
-    // Generate the SQL with Drift, then write the SQL to the database.
-    final id = entry.id.present ? entry.id.value : uuid.v4();
-    // 2. Create a companion that definitely includes the ID
-    final entryWithId = entry.copyWith(id: Value(id));
-
-    final transaction = await into(transactions).insertReturning(entryWithId);
-
-    return transaction;
-  }
-
-  Future<Transaction> updateTransaction(TransactionsCompanion entry) async {
-    final query = update(transactions)
-      ..where((t) => t.id.equals(entry.id.value));
-
-    return (await query.writeReturning(entry)).single;
-  }
-
-  Future<int> deleteTransaction(Transaction entry) =>
-      delete(transactions).delete(entry);
-
-  Future<int> deleteTransactionById(String id) =>
-      (delete(transactions)..where((t) => t.id.equals(id))).go();
-
-  Future<Transaction> getTransactionById(String id) =>
-      (select(transactions)..where((tbl) => tbl.id.equals(id))).getSingle();
-
-  // Category methods
   Future<CategoryWithAmount?> getCategoryById(String id) async {
     final categorySumQuery = getCategoriesWithAmountsQuery();
 
@@ -996,9 +935,58 @@ class AppDatabase extends _$AppDatabase {
     return (await query.writeReturning(entry)).single;
   }
 
-  Future<int> deleteCategory(Category entry) =>
-      delete(categories).delete(entry);
+  Future<int> setCategoriesArchived(List<String> ids, bool status) =>
+      (update(categories)..where(
+        (t) => t.id.isIn(ids),
+      )).write(CategoriesCompanion(isArchived: Value(status)));
 
-  Future<int> deleteCategoryById(String id) =>
-      (delete(categories)..where((c) => c.id.equals(id))).go();
+  Future<int> setCategoriesDeleted(List<String> ids, bool status) =>
+      (update(categories)..where(
+        (c) => c.id.isIn(ids),
+      )).write(CategoriesCompanion(isDeleted: Value(status)));
+
+  Future<int> permanentlyDeleteCategories(List<String> ids) =>
+      (delete(categories)..where((c) => c.id.isIn(ids))).go();
+}
+
+class QueryWithSum {
+  final JoinedSelectStatement query;
+  final Expression<double> sum;
+
+  QueryWithSum(this.query, this.sum);
+}
+
+@DriftDatabase(
+  tables: [Categories, Transactions, Goals, Accounts],
+  daos: [TransactionDao, GoalDao, AccountDao, CategoryDao],
+)
+class AppDatabase extends _$AppDatabase {
+  PowerSyncDatabase db;
+
+  AppDatabase(this.db) : super(SqliteAsyncDriftConnection(db));
+
+  @override
+  int get schemaVersion => 1;
+
+  Expression<double> getSignedTransactionSumQuery({bool summed = true}) {
+    // Mainly uses "summed" for backwards compatibility with code I wrote less
+    // than an hour ago
+    final expression = CaseWhenExpression(
+      cases: [
+        CaseWhen(
+          transactions.type.equalsValue(TransactionType.income),
+          then: transactions.amount,
+        ),
+        CaseWhen(
+          transactions.type.equalsValue(TransactionType.expense),
+          then: -transactions.amount,
+        ),
+      ],
+      orElse: const Constant(0.0),
+    );
+    if (summed) {
+      return expression.sum();
+    }
+    return expression;
+  }
 }

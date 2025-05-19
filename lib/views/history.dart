@@ -21,7 +21,7 @@ class History extends StatefulWidget {
 }
 
 class _HistoryState extends State<History> {
-  late final TransactionDao _transactionDao;
+  late final AppDatabase _db;
   late final ValueNotifier<List<Transaction>> _selectedEvents;
 
   LinkedHashMap<DateTime, List<Transaction>> _events = LinkedHashMap(
@@ -38,7 +38,7 @@ class _HistoryState extends State<History> {
   void initState() {
     super.initState();
 
-    _transactionDao = context.read<TransactionDao>();
+    _db = context.read<AppDatabase>();
     _selectedEvents = ValueNotifier(_getEventsForDay(_selectedDay));
 
     _initStreamSubscription(_focusedDay);
@@ -64,7 +64,7 @@ class _HistoryState extends State<History> {
     final start = firstDayOfMonth;
     final end = lastDayOfMonth.add(const Duration(days: 1));
 
-    _transactionsSubscription = _transactionDao
+    _transactionsSubscription = _db.transactionDao
         .watchTransactionsPage(
           filters: [
             TransactionFilter<DateTimeRange>(

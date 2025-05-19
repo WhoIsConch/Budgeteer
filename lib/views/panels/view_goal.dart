@@ -82,11 +82,11 @@ class _GoalViewerState extends State<GoalViewer> {
 
   @override
   Widget build(BuildContext context) {
-    final goalDao = context.read<GoalDao>();
+    final db = context.read<AppDatabase>();
 
     return StreamBuilder<GoalWithAchievedAmount>(
       initialData: widget.initialGoalPair,
-      stream: goalDao.watchGoalById(widget.initialGoalPair.goal.id),
+      stream: db.goalDao.watchGoalById(widget.initialGoalPair.goal.id),
       builder: (context, snapshot) {
         final goalPair = snapshot.data!;
         final goal = goalPair.goal;

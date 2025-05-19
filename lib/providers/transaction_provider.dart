@@ -47,16 +47,14 @@ class TransactionProvider extends ChangeNotifier {
 }
 
 class DeletionManager {
-  late final TransactionDao dao;
-  late final GoalDao goalDao;
+  late final AppDatabase db;
   late final SnackbarProvider snackbarProvider;
 
   // The int represents the list's hash code.
   final Map<List<String>, Timer> _activeDeleteTimers = {};
 
   DeletionManager(BuildContext context) {
-    dao = context.read<TransactionDao>();
-    goalDao = context.read<GoalDao>();
+    db = context.read<AppDatabase>();
     snackbarProvider = context.read<SnackbarProvider>();
   }
 
@@ -77,13 +75,17 @@ class DeletionManager {
 
     switch (T) {
       case Transaction:
-        dao.setTransactionsDeleted(objectIds, false);
+        db.transactionDao.setTransactionsDeleted(objectIds, false);
         break;
       case Category:
-        dao.setCategoriesDeleted(objectIds, false);
+        db.categoryDao.setCategoriesDeleted(objectIds, false);
         break;
       case Goal:
-        goalDao.setGoalsDeleted(objectIds, false);
+        db.goalDao.setGoalsDeleted(objectIds, false);
+        break;
+      case Account:
+        db.accountDao.setAccountsDeleted(objectIds, false);
+        break;
       case _:
         throw 'Unexpected Type $T';
     }
@@ -94,16 +96,16 @@ class DeletionManager {
 
     switch (T) {
       case Transaction:
-        dao.setTransactionsArchived(objectIds, false);
+        db.transactionDao.setTransactionsArchived(objectIds, false);
         break;
       case Category:
-        dao.setCategoriesArchived(objectIds, false);
+        db.categoryDao.setCategoriesArchived(objectIds, false);
         break;
       case Account:
-        dao.setAccountsArchived(objectIds, false);
+        db.accountDao.setAccountsArchived(objectIds, false);
         break;
       case Goal:
-        goalDao.setGoalsFinished(objectIds, false);
+        db.goalDao.setGoalsFinished(objectIds, false);
       case _:
         throw 'Unexpected Type $T';
     }
@@ -112,14 +114,16 @@ class DeletionManager {
   void _deletePermanently<T>(List<String> objectIds) {
     switch (T) {
       case Transaction:
-        dao.permanentlyDeleteTransactions(objectIds);
+        db.transactionDao.permanentlyDeleteTransactions(objectIds);
         break;
       case Category:
-        dao.permanentlyDeleteCategories(objectIds);
+        db.categoryDao.permanentlyDeleteCategories(objectIds);
         break;
       case Goal:
-        goalDao.permanentlyDeleteGoals(objectIds);
+        db.goalDao.permanentlyDeleteGoals(objectIds);
         break;
+      case AccountDao:
+        db.accountDao.permanentlyDeleteAccounts(objectIds);
       case _:
         throw 'Unexpected type $T';
     }
@@ -137,17 +141,23 @@ class DeletionManager {
 
     switch (T) {
       case Transaction:
-        deletionFuture = dao.setTransactionsDeleted(objectIds, true);
+        deletionFuture = db.transactionDao.setTransactionsDeleted(
+          objectIds,
+          true,
+        );
         name = objectIds.length == 1 ? 'Transaction' : 'Transactions';
         break;
       case Category:
-        deletionFuture = dao.setCategoriesDeleted(objectIds, true);
+        deletionFuture = db.categoryDao.setCategoriesDeleted(objectIds, true);
         name = objectIds.length == 1 ? 'Category' : 'Categories';
         break;
       case Goal:
-        deletionFuture = goalDao.setGoalsDeleted(objectIds, true);
+        deletionFuture = db.goalDao.setGoalsDeleted(objectIds, true);
         name = objectIds.length == 1 ? 'Goal' : 'Goals';
         break;
+      case Account:
+        deletionFuture = db.accountDao.setAccountsDeleted(objectIds, true);
+        name = objectIds.length == 1 ? 'Account' : 'Accounts';
       case _:
         throw 'Unexpected type $T';
     }
@@ -190,22 +200,25 @@ class DeletionManager {
     switch (T) {
       case Transaction:
         deletedItemString = isSingle ? 'Transaction' : 'Transactions';
-        archivalFuture = dao.setTransactionsArchived(objectIds, true);
+        archivalFuture = db.transactionDao.setTransactionsArchived(
+          objectIds,
+          true,
+        );
         break;
 
       case Category:
         deletedItemString = isSingle ? 'Category' : 'Categories';
-        archivalFuture = dao.setCategoriesArchived(objectIds, true);
+        archivalFuture = db.categoryDao.setCategoriesArchived(objectIds, true);
         break;
 
       case Account:
         deletedItemString = isSingle ? 'Account' : 'Accounts';
-        archivalFuture = dao.setAccountsArchived(objectIds, true);
+        archivalFuture = db.accountDao.setAccountsArchived(objectIds, true);
         break;
 
       case Goal:
         deletedItemString = isSingle ? 'Goal' : 'Goals';
-        archivalFuture = goalDao.setGoalsFinished(objectIds, true);
+        archivalFuture = db.goalDao.setGoalsFinished(objectIds, true);
 
       case _:
         throw 'Unexpected Type $T';

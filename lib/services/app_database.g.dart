@@ -15,6 +15,9 @@ mixin _$TransactionDaoMixin on DatabaseAccessor<AppDatabase> {
   $GoalsTable get goals => attachedDatabase.goals;
   $TransactionsTable get transactions => attachedDatabase.transactions;
 }
+mixin _$CategoryDaoMixin on DatabaseAccessor<AppDatabase> {
+  $CategoriesTable get categories => attachedDatabase.categories;
+}
 
 class $CategoriesTable extends Categories
     with TableInfo<$CategoriesTable, Category> {
@@ -2211,6 +2214,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final GoalDao goalDao = GoalDao(this as AppDatabase);
   late final AccountDao accountDao = AccountDao(this as AppDatabase);
+  late final CategoryDao categoryDao = CategoryDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

@@ -270,7 +270,7 @@ class _PieChartCardState extends State<PieChartCard> {
   final List<String> _typeTabs = ['Expenses', 'Income', 'Net'];
   final List<String> _containerTabs = ['Category', 'Goal', 'Account'];
 
-  late final TransactionDao _transactionDao;
+  late final AppDatabase _db;
   late TransactionProvider _filtersProvider;
 
   final chartCenterRadius = 60.0; // Don't let the text go beyond that radius
@@ -282,7 +282,7 @@ class _PieChartCardState extends State<PieChartCard> {
     // Post-frame callback so the widget is fully built before
     // relying on the context, which is frowned upon
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _transactionDao = context.read<TransactionDao>();
+      _db = context.read<AppDatabase>();
       _filtersProvider = context.read<TransactionProvider>();
       TransactionType? currentType =
           _filtersProvider.getFilterValue<TransactionType>();
@@ -331,7 +331,7 @@ class _PieChartCardState extends State<PieChartCard> {
     List<Future<double?>> futures = [];
     for (final category in categories) {
       futures.add(
-        _transactionDao
+        _db.transactionDao
             .watchTotalAmount(
               nullCategory: category == null,
               category: category,
@@ -505,7 +505,8 @@ class _PieChartCardState extends State<PieChartCard> {
             child: Padding(
               padding: const EdgeInsets.all(12.0),
               child: StreamBuilder<List<CategoryWithAmount>>(
-                stream: context.read<AppDatabase>().watchCategories(),
+                stream:
+                    context.read<AppDatabase>().categoryDao.watchCategories(),
                 builder: (context, categorySnapshot) {
                   if (categorySnapshot.connectionState ==
                           ConnectionState.waiting &&
@@ -636,7 +637,7 @@ class _LineChartCardState extends State<LineChartCard> {
     // yearly breakdown. Hardly ideal.
 
     final int daysDifference = dateRange.duration.inDays;
-    final TransactionDao transactionDao = context.read<TransactionDao>();
+    final AppDatabase db = context.read<AppDatabase>();
 
     AggregationLevel aggregationLevel = switch (daysDifference) {
       <= 90 => AggregationLevel.daily,
@@ -644,7 +645,7 @@ class _LineChartCardState extends State<LineChartCard> {
       _ => AggregationLevel.monthly,
     };
 
-    final List<FinancialDataPoint> points = await transactionDao
+    final List<FinancialDataPoint> points = await db.transactionDao
         .getAggregatedRangeData(dateRange, aggregationLevel);
 
     List<FlSpot> expenseSpots = [];
@@ -861,7 +862,7 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
 
   Future<BarChartCalculationData> _calculateData() async {
     final int daysDifference = dateRange.duration.inDays;
-    final TransactionDao transactionDao = context.read<TransactionDao>();
+    final AppDatabase db = context.read<AppDatabase>();
 
     AggregationLevel aggregationLevel = switch (daysDifference) {
       <= 90 => AggregationLevel.daily,
@@ -869,7 +870,7 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
       _ => AggregationLevel.monthly,
     };
 
-    List<FinancialDataPoint> points = await transactionDao
+    List<FinancialDataPoint> points = await db.transactionDao
         .getAggregatedRangeData(dateRange, aggregationLevel);
 
     // Manage the list and filter it into data that we actually want to use

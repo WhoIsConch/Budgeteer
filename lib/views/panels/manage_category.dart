@@ -96,9 +96,9 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
 
         try {
           if (isEditing) {
-            newCategory = await db.updateCategory(partialCategory);
+            newCategory = await db.categoryDao.updateCategory(partialCategory);
           } else {
-            newCategory = await db.createCategory(partialCategory);
+            newCategory = await db.categoryDao.createCategory(partialCategory);
           }
 
           final CategoryWithAmount withAmount = CategoryWithAmount(

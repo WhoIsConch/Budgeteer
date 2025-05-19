@@ -22,11 +22,11 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late TransactionDao dao;
+  late AppDatabase db;
 
   @override
   Widget build(BuildContext context) {
-    dao = context.watch<TransactionDao>();
+    db = context.watch<AppDatabase>();
 
     return Scaffold(
       body: SingleChildScrollView(
@@ -37,7 +37,7 @@ class _HomePageState extends State<HomePage> {
           children: [
             const WelcomeHeader(),
             StreamBuilder(
-              stream: dao.watchTotalAmount(),
+              stream: db.transactionDao.watchTotalAmount(),
               initialData: 0.0,
               builder: (context, snapshot) {
                 bool isNegative = (snapshot.data ?? 0) < 0;
@@ -117,10 +117,10 @@ class TransactionPreviewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TransactionDao dao = context.watch<TransactionDao>();
+    final AppDatabase db = context.watch<AppDatabase>();
 
     return StreamBuilder<List<Transaction>>(
-      stream: dao.watchTransactionsPage(
+      stream: db.transactionDao.watchTransactionsPage(
         limit: 10,
         filters: [
           TransactionFilter<DateTimeRange>(
@@ -194,8 +194,10 @@ class TransactionPreviewCard extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(12), // To match the card's radius
           onTap: () async {
-            final dao = context.read<TransactionDao>();
-            final hydrated = await dao.hydrateTransaction(transaction);
+            final db = context.read<AppDatabase>();
+            final hydrated = await db.transactionDao.hydrateTransaction(
+              transaction,
+            );
 
             if (!context.mounted) return;
 

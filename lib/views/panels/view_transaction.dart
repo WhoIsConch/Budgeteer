@@ -42,6 +42,7 @@ class ViewTransaction extends StatelessWidget {
           action: () async {
             final categoryPair = await context
                 .read<AppDatabase>()
+                .categoryDao
                 .getCategoryById(category!.id);
 
             if (categoryPair == null) return;
@@ -140,8 +141,8 @@ class ViewTransaction extends StatelessWidget {
           ),
       onArchive: () {
         if (transaction.isArchived ?? false) {
-          final transactionDao = context.read<TransactionDao>();
-          transactionDao.setTransactionsArchived([transaction.id], false);
+          final db = context.read<AppDatabase>();
+          db.transactionDao.setTransactionsArchived([transaction.id], false);
         } else {
           final deletionManager = DeletionManager(context);
           deletionManager.stageObjectsForArchival<Transaction>([

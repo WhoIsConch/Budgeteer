@@ -86,16 +86,16 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
     return EditFormScreen(
       title: isEditing ? 'Edit Goal' : 'Create goal',
       onConfirm: () async {
-        final goalDao = context.read<GoalDao>();
+        final db = context.read<AppDatabase>();
         final currentGoal = _buildGoal();
 
         Goal newGoal;
 
         try {
           if (isEditing) {
-            newGoal = await goalDao.updateGoal(currentGoal);
+            newGoal = await db.goalDao.updateGoal(currentGoal);
           } else {
-            newGoal = await goalDao.createGoal(currentGoal);
+            newGoal = await db.goalDao.createGoal(currentGoal);
           }
 
           final GoalWithAchievedAmount goalPair = GoalWithAchievedAmount(
