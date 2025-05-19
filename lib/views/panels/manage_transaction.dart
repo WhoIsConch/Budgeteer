@@ -274,18 +274,18 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
             SegmentButtonData(label: 'Income', value: TransactionType.income),
           ],
         ),
-        CustomInputFormField(label: 'Title', controller: controllers['title']),
+        TextInputEditField(label: 'Title', controller: controllers['title']),
         Row(
           spacing: 16.0,
           children: [
             Expanded(
-              child: CustomAmountFormField(
+              child: AmountEditField(
                 label: 'Amount',
                 controller: controllers['amount'],
               ),
             ),
             Expanded(
-              child: CustomDatePickerFormField(
+              child: DatePickerEditField(
                 label: 'Date',
                 controller: controllers['date'],
                 selectedDate: _selectedDate,
@@ -352,7 +352,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                         helperText = null;
                       }
 
-                      return CustomDropDownFormField<CategoryWithAmount>(
+                      return DropdownEditField<CategoryWithAmount>(
                         fieldState: state,
                         label: dropdownLabel,
                         initialSelection: _selectedCategoryPair,
@@ -431,7 +431,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                         totalBalance: _getTotalGoalBalance(),
                       );
 
-                      return CustomDropDownFormField(
+                      return DropdownEditField(
                         fieldState: fieldState,
                         label: dropdownLabel,
                         initialSelection: _selectedGoal,
@@ -516,7 +516,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                             '$prefix\$${formatAmount(total.abs(), exact: true)}';
                       }
 
-                      return CustomDropDownFormField(
+                      return DropdownEditField(
                         fieldState: fieldState,
                         label: dropdownLabel,
                         initialSelection: _selectedAccount,
@@ -566,7 +566,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
             );
           },
         ),
-        CustomInputFormField(
+        TextInputEditField(
           label: 'Notes',
           controller: controllers['notes'],
           maxLines: 3,

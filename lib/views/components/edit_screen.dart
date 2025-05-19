@@ -82,7 +82,7 @@ class _IconButtonWithTooltipState extends State<IconButtonWithTooltip> {
   }
 }
 
-class CustomInputFormField extends StatelessWidget {
+class TextInputEditField extends StatelessWidget {
   final String label;
   final TextInputType? textInputType;
   final TextEditingController? controller;
@@ -91,7 +91,7 @@ class CustomInputFormField extends StatelessWidget {
   final String? helpText;
   final Widget? suffixIcon;
 
-  const CustomInputFormField({
+  const TextInputEditField({
     super.key,
     required this.label,
     this.controller,
@@ -118,12 +118,12 @@ class CustomInputFormField extends StatelessWidget {
   }
 }
 
-class CustomToggleFormField extends StatelessWidget {
+class ToggleEditField extends StatelessWidget {
   final String label;
   final ValueChanged<bool?> onChanged;
   final bool value;
 
-  const CustomToggleFormField({
+  const ToggleEditField({
     super.key,
     required this.label,
     required this.onChanged,
@@ -149,13 +149,13 @@ class CustomToggleFormField extends StatelessWidget {
   }
 }
 
-class CustomDatePickerFormField extends StatelessWidget {
+class DatePickerEditField extends StatelessWidget {
   final String label;
   final DateTime selectedDate;
   final TextEditingController? controller;
   final ValueChanged<DateTime?> onChanged;
 
-  const CustomDatePickerFormField({
+  const DatePickerEditField({
     super.key,
     required this.label,
     required this.selectedDate,
@@ -192,11 +192,11 @@ class CustomDatePickerFormField extends StatelessWidget {
   }
 }
 
-class CustomAmountFormField extends StatelessWidget {
+class AmountEditField extends StatelessWidget {
   final String label;
   final TextEditingController? controller;
 
-  const CustomAmountFormField({
+  const AmountEditField({
     super.key,
     required this.label,
     required this.controller,
@@ -221,12 +221,12 @@ class CustomAmountFormField extends StatelessWidget {
   }
 }
 
-class CustomColorPickerFormField extends StatelessWidget {
+class ColorPickerEditField extends StatelessWidget {
   final String label;
   final Color selectedColor;
   final ValueChanged<Color> onChanged;
 
-  const CustomColorPickerFormField({
+  const ColorPickerEditField({
     super.key,
     required this.label,
     required this.selectedColor,
@@ -290,7 +290,7 @@ class CustomColorPickerFormField extends StatelessWidget {
   }
 }
 
-class CustomDropDownFormField<T> extends StatelessWidget {
+class DropdownEditField<T> extends StatelessWidget {
   final String label;
   final ValueChanged<T?> onChanged;
   final TextEditingController? controller;
@@ -302,7 +302,7 @@ class CustomDropDownFormField<T> extends StatelessWidget {
   final String? errorText;
   final String? helperText;
 
-  const CustomDropDownFormField({
+  const DropdownEditField({
     super.key,
     required this.label,
     required this.onChanged,

@@ -127,14 +127,14 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
           spacing: 8.0,
           children: [
             Expanded(
-              child: CustomInputFormField(
+              child: TextInputEditField(
                 controller: _controllers['name'],
                 label: 'Name',
                 validator: validateTitle,
               ),
             ),
             Expanded(
-              child: CustomAmountFormField(
+              child: AmountEditField(
                 label: 'Amount',
                 controller: _controllers['amount'],
               ),
@@ -145,7 +145,7 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
           spacing: 8.0,
           children: [
             Expanded(
-              child: CustomDatePickerFormField(
+              child: DatePickerEditField(
                 selectedDate: _selectedDate,
                 label: 'Date',
                 controller: _controllers['date'],
@@ -159,19 +159,19 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
                 },
               ),
             ),
-            CustomColorPickerFormField(
+            ColorPickerEditField(
               label: 'Color',
               selectedColor: _selectedColor ?? Colors.white,
               onChanged: (color) => setState(() => _selectedColor = color),
             ),
           ],
         ),
-        CustomToggleFormField(
+        ToggleEditField(
           label: 'Mark as finished',
           value: _isFinished,
           onChanged: (_) => setState(() => _isFinished = !_isFinished),
         ),
-        CustomInputFormField(
+        TextInputEditField(
           label: 'Notes (optional)',
           controller: _controllers['notes'],
           maxLines: 3,

@@ -107,7 +107,7 @@ class _ManageAccountFormState extends State<ManageAccountForm> {
         }
       },
       formFields: [
-        CustomInputFormField(
+        TextInputEditField(
           label: 'Name',
           controller: _controllers['name'],
           validator: validateTitle,
@@ -116,7 +116,7 @@ class _ManageAccountFormState extends State<ManageAccountForm> {
           spacing: 16.0,
           children: [
             Expanded(
-              child: CustomInputFormField(
+              child: TextInputEditField(
                 label: 'Priority',
                 controller: _controllers['priority'],
                 validator: (value) {
@@ -135,14 +135,14 @@ class _ManageAccountFormState extends State<ManageAccountForm> {
                   tooltipText: 'Defines the order in which accounts should appear. The top-priority account will appear first on the home page'),
               ),
             ),
-            CustomColorPickerFormField(
+            ColorPickerEditField(
               label: 'Color',
               selectedColor: _selectedColor ?? Colors.white,
               onChanged: (color) => setState(() => _selectedColor = color),
             ),
           ],
         ),
-        CustomInputFormField(
+        TextInputEditField(
           label: 'Notes',
           controller: _controllers['notes'],
           maxLines: 3,

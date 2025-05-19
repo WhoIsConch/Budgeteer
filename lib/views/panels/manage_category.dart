@@ -130,13 +130,13 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
           spacing: 16.0,
           children: [
             Expanded(
-              child: CustomInputFormField(
+              child: TextInputEditField(
                 label: 'Name',
                 controller: _controllers['name'],
                 validator: validateTitle,
               ),
             ),
-            CustomColorPickerFormField(
+            ColorPickerEditField(
               label: 'Color',
               selectedColor: _selectedColor ?? Colors.white,
               onChanged: (color) => setState(() => _selectedColor = color),
@@ -147,13 +147,13 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
           spacing: 16.0,
           children: [
             Expanded(
-              child: CustomAmountFormField(
+              child: AmountEditField(
                 label: 'Amount',
                 controller: _controllers['amount'],
               ),
             ),
             Expanded(
-              child: CustomDropDownFormField<CategoryResetIncrement>(
+              child: DropdownEditField<CategoryResetIncrement>(
                 initialSelection: _resetIncrement,
                 label: 'Reset',
                 onChanged:
@@ -171,7 +171,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
             ),
           ],
         ),
-        CustomInputFormField(
+        TextInputEditField(
           label: 'Notes',
           controller: _controllers['notes'],
           maxLines: 3,
