@@ -346,14 +346,12 @@ class CustomDropDownFormField<T> extends StatelessWidget {
 }
 
 class HybridManagerButton extends StatelessWidget {
-  final FormFieldState? formFieldState;
   final String? tooltip;
   final Icon icon;
   final dynamic Function()? onPressed;
 
   const HybridManagerButton({
     super.key,
-    this.formFieldState,
     this.tooltip,
     required this.icon,
     this.onPressed,
@@ -369,16 +367,7 @@ class HybridManagerButton extends StatelessWidget {
         onPressed: () async {
           if (onPressed == null) return;
 
-          dynamic result = onPressed!();
-
-          if (result is Future) {
-            result = await result;
-          }
-
-          if (result != null && formFieldState != null) {
-            print("Change");
-            formFieldState!.didChange(result);
-          }
+          onPressed!();
         },
       ),
     );

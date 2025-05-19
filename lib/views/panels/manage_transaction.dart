@@ -31,7 +31,6 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     'amount',
     'title',
     'notes',
-    'account',
     'date',
   ];
   late final Map<String, TextEditingController> controllers;
@@ -81,6 +80,12 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     if (hydrated.goalPair != null) {
       setState(() {
         _selectedGoal = hydrated.goalPair;
+      });
+    }
+
+    if (hydrated.accountPair != null) {
+      setState(() {
+        _selectedAccount = hydrated.accountPair;
       });
     }
 
@@ -297,7 +302,6 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
         FormField<CategoryWithAmount?>(
           autovalidateMode: AutovalidateMode.always,
           validator: (value) {
-            print(value);
             if (value == null) return null;
             if (value.category.allowNegatives) return null;
 
@@ -365,7 +369,6 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                   ),
                 ),
                 HybridManagerButton(
-                  formFieldState: state,
                   icon: Icon(
                     _selectedCategoryPair == null
                         ? Icons.add_circle_outline
@@ -386,11 +389,8 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                           ),
                     );
 
-                    if (result is String && result.isEmpty) {
-                      setState(() {
-                        _selectedCategoryPair = null;
-                      });
-                    } else if (result is CategoryWithAmount) {
+                    if (result is CategoryWithAmount) {
+                      state.didChange(result);
                       setState(() {
                         _selectedCategoryPair = result;
                       });
@@ -446,7 +446,6 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                   ),
                 ),
                 HybridManagerButton(
-                  formFieldState: fieldState,
                   icon: Icon(
                     _selectedGoal == null
                         ? Icons.add_circle_outline
@@ -465,11 +464,8 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                       ),
                     );
 
-                    if (result is String && result.isEmpty) {
-                      setState(() {
-                        _selectedGoal = null;
-                      });
-                    } else if (result is GoalWithAchievedAmount) {
+                    if (result is GoalWithAchievedAmount) {
+                      fieldState.didChange(result);
                       setState(() {
                         _selectedGoal = result;
                       });
@@ -513,14 +509,18 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                       String? formattedAmount;
                       final total = _getTotalAccountBalance();
 
+
                       if (total != null) {
+                        String prefix = total.isNegative ? '-' : '';
                         formattedAmount =
-                            '\$${formatAmount(total, exact: true)}';
+                            '$prefix\$${formatAmount(total.abs(), exact: true)}';
                       }
 
                       return CustomDropDownFormField(
                         fieldState: fieldState,
                         label: dropdownLabel,
+                        initialSelection: _selectedAccount,
+                        controller: controllers['account'],
                         onChanged:
                             (newAccount) =>
                                 setState(() => _selectedAccount = newAccount),
@@ -532,7 +532,6 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                   ),
                 ),
                 HybridManagerButton(
-                  formFieldState: fieldState,
                   icon: Icon(
                     _selectedAccount == null
                         ? Icons.add_circle_outline
@@ -542,6 +541,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                   tooltip:
                       _selectedAccount == null ? 'New account' : 'Edit account',
                   onPressed: () async {
+                    print("Pressed");
                     final result = await Navigator.of(context).push(
                       MaterialPageRoute(
                         builder:
@@ -551,18 +551,15 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                       ),
                     );
 
-                    // TODO: Figure out wtf this condition is supposed to mean
-                    if (result is String && result.isEmpty) {
-                      setState(() {
-                        _selectedAccount = null;
-                      });
-                    } else if (result is AccountWithTotal) {
+                    print("After");
+
+                    if (result is AccountWithTotal) {
+                      print(result);
+                      fieldState.didChange(result);
                       setState(() {
                         _selectedAccount = result;
                       });
                     }
-
-                    return result;
                   },
                 ),
               ],

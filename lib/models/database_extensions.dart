@@ -104,6 +104,18 @@ class AccountWithTotal {
   final double total;
 
   AccountWithTotal({required this.account, this.total = 0});
+
+  @override
+  int get hashCode => account.id.hashCode ^ total.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+    identical(this, other) ||
+        other is AccountWithTotal &&
+            runtimeType == other.runtimeType &&
+            account.id == other.account.id &&
+            total == other.total;
+  
 }
 
 class HydratedTransaction {
