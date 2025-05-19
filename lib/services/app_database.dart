@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:budget/models/data.dart';
 import 'package:budget/models/database_extensions.dart';
 import 'package:budget/utils/enums.dart';
@@ -7,26 +5,10 @@ import 'package:budget/models/filters.dart';
 import 'package:budget/utils/tools.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart' show Color, DateTimeRange;
-import 'package:intl/intl.dart';
 import 'package:powersync/powersync.dart' show PowerSyncDatabase, uuid;
 import 'package:drift_sqlite_async/drift_sqlite_async.dart';
 
 part 'app_database.g.dart';
-
-final _formatter = DateFormat('yyyy-MM-dd');
-
-int genColor() =>
-    Color((Random().nextDouble() * 0xFFFFFF).toInt()).withAlpha(255).toARGB32();
-
-class DateTextConverter extends TypeConverter<DateTime, String> {
-  const DateTextConverter();
-
-  @override
-  DateTime fromSql(String fromDb) => _formatter.parseStrict(fromDb);
-
-  @override
-  String toSql(DateTime value) => _formatter.format(value);
-}
 
 class Transactions extends Table {
   @override
@@ -71,22 +53,6 @@ class Transactions extends Table {
   Set<Column<Object>>? get primaryKey => {id};
 }
 
-extension TransactionExtensions on Transaction {
-  String formatDate() {
-    return DateFormat('MM/dd/yyyy').format(date);
-  }
-}
-
-class ColorConverter extends TypeConverter<Color, int> {
-  const ColorConverter();
-
-  @override
-  Color fromSql(int fromDb) => Color(fromDb);
-
-  @override
-  int toSql(Color value) => value.toARGB32();
-}
-
 class Categories extends Table {
   @override
   String get tableName => 'categories';
@@ -117,68 +83,6 @@ class Categories extends Table {
 
   @override
   Set<Column<Object>>? get primaryKey => {id};
-}
-
-extension CategoriesExtension on Category {
-  DateTime? getNextResetDate({DateTime? fromDate}) {
-    DateTime now = fromDate ?? DateTime.now();
-    DateTime nextReset;
-
-    switch (resetIncrement) {
-      case CategoryResetIncrement.daily:
-        // Next day at midnight
-        nextReset = DateTime(now.year, now.month, now.day + 1);
-        break;
-      case CategoryResetIncrement.weekly:
-        // Next Monday at midnight
-        nextReset = DateTime(now.year, now.month, now.day + (8 - now.weekday));
-        break;
-      case CategoryResetIncrement.monthly:
-        // First day of next month
-        if (now.month == 12) {
-          nextReset = DateTime(now.year + 1, 1, 1);
-        } else {
-          nextReset = DateTime(now.year, now.month + 1, 1);
-        }
-        break;
-      case CategoryResetIncrement.yearly:
-        // First day of next year
-        nextReset = DateTime(now.year + 1, 1, 1);
-        break;
-      default:
-        return null;
-    }
-
-    return nextReset;
-  }
-
-  String getTimeUntilNextReset({DateTime? fromDate}) {
-    final now = fromDate ?? DateTime.now();
-    final nextReset = getNextResetDate(fromDate: fromDate);
-
-    if (nextReset == null) return '';
-
-    Duration timeLeft = nextReset.difference(now);
-    int days = timeLeft.inDays;
-    int hours = timeLeft.inHours % 24;
-    int minutes = timeLeft.inMinutes % 60;
-
-    if (timeLeft.isNegative) return 'Now';
-
-    if (days > 30) {
-      int months = days ~/ 30;
-      return months == 1 ? 'a month' : '$months months';
-    } else if (days >= 7) {
-      int weeks = days ~/ 7;
-      return weeks == 1 ? 'a week' : '$weeks weeks';
-    } else if (days > 0) {
-      return days == 1 ? 'a day' : '$days days';
-    } else if (hours > 0) {
-      return hours == 1 ? 'an hour' : '$hours hours';
-    } else {
-      return minutes == 1 ? 'a minute' : '$minutes minutes';
-    }
-  }
 }
 
 class Accounts extends Table {
@@ -545,11 +449,9 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
               query..where(
                 (t) =>
                     t.date.isBiggerOrEqualValue(
-                      _formatter.format(f.value.start),
+                      formatter.format(f.value.start),
                     ) &
-                    t.date.isSmallerOrEqualValue(
-                      _formatter.format(f.value.end),
-                    ),
+                    t.date.isSmallerOrEqualValue(formatter.format(f.value.end)),
               );
           break;
         case TransactionFilter<TransactionType> f:
@@ -625,8 +527,8 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
       query =
           query..where(
             (t) => t.date.isBetweenValues(
-              _formatter.format(dateRange.start),
-              _formatter.format(dateRange.end),
+              formatter.format(dateRange.start),
+              formatter.format(dateRange.end),
             ),
           );
     }
@@ -815,7 +717,7 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     return CaseWhen(
       categories.resetIncrement.equalsValue(increment),
       then: Constant<String>(
-        _formatter.format(isStart ? timeRange.start : timeRange.end),
+        formatter.format(isStart ? timeRange.start : timeRange.end),
       ),
     );
   }
@@ -947,13 +849,6 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
 
   Future<int> permanentlyDeleteCategories(List<String> ids) =>
       (delete(categories)..where((c) => c.id.isIn(ids))).go();
-}
-
-class QueryWithSum {
-  final JoinedSelectStatement query;
-  final Expression<double> sum;
-
-  QueryWithSum(this.query, this.sum);
 }
 
 @DriftDatabase(

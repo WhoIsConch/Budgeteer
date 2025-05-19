@@ -1,5 +1,16 @@
+import 'dart:math';
+
 import 'package:budget/services/app_database.dart';
+import 'package:budget/utils/enums.dart';
 import 'package:budget/utils/validators.dart';
+import 'package:drift/drift.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+
+final formatter = DateFormat('yyyy-MM-dd');
+
+int genColor() =>
+    Color((Random().nextDouble() * 0xFFFFFF).toInt()).withAlpha(255).toARGB32();
 
 class GoalWithAchievedAmount {
   final Goal goal;
@@ -123,4 +134,99 @@ class HydratedTransaction {
           categoryPair == other.categoryPair &&
           accountPair == other.accountPair &&
           goalPair == other.goalPair;
+}
+
+class QueryWithSum {
+  final JoinedSelectStatement query;
+  final Expression<double> sum;
+
+  QueryWithSum(this.query, this.sum);
+}
+
+extension CategoriesExtension on Category {
+  DateTime? getNextResetDate({DateTime? fromDate}) {
+    DateTime now = fromDate ?? DateTime.now();
+    DateTime nextReset;
+
+    switch (resetIncrement) {
+      case CategoryResetIncrement.daily:
+        // Next day at midnight
+        nextReset = DateTime(now.year, now.month, now.day + 1);
+        break;
+      case CategoryResetIncrement.weekly:
+        // Next Monday at midnight
+        nextReset = DateTime(now.year, now.month, now.day + (8 - now.weekday));
+        break;
+      case CategoryResetIncrement.monthly:
+        // First day of next month
+        if (now.month == 12) {
+          nextReset = DateTime(now.year + 1, 1, 1);
+        } else {
+          nextReset = DateTime(now.year, now.month + 1, 1);
+        }
+        break;
+      case CategoryResetIncrement.yearly:
+        // First day of next year
+        nextReset = DateTime(now.year + 1, 1, 1);
+        break;
+      default:
+        return null;
+    }
+
+    return nextReset;
+  }
+
+  String getTimeUntilNextReset({DateTime? fromDate}) {
+    final now = fromDate ?? DateTime.now();
+    final nextReset = getNextResetDate(fromDate: fromDate);
+
+    if (nextReset == null) return '';
+
+    Duration timeLeft = nextReset.difference(now);
+    int days = timeLeft.inDays;
+    int hours = timeLeft.inHours % 24;
+    int minutes = timeLeft.inMinutes % 60;
+
+    if (timeLeft.isNegative) return 'Now';
+
+    if (days > 30) {
+      int months = days ~/ 30;
+      return months == 1 ? 'a month' : '$months months';
+    } else if (days >= 7) {
+      int weeks = days ~/ 7;
+      return weeks == 1 ? 'a week' : '$weeks weeks';
+    } else if (days > 0) {
+      return days == 1 ? 'a day' : '$days days';
+    } else if (hours > 0) {
+      return hours == 1 ? 'an hour' : '$hours hours';
+    } else {
+      return minutes == 1 ? 'a minute' : '$minutes minutes';
+    }
+  }
+}
+
+extension TransactionExtensions on Transaction {
+  String formatDate() {
+    return DateFormat('MM/dd/yyyy').format(date);
+  }
+}
+
+class ColorConverter extends TypeConverter<Color, int> {
+  const ColorConverter();
+
+  @override
+  Color fromSql(int fromDb) => Color(fromDb);
+
+  @override
+  int toSql(Color value) => value.toARGB32();
+}
+
+class DateTextConverter extends TypeConverter<DateTime, String> {
+  const DateTextConverter();
+
+  @override
+  DateTime fromSql(String fromDb) => formatter.parseStrict(fromDb);
+
+  @override
+  String toSql(DateTime value) => formatter.format(value);
 }
