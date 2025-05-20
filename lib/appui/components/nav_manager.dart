@@ -1,16 +1,16 @@
 import 'package:budget/providers/snackbar_provider.dart';
-import 'package:budget/views/history.dart';
-import 'package:budget/views/login.dart';
+import 'package:budget/appui/pages/history.dart';
+import 'package:budget/appui/pages/login.dart';
 import 'package:budget/utils/enums.dart';
-import 'package:budget/views/panels/manage_account.dart';
-import 'package:budget/views/panels/manage_category.dart';
-import 'package:budget/views/panels/manage_goal.dart';
-import 'package:budget/views/panels/manage_transaction.dart';
+import 'package:budget/appui/accounts/manage_account.dart';
+import 'package:budget/appui/categories/manage_category.dart';
+import 'package:budget/appui/goals/manage_goal.dart';
+import 'package:budget/appui/transactions/manage_transaction.dart';
 
 import 'package:flutter/material.dart';
-import 'package:budget/views/home.dart';
-import 'package:budget/views/account.dart';
-import 'package:budget/views/statistics.dart';
+import 'package:budget/appui/pages/home.dart';
+import 'package:budget/appui/pages/account.dart';
+import 'package:budget/appui/pages/statistics.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

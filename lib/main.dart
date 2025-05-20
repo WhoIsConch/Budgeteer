@@ -1,7 +1,7 @@
 import 'package:budget/providers/snackbar_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/tools.dart';
-import 'package:budget/views/components/nav_manager.dart';
+import 'package:budget/appui/components/nav_manager.dart';
 import 'package:budget/services/powersync.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

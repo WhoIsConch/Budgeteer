@@ -1,5 +1,5 @@
 import 'package:budget/models/database_extensions.dart';
-import 'package:budget/views/panels/manage_category.dart';
+import 'package:budget/appui/categories/manage_category.dart';
 import 'package:budget/utils/enums.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:flutter/material.dart';

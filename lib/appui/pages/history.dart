@@ -3,8 +3,8 @@ import 'dart:collection';
 
 import 'package:budget/models/filters.dart';
 import 'package:budget/services/app_database.dart';
-import 'package:budget/views/components/transactions_list.dart';
-import 'package:budget/views/transaction_search.dart';
+import 'package:budget/appui/transactions/transactions_list.dart';
+import 'package:budget/appui/pages/transaction_search.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';

@@ -2,7 +2,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:budget/models/database_extensions.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/validators.dart';
-import 'package:budget/views/panels/manage_account.dart';
+import 'package:budget/appui/accounts/manage_account.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

@@ -2,7 +2,7 @@ import 'package:budget/models/database_extensions.dart';
 import 'package:budget/providers/snackbar_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/validators.dart';
-import 'package:budget/views/components/edit_screen.dart';
+import 'package:budget/appui/components/edit_screen.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
