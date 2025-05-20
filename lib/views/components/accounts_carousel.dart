@@ -9,15 +9,15 @@ import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class CarouselCardPair {
-  final AccountWithTotal account;
+  final AccountWithTotal? account;
   final String title;
   final String content;
   final bool isNegative;
 
   const CarouselCardPair(
-    this.account,
     this.title,
     this.content, {
+    this.account,
     this.isNegative = false,
   });
 }
@@ -57,21 +57,46 @@ class _AccountsCarouselState extends State<AccountsCarousel> {
           ),
         ),
       ),
-      Align(
-        alignment: Alignment.topRight,
-        child: IconButton(
-          icon: Icon(Icons.settings),
-          color: Theme.of(context).colorScheme.onPrimaryContainer,
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => ManageAccountForm(initialAccount: data.account),
-              ),
-            );
-          },
+      if (data.account != null)
+        Align(
+          alignment: Alignment.topRight,
+          child: IconButton(
+            icon: Icon(Icons.settings),
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder:
+                      (_) => ManageAccountForm(initialAccount: data.account),
+                ),
+              );
+            },
+          ),
         ),
-      ),
     ],
+  );
+
+  Widget _getTotalStreamCard() => StreamBuilder<double?>(
+    stream: context.read<AppDatabase>().transactionDao.watchTotalAmount(),
+    builder: (context, snapshot) {
+      if (snapshot.data == null) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return LinearProgressIndicator();
+        } else {
+          return Text('No transactions'); // Should never happen
+        }
+      }
+
+      final prefix = snapshot.data!.isNegative ? '-' : '';
+
+      return _getCardStack(
+        CarouselCardPair(
+          'Total balance',
+          '$prefix\$${formatAmount(snapshot.data!.abs(), exact: true)}',
+          isNegative: snapshot.data!.isNegative,
+        ),
+      );
+    },
   );
 
   @override
@@ -83,22 +108,25 @@ class _AccountsCarouselState extends State<AccountsCarousel> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return LinearProgressIndicator();
           } else {
-            return Text('No accounts'); // Should never happen
+            return _getTotalStreamCard();
           }
         }
 
-        List<CarouselCardPair> items =
-            snapshot.data!.map((a) {
-              String formattedAmount = formatAmount(a.total.abs(), exact: true);
-              String? prefix = a.total.isNegative ? '-' : '';
+        // Include null so we know where to put the card for the total later
+        List<CarouselCardPair?> items = [
+          null,
+          ...snapshot.data!.map((a) {
+            String formattedAmount = formatAmount(a.total.abs(), exact: true);
+            String? prefix = a.total.isNegative ? '-' : '';
 
-              return CarouselCardPair(
-                a,
-                a.account.name,
-                '$prefix\$$formattedAmount',
-                isNegative: a.total.isNegative,
-              );
-            }).toList();
+            return CarouselCardPair(
+              a.account.name,
+              '$prefix\$$formattedAmount',
+              account: a,
+              isNegative: a.total.isNegative,
+            );
+          }),
+        ];
 
         return Card(
           margin: const EdgeInsets.all(4),
@@ -115,7 +143,13 @@ class _AccountsCarouselState extends State<AccountsCarousel> {
                     aspectRatio: 2,
                     onPageChanged: (i, reason) => setState(() => index = i),
                   ),
-                  items: items.map((e) => _getCardStack(e)).toList(),
+                  items:
+                      items.map((e) {
+                        if (e == null) {
+                          return _getTotalStreamCard();
+                        }
+                        return _getCardStack(e);
+                      }).toList(),
                 ),
                 Positioned(
                   bottom: 0,
