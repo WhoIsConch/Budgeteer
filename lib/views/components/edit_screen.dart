@@ -2,11 +2,25 @@ import 'package:budget/utils/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
+class PickerFieldResponse<T> {
+  // Used so we can differentiate between when a field purposely returns a null
+  // value (when it's clearing the field) or when the result is null due to a
+  // user action (e.g. closing the window)
+  final T? value;
+  final bool cancelled;
+
+  const PickerFieldResponse(this.value, {this.cancelled = false});
+}
+
 class IconButtonWithTooltip extends StatefulWidget {
   final String tooltipText;
   final bool isFocused;
 
-  const IconButtonWithTooltip({super.key, required this.tooltipText, this.isFocused = false});
+  const IconButtonWithTooltip({
+    super.key,
+    required this.tooltipText,
+    this.isFocused = false,
+  });
 
   @override
   State<IconButtonWithTooltip> createState() => _IconButtonWithTooltipState();
@@ -56,29 +70,34 @@ class _IconButtonWithTooltipState extends State<IconButtonWithTooltip> {
             showWhenUnlinked: false,
             // offset: Offset(0, 0),
             followerAnchor: Alignment.topCenter, // Make top-center of tooltip
-            targetAnchor: Alignment.bottomCenter, // align with bottom-center of icon
+            targetAnchor:
+                Alignment.bottomCenter, // align with bottom-center of icon
             child: Material(
               elevation: 4.0,
               borderRadius: BorderRadius.circular(4),
               child: Padding(
                 padding: EdgeInsets.all(4),
-                child: Text(
-                  widget.tooltipText,
-                  textAlign: TextAlign.center,
-                )
-              )
-            )
+                child: Text(widget.tooltipText, textAlign: TextAlign.center),
+              ),
+            ),
           ),
         ),
   );
 
   @override
   Widget build(BuildContext context) {
-    return CompositedTransformTarget(link: _layerLink, child: IconButton(
-      icon: Icon(Icons.help, color: widget.isFocused ? Theme.of(context).colorScheme.primary : null),
-      tooltip: _isTooltipVisible ? '' : 'Tap for info',
-      onPressed: _toggleTooltip
-    ));
+    return CompositedTransformTarget(
+      link: _layerLink,
+      child: IconButton(
+        icon: Icon(
+          Icons.help,
+          color:
+              widget.isFocused ? Theme.of(context).colorScheme.primary : null,
+        ),
+        tooltip: _isTooltipVisible ? '' : 'Tap for info',
+        onPressed: _toggleTooltip,
+      ),
+    );
   }
 }
 
@@ -110,7 +129,7 @@ class TextInputEditField extends StatelessWidget {
         labelText: label,
         border: OutlineInputBorder(),
         alignLabelWithHint: true,
-        suffixIcon: suffixIcon
+        suffixIcon: suffixIcon,
       ),
       validator: validator,
       maxLines: maxLines,
@@ -149,11 +168,12 @@ class ToggleEditField extends StatelessWidget {
   }
 }
 
-class DatePickerEditField extends StatelessWidget {
+class DatePickerEditField extends StatefulWidget {
   final String label;
-  final DateTime selectedDate;
+  final DateTime? selectedDate;
   final TextEditingController? controller;
-  final ValueChanged<DateTime?> onChanged;
+  final ValueChanged<PickerFieldResponse<DateTime>> onChanged;
+  final bool isNullable;
 
   const DatePickerEditField({
     super.key,
@@ -161,30 +181,64 @@ class DatePickerEditField extends StatelessWidget {
     required this.selectedDate,
     required this.onChanged,
     this.controller,
+    this.isNullable = false,
   });
 
+  @override
+  State<DatePickerEditField> createState() => _DatePickerEditFieldState();
+}
+
+class _DatePickerEditFieldState extends State<DatePickerEditField> {
   void _pickDate(context) async {
     final DateTime? newDate = await showDatePicker(
       context: context,
-      initialDate: selectedDate,
+      initialDate: widget.selectedDate ?? DateTime.now(),
       firstDate: DateTime.now().subtract(const Duration(days: 365 * 100)),
       lastDate: DateTime.now().add(const Duration(days: 365 * 100)),
     );
 
-    onChanged(newDate);
+    widget.onChanged(PickerFieldResponse(newDate, cancelled: newDate == null));
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Ensure the widget can't be non-nullable while having a null value
+    if (!widget.isNullable && widget.selectedDate == null) {
+      widget.onChanged(PickerFieldResponse(DateTime.now()));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
-      controller: controller,
+      controller: widget.controller,
       readOnly: true,
       decoration: InputDecoration(
-        labelText: label,
+        labelText: widget.label,
         border: const OutlineInputBorder(),
-        suffixIcon: Icon(
-          Icons.calendar_today,
-          color: Theme.of(context).colorScheme.primary,
+        suffixIcon: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            if (widget.isNullable && widget.selectedDate != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 4.0),
+                child: IconButton(
+                  icon: Icon(Icons.close),
+                  onPressed: () => widget.onChanged(PickerFieldResponse(null)),
+                ),
+              ),
+            if (!widget.isNullable || widget.selectedDate == null)
+              Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: Icon(
+                  Icons.calendar_today,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+          ],
         ),
       ),
       onTap: () => _pickDate(context),

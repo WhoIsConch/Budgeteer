@@ -28,7 +28,7 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
   final List<String> _validControllers = ['amount', 'name', 'notes', 'date'];
 
   bool _isFinished = false;
-  DateTime _selectedDate = DateTime.now();
+  DateTime? _selectedDate;
   Color? _selectedColor;
 
   late final Map<String, TextEditingController> _controllers;
@@ -53,7 +53,14 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
           : const Value.absent();
 
   void _updateDateControllerText() {
-    _controllers['date']!.text = DateFormat('MM/dd/yyyy').format(_selectedDate);
+    if (_selectedDate == null) {
+      _controllers['date']!.text = '';
+      return;
+    }
+
+    _controllers['date']!.text = DateFormat(
+      'MM/dd/yyyy',
+    ).format(_selectedDate!);
   }
 
   @override
@@ -124,7 +131,7 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
       },
       formFields: [
         Row(
-          spacing: 8.0,
+          spacing: 16.0,
           children: [
             Expanded(
               child: TextInputEditField(
@@ -142,21 +149,22 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
           ],
         ),
         Row(
-          spacing: 8.0,
+          spacing: 16.0,
           children: [
             Expanded(
               child: DatePickerEditField(
                 selectedDate: _selectedDate,
                 label: 'Date',
                 controller: _controllers['date'],
-                onChanged: (selectedDate) {
-                  if (selectedDate != null) {
-                    setState(() {
-                      _selectedDate = selectedDate;
-                      _updateDateControllerText();
-                    });
-                  }
+                onChanged: (response) {
+                  if (response.cancelled) return;
+
+                  setState(() {
+                    _selectedDate = response.value;
+                    _updateDateControllerText();
+                  });
                 },
+                isNullable: true,
               ),
             ),
             ColorPickerEditField(

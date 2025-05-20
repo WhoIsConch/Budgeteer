@@ -27,12 +27,7 @@ class ManageTransactionPage extends StatefulWidget {
 }
 
 class _ManageTransactionPageState extends State<ManageTransactionPage> {
-  final List<String> _validControllers = [
-    'amount',
-    'title',
-    'notes',
-    'date',
-  ];
+  final List<String> _validControllers = ['amount', 'title', 'notes', 'date'];
   late final Map<String, TextEditingController> controllers;
 
   DateTime _selectedDate = DateTime.now();
@@ -289,10 +284,10 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                 label: 'Date',
                 controller: controllers['date'],
                 selectedDate: _selectedDate,
-                onChanged: (newDate) {
-                  if (newDate == null) return;
+                onChanged: (response) {
+                  if (response.cancelled || response.value == null) return;
 
-                  setState(() => _selectedDate = newDate);
+                  setState(() => _selectedDate = response.value!);
                   _updateDateControllerText();
                 },
               ),
@@ -508,7 +503,6 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
 
                       String? formattedAmount;
                       final total = _getTotalAccountBalance();
-
 
                       if (total != null) {
                         String prefix = total.isNegative ? '-' : '';
