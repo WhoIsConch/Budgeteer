@@ -35,6 +35,7 @@ class TransactionProvider extends ChangeNotifier {
       filters.firstWhereOrNull((e) => e.value.runtimeType == T)?.value;
 
   void updateFilter<T>(TransactionFilter<T> filter) {
+    print(hashCode);
     filters.removeWhere((e) => e.value.runtimeType == filter.value.runtimeType);
     filters.add(filter);
     notifyListeners();
