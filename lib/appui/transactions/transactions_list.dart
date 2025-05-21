@@ -1,3 +1,4 @@
+import 'package:budget/appui/components/status.dart';
 import 'package:budget/models/database_extensions.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/models/filters.dart';
@@ -132,13 +133,6 @@ class _TransactionsListState extends State<TransactionsList> {
         ),
   );
 
-  Widget get _noTransactions => Center(
-    child: Text(
-      'No transactions found',
-      style: Theme.of(context).textTheme.headlineSmall,
-    ),
-  );
-
   Widget getList() {
     // Return a stack with a listview in it so we can put that floating
     // action button at the bottom right
@@ -191,7 +185,7 @@ class _TransactionsListState extends State<TransactionsList> {
 
             Widget listContent;
             if (currentList.isEmpty && !showLoadingIndicator) {
-              listContent = _noTransactions;
+              listContent = ErrorInset('No transactions found');
             } else {
               listContent = _getListview(currentList);
             }
@@ -202,7 +196,7 @@ class _TransactionsListState extends State<TransactionsList> {
       ];
     } else {
       if (widget.transactions!.isEmpty) {
-        stackChildren = [_noTransactions];
+        stackChildren = [ErrorInset('No transactions found')];
       } else {
         stackChildren = [_getListview(widget.transactions!)];
       }

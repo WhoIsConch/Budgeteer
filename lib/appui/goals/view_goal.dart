@@ -132,23 +132,9 @@ class _GoalViewerState extends State<GoalViewer> {
             properties: _getProperties(context, goalPair),
           ),
           body: Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Text(
-                //   "Transactions",
-                //   style: Theme.of(context).textTheme.headlineMedium,
-                // ),
-                Expanded(
-                  child: TransactionsList(
-                    // showBackground: false,
-                    filters: [
-                      TransactionFilter<List<GoalWithAchievedAmount>>([
-                        goalPair,
-                      ]),
-                    ],
-                  ),
-                ),
+            child: TransactionsList(
+              filters: [
+                TransactionFilter<List<GoalWithAchievedAmount>>([goalPair]),
               ],
             ),
           ),

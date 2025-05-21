@@ -497,10 +497,14 @@ class _TransactionSearchState extends State<TransactionSearch> {
             child: Wrap(spacing: 4, children: getFilterChips()),
           ),
         Expanded(
-          child: TransactionsList(
-            showActionButton: true,
-            filters: provider.filters,
-            sort: provider.sort,
+          child: Padding(
+            padding: EdgeInsets.all(8.0),
+            child: TransactionsList(
+              showBackground: false,
+              showActionButton: true,
+              filters: provider.filters,
+              sort: provider.sort,
+            ),
           ),
         ),
       ],

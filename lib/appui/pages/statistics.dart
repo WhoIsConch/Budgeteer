@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:budget/appui/components/status.dart';
 import 'package:budget/models/data.dart';
 import 'package:budget/models/database_extensions.dart';
 import 'package:budget/models/filters.dart';
@@ -240,26 +241,6 @@ class PieChartCard extends StatefulWidget {
   State<PieChartCard> createState() => _PieChartCardState();
 }
 
-Widget errorInset(BuildContext context, String text) => Center(
-  child: Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Icon(
-        Icons.warning_rounded,
-        size: 48,
-        color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
-      ),
-      Text(
-        text,
-        textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.headlineSmall!.copyWith(
-          color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
-        ),
-      ),
-    ],
-  ),
-);
-
 class _PieChartCardState extends State<PieChartCard> {
   // I couldn't think of a better name for these so they are
   // typeIndex for the type of transaction and containerIndex
@@ -476,10 +457,7 @@ class _PieChartCardState extends State<PieChartCard> {
         // TODO: Estimated center; make it exact
         final buttonsHeight = MediaQuery.of(context).size.height * 0.35;
 
-        return SizedBox(
-          height: buttonsHeight,
-          child: errorInset(context, text),
-        );
+        return SizedBox(height: buttonsHeight, child: ErrorInset(text));
       },
     );
   }
@@ -776,14 +754,14 @@ class _LineChartCardState extends State<LineChartCard> {
             future: _calculateData(),
             builder: (context, snapshot) {
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return errorInset(context, 'No data');
+                return ErrorInset('No data');
               } else if ((snapshot.data!.expenseSpots.length +
                       snapshot.data!.incomeSpots.length) <
                   3) {
                 // If there aren't enough spots the table will look pointless
-                return errorInset(context, 'Insufficient data');
+                return ErrorInset('Insufficient data');
               } else if (snapshot.hasError) {
-                return errorInset(context, 'Something went wrong');
+                return ErrorInset('Something went wrong');
               } else {
                 return _getLineChart(snapshot.data!);
               }
@@ -990,7 +968,7 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
                 future: _calculateData(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return errorInset(context, 'No data');
+                    return ErrorInset('No data');
                   }
 
                   var interval = calculateNiceInterval(
