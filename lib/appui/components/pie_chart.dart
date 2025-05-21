@@ -89,22 +89,27 @@ class VerticalTabButton extends StatelessWidget {
     this.isSelected = false,
   });
 
+  static const double height = 40.0;
+
   @override
   Widget build(BuildContext context) {
-    return TextButton(
-      style: TextButton.styleFrom(
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
-        backgroundColor:
-            isSelected ? Theme.of(context).colorScheme.surface : null,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      // TODO: Implement this functionality.
-      // These temporarily are disabled until goals and accounts are actually
-      // added.
-      onPressed: ['Goal', 'Account'].contains(text) ? null : onPressed,
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(text, style: Theme.of(context).textTheme.titleMedium),
+    return SizedBox(
+      // height: height,
+      child: TextButton(
+        style: TextButton.styleFrom(
+          foregroundColor: Theme.of(context).colorScheme.onSurface,
+          backgroundColor:
+              isSelected ? Theme.of(context).colorScheme.surface : null,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        // TODO: Implement this functionality.
+        // These temporarily are disabled until goals and accounts are actually
+        // added.
+        onPressed: ['Goal', 'Account'].contains(text) ? null : onPressed,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(text, style: Theme.of(context).textTheme.titleMedium),
+        ),
       ),
     );
   }
@@ -175,8 +180,6 @@ class _PieChartCardState extends State<PieChartCard> {
     required List<Category?> categories,
     required List<TransactionFilter> filters,
   }) async {
-    print(filters.map((e) => e.value));
-
     double absTotal = 0;
     List<PieChartSectionData> sectionData = [];
     List<ChartKeyItem> keyItems = [];
@@ -344,115 +347,121 @@ class _PieChartCardState extends State<PieChartCard> {
     return Card(
       margin: EdgeInsets.zero,
       color: getAdjustedColor(context, Theme.of(context).colorScheme.surface),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: StreamBuilder<List<CategoryWithAmount>>(
-                stream:
-                    context.read<AppDatabase>().categoryDao.watchCategories(),
-                builder: (context, categorySnapshot) {
-                  if (categorySnapshot.connectionState ==
-                          ConnectionState.waiting &&
-                      !categorySnapshot.hasData) {
-                    return const SizedBox();
-                  } else if (categorySnapshot.hasError) {
-                    AppLogger().logger.e(
-                      'Error loading categories: ${categorySnapshot.error}',
-                    );
-                    return ErrorInset('Error loading categories: ${categorySnapshot.error}');
-                  } else if (!categorySnapshot.hasData ||
-                      categorySnapshot.data!.isEmpty) {
-                    return ErrorInset('No categories');
-                  }
-
-                  final availableCategories = categorySnapshot.data!.map(
-                    (ca) => ca.category,
-                  );
-                  final categoriesWithNull = [...availableCategories, null];
-
-                  return FutureBuilder<ChartCalculationResult>(
-                    future: _calculateChartData(
-                      categories: categoriesWithNull,
-                      filters: context.watch<TransactionProvider>().filters,
-                    ),
-                    builder: (context, dataSnapshot) {
-                      // These error widgets should be centered in the row vertically.
-                      if (dataSnapshot.hasError) {
-                        return ErrorInset(
-                          'Something went wrong. Try again later',
-                        );
-                      } else if (!dataSnapshot.hasData ||
-                          dataSnapshot.data!.isEmpty) {
-                        return ErrorInset.noData;
-                      }
-
-                      return Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Your $titleText',
-                            textAlign: TextAlign.left,
-                            style: Theme.of(context).textTheme.headlineSmall,
-                          ),
-                          const SizedBox(height: 8.0),
-                          _getPieChart(dataSnapshot.data!),
-                          const SizedBox(height: 12.0),
-                          ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxHeight:
-                                  (PieChartCard.estKeyItemHeight *
-                                          PieChartCard.maxItems)
-                                      .toDouble(),
-                            ),
-                            child: ListView(
-                              shrinkWrap: true,
-                              children: dataSnapshot.data!.keyItems,
-                            ),
-                          ),
-                        ],
+      child: SizedBox(
+        height: (48 * 6) + 16 + 16, // Height of six buttons (with input padding) + divider height + Padding (both sides)
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: StreamBuilder<List<CategoryWithAmount>>(
+                  stream:
+                      context.read<AppDatabase>().categoryDao.watchCategories(),
+                  builder: (context, categorySnapshot) {
+                    if (categorySnapshot.connectionState ==
+                            ConnectionState.waiting &&
+                        !categorySnapshot.hasData) {
+                      return const SizedBox();
+                    } else if (categorySnapshot.hasError) {
+                      AppLogger().logger.e(
+                        'Error loading categories: ${categorySnapshot.error}',
                       );
-                    },
-                  );
-                },
-              ),
-            ),
-          ),
-          IntrinsicWidth(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ..._buildVerticalTabs(_typeTabs, typeIndex, (index) {
-                    final provider = context.read<TransactionProvider>();
-
-                    setState(() => typeIndex = index);
-
-                    if (typeIndex == 0 || typeIndex == 1) {
-                      provider.updateFilter(
-                        TransactionFilter<TransactionType>(
-                          TransactionType.fromValue(typeIndex),
-                        ),
-                      );
-                    } else {
-                      provider.removeFilter<TransactionType>();
+                      return ErrorInset('Error loading categories: ${categorySnapshot.error}');
+                    } else if (!categorySnapshot.hasData ||
+                        categorySnapshot.data!.isEmpty) {
+                      return ErrorInset('No categories');
                     }
-                  }),
-                  const Divider(),
-                  ..._buildVerticalTabs(
-                    _containerTabs,
-                    containerIndex,
-                    (index) => setState(() => containerIndex = index),
-                  ),
-                ],
+        
+                    final availableCategories = categorySnapshot.data!.map(
+                      (ca) => ca.category,
+                    );
+                    final categoriesWithNull = [...availableCategories, null];
+        
+                    return FutureBuilder<ChartCalculationResult>(
+                      future: _calculateChartData(
+                        categories: categoriesWithNull,
+                        filters: context.watch<TransactionProvider>().filters,
+                      ),
+                      builder: (context, dataSnapshot) {
+                        // These error widgets should be centered in the row vertically.
+                        if (dataSnapshot.hasError) {
+                          return ErrorInset(
+                            'Something went wrong. Try again later',
+                          );
+                        } else if (!dataSnapshot.hasData ||
+                            dataSnapshot.data!.isEmpty) {
+                          return ErrorInset.noData;
+                        }
+        
+                        return SingleChildScrollView(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Your $titleText',
+                                textAlign: TextAlign.left,
+                                style: Theme.of(context).textTheme.headlineSmall,
+                              ),
+                              const SizedBox(height: 8.0),
+                              _getPieChart(dataSnapshot.data!),
+                              const SizedBox(height: 12.0),
+                              ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxHeight:
+                                      (PieChartCard.estKeyItemHeight *
+                                              PieChartCard.maxItems)
+                                          .toDouble(),
+                                ),
+                                child: ListView(
+                                  physics: NeverScrollableScrollPhysics(),
+                                  shrinkWrap: true,
+                                  children: dataSnapshot.data!.keyItems,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-        ],
+            IntrinsicWidth(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ..._buildVerticalTabs(_typeTabs, typeIndex, (index) {
+                      final provider = context.read<TransactionProvider>();
+        
+                      setState(() => typeIndex = index);
+        
+                      if (typeIndex == 0 || typeIndex == 1) {
+                        provider.updateFilter(
+                          TransactionFilter<TransactionType>(
+                            TransactionType.fromValue(typeIndex),
+                          ),
+                        );
+                      } else {
+                        provider.removeFilter<TransactionType>();
+                      }
+                    }),
+                    const Divider(),
+                    ..._buildVerticalTabs(
+                      _containerTabs,
+                      containerIndex,
+                      (index) => setState(() => containerIndex = index),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
