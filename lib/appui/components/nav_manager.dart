@@ -235,9 +235,9 @@ class _NavManagerState extends State<NavManager>
               const SizedBox(height: 4),
               FloatingActionButton(
                 backgroundColor:
-                    Theme.of(context).colorScheme.tertiaryContainer,
+                    Theme.of(context).colorScheme.primary,
                 foregroundColor:
-                    Theme.of(context).colorScheme.onTertiaryContainer,
+                    Theme.of(context).colorScheme.onPrimary,
                 heroTag: 'home_fab',
                 onPressed: _toggleFabMenu,
                 child: RotationTransition(
@@ -289,8 +289,8 @@ class SpeedDialExpandedButton extends StatelessWidget {
           ),
           FloatingActionButton.small(
             heroTag: '${data.text.toLowerCase()}_fab',
-            backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
-            foregroundColor: Theme.of(context).colorScheme.onTertiaryContainer,
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
             onPressed: data.onPressed,
             child: data.icon,
           ),
