@@ -34,15 +34,15 @@ class TransactionProvider extends ChangeNotifier {
   T? getFilterValue<T>() =>
       filters.firstWhereOrNull((e) => e.value.runtimeType == T)?.value;
 
-  void updateFilter<T>(TransactionFilter<T> filter) {
+  void updateFilter<T>(TransactionFilter<T> filter, {bool notify = true}) {
     filters.removeWhere((e) => e.value.runtimeType == filter.value.runtimeType);
     filters.add(filter);
-    notifyListeners();
+    if (notify) notifyListeners();
   }
 
-  void removeFilter<T>({Type? filterType}) {
+  void removeFilter<T>({Type? filterType, bool notify = true}) {
     filters.removeWhere((e) => e.value.runtimeType == (filterType ?? T));
-    notifyListeners();
+    if (notify) notifyListeners();
   }
 }
 

@@ -2,7 +2,6 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:budget/appui/components/status.dart';
 import 'package:budget/models/database_extensions.dart';
 import 'package:budget/models/filters.dart';
-import 'package:budget/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/enums.dart';
 import 'package:budget/utils/tools.dart';
@@ -12,6 +11,79 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+enum PieChartType { category, account, goal }
+
+class PieChartSelectionData<T> {
+  final T type;
+  final int index;
+  final String label;
+
+  const PieChartSelectionData({
+    required this.type,
+    required this.index,
+    required this.label,
+  });
+
+  static const netType = PieChartSelectionData<TransactionType?>(
+    type: null,
+    index: 0,
+    label: 'Cash Flow',
+  );
+  static const expenseType = PieChartSelectionData<TransactionType?>(
+    type: TransactionType.expense,
+    index: 1,
+    label: 'Expense',
+  );
+  static const incomeType = PieChartSelectionData<TransactionType?>(
+    type: TransactionType.income,
+    index: 2,
+    label: 'Income',
+  );
+
+  static const categoryType = PieChartSelectionData(
+    type: PieChartType.category,
+    index: 0,
+    label: 'Category',
+  );
+  static const accountType = PieChartSelectionData(
+    type: PieChartType.account,
+    index: 1,
+    label: 'Account',
+  );
+  static const goalType = PieChartSelectionData(
+    type: PieChartType.goal,
+    index: 2,
+    label: 'Goal',
+  );
+
+  static const typeList = [netType, expenseType, incomeType];
+  static const containerList = [categoryType, accountType, goalType];
+
+  @override
+  int get hashCode => type.hashCode ^ index.hashCode ^ label.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is PieChartSelectionData &&
+            runtimeType == other.runtimeType &&
+            type == other.type &&
+            index == other.index &&
+            label == other.label;
+  }
+}
+
+class PieChartObject {
+  final String name;
+  final Color color;
+  final double amount;
+
+  const PieChartObject({
+    required this.name,
+    required this.color,
+    required this.amount,
+  });
+}
 
 class ChartCalculationResult {
   final List<PieChartSectionData> sectionData;
@@ -100,12 +172,11 @@ class VerticalTabButton extends StatelessWidget {
           foregroundColor: Theme.of(context).colorScheme.onSurface,
           backgroundColor:
               isSelected ? Theme.of(context).colorScheme.surface : null,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        // TODO: Implement this functionality.
-        // These temporarily are disabled until goals and accounts are actually
-        // added.
-        onPressed: ['Goal', 'Account'].contains(text) ? null : onPressed,
+        onPressed: onPressed,
         child: Align(
           alignment: Alignment.centerLeft,
           child: Text(text, style: Theme.of(context).textTheme.titleMedium),
@@ -125,92 +196,43 @@ class PieChartCard extends StatefulWidget {
   State<PieChartCard> createState() => _PieChartCardState();
 }
 
-
 class _PieChartCardState extends State<PieChartCard> {
   // I couldn't think of a better name for these so they are
   // typeIndex for the type of transaction and containerIndex
   // for the containers a transaction belongs to
   // In this case, goals, categories, and accounts are containers
-  int typeIndex = 0;
-  int containerIndex = 0;
-  final List<String> _typeTabs = ['Expenses', 'Income', 'Net'];
-  final List<String> _containerTabs = ['Category', 'Goal', 'Account'];
-
-  late final AppDatabase _db;
+  PieChartSelectionData<TransactionType?> _selectedType =
+      PieChartSelectionData.netType;
+  PieChartSelectionData<PieChartType> _selectedContainer =
+      PieChartSelectionData.categoryType;
 
   final chartCenterRadius = 60.0; // Don't let the text go beyond that radius
 
-  @override
-  void initState() {
-    super.initState();
+  List<Widget> _buildVerticalTabs<T>(
+    List<PieChartSelectionData<T>> tabs,
+    PieChartSelectionData<T> selectedObj,
+    ValueChanged<PieChartSelectionData<T>> onTabSelected,
+  ) => List.generate(tabs.length, (index) {
+    final data = tabs.where((e) => e.index == index).single;
 
-    // Post-frame callback so the widget is fully built before
-    // relying on the context, which is frowned upon
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _db = context.read<AppDatabase>();
-      final provider = context.read<TransactionProvider>();
-      
-      TransactionType? currentType =
-          provider.getFilterValue<TransactionType>();
-
-      setState(() {
-        if (currentType != null) {
-          typeIndex = currentType.value;
-        } else {
-          typeIndex = 2; // Cash Flow
-        }
-      });
-    });
-  }
-
-  List<Widget> _buildVerticalTabs(
-    List<String> tabs,
-    int selectedIndex,
-    ValueChanged<int> onTabSelected,
-  ) => List.generate(
-    _containerTabs.length,
-    (index) => VerticalTabButton(
-      text: tabs[index],
-      isSelected: index == selectedIndex,
-      onPressed: () => onTabSelected(index),
-    ),
-  );
+    return VerticalTabButton(
+      text: data.label,
+      isSelected: data == selectedObj,
+      onPressed: () => onTabSelected(data),
+    );
+  });
 
   Future<ChartCalculationResult> _calculateChartData({
-    required List<Category?> categories,
-    required List<TransactionFilter> filters,
+    required List<PieChartObject?> objects,
   }) async {
     double absTotal = 0;
     List<PieChartSectionData> sectionData = [];
     List<ChartKeyItem> keyItems = [];
     double otherSectionTotal = 0;
 
-    TransactionType? typeFilter =
-        filters
-            .firstWhereOrNull((e) => e.value.runtimeType == TransactionType)
-            ?.value;
-    DateTimeRange? dateFilter =
-        filters
-            .firstWhereOrNull((e) => e.value.runtimeType == DateTimeRange)
-            ?.value;
+    final totals = objects.map((e) => e?.amount ?? 0).toList();
 
-    List<Future<double?>> futures = [];
-    for (final category in categories) {
-      futures.add(
-        _db.transactionDao
-            .watchTotalAmount(
-              nullCategory: category == null,
-              category: category,
-              type: typeFilter,
-              dateRange: dateFilter,
-              net: false,
-            )
-            .first,
-      );
-    }
-    final totals = (await Future.wait(futures)).map((e) => e ?? 0).toList();
-
-    absTotal = totals.sum;
+    absTotal = totals.sum.abs();
 
     if (absTotal == 0) {
       return ChartCalculationResult(
@@ -221,16 +243,16 @@ class _PieChartCardState extends State<PieChartCard> {
       );
     }
 
-    for (int i = 0; i < categories.length; i++) {
-      final category = categories[i];
+    for (int i = 0; i < objects.length; i++) {
+      final object = objects[i];
       final total = totals[i];
 
       if (total == 0) continue;
 
       double percentage = (total.abs() / absTotal) * 100;
 
-      final color = category?.color ?? Colors.grey[400]!;
-      final name = category?.name ?? 'No category';
+      final color = object?.color ?? Colors.grey[400]!;
+      final name = object?.name ?? 'Uncategorized';
 
       if (percentage < 2) {
         otherSectionTotal += total.abs();
@@ -335,29 +357,89 @@ class _PieChartCardState extends State<PieChartCard> {
     );
   }
 
+  Stream<List<PieChartObject?>> _getContainerStream() {
+    // TransactionType? typeFilter =
+    //     filters
+    //         .firstWhereOrNull((e) => e.value.runtimeType == TransactionType)
+    //         ?.value;
+    // DateTimeRange? dateFilter =
+    //     filters
+    //         .firstWhereOrNull((e) => e.value.runtimeType == DateTimeRange)
+    //         ?.value;
+
+    final db = context.read<AppDatabase>();
+
+    switch (_selectedContainer.type) {
+      case PieChartType.account:
+        return db.accountDao.watchAccounts().map((
+          List<AccountWithTotal> accounts,
+        ) {
+          final List<PieChartObject> objects =
+              accounts
+                  .map(
+                    (account) => PieChartObject(
+                      name: account.account.name,
+                      color: account.account.color,
+                      amount: account.total,
+                    ),
+                  )
+                  .toList();
+          return [...objects, null];
+        });
+      case PieChartType.category:
+        return db.categoryDao.watchCategories().map((
+          List<CategoryWithAmount> categories,
+        ) {
+          final List<PieChartObject> objects =
+              categories
+                  .map(
+                    (category) => PieChartObject(
+                      name: category.category.name,
+                      color: category.category.color,
+                      amount: category.amount ?? 0,
+                    ),
+                  )
+                  .toList();
+
+          return [...objects, null];
+        });
+      case PieChartType.goal:
+        return db.goalDao.watchGoals().map((
+          List<GoalWithAchievedAmount> goals,
+        ) {
+          final List<PieChartObject> objects =
+              goals
+                  .map(
+                    (goal) => PieChartObject(
+                      name: goal.goal.name,
+                      color: goal.goal.color,
+                      amount: goal.achievedAmount,
+                    ),
+                  )
+                  .toList();
+          return [...objects, null];
+        });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    String titleText = switch (typeIndex) {
-      0 => 'spending',
-      1 => 'earning',
-      2 => 'cash flow',
-      _ => 'invalid', // Shouldn't happen
-    };
-
     return Card(
       margin: EdgeInsets.zero,
       color: getAdjustedColor(context, Theme.of(context).colorScheme.surface),
       child: SizedBox(
-        height: (48 * 6) + 16 + 16, // Height of six buttons (with input padding) + divider height + Padding (both sides)
+        height:
+            (48 * 6) +
+            16 +
+            16, // Height of six buttons (with input padding) + divider height + Padding (both sides)
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
-                child: StreamBuilder<List<CategoryWithAmount>>(
-                  stream:
-                      context.read<AppDatabase>().categoryDao.watchCategories(),
+                child: StreamBuilder<List<PieChartObject?>>(
+                  stream: _getContainerStream(),
                   builder: (context, categorySnapshot) {
                     if (categorySnapshot.connectionState ==
                             ConnectionState.waiting &&
@@ -365,24 +447,20 @@ class _PieChartCardState extends State<PieChartCard> {
                       return const SizedBox();
                     } else if (categorySnapshot.hasError) {
                       AppLogger().logger.e(
-                        'Error loading categories: ${categorySnapshot.error}',
+                        'Error loading data: ${categorySnapshot.error}',
                       );
-                      return ErrorInset('Error loading categories: ${categorySnapshot.error}');
+                      return ErrorInset(
+                        'Error loading data: ${categorySnapshot.error}',
+                      );
                     } else if (!categorySnapshot.hasData ||
                         categorySnapshot.data!.isEmpty) {
-                      return ErrorInset('No categories');
+                      return ErrorInset.noData;
                     }
-        
-                    final availableCategories = categorySnapshot.data!.map(
-                      (ca) => ca.category,
-                    );
-                    final categoriesWithNull = [...availableCategories, null];
-        
+
+                    final data = categorySnapshot.data!;
+
                     return FutureBuilder<ChartCalculationResult>(
-                      future: _calculateChartData(
-                        categories: categoriesWithNull,
-                        filters: context.watch<TransactionProvider>().filters,
-                      ),
+                      future: _calculateChartData(objects: data),
                       builder: (context, dataSnapshot) {
                         // These error widgets should be centered in the row vertically.
                         if (dataSnapshot.hasError) {
@@ -393,15 +471,16 @@ class _PieChartCardState extends State<PieChartCard> {
                             dataSnapshot.data!.isEmpty) {
                           return ErrorInset.noData;
                         }
-        
+
                         return SingleChildScrollView(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'Your $titleText',
+                                'Your ${_selectedType.label.toLowerCase()}',
                                 textAlign: TextAlign.left,
-                                style: Theme.of(context).textTheme.headlineSmall,
+                                style:
+                                    Theme.of(context).textTheme.headlineSmall,
                               ),
                               const SizedBox(height: 8.0),
                               _getPieChart(dataSnapshot.data!),
@@ -435,26 +514,17 @@ class _PieChartCardState extends State<PieChartCard> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    ..._buildVerticalTabs(_typeTabs, typeIndex, (index) {
-                      final provider = context.read<TransactionProvider>();
-        
-                      setState(() => typeIndex = index);
-        
-                      if (typeIndex == 0 || typeIndex == 1) {
-                        provider.updateFilter(
-                          TransactionFilter<TransactionType>(
-                            TransactionType.fromValue(typeIndex),
-                          ),
-                        );
-                      } else {
-                        provider.removeFilter<TransactionType>();
-                      }
-                    }),
+                    ..._buildVerticalTabs<TransactionType?>(
+                      PieChartSelectionData.typeList,
+                      _selectedType,
+                      (newType) => setState(() => _selectedType = newType),
+                    ),
                     const Divider(),
-                    ..._buildVerticalTabs(
-                      _containerTabs,
-                      containerIndex,
-                      (index) => setState(() => containerIndex = index),
+                    ..._buildVerticalTabs<PieChartType>(
+                      PieChartSelectionData.containerList,
+                      _selectedContainer,
+                      (newContainer) =>
+                          setState(() => _selectedContainer = newContainer),
                     ),
                   ],
                 ),
