@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:provider/provider.dart';
-import 'package:budget/providers/transaction_provider.dart';
 import 'package:budget/services/settings.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -50,10 +49,6 @@ void main() async {
     dispose: (_, db) => db.close(),
   );
 
-  final transactionProvider = ChangeNotifierProvider<TransactionProvider>(
-    create: (context) => TransactionProvider(),
-  );
-
   final snackBarProvider = ChangeNotifierProvider<SnackbarProvider>(
     create: (_) => SnackbarProvider(),
   );
@@ -62,7 +57,7 @@ void main() async {
 
   runApp(
     MultiProvider(
-      providers: [dbProvider, transactionProvider, snackBarProvider],
+      providers: [dbProvider, snackBarProvider],
       child: const BudgetApp(),
     ),
   );

@@ -29,16 +29,13 @@ class _TransactionSearchState extends State<TransactionSearch> {
   // a multiple of a filter in there
   bool isSearching = false; // Is the title bar a search field?
   TextEditingController searchController = TextEditingController();
-  late TransactionProvider provider;
 
-  Sort get sort => provider.sort;
-  List<TransactionFilter> get filters => provider.filters;
-
-  List<Widget> getFilterChips() {
+  List<Widget> getFilterChips(BuildContext context) {
     List<Widget> chips = [];
     DateFormat dateFormat = DateFormat('MM/dd');
+    final provider = context.watch<TransactionProvider>();
 
-    for (TransactionFilter filter in filters) {
+    for (TransactionFilter filter in provider.filters) {
       String label = switch (filter) {
         TransactionFilter<String> t => '"${t.value}"', // "Value"
         TransactionFilter<AmountFilter> t =>
@@ -64,7 +61,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
 
       chips.add(
         GestureDetector(
-          onTap: () => _activateFilter(filter.value.runtimeType),
+          onTap: () => _activateFilter(context, filter.value.runtimeType),
           child: Chip(
             label: Text(label),
             deleteIcon: const Icon(Icons.close),
@@ -96,6 +93,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
   Future<TransactionFilter?> _showAmountFilterDialog(
     BuildContext context,
   ) async {
+    final provider = context.watch<TransactionProvider>();
     // Shows a dialog inline with a dropdown showing the filter type first,
     // then the amount as an input.
     TextEditingController controller = TextEditingController();
@@ -198,6 +196,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
     // This shows an AlertDialog with nothing in it other than a dropdown
     // which a user can select multiple categories from.
     final db = context.read<AppDatabase>();
+    final provider = context.watch<TransactionProvider>();
 
     List<CategoryWithAmount> selectedCategories =
         provider.getFilterValue<List<CategoryWithAmount>>() ?? [];
@@ -281,7 +280,9 @@ class _TransactionSearchState extends State<TransactionSearch> {
     );
   }
 
-  void toggleTransactionType() {
+  void toggleTransactionType(BuildContext context) {
+    final provider = context.watch<TransactionProvider>();
+
     TransactionType? typeFilterValue =
         provider.getFilterValue<TransactionType>();
     TransactionFilter? filter;
@@ -294,80 +295,82 @@ class _TransactionSearchState extends State<TransactionSearch> {
       );
     }
 
-    setState(() {
-      if (filter == null) {
-        provider.removeFilter<TransactionType>();
-      } else {
-        provider.updateFilter(filter);
-      }
-    });
+    if (filter == null) {
+      provider.removeFilter<TransactionType>();
+    } else {
+      provider.updateFilter(filter);
+    }
   }
 
-  List<Widget> get filterMenuButtons => [
+  List<Widget> _getFilterMenuButtons(BuildContext context) => [
     MenuItemButton(
       child: const Text('Date'),
-      onPressed: () => _activateFilter(DateTimeRange),
+      onPressed: () => _activateFilter(context, DateTimeRange),
     ),
     MenuItemButton(
       child: const Text('Amount'),
-      onPressed: () => _activateFilter(AmountFilter),
+      onPressed: () => _activateFilter(context, AmountFilter),
     ),
     MenuItemButton(
       child: const Text('Type'),
-      onPressed: () => _activateFilter(TransactionType),
+      onPressed: () => _activateFilter(context, TransactionType),
     ),
     MenuItemButton(
       child: const Text('Category'),
-      onPressed: () => _activateFilter(List<CategoryWithAmount>),
+      onPressed: () => _activateFilter(context, List<CategoryWithAmount>),
     ),
   ];
 
-  List<Widget> get sortMenuButtons =>
-      SortType.values
-          .map(
-            (type) => MenuItemButton(
-              closeOnActivate: false,
-              trailingIcon:
-                  sort.sortType == type
-                      ? switch (sort.sortOrder) {
-                        SortOrder.ascending => const Icon(Icons.arrow_upward),
-                        SortOrder.descending => const Icon(
-                          Icons.arrow_downward,
-                        ),
-                      }
-                      : null,
-              onPressed: () {
-                Sort newSort;
+  List<Widget> _getSortMenuButtons(BuildContext context) {
+    final provider = context.watch<TransactionProvider>();
 
-                if (sort.sortType == type) {
-                  newSort = Sort(
-                    type,
-                    sort.sortOrder == SortOrder.descending
-                        ? SortOrder.ascending
-                        : SortOrder.descending,
-                  );
-                } else {
-                  newSort = Sort(type, SortOrder.descending);
-                }
+    return SortType.values
+        .map(
+          (type) => MenuItemButton(
+            closeOnActivate: false,
+            trailingIcon:
+                provider.sort.sortType == type
+                    ? switch (provider.sort.sortOrder) {
+                      SortOrder.ascending => const Icon(Icons.arrow_upward),
+                      SortOrder.descending => const Icon(Icons.arrow_downward),
+                    }
+                    : null,
+            onPressed: () {
+              Sort newSort;
 
-                provider.update(sort: newSort);
-              },
-              child: Text(toTitleCase(type.name)),
-            ),
-          )
-          .toList();
+              if (provider.sort.sortType == type) {
+                newSort = Sort(
+                  type,
+                  provider.sort.sortOrder == SortOrder.descending
+                      ? SortOrder.ascending
+                      : SortOrder.descending,
+                );
+              } else {
+                newSort = Sort(type, SortOrder.descending);
+              }
 
-  List<Widget> get mainMenuButtons => [
+              provider.update(sort: newSort);
+            },
+            child: Text(toTitleCase(type.name)),
+          ),
+        )
+        .toList();
+  }
+
+  List<Widget> _getMainMenuButtons(BuildContext context) => [
     SubmenuButton(
-      menuChildren: filterMenuButtons,
+      menuChildren: _getFilterMenuButtons(context),
       child: const Text('Filter by'),
     ),
-    SubmenuButton(menuChildren: sortMenuButtons, child: const Text('Sort by')),
+    SubmenuButton(
+      menuChildren: _getSortMenuButtons(context),
+      child: const Text('Sort by'),
+    ),
   ];
 
-  Widget get filterButton => MenuAnchor(
+  Widget filterButton(BuildContext context) => MenuAnchor(
     alignmentOffset: const Offset(-40, 0),
-    menuChildren: mainMenuButtons,
+    menuChildren: _getMainMenuButtons(context),
     builder:
         (BuildContext context, MenuController controller, Widget? child) =>
             IconButton(
@@ -382,56 +385,53 @@ class _TransactionSearchState extends State<TransactionSearch> {
             ),
   );
 
-  Map<Type, Function> get _filterActions => {
-    DateTimeRange:
-        () => showDateRangePicker(
-          context: context,
-          initialDateRange: provider.getFilterValue<DateTimeRange>(),
-          firstDate: DateTime.now().subtract(const Duration(days: 365 * 10)),
-          lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
-        ).then((DateTimeRange? value) {
-          if (value == null) return;
+  Map<Type, Function> _getFilterActions(BuildContext context) {
+    final provider = context.read<TransactionProvider>();
 
-          provider.updateFilter(TransactionFilter<DateTimeRange>(value));
-        }),
-    String: () => setState(() => isSearching = true),
-    AmountFilter:
-        () => _showAmountFilterDialog(context).then((value) {
-          if (value == null) {
-            return;
-          }
-          provider.updateFilter(value as TransactionFilter<AmountFilter>);
-        }),
-    TransactionType: () => toggleTransactionType(),
-    List<CategoryWithAmount>:
-        () => _showCategoryInputDialog(context).then((value) {
-          if (value == null) {
-            return;
-          } else if (value.isEmpty) {
-            provider.removeFilter<List<CategoryWithAmount>>();
-          } else {
-            provider.updateFilter(
-              TransactionFilter<List<CategoryWithAmount>>(value),
-            );
-          }
-        }),
-  };
+    return {
+      DateTimeRange:
+          () => showDateRangePicker(
+            context: context,
+            initialDateRange: provider.getFilterValue<DateTimeRange>(),
+            firstDate: DateTime.now().subtract(const Duration(days: 365 * 10)),
+            lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
+          ).then((DateTimeRange? value) {
+            if (value == null) return;
 
-  void _activateFilter(Type type) {
-    final action = _filterActions[type];
+            provider.updateFilter(TransactionFilter<DateTimeRange>(value));
+          }),
+      String: () => setState(() => isSearching = true),
+      AmountFilter:
+          () => _showAmountFilterDialog(context).then((value) {
+            if (value == null) {
+              return;
+            }
+            provider.updateFilter(value as TransactionFilter<AmountFilter>);
+          }),
+      TransactionType: () => toggleTransactionType(context),
+      List<CategoryWithAmount>:
+          () => _showCategoryInputDialog(context).then((value) {
+            if (value == null) {
+              return;
+            } else if (value.isEmpty) {
+              provider.removeFilter<List<CategoryWithAmount>>();
+            } else {
+              provider.updateFilter(
+                TransactionFilter<List<CategoryWithAmount>>(value),
+              );
+            }
+          }),
+    };
+  }
+
+  void _activateFilter(BuildContext context, Type type) {
+    final action = _getFilterActions(context)[type];
 
     if (action != null) {
       action();
     } else {
       throw FilterTypeException(type);
     }
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    print('Dependencies');
-    provider = context.watch<TransactionProvider>();
   }
 
   @override
@@ -442,82 +442,99 @@ class _TransactionSearchState extends State<TransactionSearch> {
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> appBarActions = [];
-    Widget body;
-    Widget? leading;
+    return ChangeNotifierProvider(
+      create: (_) {
+        final provider = TransactionProvider();
 
-    if (!isSearching) {
-      appBarActions = [
-        IconButton(
-          icon: const Icon(Icons.search),
-          onPressed: () {
-            setState(() => isSearching = true);
-          },
-        ),
-        filterButton,
-      ];
-    } else {
-      appBarActions = [
-        IconButton(
-          icon: const Icon(Icons.check),
-          onPressed: () {
-            String text = searchController.text.trim();
+        provider.update(
+          filters: widget.initialFilters,
+          sort: widget.initialSortType,
+          notify: false,
+        );
 
-            if (text.length > 30) {
-              text = '${text.substring(0, 27)}...';
-            }
+        return provider;
+      },
+      builder: (context, _) {
+        List<Widget> appBarActions = [];
+        Widget body;
+        Widget? leading;
 
-            TransactionFilter<String> filter = TransactionFilter(text);
+        final provider = context.watch<TransactionProvider>();
 
-            if (filters.contains(filter) || filter.value.isEmpty) {
-              // The list of filters already has the exact same filter,
-              // so we don't do anything other than stop searching.
-              setState(() => isSearching = false);
-              return;
-            }
-
-            isSearching = false;
-            provider.updateFilter(filter);
-          },
-        ),
-      ];
-
-      leading = IconButton(
-        icon: const Icon(Icons.close),
-        onPressed: () => setState(() => isSearching = false),
-      );
-    }
-
-    body = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (filters.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Wrap(spacing: 4, children: getFilterChips()),
-          ),
-        Expanded(
-          child: Padding(
-            padding: EdgeInsets.all(8.0),
-            child: TransactionsList(
-              showBackground: false,
-              showActionButton: true,
-              filters: provider.filters,
-              sort: provider.sort,
+        if (!isSearching) {
+          appBarActions = [
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () {
+                setState(() => isSearching = true);
+              },
             ),
-          ),
-        ),
-      ],
-    );
+            filterButton(context),
+          ];
+        } else {
+          appBarActions = [
+            IconButton(
+              icon: const Icon(Icons.check),
+              onPressed: () {
+                String text = searchController.text.trim();
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: leading,
-        titleSpacing: 0,
-        title: getTitle(),
-        actions: appBarActions,
-      ),
-      body: body,
+                if (text.length > 30) {
+                  text = '${text.substring(0, 27)}...';
+                }
+
+                TransactionFilter<String> filter = TransactionFilter(text);
+
+                if (provider.filters.contains(filter) || filter.value.isEmpty) {
+                  // The list of filters already has the exact same filter,
+                  // so we don't do anything other than stop searching.
+                  setState(() => isSearching = false);
+                  return;
+                }
+
+                isSearching = false;
+                provider.updateFilter(filter);
+              },
+            ),
+          ];
+
+          leading = IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => setState(() => isSearching = false),
+          );
+        }
+
+        body = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (provider.filters.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Wrap(spacing: 4, children: getFilterChips(context)),
+              ),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.all(8.0),
+                child: TransactionsList(
+                  showBackground: false,
+                  showActionButton: true,
+                  filters: provider.filters,
+                  sort: provider.sort,
+                ),
+              ),
+            ),
+          ],
+        );
+
+        return Scaffold(
+          appBar: AppBar(
+            leading: leading,
+            titleSpacing: 0,
+            title: getTitle(),
+            actions: appBarActions,
+          ),
+          body: body,
+        );
+      },
     );
   }
 }
