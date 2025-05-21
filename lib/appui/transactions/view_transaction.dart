@@ -162,7 +162,7 @@ class ViewTransaction extends StatelessWidget {
         description: description,
         textColor: textColor,
       ),
-      body: ObjectPropertiesList(properties: _getProperties(context)),
+      properties: ObjectPropertiesList(properties: _getProperties(context)),
     );
   }
 }

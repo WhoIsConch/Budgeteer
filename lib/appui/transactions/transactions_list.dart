@@ -2,6 +2,7 @@ import 'package:budget/models/database_extensions.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/models/filters.dart';
 import 'package:budget/providers/transaction_provider.dart';
+import 'package:budget/utils/tools.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:budget/utils/ui.dart';
 import 'package:flutter/material.dart';
@@ -121,10 +122,12 @@ class _TransactionsListState extends State<TransactionsList> {
     );
   }
 
-  Widget _getListview(List<Transaction> transactions) => ListView.builder(
+  Widget _getListview(List<Transaction> transactions) => ListView.separated(
+    separatorBuilder: (_, _) => SizedBox(height: 8.0),
     itemCount: transactions.length,
     itemBuilder:
         (context, index) => Card(
+          margin: EdgeInsets.zero,
           child: tileFromTransaction(transactions[index], Theme.of(context)),
         ),
   );
@@ -261,6 +264,7 @@ class _TransactionsListState extends State<TransactionsList> {
   Widget build(BuildContext context) {
     if (widget.showBackground) {
       return Card(
+        color: getAdjustedColor(context, Theme.of(context).colorScheme.surface),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16.0),
         ),

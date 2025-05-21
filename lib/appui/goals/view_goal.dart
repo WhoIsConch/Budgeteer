@@ -1,4 +1,6 @@
+import 'package:budget/appui/transactions/transactions_list.dart';
 import 'package:budget/models/database_extensions.dart';
+import 'package:budget/models/filters.dart';
 import 'package:budget/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/validators.dart';
@@ -126,8 +128,29 @@ class _GoalViewerState extends State<GoalViewer> {
             progress: achieved / total,
             foregroundColor: goal.color,
           ),
-          body: ObjectPropertiesList(
+          properties: ObjectPropertiesList(
             properties: _getProperties(context, goalPair),
+          ),
+          body: Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Text(
+                //   "Transactions",
+                //   style: Theme.of(context).textTheme.headlineMedium,
+                // ),
+                Expanded(
+                  child: TransactionsList(
+                    // showBackground: false,
+                    filters: [
+                      TransactionFilter<List<GoalWithAchievedAmount>>([
+                        goalPair,
+                      ]),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

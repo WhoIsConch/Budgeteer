@@ -88,7 +88,7 @@ class CategoryViewer extends StatelessWidget {
             ),
           ),
       header: header,
-      body: ObjectPropertiesList(properties: _getProperties()),
+      properties: ObjectPropertiesList(properties: _getProperties()),
     );
   }
 }

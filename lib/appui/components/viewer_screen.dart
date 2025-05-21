@@ -262,7 +262,8 @@ class ViewerScreen extends StatelessWidget {
   final bool isArchived;
 
   final Widget header;
-  final Widget body;
+  final Widget properties;
+  final Widget? body;
 
   final Function()? onEdit;
   final Function()? onDelete;
@@ -272,11 +273,12 @@ class ViewerScreen extends StatelessWidget {
     super.key,
     required this.title,
     required this.header,
-    required this.body,
+    required this.properties,
     this.onEdit,
     this.onDelete,
     this.onArchive,
     this.isArchived = false,
+    this.body,
   });
 
   @override
@@ -373,7 +375,15 @@ class ViewerScreen extends StatelessWidget {
       appBar: AppBar(title: Text(title), actions: actions),
       body: Padding(
         padding: const EdgeInsets.all(28.0),
-        child: Column(spacing: 56.0, children: [header, body]),
+        child: Column(
+          spacing: 28.0,
+          children: [
+            header,
+            SizedBox(height: 20),
+            properties,
+            if (body != null) body!,
+          ],
+        ),
       ),
     );
   }

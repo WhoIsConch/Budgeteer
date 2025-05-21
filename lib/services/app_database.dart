@@ -478,6 +478,16 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
                 (t) => t.category.isIn(f.value.map((e) => e.category.id)),
               );
           break;
+        case TransactionFilter<List<GoalWithAchievedAmount>> f:
+          query =
+              query..where((t) => t.goalId.isIn(f.value.map((g) => g.goal.id)));
+          break;
+        case TransactionFilter<List<AccountWithTotal>> f:
+          query =
+              query..where(
+                (t) => t.accountId.isIn(f.value.map((a) => a.account.id)),
+              );
+          break;
       }
     }
 
