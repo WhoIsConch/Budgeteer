@@ -262,7 +262,10 @@ class _TransactionsListState extends State<TransactionsList> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16.0),
         ),
-        child: getList(),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: getList(),
+        ),
       );
     } else {
       return getList();
