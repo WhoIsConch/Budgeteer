@@ -6,6 +6,9 @@ class ErrorInset extends StatelessWidget {
 
   const ErrorInset(this.text, {super.key, this.alignCenter = true});
 
+  static const noTransactions = ErrorInset('No transactions');
+  static const noData = ErrorInset('No data');
+
   @override
   Widget build(BuildContext context) {
     final content = Column(

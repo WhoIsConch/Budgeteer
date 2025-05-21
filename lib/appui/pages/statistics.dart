@@ -754,7 +754,7 @@ class _LineChartCardState extends State<LineChartCard> {
             future: _calculateData(),
             builder: (context, snapshot) {
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return ErrorInset('No data');
+                return ErrorInset.noData;
               } else if ((snapshot.data!.expenseSpots.length +
                       snapshot.data!.incomeSpots.length) <
                   3) {
@@ -968,7 +968,7 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
                 future: _calculateData(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return ErrorInset('No data');
+                    return ErrorInset.noData;
                   }
 
                   var interval = calculateNiceInterval(

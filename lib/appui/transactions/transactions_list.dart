@@ -185,7 +185,7 @@ class _TransactionsListState extends State<TransactionsList> {
 
             Widget listContent;
             if (currentList.isEmpty && !showLoadingIndicator) {
-              listContent = ErrorInset('No transactions found');
+              listContent = ErrorInset.noTransactions;
             } else {
               listContent = _getListview(currentList);
             }
@@ -196,7 +196,7 @@ class _TransactionsListState extends State<TransactionsList> {
       ];
     } else {
       if (widget.transactions!.isEmpty) {
-        stackChildren = [ErrorInset('No transactions found')];
+        stackChildren = [ErrorInset.noTransactions];
       } else {
         stackChildren = [_getListview(widget.transactions!)];
       }
