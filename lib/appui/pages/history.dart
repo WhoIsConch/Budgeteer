@@ -166,7 +166,6 @@ class _HistoryState extends State<History> {
             valueListenable: _selectedEvents,
             builder:
                 (context, value, _) => TransactionsList(
-                  showBackground: false,
                   transactions: value,
                 ),
           ),
