@@ -120,6 +120,8 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
           }
         } catch (e) {
           AppLogger().logger.e('Unable to save category: $e');
+          if (!context.mounted) return;
+
           context.read<SnackbarProvider>().showSnackBar(
             const SnackBar(content: Text('Unable to save category')),
           );

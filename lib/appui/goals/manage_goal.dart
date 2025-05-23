@@ -124,6 +124,9 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
           }
         } catch (e) {
           AppLogger().logger.e('Unable to save goal: $e');
+          
+          if (!context.mounted) return; 
+
           context.read<SnackbarProvider>().showSnackBar(
             const SnackBar(content: Text('Unable to save goal')),
           );

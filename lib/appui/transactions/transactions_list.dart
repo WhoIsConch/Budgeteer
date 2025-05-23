@@ -110,16 +110,17 @@ class _TransactionsListState extends State<TransactionsList> {
             .transactionDao
             .hydrateTransaction(transaction);
 
-        if (context.mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (context) =>
-                      ViewTransaction(transactionData: hydratedTransaction),
-            ),
-          );
-        }
+        if (!mounted) return;
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) =>
+                    ViewTransaction(transactionData: hydratedTransaction),
+          ),
+        );
+        
       },
       onLongPress: () => showOptionsDialog(context, transaction),
       trailing: IconButton(
