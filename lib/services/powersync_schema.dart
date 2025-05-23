@@ -39,7 +39,7 @@ const powersyncAppSchema = Schema([
     Column.text('name'),
     Column.real('cost'),
     Column.text('due_date'),
-    Column.integer('is_finished'),
+    Column.integer('is_archived'),
     Column.integer('is_deleted'),
     Column.text('notes'),
     Column.integer('color'),

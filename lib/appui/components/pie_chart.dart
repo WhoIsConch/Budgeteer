@@ -362,11 +362,13 @@ class _PieChartCardState extends State<PieChartCard> {
     final provider = context.watch<TransactionProvider>();
 
     final db = context.read<AppDatabase>();
+    final bool net = _selectedType.type != null;
 
     switch (_selectedContainer.type) {
       case PieChartType.account:
         return db.accountDao.watchAccounts(
           filters: provider.filters,
+          net: net,
         ).map((
           List<AccountWithTotal> accounts,
         ) {
@@ -385,6 +387,8 @@ class _PieChartCardState extends State<PieChartCard> {
       case PieChartType.category:
         return db.categoryDao.watchCategories(
           filters: provider.filters,
+          net: net,
+          sumByResetIncrement: false,
         ).map((
           List<CategoryWithAmount> categories,
         ) {
@@ -404,6 +408,7 @@ class _PieChartCardState extends State<PieChartCard> {
       case PieChartType.goal:
         return db.goalDao.watchGoals(
           filters: provider.filters,
+          net: net
         ).map((
           List<GoalWithAchievedAmount> goals,
         ) {

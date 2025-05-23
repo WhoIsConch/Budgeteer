@@ -10,6 +10,21 @@ import 'package:drift_sqlite_async/drift_sqlite_async.dart';
 
 part 'app_database.g.dart';
 
+mixin SoftDeletableTable on Table {
+  TextColumn get id => text().clientDefault(() => uuid.v4())();
+  BoolColumn get isDeleted =>
+      boolean()
+          .nullable()
+          .withDefault(const Constant(false))
+          .named('is_deleted')();
+  BoolColumn get isArchived =>
+      boolean()
+          .nullable()
+          .withDefault(const Constant(false))
+          .named('is_archived')();
+
+}
+
 class Transactions extends Table {
   @override
   String get tableName => 'transactions';
@@ -53,11 +68,10 @@ class Transactions extends Table {
   Set<Column<Object>>? get primaryKey => {id};
 }
 
-class Categories extends Table {
+class Categories extends Table with SoftDeletableTable {
   @override
   String get tableName => 'categories';
 
-  TextColumn get id => text().clientDefault(() => uuid.v4())();
   TextColumn get name => text()();
   TextColumn get notes => text().nullable()();
 
@@ -70,49 +84,27 @@ class Categories extends Table {
   IntColumn get color =>
       integer().clientDefault(genColor).map(const ColorConverter())();
   RealColumn get balance => real().nullable()();
-  BoolColumn get isDeleted =>
-      boolean()
-          .nullable()
-          .withDefault(const Constant(false))
-          .named('is_deleted')();
-  BoolColumn get isArchived =>
-      boolean()
-          .nullable()
-          .withDefault(const Constant(false))
-          .named('is_archived')();
 
   @override
   Set<Column<Object>>? get primaryKey => {id};
 }
 
-class Accounts extends Table {
+class Accounts extends Table with SoftDeletableTable {
   @override
   get tableName => 'accounts';
 
-  TextColumn get id => text().clientDefault(() => uuid.v4())();
   TextColumn get name => text()();
   TextColumn get notes => text().nullable()();
   IntColumn get priority => integer().nullable()();
 
   IntColumn get color =>
       integer().clientDefault(genColor).map(const ColorConverter())();
-  BoolColumn get isDeleted =>
-      boolean()
-          .nullable()
-          .withDefault(const Constant(false))
-          .named('is_deleted')();
-  BoolColumn get isArchived =>
-      boolean()
-          .nullable()
-          .withDefault(const Constant(false))
-          .named('is_archived')();
 }
 
-class Goals extends Table {
+class Goals extends Table with SoftDeletableTable {
   @override
   get tableName => 'goals';
 
-  TextColumn get id => text().clientDefault(() => uuid.v4())();
   TextColumn get name => text()();
   TextColumn get notes => text().nullable()();
   RealColumn get cost => real()();
@@ -121,52 +113,22 @@ class Goals extends Table {
       integer().clientDefault(genColor).map(const ColorConverter())();
   TextColumn get dueDate =>
       text().nullable().named('due_date').map(const DateTextConverter())();
-  BoolColumn get isFinished => // Basically isArchived
-      boolean().withDefault(const Constant(false)).named('is_finished')();
-  BoolColumn get isDeleted =>
-      boolean().withDefault(const Constant(false)).named('is_deleted')();
 }
 
 @DriftAccessor(tables: [Accounts])
 class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
   AccountDao(super.db);
 
-  QueryWithSum _getCombinedQuery({bool includeArchived = false}) {
-    var query = select(accounts).join([
-      leftOuterJoin(
-        db.transactions,
-        db.transactions.accountId.equalsExp(accounts.id),
-      ),
-    ]);
-
-    final signedSumQuery = db.getSignedTransactionSumQuery();
-
-    if (!includeArchived) {
-      query =
-          query..where(
-            accounts.isArchived.isNotExp(const Constant(true)) &
-                db.transactions.isDeleted.isNotExp(
-                  const Constant(true) &
-                      db.transactions.isArchived.isNotExp(const Constant(true)),
-                ),
-          );
-    }
-
-    query =
-        query
-          ..where(accounts.isDeleted.equals(false))
-          ..addColumns([signedSumQuery])
-          ..groupBy([accounts.id]);
-
-    return QueryWithSum(query, signedSumQuery);
-  }
-
   Stream<List<AccountWithTotal>> watchAccounts({
     List<TransactionFilter>? filters,
     includeArchived = false,
     sortDescending = true,
+    net = true
   }) {
-    final queryWithSum = _getCombinedQuery(includeArchived: includeArchived);
+    final queryWithSum = db.getCombinedQuery(
+      accounts, includeArchived: includeArchived,
+      net: net
+      );
 
     db._applyFilters(queryWithSum.query, filters);
 
@@ -203,7 +165,7 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     String id, {
     bool includeArchived = true,
   }) {
-    final queryWithSum = _getCombinedQuery(includeArchived: includeArchived);
+    final queryWithSum = db.getCombinedQuery(accounts, includeArchived: includeArchived);
     final filteredQuery = queryWithSum.query..where(accounts.id.equals(id));
 
     final mappedSelectable = filteredQuery.map((row) {
@@ -220,7 +182,7 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     String id, {
     bool includeArchived = true,
   }) {
-    final queryWithSum = _getCombinedQuery(includeArchived: includeArchived);
+    final queryWithSum = db.getCombinedQuery(accounts, includeArchived: includeArchived);
     final filteredQuery = queryWithSum.query..where(accounts.id.equals(id));
 
     final mappedSelectable = filteredQuery.map((row) {
@@ -269,35 +231,14 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
 class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
   GoalDao(super.db);
 
-  QueryWithSum _getCombinedQuery({bool includeFinished = false}) {
-    var query = select(goals).join([
-      leftOuterJoin(
-        db.transactions,
-        db.transactions.goalId.equalsExp(goals.id),
-      ),
-    ]);
-
-    final signedSumQuery = db.getSignedTransactionSumQuery();
-
-    if (!includeFinished) {
-      query = query..where(goals.isFinished.isNotExp(const Constant(true)));
-    }
-
-    query =
-        query
-          ..where(goals.isDeleted.equals(false))
-          ..addColumns([signedSumQuery])
-          ..groupBy([goals.id]);
-
-    return QueryWithSum(query, signedSumQuery);
-  }
-
   Stream<List<GoalWithAchievedAmount>> watchGoals({
     List<TransactionFilter>? filters,
     bool includeFinished = true,
     bool sortDescending = true,
+    bool net = true,
   }) {
-    final queryWithSum = _getCombinedQuery(includeFinished: includeFinished);
+    final queryWithSum = db.getCombinedQuery(
+      goals, includeArchived: includeFinished, net: net);
 
     db._applyFilters(queryWithSum.query, filters);
 
@@ -353,7 +294,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
   Future<void> setGoalsFinished(List<String> ids, bool status) => (update(goals)
     ..where(
       (g) => g.id.isIn(ids),
-    )).write(GoalsCompanion(isFinished: Value(status)));
+    )).write(GoalsCompanion(isArchived: Value(status)));
 
   Future<int> permanentlyDeleteGoals(List<String> ids) =>
       (delete(goals)..where((g) => g.id.isIn(ids))).go();
@@ -373,7 +314,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     String id, {
     bool includeFinished = true,
   }) {
-    final queryWithSum = _getCombinedQuery(includeFinished: includeFinished);
+    final queryWithSum = db.getCombinedQuery(goals, includeArchived: includeFinished);
 
     final filteredQuery = queryWithSum.query..where(goals.id.equals(id));
 
@@ -391,7 +332,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     String id, {
     bool includeFinished = true,
   }) {
-    final queryWithSum = _getCombinedQuery(includeFinished: includeFinished);
+    final queryWithSum = db.getCombinedQuery(goals, includeArchived: includeFinished);
 
     final filteredQuery = queryWithSum.query..where(goals.id.equals(id));
 
@@ -753,7 +694,7 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
-  QueryWithSum getCategoriesWithAmountsQuery() {
+  QueryWithSum _getCategoriesWithAmountsQuery() {
     // Get the start and end date to look for the values
     Expression<String> startDate = CaseWhenExpression<String>(
       cases:
@@ -818,10 +759,29 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     return QueryWithSum(queryWithSum, conditionalSum);
   }
 
+  QueryWithSum _getQueryWithSum({bool includeArchived = false, bool net = true, bool sumByResetIncrement = true}) {
+    QueryWithSum queryWithSum;
+
+    if (sumByResetIncrement) {
+      queryWithSum = _getCategoriesWithAmountsQuery();
+    } else {
+      queryWithSum = db.getCombinedQuery(categories, includeArchived: includeArchived, net: net);
+    }
+
+    return queryWithSum;
+  }
+
   Stream<List<CategoryWithAmount>> watchCategories({
     List<TransactionFilter>? filters,
+    bool includeArchived = false,
+    bool net = true,
+    bool sumByResetIncrement = true
   }) {
-    final queryWithSum = getCategoriesWithAmountsQuery();
+    final queryWithSum = _getQueryWithSum(
+      includeArchived: includeArchived,
+      net: net,
+      sumByResetIncrement: sumByResetIncrement
+    );
 
     db._applyFilters(queryWithSum.query, filters);
 
@@ -838,17 +798,27 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
-  Future<CategoryWithAmount?> getCategoryById(String id) async {
-    final categorySumQuery = getCategoriesWithAmountsQuery();
+  Future<CategoryWithAmount?> getCategoryById(
+    String id,{
+    bool includeArchived = false,
+    bool net = true,
+    bool sumByResetIncrement = true,
+    }) async {
+    final queryWithSum = _getQueryWithSum(
+      includeArchived: includeArchived,
+      net: net,
+      sumByResetIncrement: sumByResetIncrement
+    );
+
 
     final singleCategoryQuery =
-        categorySumQuery.query..where(categories.id.equals(id));
+        queryWithSum.query..where(categories.id.equals(id));
 
     final row = await singleCategoryQuery.getSingleOrNull();
 
     if (row != null) {
       final category = row.readTable(categories);
-      final amount = row.read<double>(categorySumQuery.sum);
+      final amount = row.read<double>(queryWithSum.sum);
 
       return CategoryWithAmount(category: category, amount: amount);
     } else {
@@ -897,6 +867,52 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   int get schemaVersion => 1;
+
+  QueryWithSum getCombinedQuery<T extends SoftDeletableTable>(
+    TableInfo<T, dynamic> relatedTable, {
+      bool includeArchived = false,
+      bool net = true,
+    }
+  ) {
+    var query = select(relatedTable).join([
+      leftOuterJoin(transactions, _getJoinCondition(relatedTable))
+    ]);
+
+    query.where(
+      transactions.isDeleted.isNotExp(const Constant(true)) &
+      relatedTable.asDslTable.isDeleted.isNotExp(const Constant(true))
+    );
+
+    if (!includeArchived) {
+      query.where(relatedTable.asDslTable.isArchived.isNotExp(const Constant(true)));
+    }
+
+    Expression<double> sumExpression;
+
+    if (net) {
+      sumExpression = getSignedTransactionSumQuery();
+    } else {
+      sumExpression = transactions.amount.sum();
+    }
+
+    query.addColumns([sumExpression]);
+    query.groupBy([relatedTable.asDslTable.id]);
+
+    return QueryWithSum(query, sumExpression);
+  }
+
+  Expression<bool> _getJoinCondition<T extends Table>(TableInfo<T, dynamic> table) {
+    switch (table.actualTableName) {
+      case 'categories':
+        return transactions.category.equalsExp(categories.id);
+      case 'accounts':
+        return transactions.accountId.equalsExp(accounts.id);
+      case 'goals':
+        return transactions.goalId.equalsExp(goals.id);
+      default:
+        throw ArgumentError('Unsupported table: ${table.actualTableName}');
+    }
+  }
 
   void _applyFilters<Q extends JoinedSelectStatement>(
     Q query,

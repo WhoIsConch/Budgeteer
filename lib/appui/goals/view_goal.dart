@@ -29,7 +29,7 @@ class _GoalViewerState extends State<GoalViewer> {
 
     final List<ObjectPropertyData> properties = [];
 
-    if (percentage >= 1 && !goal.isFinished) {
+    if (percentage >= 1 && !(goal.isArchived ?? false)) {
       properties.add(
         ObjectPropertyData(
           icon: Icons.flag,
@@ -52,7 +52,7 @@ class _GoalViewerState extends State<GoalViewer> {
         ObjectPropertyData(
           icon: Icons.flag,
           title: 'Status',
-          description: goal.isFinished ? 'Complete' : 'Incomplete',
+          description: goal.isArchived ?? false ? 'Complete' : 'Incomplete',
         ),
       );
     }
