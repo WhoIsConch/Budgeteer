@@ -3,7 +3,6 @@ import 'package:budget/models/database_extensions.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/models/filters.dart';
 import 'package:budget/providers/transaction_provider.dart';
-import 'package:budget/utils/tools.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:budget/utils/ui.dart';
 import 'package:flutter/material.dart';
@@ -73,8 +72,14 @@ class _TransactionsListState extends State<TransactionsList> {
       leadingWidget = IconButton(
         icon:
             (transaction.type == TransactionType.expense)
-                ? const Icon(Icons.remove_circle)
-                : const Icon(Icons.add_circle),
+                ? Icon(
+                  Icons.remove_circle,
+                  color: theme.colorScheme.onSecondaryContainer,
+                )
+                : Icon(
+                  Icons.add_circle,
+                  color: theme.colorScheme.onSecondaryContainer,
+                ),
         onPressed: () {
           if (!widget.showActionButton) return;
 
@@ -114,7 +119,10 @@ class _TransactionsListState extends State<TransactionsList> {
           ),
       onLongPress: () => showOptionsDialog(context, transaction),
       trailing: IconButton(
-        icon: const Icon(Icons.more_vert),
+        icon: Icon(
+          Icons.more_vert,
+          color: theme.colorScheme.onSecondaryContainer,
+        ),
         onPressed: () => showOptionsDialog(context, transaction),
       ),
       tileColor: theme.colorScheme.secondaryContainer,
@@ -258,14 +266,11 @@ class _TransactionsListState extends State<TransactionsList> {
   Widget build(BuildContext context) {
     if (widget.showBackground) {
       return Card(
-        color: getAdjustedColor(context, Theme.of(context).colorScheme.surface),
+        color: Theme.of(context).colorScheme.surfaceContainer,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16.0),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: getList(),
-        ),
+        child: Padding(padding: const EdgeInsets.all(8.0), child: getList()),
       );
     } else {
       return getList();

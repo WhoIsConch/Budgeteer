@@ -131,7 +131,7 @@ class _GoalPreviewCardState extends State<GoalPreviewCard> {
               child: Text(
                 hasGoals ? 'Your goals' : 'No goals',
                 style: Theme.of(context).textTheme.headlineMedium!.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
                 ),
               ),
             ),

@@ -168,7 +168,7 @@ class TransactionPreviewCard extends StatelessWidget {
       width: 135,
       height: 200,
       child: Card(
-        color: getAdjustedColor(context, Theme.of(context).colorScheme.surface),
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
         child: InkWell(
           borderRadius: BorderRadius.circular(12), // To match the card's radius
           onTap: () async {

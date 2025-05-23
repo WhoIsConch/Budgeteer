@@ -292,7 +292,7 @@ class _LineChartCardState extends State<LineChartCard> {
       aspectRatio: 3 / 2,
       child: Card(
         margin: EdgeInsets.zero,
-        color: getAdjustedColor(context, Theme.of(context).colorScheme.surface),
+        color: Theme.of(context).colorScheme.surfaceContainer,
         child: Padding(
           padding: EdgeInsets.all(16.0),
           child: FutureBuilder(
@@ -493,7 +493,7 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
 
     return Card(
       margin: EdgeInsets.zero,
-      color: getAdjustedColor(context, Theme.of(context).colorScheme.surface),
+      color: Theme.of(context).colorScheme.surfaceContainer,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

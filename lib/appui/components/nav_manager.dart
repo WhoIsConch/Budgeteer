@@ -234,10 +234,8 @@ class _NavManagerState extends State<NavManager>
               if (!_animationController.isDismissed) ..._buildActionButtons(),
               const SizedBox(height: 4),
               FloatingActionButton(
-                backgroundColor:
-                    Theme.of(context).colorScheme.primary,
-                foregroundColor:
-                    Theme.of(context).colorScheme.onPrimary,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 heroTag: 'home_fab',
                 onPressed: _toggleFabMenu,
                 child: RotationTransition(

@@ -366,50 +366,44 @@ class _PieChartCardState extends State<PieChartCard> {
 
     switch (_selectedContainer.type) {
       case PieChartType.account:
-        return db.accountDao.watchAccounts(
-          filters: provider.filters,
-          net: net,
-        ).map((
-          List<AccountWithTotal> accounts,
-        ) {
-          final List<PieChartObject> objects =
-              accounts
-                  .map(
-                    (account) => PieChartObject(
-                      name: account.account.name,
-                      color: account.account.color,
-                      amount: account.total,
-                    ),
-                  )
-                  .toList();
-          return [...objects, null];
-        });
+        return db.accountDao
+            .watchAccounts(filters: provider.filters, net: net)
+            .map((List<AccountWithTotal> accounts) {
+              final List<PieChartObject> objects =
+                  accounts
+                      .map(
+                        (account) => PieChartObject(
+                          name: account.account.name,
+                          color: account.account.color,
+                          amount: account.total,
+                        ),
+                      )
+                      .toList();
+              return [...objects, null];
+            });
       case PieChartType.category:
-        return db.categoryDao.watchCategories(
-          filters: provider.filters,
-          net: net,
-          sumByResetIncrement: false,
-        ).map((
-          List<CategoryWithAmount> categories,
-        ) {
-          final List<PieChartObject> objects =
-              categories
-                  .map(
-                    (category) => PieChartObject(
-                      name: category.category.name,
-                      color: category.category.color,
-                      amount: category.amount ?? 0,
-                    ),
-                  )
-                  .toList();
+        return db.categoryDao
+            .watchCategories(
+              filters: provider.filters,
+              net: net,
+              sumByResetIncrement: false,
+            )
+            .map((List<CategoryWithAmount> categories) {
+              final List<PieChartObject> objects =
+                  categories
+                      .map(
+                        (category) => PieChartObject(
+                          name: category.category.name,
+                          color: category.category.color,
+                          amount: category.amount ?? 0,
+                        ),
+                      )
+                      .toList();
 
-          return [...objects, null];
-        });
+              return [...objects, null];
+            });
       case PieChartType.goal:
-        return db.goalDao.watchGoals(
-          filters: provider.filters,
-          net: net
-        ).map((
+        return db.goalDao.watchGoals(filters: provider.filters, net: net).map((
           List<GoalWithAchievedAmount> goals,
         ) {
           final List<PieChartObject> objects =
@@ -431,7 +425,7 @@ class _PieChartCardState extends State<PieChartCard> {
   Widget build(BuildContext context) {
     return Card(
       margin: EdgeInsets.zero,
-      color: getAdjustedColor(context, Theme.of(context).colorScheme.surface),
+      color: Theme.of(context).colorScheme.surfaceContainer,
       child: SizedBox(
         height:
             (48 * 6) +
@@ -530,9 +524,11 @@ class _PieChartCardState extends State<PieChartCard> {
                         if (newType.type == null) {
                           provider.removeFilter<TransactionType>();
                         } else {
-                          provider.updateFilter(TransactionFilter<TransactionType>(newType.type!));
+                          provider.updateFilter(
+                            TransactionFilter<TransactionType>(newType.type!),
+                          );
                         }
-                        },
+                      },
                     ),
                     const Divider(),
                     ..._buildVerticalTabs<PieChartType>(
