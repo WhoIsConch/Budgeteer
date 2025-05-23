@@ -7,6 +7,8 @@ void showOptionsDialog(BuildContext context, Transaction transaction) {
   showModalBottomSheet(
     context: context,
     builder: (context) {
+      final deletionManager = DeletionManager(context);
+
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -27,12 +29,18 @@ void showOptionsDialog(BuildContext context, Transaction transaction) {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.archive),
+            title: const Text('Archive'),
+            onTap: () {
+              deletionManager.stageObjectsForArchival<Transaction>([transaction.id]);
+              Navigator.pop(context);
+            }
+          ),
+          ListTile(
             leading: const Icon(Icons.delete),
             title: const Text('Delete'),
             onTap: () {
-              DeletionManager(
-                context,
-              ).stageObjectsForDeletion<Transaction>([transaction.id]);
+              deletionManager.stageObjectsForDeletion<Transaction>([transaction.id]);
               Navigator.pop(context);
             },
           ),
