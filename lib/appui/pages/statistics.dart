@@ -26,9 +26,9 @@ class StatisticsPage extends StatefulWidget {
 class _StatisticsPageState extends State<StatisticsPage> {
   final TextEditingController _rangeController = TextEditingController();
 
-  DateTimeRange? _getCurrentRange(BuildContext context) => context.watch<TransactionProvider>().getFilterValue<DateTimeRange>(); 
+  DateTimeRange? _getCurrentRange(BuildContext context) => context.read<TransactionProvider>().getFilterValue<DateTimeRange>(); 
 
-  void pickDateRange({DateTimeRange? initialRange}) async {
+  void pickDateRange(BuildContext context, {DateTimeRange? initialRange}) async {
     final provider = context.read<TransactionProvider>();
 
     DateTimeRange? newRange = await showDateRangePicker(
@@ -76,7 +76,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
       initialSelection: currentDateRange,
       onSelected: (range) async {
         if (range == null) {
-          pickDateRange(initialRange: currentDateRange);
+          pickDateRange(context, initialRange: currentDateRange);
         } else {
           setState(
             () => context.read<TransactionProvider>().updateFilter(
@@ -110,7 +110,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                   iconSize: 32,
                   icon: const Icon(Icons.date_range),
                   onPressed:
-                      () => pickDateRange(initialRange: _getCurrentRange(context)),
+                      () => pickDateRange(context, initialRange: _getCurrentRange(context)),
                 ),
               ],
             ),
