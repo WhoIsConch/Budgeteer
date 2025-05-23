@@ -818,9 +818,9 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     return QueryWithSum(queryWithSum, conditionalSum);
   }
 
-  Stream<List<CategoryWithAmount>> watchCategories(
+  Stream<List<CategoryWithAmount>> watchCategories({
     List<TransactionFilter>? filters,
-  ) {
+  }) {
     final queryWithSum = getCategoriesWithAmountsQuery();
 
     db._applyFilters(queryWithSum.query, filters);

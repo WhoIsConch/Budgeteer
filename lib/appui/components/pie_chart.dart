@@ -361,9 +361,6 @@ class _PieChartCardState extends State<PieChartCard> {
   Stream<List<PieChartObject?>> _getContainerStream() {
     final provider = context.watch<TransactionProvider>();
 
-    TransactionType? typeFilter = _selectedType.type;
-    DateTimeRange? dateFilter = provider.getFilterValue<DateTimeRange>();
-
     final db = context.read<AppDatabase>();
 
     switch (_selectedContainer.type) {
@@ -386,7 +383,9 @@ class _PieChartCardState extends State<PieChartCard> {
           return [...objects, null];
         });
       case PieChartType.category:
-        return db.categoryDao.watchCategories().map((
+        return db.categoryDao.watchCategories(
+          filters: provider.filters,
+        ).map((
           List<CategoryWithAmount> categories,
         ) {
           final List<PieChartObject> objects =
@@ -403,7 +402,9 @@ class _PieChartCardState extends State<PieChartCard> {
           return [...objects, null];
         });
       case PieChartType.goal:
-        return db.goalDao.watchGoals().map((
+        return db.goalDao.watchGoals(
+          filters: provider.filters,
+        ).map((
           List<GoalWithAchievedAmount> goals,
         ) {
           final List<PieChartObject> objects =
