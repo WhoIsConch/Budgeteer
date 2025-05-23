@@ -156,6 +156,7 @@ class _LoginPageState extends State<LoginPage> {
     enabled: !isLoading,
     validator: validateEmail,
     forceErrorText: usernameError,
+    keyboardType: TextInputType.emailAddress,
     controller: usernameController,
     decoration: const InputDecoration(
       label: Text('Email'),
@@ -170,6 +171,13 @@ class _LoginPageState extends State<LoginPage> {
     obscureText: !passwordIsVisible,
     enableSuggestions: false,
     forceErrorText: passwordError,
+    validator: (value) {
+      if (value == null || value.trim().isEmpty) {
+        return 'Required';
+      }
+
+      return null;
+    },
     decoration: InputDecoration(
       suffixIcon: Padding(
         padding: const EdgeInsets.only(right: 4),
