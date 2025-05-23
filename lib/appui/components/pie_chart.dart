@@ -517,7 +517,17 @@ class _PieChartCardState extends State<PieChartCard> {
                     ..._buildVerticalTabs<TransactionType?>(
                       PieChartSelectionData.typeList,
                       _selectedType,
-                      (newType) => setState(() => _selectedType = newType),
+                      (newType) {
+                        setState(() => _selectedType = newType);
+
+                        final provider = context.read<TransactionProvider>();
+
+                        if (newType.type == null) {
+                          provider.removeFilter<TransactionType>();
+                        } else {
+                          provider.updateFilter(TransactionFilter<TransactionType>(newType.type!));
+                        }
+                        },
                     ),
                     const Divider(),
                     ..._buildVerticalTabs<PieChartType>(
