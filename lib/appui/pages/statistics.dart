@@ -10,7 +10,7 @@ import 'package:budget/utils/enums.dart';
 import 'package:budget/utils/tools.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:collection/collection.dart';
-import 'package:dynamic_color/dynamic_color.dart';
+import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -26,7 +26,8 @@ class StatisticsPage extends StatefulWidget {
 class _StatisticsPageState extends State<StatisticsPage> {
   final TextEditingController _rangeController = TextEditingController();
 
-  DateTimeRange? _getCurrentRange(BuildContext context) => context.watch<TransactionProvider>().getFilterValue<DateTimeRange>(); 
+  DateTimeRange? _getCurrentRange(BuildContext context) =>
+      context.watch<TransactionProvider>().getFilterValue<DateTimeRange>();
 
   void pickDateRange({DateTimeRange? initialRange}) async {
     final provider = context.read<TransactionProvider>();
@@ -40,7 +41,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
     if (newRange == null) return;
 
-    provider.updateFilter<DateTimeRange>(TransactionFilter<DateTimeRange>(newRange));
+    provider.updateFilter<DateTimeRange>(
+      TransactionFilter<DateTimeRange>(newRange),
+    );
   }
 
   DropdownMenu getDateRangeDropdown(BuildContext context) {
@@ -95,34 +98,39 @@ class _StatisticsPageState extends State<StatisticsPage> {
       create: (context) {
         final filterProvider = TransactionProvider();
 
-        filterProvider.updateFilter(TransactionFilter<DateTimeRange>(RelativeDateRange.today.getRange()));
+        filterProvider.updateFilter(
+          TransactionFilter<DateTimeRange>(RelativeDateRange.today.getRange()),
+        );
 
         return filterProvider;
       },
-      builder: (context, _) => SingleChildScrollView(
-        child: Column(
-          children: [
-            Row(
+      builder:
+          (context, _) => SingleChildScrollView(
+            child: Column(
               children: [
-                Expanded(child: getDateRangeDropdown(context)),
-                const SizedBox(width: 4),
-                IconButton(
-                  iconSize: 32,
-                  icon: const Icon(Icons.date_range),
-                  onPressed:
-                      () => pickDateRange(initialRange: _getCurrentRange(context)),
+                Row(
+                  children: [
+                    Expanded(child: getDateRangeDropdown(context)),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      iconSize: 32,
+                      icon: const Icon(Icons.date_range),
+                      onPressed:
+                          () => pickDateRange(
+                            initialRange: _getCurrentRange(context),
+                          ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 8.0), // Bottom padding
+                const PieChartCard(),
+                const SizedBox(height: 8.0),
+                // const LineChartCard(),
+                const SpendingBarChart(),
+                const SizedBox(height: 60), // To give the FAB somewhere to go
               ],
             ),
-            const SizedBox(height: 8.0), // Bottom padding
-            const PieChartCard(),
-            const SizedBox(height: 8.0),
-            // const LineChartCard(),
-            const SpendingBarChart(),
-            const SizedBox(height: 60), // To give the FAB somewhere to go
-          ],
-        ),
-      ),
+          ),
     );
   }
 }

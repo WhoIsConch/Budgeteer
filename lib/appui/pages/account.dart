@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class Account extends StatelessWidget {
   const Account({super.key});
@@ -57,13 +58,28 @@ class Account extends StatelessWidget {
             //   },
             //   child: Text("Send Firestore Data"),
             // )
-            // TextButton(
-            //   onPressed:
-            //       () => Navigator.of(
-            //         context,
-            //       ).push(MaterialPageRoute(builder: (_) => TestEditScreen())),
-            //   child: Text('Open new transaction manager'),
-            // ),
+            TextButton(
+              onPressed: () {
+                var colors = Theme.of(context).colorScheme;
+
+                print('--- Surfaces ---');
+                print(colors.surface.toHexString());
+                print(colors.surfaceBright.toHexString());
+                print(colors.surfaceDim.toHexString());
+                print(colors.surfaceContainer.toHexString());
+                print(colors.surfaceContainerLowest.toHexString());
+                print(colors.surfaceContainerLow.toHexString());
+                print(colors.surfaceContainerHigh.toHexString());
+                print(colors.surfaceContainerHighest.toHexString());
+                print('--- Primaries ---');
+                print(colors.primary.toHexString());
+                print(colors.primaryContainer.toHexString());
+                print(colors.primaryFixed.toHexString());
+                print(colors.primaryFixedDim.toHexString());
+                print(colors.inversePrimary.toHexString());
+              },
+              child: Text('Print color information'),
+            ),
           ],
         ),
         Divider(),

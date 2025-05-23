@@ -7,7 +7,7 @@ import 'package:budget/appui/components/viewer_screen.dart';
 import 'package:budget/appui/transactions/manage_transaction.dart';
 import 'package:budget/appui/categories/view_category.dart';
 import 'package:budget/appui/goals/view_goal.dart';
-import 'package:dynamic_color/dynamic_color.dart';
+import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';

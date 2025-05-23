@@ -9,7 +9,7 @@ import 'package:budget/utils/enums.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:budget/appui/transactions/view_transaction.dart';
 import 'package:budget/appui/pages/transaction_search.dart';
-import 'package:dynamic_color/dynamic_color.dart';
+import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
