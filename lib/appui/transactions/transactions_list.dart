@@ -1,4 +1,5 @@
 import 'package:budget/appui/components/status.dart';
+import 'package:budget/appui/transactions/view_transaction.dart';
 import 'package:budget/models/database_extensions.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/models/filters.dart';
@@ -103,15 +104,23 @@ class _TransactionsListState extends State<TransactionsList> {
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(transaction.formatDate()),
-      onTap:
-          () => Navigator.push(
+      onTap: () async {
+        var hydratedTransaction = await context
+            .read<AppDatabase>()
+            .transactionDao
+            .hydrateTransaction(transaction);
+
+        if (context.mounted) {
+          Navigator.push(
             context,
             MaterialPageRoute(
               builder:
                   (context) =>
-                      ManageTransactionPage(initialTransaction: transaction),
+                      ViewTransaction(transactionData: hydratedTransaction),
             ),
-          ),
+          );
+        }
+      },
       onLongPress: () => showOptionsDialog(context, transaction),
       trailing: IconButton(
         icon: const Icon(Icons.more_vert),
@@ -262,10 +271,7 @@ class _TransactionsListState extends State<TransactionsList> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16.0),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: getList(),
-        ),
+        child: Padding(padding: const EdgeInsets.all(8.0), child: getList()),
       );
     } else {
       return getList();
