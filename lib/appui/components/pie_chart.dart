@@ -2,6 +2,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:budget/appui/components/status.dart';
 import 'package:budget/models/database_extensions.dart';
 import 'package:budget/models/filters.dart';
+import 'package:budget/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/enums.dart';
 import 'package:budget/utils/tools.dart';
@@ -358,20 +359,18 @@ class _PieChartCardState extends State<PieChartCard> {
   }
 
   Stream<List<PieChartObject?>> _getContainerStream() {
-    // TransactionType? typeFilter =
-    //     filters
-    //         .firstWhereOrNull((e) => e.value.runtimeType == TransactionType)
-    //         ?.value;
-    // DateTimeRange? dateFilter =
-    //     filters
-    //         .firstWhereOrNull((e) => e.value.runtimeType == DateTimeRange)
-    //         ?.value;
+    final provider = context.watch<TransactionProvider>();
+
+    TransactionType? typeFilter = _selectedType.type;
+    DateTimeRange? dateFilter = provider.getFilterValue<DateTimeRange>();
 
     final db = context.read<AppDatabase>();
 
     switch (_selectedContainer.type) {
       case PieChartType.account:
-        return db.accountDao.watchAccounts().map((
+        return db.accountDao.watchAccounts(
+          filters: provider.filters,
+        ).map((
           List<AccountWithTotal> accounts,
         ) {
           final List<PieChartObject> objects =

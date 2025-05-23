@@ -162,10 +162,13 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
   }
 
   Stream<List<AccountWithTotal>> watchAccounts({
+    List<TransactionFilter>? filters,
     includeArchived = false,
     sortDescending = true,
   }) {
     final queryWithSum = _getCombinedQuery(includeArchived: includeArchived);
+
+    db._applyFilters(queryWithSum.query, filters);
 
     return queryWithSum.query.watch().map((rows) {
       final List<AccountWithTotal> accountsWithTotals =
@@ -290,10 +293,13 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
   }
 
   Stream<List<GoalWithAchievedAmount>> watchGoals({
+    List<TransactionFilter>? filters,
     bool includeFinished = true,
     bool sortDescending = true,
   }) {
     final queryWithSum = _getCombinedQuery(includeFinished: includeFinished);
+
+    db._applyFilters(queryWithSum.query, filters);
 
     // View all of the goals in the database
     return queryWithSum.query.watch().map((rows) {
@@ -812,8 +818,12 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     return QueryWithSum(queryWithSum, conditionalSum);
   }
 
-  Stream<List<CategoryWithAmount>> watchCategories() {
+  Stream<List<CategoryWithAmount>> watchCategories(
+    List<TransactionFilter>? filters,
+  ) {
     final queryWithSum = getCategoriesWithAmountsQuery();
+
+    db._applyFilters(queryWithSum.query, filters);
 
     return queryWithSum.query.watch().map(
       (rows) =>
@@ -887,6 +897,31 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   int get schemaVersion => 1;
+
+  void _applyFilters<Q extends JoinedSelectStatement>(
+    Q query,
+    List<TransactionFilter>? filters,
+  ) {
+    if (filters == null) return;
+
+    for (TransactionFilter filter in filters) {
+      switch (filter) {
+        case TransactionFilter<DateTimeRange> f:
+          query =
+              query..where(
+                transactions.date.isBiggerOrEqualValue(
+                      formatter.format(f.value.start),
+                    ) &
+                    transactions.date.isSmallerOrEqualValue(
+                      formatter.format(f.value.end),
+                    ),
+              );
+          break;
+        case TransactionFilter<TransactionType> f:
+          query = query..where(transactions.type.equalsValue(f.value));
+      }
+    }
+  }
 
   Expression<double> getSignedTransactionSumQuery({bool summed = true}) {
     // Mainly uses "summed" for backwards compatibility with code I wrote less
