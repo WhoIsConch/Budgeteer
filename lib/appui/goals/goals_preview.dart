@@ -1,6 +1,8 @@
+import 'package:budget/appui/components/status.dart';
 import 'package:budget/models/database_extensions.dart';
 import 'package:budget/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
+import 'package:budget/utils/tools.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:budget/appui/goals/view_goal.dart';
 import 'package:flutter/material.dart';
@@ -140,11 +142,16 @@ class _GoalPreviewCardState extends State<GoalPreviewCard> {
               child: StreamBuilder<List<GoalWithAchievedAmount>>(
                 stream: db.goalDao.watchGoals(includeFinished: false),
                 builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    AppLogger().logger.e(snapshot.error.toString());
+                    return ErrorInset('Error loading goals');
+                  }
+
                   if (!snapshot.hasData) {
                     return const LinearProgressIndicator();
                   } else if (snapshot.hasData && snapshot.data!.isEmpty) {
                     hasGoals = false;
-                    return const SizedBox.shrink();
+                    return ErrorInset('No goals');
                   }
 
                   hasGoals = true;
