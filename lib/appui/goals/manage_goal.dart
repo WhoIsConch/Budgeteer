@@ -82,7 +82,7 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
 
       _selectedDate = initialGoal!.goal.dueDate ?? DateTime.now();
       _selectedColor = initialGoal!.goal.color;
-      _isFinished = initialGoal!.goal.isArchived ?? false;
+      _isFinished = initialGoal!.goal.isArchived;
     }
 
     _controllers = tempControllers;

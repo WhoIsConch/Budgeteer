@@ -42,13 +42,13 @@ class $CategoriesTable extends Categories
   late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
     'is_deleted',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.bool,
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'CHECK ("is_deleted" IN (0, 1))',
     ),
-    defaultValue: const Constant(false),
+    clientDefault: () => false,
   );
   static const VerificationMeta _isArchivedMeta = const VerificationMeta(
     'isArchived',
@@ -57,13 +57,13 @@ class $CategoriesTable extends Categories
   late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
     'is_archived',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.bool,
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'CHECK ("is_archived" IN (0, 1))',
     ),
-    defaultValue: const Constant(false),
+    clientDefault: () => false,
   );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
@@ -108,7 +108,7 @@ class $CategoriesTable extends Categories
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'CHECK ("allow_negatives" IN (0, 1))',
     ),
-    defaultValue: const Constant(false),
+    clientDefault: () => false,
   );
   @override
   late final GeneratedColumnWithTypeConverter<Color, int> color =
@@ -213,14 +213,16 @@ class $CategoriesTable extends Categories
             DriftSqlType.string,
             data['${effectivePrefix}id'],
           )!,
-      isDeleted: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_deleted'],
-      ),
-      isArchived: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_archived'],
-      ),
+      isDeleted:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}is_deleted'],
+          )!,
+      isArchived:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}is_archived'],
+          )!,
       name:
           attachedDatabase.typeMapping.read(
             DriftSqlType.string,
@@ -268,8 +270,8 @@ class $CategoriesTable extends Categories
 
 class Category extends DataClass implements Insertable<Category> {
   final String id;
-  final bool? isDeleted;
-  final bool? isArchived;
+  final bool isDeleted;
+  final bool isArchived;
   final String name;
   final String? notes;
   final CategoryResetIncrement resetIncrement;
@@ -278,8 +280,8 @@ class Category extends DataClass implements Insertable<Category> {
   final double? balance;
   const Category({
     required this.id,
-    this.isDeleted,
-    this.isArchived,
+    required this.isDeleted,
+    required this.isArchived,
     required this.name,
     this.notes,
     required this.resetIncrement,
@@ -291,12 +293,8 @@ class Category extends DataClass implements Insertable<Category> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    if (!nullToAbsent || isDeleted != null) {
-      map['is_deleted'] = Variable<bool>(isDeleted);
-    }
-    if (!nullToAbsent || isArchived != null) {
-      map['is_archived'] = Variable<bool>(isArchived);
-    }
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    map['is_archived'] = Variable<bool>(isArchived);
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
@@ -321,14 +319,8 @@ class Category extends DataClass implements Insertable<Category> {
   CategoriesCompanion toCompanion(bool nullToAbsent) {
     return CategoriesCompanion(
       id: Value(id),
-      isDeleted:
-          isDeleted == null && nullToAbsent
-              ? const Value.absent()
-              : Value(isDeleted),
-      isArchived:
-          isArchived == null && nullToAbsent
-              ? const Value.absent()
-              : Value(isArchived),
+      isDeleted: Value(isDeleted),
+      isArchived: Value(isArchived),
       name: Value(name),
       notes:
           notes == null && nullToAbsent ? const Value.absent() : Value(notes),
@@ -349,8 +341,8 @@ class Category extends DataClass implements Insertable<Category> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Category(
       id: serializer.fromJson<String>(json['id']),
-      isDeleted: serializer.fromJson<bool?>(json['isDeleted']),
-      isArchived: serializer.fromJson<bool?>(json['isArchived']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
       name: serializer.fromJson<String>(json['name']),
       notes: serializer.fromJson<String?>(json['notes']),
       resetIncrement: $CategoriesTable.$converterresetIncrement.fromJson(
@@ -366,8 +358,8 @@ class Category extends DataClass implements Insertable<Category> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'isDeleted': serializer.toJson<bool?>(isDeleted),
-      'isArchived': serializer.toJson<bool?>(isArchived),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'isArchived': serializer.toJson<bool>(isArchived),
       'name': serializer.toJson<String>(name),
       'notes': serializer.toJson<String?>(notes),
       'resetIncrement': serializer.toJson<int>(
@@ -381,8 +373,8 @@ class Category extends DataClass implements Insertable<Category> {
 
   Category copyWith({
     String? id,
-    Value<bool?> isDeleted = const Value.absent(),
-    Value<bool?> isArchived = const Value.absent(),
+    bool? isDeleted,
+    bool? isArchived,
     String? name,
     Value<String?> notes = const Value.absent(),
     CategoryResetIncrement? resetIncrement,
@@ -391,8 +383,8 @@ class Category extends DataClass implements Insertable<Category> {
     Value<double?> balance = const Value.absent(),
   }) => Category(
     id: id ?? this.id,
-    isDeleted: isDeleted.present ? isDeleted.value : this.isDeleted,
-    isArchived: isArchived.present ? isArchived.value : this.isArchived,
+    isDeleted: isDeleted ?? this.isDeleted,
+    isArchived: isArchived ?? this.isArchived,
     name: name ?? this.name,
     notes: notes.present ? notes.value : this.notes,
     resetIncrement: resetIncrement ?? this.resetIncrement,
@@ -466,8 +458,8 @@ class Category extends DataClass implements Insertable<Category> {
 
 class CategoriesCompanion extends UpdateCompanion<Category> {
   final Value<String> id;
-  final Value<bool?> isDeleted;
-  final Value<bool?> isArchived;
+  final Value<bool> isDeleted;
+  final Value<bool> isArchived;
   final Value<String> name;
   final Value<String?> notes;
   final Value<CategoryResetIncrement> resetIncrement;
@@ -527,8 +519,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
 
   CategoriesCompanion copyWith({
     Value<String>? id,
-    Value<bool?>? isDeleted,
-    Value<bool?>? isArchived,
+    Value<bool>? isDeleted,
+    Value<bool>? isArchived,
     Value<String>? name,
     Value<String?>? notes,
     Value<CategoryResetIncrement>? resetIncrement,
@@ -631,13 +623,13 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
   late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
     'is_deleted',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.bool,
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'CHECK ("is_deleted" IN (0, 1))',
     ),
-    defaultValue: const Constant(false),
+    clientDefault: () => false,
   );
   static const VerificationMeta _isArchivedMeta = const VerificationMeta(
     'isArchived',
@@ -646,13 +638,13 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
   late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
     'is_archived',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.bool,
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'CHECK ("is_archived" IN (0, 1))',
     ),
-    defaultValue: const Constant(false),
+    clientDefault: () => false,
   );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
@@ -764,14 +756,16 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
             DriftSqlType.string,
             data['${effectivePrefix}id'],
           )!,
-      isDeleted: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_deleted'],
-      ),
-      isArchived: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_archived'],
-      ),
+      isDeleted:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}is_deleted'],
+          )!,
+      isArchived:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}is_archived'],
+          )!,
       name:
           attachedDatabase.typeMapping.read(
             DriftSqlType.string,
@@ -804,16 +798,16 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
 
 class Account extends DataClass implements Insertable<Account> {
   final String id;
-  final bool? isDeleted;
-  final bool? isArchived;
+  final bool isDeleted;
+  final bool isArchived;
   final String name;
   final String? notes;
   final int? priority;
   final Color color;
   const Account({
     required this.id,
-    this.isDeleted,
-    this.isArchived,
+    required this.isDeleted,
+    required this.isArchived,
     required this.name,
     this.notes,
     this.priority,
@@ -823,12 +817,8 @@ class Account extends DataClass implements Insertable<Account> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    if (!nullToAbsent || isDeleted != null) {
-      map['is_deleted'] = Variable<bool>(isDeleted);
-    }
-    if (!nullToAbsent || isArchived != null) {
-      map['is_archived'] = Variable<bool>(isArchived);
-    }
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    map['is_archived'] = Variable<bool>(isArchived);
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
@@ -845,14 +835,8 @@ class Account extends DataClass implements Insertable<Account> {
   AccountsCompanion toCompanion(bool nullToAbsent) {
     return AccountsCompanion(
       id: Value(id),
-      isDeleted:
-          isDeleted == null && nullToAbsent
-              ? const Value.absent()
-              : Value(isDeleted),
-      isArchived:
-          isArchived == null && nullToAbsent
-              ? const Value.absent()
-              : Value(isArchived),
+      isDeleted: Value(isDeleted),
+      isArchived: Value(isArchived),
       name: Value(name),
       notes:
           notes == null && nullToAbsent ? const Value.absent() : Value(notes),
@@ -871,8 +855,8 @@ class Account extends DataClass implements Insertable<Account> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Account(
       id: serializer.fromJson<String>(json['id']),
-      isDeleted: serializer.fromJson<bool?>(json['isDeleted']),
-      isArchived: serializer.fromJson<bool?>(json['isArchived']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
       name: serializer.fromJson<String>(json['name']),
       notes: serializer.fromJson<String?>(json['notes']),
       priority: serializer.fromJson<int?>(json['priority']),
@@ -884,8 +868,8 @@ class Account extends DataClass implements Insertable<Account> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'isDeleted': serializer.toJson<bool?>(isDeleted),
-      'isArchived': serializer.toJson<bool?>(isArchived),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'isArchived': serializer.toJson<bool>(isArchived),
       'name': serializer.toJson<String>(name),
       'notes': serializer.toJson<String?>(notes),
       'priority': serializer.toJson<int?>(priority),
@@ -895,16 +879,16 @@ class Account extends DataClass implements Insertable<Account> {
 
   Account copyWith({
     String? id,
-    Value<bool?> isDeleted = const Value.absent(),
-    Value<bool?> isArchived = const Value.absent(),
+    bool? isDeleted,
+    bool? isArchived,
     String? name,
     Value<String?> notes = const Value.absent(),
     Value<int?> priority = const Value.absent(),
     Color? color,
   }) => Account(
     id: id ?? this.id,
-    isDeleted: isDeleted.present ? isDeleted.value : this.isDeleted,
-    isArchived: isArchived.present ? isArchived.value : this.isArchived,
+    isDeleted: isDeleted ?? this.isDeleted,
+    isArchived: isArchived ?? this.isArchived,
     name: name ?? this.name,
     notes: notes.present ? notes.value : this.notes,
     priority: priority.present ? priority.value : this.priority,
@@ -955,8 +939,8 @@ class Account extends DataClass implements Insertable<Account> {
 
 class AccountsCompanion extends UpdateCompanion<Account> {
   final Value<String> id;
-  final Value<bool?> isDeleted;
-  final Value<bool?> isArchived;
+  final Value<bool> isDeleted;
+  final Value<bool> isArchived;
   final Value<String> name;
   final Value<String?> notes;
   final Value<int?> priority;
@@ -1006,8 +990,8 @@ class AccountsCompanion extends UpdateCompanion<Account> {
 
   AccountsCompanion copyWith({
     Value<String>? id,
-    Value<bool?>? isDeleted,
-    Value<bool?>? isArchived,
+    Value<bool>? isDeleted,
+    Value<bool>? isArchived,
     Value<String>? name,
     Value<String?>? notes,
     Value<int?>? priority,
@@ -1096,13 +1080,13 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
   late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
     'is_deleted',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.bool,
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'CHECK ("is_deleted" IN (0, 1))',
     ),
-    defaultValue: const Constant(false),
+    clientDefault: () => false,
   );
   static const VerificationMeta _isArchivedMeta = const VerificationMeta(
     'isArchived',
@@ -1111,13 +1095,13 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
   late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
     'is_archived',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.bool,
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'CHECK ("is_archived" IN (0, 1))',
     ),
-    defaultValue: const Constant(false),
+    clientDefault: () => false,
   );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
@@ -1239,14 +1223,16 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
             DriftSqlType.string,
             data['${effectivePrefix}id'],
           )!,
-      isDeleted: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_deleted'],
-      ),
-      isArchived: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_archived'],
-      ),
+      isDeleted:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}is_deleted'],
+          )!,
+      isArchived:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}is_archived'],
+          )!,
       name:
           attachedDatabase.typeMapping.read(
             DriftSqlType.string,
@@ -1290,8 +1276,8 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
 
 class Goal extends DataClass implements Insertable<Goal> {
   final String id;
-  final bool? isDeleted;
-  final bool? isArchived;
+  final bool isDeleted;
+  final bool isArchived;
   final String name;
   final String? notes;
   final double cost;
@@ -1299,8 +1285,8 @@ class Goal extends DataClass implements Insertable<Goal> {
   final DateTime? dueDate;
   const Goal({
     required this.id,
-    this.isDeleted,
-    this.isArchived,
+    required this.isDeleted,
+    required this.isArchived,
     required this.name,
     this.notes,
     required this.cost,
@@ -1311,12 +1297,8 @@ class Goal extends DataClass implements Insertable<Goal> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    if (!nullToAbsent || isDeleted != null) {
-      map['is_deleted'] = Variable<bool>(isDeleted);
-    }
-    if (!nullToAbsent || isArchived != null) {
-      map['is_archived'] = Variable<bool>(isArchived);
-    }
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    map['is_archived'] = Variable<bool>(isArchived);
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
@@ -1336,14 +1318,8 @@ class Goal extends DataClass implements Insertable<Goal> {
   GoalsCompanion toCompanion(bool nullToAbsent) {
     return GoalsCompanion(
       id: Value(id),
-      isDeleted:
-          isDeleted == null && nullToAbsent
-              ? const Value.absent()
-              : Value(isDeleted),
-      isArchived:
-          isArchived == null && nullToAbsent
-              ? const Value.absent()
-              : Value(isArchived),
+      isDeleted: Value(isDeleted),
+      isArchived: Value(isArchived),
       name: Value(name),
       notes:
           notes == null && nullToAbsent ? const Value.absent() : Value(notes),
@@ -1363,8 +1339,8 @@ class Goal extends DataClass implements Insertable<Goal> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Goal(
       id: serializer.fromJson<String>(json['id']),
-      isDeleted: serializer.fromJson<bool?>(json['isDeleted']),
-      isArchived: serializer.fromJson<bool?>(json['isArchived']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
       name: serializer.fromJson<String>(json['name']),
       notes: serializer.fromJson<String?>(json['notes']),
       cost: serializer.fromJson<double>(json['cost']),
@@ -1377,8 +1353,8 @@ class Goal extends DataClass implements Insertable<Goal> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'isDeleted': serializer.toJson<bool?>(isDeleted),
-      'isArchived': serializer.toJson<bool?>(isArchived),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'isArchived': serializer.toJson<bool>(isArchived),
       'name': serializer.toJson<String>(name),
       'notes': serializer.toJson<String?>(notes),
       'cost': serializer.toJson<double>(cost),
@@ -1389,8 +1365,8 @@ class Goal extends DataClass implements Insertable<Goal> {
 
   Goal copyWith({
     String? id,
-    Value<bool?> isDeleted = const Value.absent(),
-    Value<bool?> isArchived = const Value.absent(),
+    bool? isDeleted,
+    bool? isArchived,
     String? name,
     Value<String?> notes = const Value.absent(),
     double? cost,
@@ -1398,8 +1374,8 @@ class Goal extends DataClass implements Insertable<Goal> {
     Value<DateTime?> dueDate = const Value.absent(),
   }) => Goal(
     id: id ?? this.id,
-    isDeleted: isDeleted.present ? isDeleted.value : this.isDeleted,
-    isArchived: isArchived.present ? isArchived.value : this.isArchived,
+    isDeleted: isDeleted ?? this.isDeleted,
+    isArchived: isArchived ?? this.isArchived,
     name: name ?? this.name,
     notes: notes.present ? notes.value : this.notes,
     cost: cost ?? this.cost,
@@ -1454,8 +1430,8 @@ class Goal extends DataClass implements Insertable<Goal> {
 
 class GoalsCompanion extends UpdateCompanion<Goal> {
   final Value<String> id;
-  final Value<bool?> isDeleted;
-  final Value<bool?> isArchived;
+  final Value<bool> isDeleted;
+  final Value<bool> isArchived;
   final Value<String> name;
   final Value<String?> notes;
   final Value<double> cost;
@@ -1511,8 +1487,8 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
 
   GoalsCompanion copyWith({
     Value<String>? id,
-    Value<bool?>? isDeleted,
-    Value<bool?>? isArchived,
+    Value<bool>? isDeleted,
+    Value<bool>? isArchived,
     Value<String>? name,
     Value<String?>? notes,
     Value<double>? cost,
@@ -1646,13 +1622,13 @@ class $TransactionsTable extends Transactions
   late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
     'is_deleted',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.bool,
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'CHECK ("is_deleted" IN (0, 1))',
     ),
-    defaultValue: const Constant(false),
+    clientDefault: () => false,
   );
   static const VerificationMeta _isArchivedMeta = const VerificationMeta(
     'isArchived',
@@ -1661,13 +1637,13 @@ class $TransactionsTable extends Transactions
   late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
     'is_archived',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.bool,
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'CHECK ("is_archived" IN (0, 1))',
     ),
-    defaultValue: const Constant(false),
+    clientDefault: () => false,
   );
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
@@ -1835,14 +1811,16 @@ class $TransactionsTable extends Transactions
           data['${effectivePrefix}type'],
         )!,
       ),
-      isDeleted: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_deleted'],
-      ),
-      isArchived: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_archived'],
-      ),
+      isDeleted:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}is_deleted'],
+          )!,
+      isArchived:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}is_archived'],
+          )!,
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
@@ -1879,8 +1857,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   final double amount;
   final DateTime date;
   final TransactionType type;
-  final bool? isDeleted;
-  final bool? isArchived;
+  final bool isDeleted;
+  final bool isArchived;
   final String? notes;
   final String? category;
   final String? accountId;
@@ -1891,8 +1869,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     required this.amount,
     required this.date,
     required this.type,
-    this.isDeleted,
-    this.isArchived,
+    required this.isDeleted,
+    required this.isArchived,
     this.notes,
     this.category,
     this.accountId,
@@ -1914,12 +1892,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
         $TransactionsTable.$convertertype.toSql(type),
       );
     }
-    if (!nullToAbsent || isDeleted != null) {
-      map['is_deleted'] = Variable<bool>(isDeleted);
-    }
-    if (!nullToAbsent || isArchived != null) {
-      map['is_archived'] = Variable<bool>(isArchived);
-    }
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    map['is_archived'] = Variable<bool>(isArchived);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
@@ -1942,14 +1916,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       amount: Value(amount),
       date: Value(date),
       type: Value(type),
-      isDeleted:
-          isDeleted == null && nullToAbsent
-              ? const Value.absent()
-              : Value(isDeleted),
-      isArchived:
-          isArchived == null && nullToAbsent
-              ? const Value.absent()
-              : Value(isArchived),
+      isDeleted: Value(isDeleted),
+      isArchived: Value(isArchived),
       notes:
           notes == null && nullToAbsent ? const Value.absent() : Value(notes),
       category:
@@ -1978,8 +1946,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       type: $TransactionsTable.$convertertype.fromJson(
         serializer.fromJson<int>(json['type']),
       ),
-      isDeleted: serializer.fromJson<bool?>(json['isDeleted']),
-      isArchived: serializer.fromJson<bool?>(json['isArchived']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
       notes: serializer.fromJson<String?>(json['notes']),
       category: serializer.fromJson<String?>(json['category']),
       accountId: serializer.fromJson<String?>(json['accountId']),
@@ -1997,8 +1965,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       'type': serializer.toJson<int>(
         $TransactionsTable.$convertertype.toJson(type),
       ),
-      'isDeleted': serializer.toJson<bool?>(isDeleted),
-      'isArchived': serializer.toJson<bool?>(isArchived),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'isArchived': serializer.toJson<bool>(isArchived),
       'notes': serializer.toJson<String?>(notes),
       'category': serializer.toJson<String?>(category),
       'accountId': serializer.toJson<String?>(accountId),
@@ -2012,8 +1980,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     double? amount,
     DateTime? date,
     TransactionType? type,
-    Value<bool?> isDeleted = const Value.absent(),
-    Value<bool?> isArchived = const Value.absent(),
+    bool? isDeleted,
+    bool? isArchived,
     Value<String?> notes = const Value.absent(),
     Value<String?> category = const Value.absent(),
     Value<String?> accountId = const Value.absent(),
@@ -2024,8 +1992,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     amount: amount ?? this.amount,
     date: date ?? this.date,
     type: type ?? this.type,
-    isDeleted: isDeleted.present ? isDeleted.value : this.isDeleted,
-    isArchived: isArchived.present ? isArchived.value : this.isArchived,
+    isDeleted: isDeleted ?? this.isDeleted,
+    isArchived: isArchived ?? this.isArchived,
     notes: notes.present ? notes.value : this.notes,
     category: category.present ? category.value : this.category,
     accountId: accountId.present ? accountId.value : this.accountId,
@@ -2103,8 +2071,8 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   final Value<double> amount;
   final Value<DateTime> date;
   final Value<TransactionType> type;
-  final Value<bool?> isDeleted;
-  final Value<bool?> isArchived;
+  final Value<bool> isDeleted;
+  final Value<bool> isArchived;
   final Value<String?> notes;
   final Value<String?> category;
   final Value<String?> accountId;
@@ -2177,8 +2145,8 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Value<double>? amount,
     Value<DateTime>? date,
     Value<TransactionType>? type,
-    Value<bool?>? isDeleted,
-    Value<bool?>? isArchived,
+    Value<bool>? isDeleted,
+    Value<bool>? isArchived,
     Value<String?>? notes,
     Value<String?>? category,
     Value<String?>? accountId,
@@ -2319,8 +2287,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 typedef $$CategoriesTableCreateCompanionBuilder =
     CategoriesCompanion Function({
       Value<String> id,
-      Value<bool?> isDeleted,
-      Value<bool?> isArchived,
+      Value<bool> isDeleted,
+      Value<bool> isArchived,
       required String name,
       Value<String?> notes,
       Value<CategoryResetIncrement> resetIncrement,
@@ -2332,8 +2300,8 @@ typedef $$CategoriesTableCreateCompanionBuilder =
 typedef $$CategoriesTableUpdateCompanionBuilder =
     CategoriesCompanion Function({
       Value<String> id,
-      Value<bool?> isDeleted,
-      Value<bool?> isArchived,
+      Value<bool> isDeleted,
+      Value<bool> isArchived,
       Value<String> name,
       Value<String?> notes,
       Value<CategoryResetIncrement> resetIncrement,
@@ -2605,8 +2573,8 @@ class $$CategoriesTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<bool?> isDeleted = const Value.absent(),
-                Value<bool?> isArchived = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<CategoryResetIncrement> resetIncrement =
@@ -2630,8 +2598,8 @@ class $$CategoriesTableTableManager
           createCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<bool?> isDeleted = const Value.absent(),
-                Value<bool?> isArchived = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
                 required String name,
                 Value<String?> notes = const Value.absent(),
                 Value<CategoryResetIncrement> resetIncrement =
@@ -2716,8 +2684,8 @@ typedef $$CategoriesTableProcessedTableManager =
 typedef $$AccountsTableCreateCompanionBuilder =
     AccountsCompanion Function({
       Value<String> id,
-      Value<bool?> isDeleted,
-      Value<bool?> isArchived,
+      Value<bool> isDeleted,
+      Value<bool> isArchived,
       required String name,
       Value<String?> notes,
       Value<int?> priority,
@@ -2727,8 +2695,8 @@ typedef $$AccountsTableCreateCompanionBuilder =
 typedef $$AccountsTableUpdateCompanionBuilder =
     AccountsCompanion Function({
       Value<String> id,
-      Value<bool?> isDeleted,
-      Value<bool?> isArchived,
+      Value<bool> isDeleted,
+      Value<bool> isArchived,
       Value<String> name,
       Value<String?> notes,
       Value<int?> priority,
@@ -2962,8 +2930,8 @@ class $$AccountsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<bool?> isDeleted = const Value.absent(),
-                Value<bool?> isArchived = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int?> priority = const Value.absent(),
@@ -2982,8 +2950,8 @@ class $$AccountsTableTableManager
           createCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<bool?> isDeleted = const Value.absent(),
-                Value<bool?> isArchived = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
                 required String name,
                 Value<String?> notes = const Value.absent(),
                 Value<int?> priority = const Value.absent(),
@@ -3063,8 +3031,8 @@ typedef $$AccountsTableProcessedTableManager =
 typedef $$GoalsTableCreateCompanionBuilder =
     GoalsCompanion Function({
       Value<String> id,
-      Value<bool?> isDeleted,
-      Value<bool?> isArchived,
+      Value<bool> isDeleted,
+      Value<bool> isArchived,
       required String name,
       Value<String?> notes,
       required double cost,
@@ -3075,8 +3043,8 @@ typedef $$GoalsTableCreateCompanionBuilder =
 typedef $$GoalsTableUpdateCompanionBuilder =
     GoalsCompanion Function({
       Value<String> id,
-      Value<bool?> isDeleted,
-      Value<bool?> isArchived,
+      Value<bool> isDeleted,
+      Value<bool> isArchived,
       Value<String> name,
       Value<String?> notes,
       Value<double> cost,
@@ -3324,8 +3292,8 @@ class $$GoalsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<bool?> isDeleted = const Value.absent(),
-                Value<bool?> isArchived = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<double> cost = const Value.absent(),
@@ -3346,8 +3314,8 @@ class $$GoalsTableTableManager
           createCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<bool?> isDeleted = const Value.absent(),
-                Value<bool?> isArchived = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
                 required String name,
                 Value<String?> notes = const Value.absent(),
                 required double cost,
@@ -3428,8 +3396,8 @@ typedef $$TransactionsTableCreateCompanionBuilder =
       required double amount,
       required DateTime date,
       required TransactionType type,
-      Value<bool?> isDeleted,
-      Value<bool?> isArchived,
+      Value<bool> isDeleted,
+      Value<bool> isArchived,
       Value<String?> notes,
       Value<String?> category,
       Value<String?> accountId,
@@ -3443,8 +3411,8 @@ typedef $$TransactionsTableUpdateCompanionBuilder =
       Value<double> amount,
       Value<DateTime> date,
       Value<TransactionType> type,
-      Value<bool?> isDeleted,
-      Value<bool?> isArchived,
+      Value<bool> isDeleted,
+      Value<bool> isArchived,
       Value<String?> notes,
       Value<String?> category,
       Value<String?> accountId,
@@ -3892,8 +3860,8 @@ class $$TransactionsTableTableManager
                 Value<double> amount = const Value.absent(),
                 Value<DateTime> date = const Value.absent(),
                 Value<TransactionType> type = const Value.absent(),
-                Value<bool?> isDeleted = const Value.absent(),
-                Value<bool?> isArchived = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> category = const Value.absent(),
                 Value<String?> accountId = const Value.absent(),
@@ -3920,8 +3888,8 @@ class $$TransactionsTableTableManager
                 required double amount,
                 required DateTime date,
                 required TransactionType type,
-                Value<bool?> isDeleted = const Value.absent(),
-                Value<bool?> isArchived = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> category = const Value.absent(),
                 Value<String?> accountId = const Value.absent(),

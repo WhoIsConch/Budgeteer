@@ -140,7 +140,7 @@ class ViewTransaction extends StatelessWidget {
             ),
           ),
       onArchive: () {
-        if (transaction.isArchived ?? false) {
+        if (transaction.isArchived) {
           final db = context.read<AppDatabase>();
           db.transactionDao.setTransactionsArchived([transaction.id], false);
         } else {

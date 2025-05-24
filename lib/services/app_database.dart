@@ -13,16 +13,9 @@ part 'app_database.g.dart';
 mixin SoftDeletableTable on Table {
   TextColumn get id => text().clientDefault(() => uuid.v4())();
   BoolColumn get isDeleted =>
-      boolean()
-          .nullable()
-          .withDefault(const Constant(false))
-          .named('is_deleted')();
+      boolean().clientDefault(() => false).named('is_deleted')();
   BoolColumn get isArchived =>
-      boolean()
-          .nullable()
-          .withDefault(const Constant(false))
-          .named('is_archived')();
-
+      boolean().clientDefault(() => false).named('is_archived')();
 }
 
 class Transactions extends Table {
@@ -35,15 +28,9 @@ class Transactions extends Table {
   TextColumn get date => text().map(const DateTextConverter())();
   IntColumn get type => intEnum<TransactionType>()();
   BoolColumn get isDeleted =>
-      boolean()
-          .nullable()
-          .withDefault(const Constant(false))
-          .named('is_deleted')();
+      boolean().clientDefault(() => false).named('is_deleted')();
   BoolColumn get isArchived =>
-      boolean()
-          .nullable()
-          .withDefault(const Constant(false))
-          .named('is_archived')();
+      boolean().clientDefault(() => false).named('is_archived')();
   TextColumn get notes => text().nullable()();
 
   TextColumn get category =>
@@ -80,7 +67,7 @@ class Categories extends Table with SoftDeletableTable {
           .withDefault(const Constant(0))
           .named('reset_increment')();
   BoolColumn get allowNegatives =>
-      boolean().withDefault(const Constant(false)).named('allow_negatives')();
+      boolean().clientDefault(() => false).named('allow_negatives')();
   IntColumn get color =>
       integer().clientDefault(genColor).map(const ColorConverter())();
   RealColumn get balance => real().nullable()();
@@ -123,12 +110,13 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     List<TransactionFilter>? filters,
     includeArchived = false,
     sortDescending = true,
-    net = true
+    net = true,
   }) {
     final queryWithSum = db.getCombinedQuery(
-      accounts, includeArchived: includeArchived,
-      net: net
-      );
+      accounts,
+      includeArchived: includeArchived,
+      net: net,
+    );
 
     db._applyFilters(queryWithSum.query, filters);
 
@@ -165,7 +153,10 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     String id, {
     bool includeArchived = true,
   }) {
-    final queryWithSum = db.getCombinedQuery(accounts, includeArchived: includeArchived);
+    final queryWithSum = db.getCombinedQuery(
+      accounts,
+      includeArchived: includeArchived,
+    );
     final filteredQuery = queryWithSum.query..where(accounts.id.equals(id));
 
     final mappedSelectable = filteredQuery.map((row) {
@@ -182,7 +173,10 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     String id, {
     bool includeArchived = true,
   }) {
-    final queryWithSum = db.getCombinedQuery(accounts, includeArchived: includeArchived);
+    final queryWithSum = db.getCombinedQuery(
+      accounts,
+      includeArchived: includeArchived,
+    );
     final filteredQuery = queryWithSum.query..where(accounts.id.equals(id));
 
     final mappedSelectable = filteredQuery.map((row) {
@@ -238,7 +232,10 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     bool net = true,
   }) {
     final queryWithSum = db.getCombinedQuery(
-      goals, includeArchived: includeFinished, net: net);
+      goals,
+      includeArchived: includeFinished,
+      net: net,
+    );
 
     db._applyFilters(queryWithSum.query, filters);
 
@@ -314,7 +311,10 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     String id, {
     bool includeFinished = true,
   }) {
-    final queryWithSum = db.getCombinedQuery(goals, includeArchived: includeFinished);
+    final queryWithSum = db.getCombinedQuery(
+      goals,
+      includeArchived: includeFinished,
+    );
 
     final filteredQuery = queryWithSum.query..where(goals.id.equals(id));
 
@@ -332,7 +332,10 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     String id, {
     bool includeFinished = true,
   }) {
-    final queryWithSum = db.getCombinedQuery(goals, includeArchived: includeFinished);
+    final queryWithSum = db.getCombinedQuery(
+      goals,
+      includeArchived: includeFinished,
+    );
 
     final filteredQuery = queryWithSum.query..where(goals.id.equals(id));
 
@@ -368,11 +371,10 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     int? offset,
     bool showArchived = false,
   }) {
-    var query = db.select(db.transactions)
-      ..where((t) => t.isDeleted.isNotExp(const Constant(true)));
+    var query = db.select(db.transactions)..where((t) => t.isDeleted.not());
 
     if (!showArchived) {
-      query = query..where((t) => t.isArchived.isNotExp(const Constant(true)));
+      query = query..where((t) => t.isArchived.not());
     }
 
     filters ??= [];
@@ -479,11 +481,8 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     // nullable. This is because something (either Supabase, Drift, or PowerSync)
     // doesn't think transactions are capable of handling non-null booleans.
     // My money is on PowerSync being the issue.
-    var query = select(transactions)..where(
-      (t) =>
-          t.isDeleted.isNotExp(const Constant(true)) &
-          t.isArchived.isNotExp(const Constant(true)),
-    );
+    var query = select(transactions)
+      ..where((t) => t.isDeleted.not() & t.isArchived.not());
 
     if (type != null) {
       query = query..where((t) => t.type.equalsValue(type));
@@ -759,13 +758,21 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     return QueryWithSum(queryWithSum, conditionalSum);
   }
 
-  QueryWithSum _getQueryWithSum({bool includeArchived = false, bool net = true, bool sumByResetIncrement = true}) {
+  QueryWithSum _getQueryWithSum({
+    bool includeArchived = false,
+    bool net = true,
+    bool sumByResetIncrement = true,
+  }) {
     QueryWithSum queryWithSum;
 
     if (sumByResetIncrement) {
       queryWithSum = _getCategoriesWithAmountsQuery();
     } else {
-      queryWithSum = db.getCombinedQuery(categories, includeArchived: includeArchived, net: net);
+      queryWithSum = db.getCombinedQuery(
+        categories,
+        includeArchived: includeArchived,
+        net: net,
+      );
     }
 
     return queryWithSum;
@@ -775,12 +782,12 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     List<TransactionFilter>? filters,
     bool includeArchived = false,
     bool net = true,
-    bool sumByResetIncrement = true
+    bool sumByResetIncrement = true,
   }) {
     final queryWithSum = _getQueryWithSum(
       includeArchived: includeArchived,
       net: net,
-      sumByResetIncrement: sumByResetIncrement
+      sumByResetIncrement: sumByResetIncrement,
     );
 
     db._applyFilters(queryWithSum.query, filters);
@@ -799,17 +806,16 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
   }
 
   Future<CategoryWithAmount?> getCategoryById(
-    String id,{
+    String id, {
     bool includeArchived = false,
     bool net = true,
     bool sumByResetIncrement = true,
-    }) async {
+  }) async {
     final queryWithSum = _getQueryWithSum(
       includeArchived: includeArchived,
       net: net,
-      sumByResetIncrement: sumByResetIncrement
+      sumByResetIncrement: sumByResetIncrement,
     );
-
 
     final singleCategoryQuery =
         queryWithSum.query..where(categories.id.equals(id));
@@ -870,21 +876,17 @@ class AppDatabase extends _$AppDatabase {
 
   QueryWithSum getCombinedQuery<T extends SoftDeletableTable>(
     TableInfo<T, dynamic> relatedTable, {
-      bool includeArchived = false,
-      bool net = true,
-    }
-  ) {
-    var query = select(relatedTable).join([
-      leftOuterJoin(transactions, _getJoinCondition(relatedTable))
-    ]);
+    bool includeArchived = false,
+    bool net = true,
+  }) {
+    var query = select(
+      relatedTable,
+    ).join([leftOuterJoin(transactions, _getJoinCondition(relatedTable))]);
 
-    query.where(
-      transactions.isDeleted.isNotExp(const Constant(true)) &
-      relatedTable.asDslTable.isDeleted.isNotExp(const Constant(true))
-    );
+    query.where(relatedTable.asDslTable.isDeleted.not());
 
     if (!includeArchived) {
-      query.where(relatedTable.asDslTable.isArchived.isNotExp(const Constant(true)));
+      query.where(relatedTable.asDslTable.isArchived.not());
     }
 
     Expression<double> sumExpression;
@@ -901,7 +903,9 @@ class AppDatabase extends _$AppDatabase {
     return QueryWithSum(query, sumExpression);
   }
 
-  Expression<bool> _getJoinCondition<T extends Table>(TableInfo<T, dynamic> table) {
+  Expression<bool> _getJoinCondition<T extends Table>(
+    TableInfo<T, dynamic> table,
+  ) {
     switch (table.actualTableName) {
       case 'categories':
         return transactions.category.equalsExp(categories.id);
@@ -939,20 +943,46 @@ class AppDatabase extends _$AppDatabase {
     }
   }
 
-  Expression<double> getSignedTransactionSumQuery({bool summed = true}) {
+  Expression<double> getSignedTransactionSumQuery({
+    bool includeArchived = false,
+    bool summed = true,
+  }) {
     // Mainly uses "summed" for backwards compatibility with code I wrote less
     // than an hour ago
-    final expression = CaseWhenExpression(
-      cases: [
+    List<CaseWhen<bool, double>> cases;
+
+    if (includeArchived) {
+      cases = [
         CaseWhen(
-          transactions.type.equalsValue(TransactionType.income),
+          transactions.type.equalsValue(TransactionType.income) &
+              transactions.isDeleted.not(),
           then: transactions.amount,
         ),
         CaseWhen(
-          transactions.type.equalsValue(TransactionType.expense),
+          transactions.type.equalsValue(TransactionType.expense) &
+              transactions.isDeleted.not(),
           then: -transactions.amount,
         ),
-      ],
+      ];
+    } else {
+      cases = [
+        CaseWhen(
+          transactions.type.equalsValue(TransactionType.income) &
+              transactions.isDeleted.not() &
+              transactions.isArchived.not(),
+          then: transactions.amount,
+        ),
+        CaseWhen(
+          transactions.type.equalsValue(TransactionType.expense) &
+              transactions.isDeleted.not() &
+              transactions.isArchived.not(),
+          then: -transactions.amount,
+        ),
+      ];
+    }
+
+    final expression = CaseWhenExpression(
+      cases: cases,
       orElse: const Constant(0.0),
     );
     if (summed) {
