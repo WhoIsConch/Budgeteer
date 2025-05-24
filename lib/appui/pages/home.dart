@@ -1,4 +1,5 @@
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:budget/appui/components/status.dart';
 import 'package:budget/models/filters.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/tools.dart';
@@ -97,48 +98,41 @@ class TransactionPreviewer extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppDatabase db = context.watch<AppDatabase>();
 
-    return StreamBuilder<List<Transaction>>(
-      stream: db.transactionDao.watchTransactionsPage(
-        limit: 10,
-        filters: [
-          TransactionFilter<DateTimeRange>(
-            DateTimeRange(
-              start: DateTime.now().subtract(const Duration(days: 7)),
-              end: DateTime.now(),
-            ).makeInclusive(),
-          ),
-        ],
-      ),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+    return SizedBox(
+      height: 200,
+      child: StreamBuilder<List<Transaction>>(
+        stream: db.transactionDao.watchTransactionsPage(
+          limit: 10,
+          filters: [
+            TransactionFilter<DateTimeRange>(
+              DateTimeRange(
+                start: DateTime.now().subtract(const Duration(days: 7)),
+                end: DateTime.now(),
+              ).makeInclusive(),
+            ),
+          ],
+        ),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+          } else {
+            if (snapshot.data!.isEmpty) {
+              return ErrorInset('No activity');
+            }
           }
-        } else {
-          if (snapshot.data!.isEmpty) {
-            return Center(
-              child: Text(
-                'No recent transactions',
-                style: Theme.of(context).textTheme.headlineSmall!.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
-                ),
-              ),
-            );
-          }
-        }
 
-        return SizedBox(
-          height: 200,
-          child: ListView.builder(
+          return ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: snapshot.data!.length,
             clipBehavior: Clip.none,
             itemBuilder:
                 (context, index) =>
                     TransactionPreviewCard(transaction: snapshot.data![index]),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
