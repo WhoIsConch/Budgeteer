@@ -90,6 +90,12 @@ class _GoalViewerState extends State<GoalViewer> {
       initialData: widget.initialGoalPair,
       stream: db.goalDao.watchGoalById(widget.initialGoalPair.goal.id),
       builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Align(
+            alignment: Alignment.center,
+            child: CircularProgressIndicator(),
+          );
+        }
         final goalPair = snapshot.data!;
         final goal = goalPair.goal;
 
