@@ -75,26 +75,32 @@ class _ManageAccountFormState extends State<ManageAccountForm> {
       title: title,
       onConfirm: () async {
         final AccountsCompanion? newAccount = _buildAccount();
+        final snackbarProvider = context.read<SnackbarProvider>();
 
         if (newAccount == null) {
-          context.read<SnackbarProvider>().showSnackBar(
+          snackbarProvider.showSnackBar(
             SnackBar(
               content: Text(
                 "Something went wrong.",
               ), // TODO: Make this more descriptive
             ),
           );
+          return;
         }
 
         final db = context.read<AppDatabase>();
 
         Account account;
 
-        if (isEditing) {
-          // bruh
-          account = await db.accountDao.updateAccount(newAccount!);
-        } else {
-          account = await db.accountDao.createAccount(newAccount!);
+        try {
+          if (isEditing) {
+            account = await db.accountDao.updateAccount(newAccount);
+          } else {
+            account = await db.accountDao.createAccount(newAccount);
+          }
+        } on ArgumentError catch (e) {
+          snackbarProvider.showSnackBar(SnackBar(content: Text(e.message)));
+          return;
         }
 
         final AccountWithTotal withTotal = AccountWithTotal(

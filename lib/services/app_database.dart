@@ -106,6 +106,20 @@ class Goals extends Table with SoftDeletableTable {
 class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
   AccountDao(super.db);
 
+  Future<bool> isPriorityTaken(int newPriority, {String? currentItemId}) async {
+    /// Ensure that a priority field for an account isn't taken.
+    final query = select(accounts)
+      ..where((a) => a.priority.equals(newPriority));
+
+    if (currentItemId != null) {
+      // If an item is being updated, it shouldn't check itself
+      query.where((a) => a.id.equals(currentItemId).not());
+    }
+
+    final existingItems = await query.get();
+    return existingItems.isNotEmpty;
+  }
+
   Stream<List<AccountWithTotal>> watchAccounts({
     List<TransactionFilter>? filters,
     includeArchived = false,
@@ -190,6 +204,15 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
   }
 
   Future<Account> createAccount(AccountsCompanion entry) async {
+    if (entry.priority.value != null) {
+      bool isTaken = await isPriorityTaken(entry.priority.value!);
+
+      if (isTaken) {
+        throw ArgumentError(
+          'Account with priority ${entry.priority.value} already exists',
+        );
+      }
+    }
     final id = entry.id.present ? entry.id.value : uuid.v4();
 
     final entryWithId = entry.copyWith(id: Value(id));
@@ -200,6 +223,19 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
 
   Future<Account> updateAccount(AccountsCompanion entry) async {
     assert(entry.id.present, '`id` must be supplied when updating an Account');
+
+    if (entry.priority.value != null) {
+      bool isTaken = await isPriorityTaken(
+        entry.priority.value!,
+        currentItemId: entry.id.value,
+      );
+
+      if (isTaken) {
+        throw ArgumentError(
+          'Account with priority ${entry.priority.value} already exists',
+        );
+      }
+    }
 
     final account = await (update(accounts)
       ..where((a) => a.id.equals(entry.id.value))).writeReturning(entry);
