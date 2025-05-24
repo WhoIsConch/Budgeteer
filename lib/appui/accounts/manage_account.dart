@@ -132,7 +132,9 @@ class _ManageAccountFormState extends State<ManageAccountForm> {
                 },
                 textInputType: TextInputType.numberWithOptions(),
                 suffixIcon: IconButtonWithTooltip(
-                  tooltipText: 'Defines the order in which accounts should appear. The top-priority account will appear first on the home page'),
+                  tooltipText:
+                      'Defines the order in which accounts should appear. The top-priority account will appear first on the home page',
+                ),
               ),
             ),
             ColorPickerEditField(

@@ -674,6 +674,7 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
   );
   @override
   late final GeneratedColumnWithTypeConverter<Color, int> color =

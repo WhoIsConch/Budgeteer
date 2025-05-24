@@ -82,7 +82,7 @@ class Accounts extends Table with SoftDeletableTable {
 
   TextColumn get name => text()();
   TextColumn get notes => text().nullable()();
-  IntColumn get priority => integer().nullable()();
+  IntColumn get priority => integer().nullable().unique()();
 
   IntColumn get color =>
       integer().clientDefault(genColor).map(const ColorConverter())();
@@ -131,9 +131,9 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
 
       accountsWithTotals.sort((a, b) {
         if (a.account.priority != null && b.account.priority == null) {
-          return 1;
-        } else if (a.account.priority == null && b.account.priority != null) {
           return -1;
+        } else if (a.account.priority == null && b.account.priority != null) {
+          return 1;
         } else if (a.account.priority == null && b.account.priority == null) {
           return 0;
         }
