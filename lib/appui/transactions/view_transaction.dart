@@ -67,7 +67,8 @@ class ViewTransaction extends StatelessWidget {
           action: () async {
             final fulfillmentAmount =
                 await context
-                    .read<GoalDao>()
+                    .read<AppDatabase>()
+                    .goalDao
                     .getGoalFulfillmentAmount(goal!)
                     .first;
 
