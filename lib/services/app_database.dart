@@ -26,6 +26,11 @@ class Transactions extends Table {
   TextColumn get title => text()();
   RealColumn get amount => real()();
   TextColumn get date => text().map(const DateTextConverter())();
+  TextColumn get createdAt =>
+      text()
+          .map(const DateTimeTextConverter())
+          .clientDefault(() => DateTime.now().toIso8601String())
+          .named('created_at')();
   IntColumn get type => intEnum<TransactionType>()();
   BoolColumn get isDeleted =>
       boolean().clientDefault(() => false).named('is_deleted')();
@@ -494,9 +499,14 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
                       }
                       as Expression<Object>,
             ),
+            (t) => OrderingTerm(mode: sortMode, expression: t.createdAt),
           ]);
     } else {
-      query = query..orderBy([(t) => OrderingTerm.desc(t.date)]);
+      query =
+          query..orderBy([
+            (t) => OrderingTerm.desc(t.date),
+            (t) => OrderingTerm.desc(t.createdAt),
+          ]);
     }
 
     if (limit != null) {

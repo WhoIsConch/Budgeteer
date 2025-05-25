@@ -110,12 +110,11 @@ class AccountWithTotal {
 
   @override
   bool operator ==(Object other) =>
-    identical(this, other) ||
-        other is AccountWithTotal &&
-            runtimeType == other.runtimeType &&
-            account.id == other.account.id &&
-            total == other.total;
-  
+      identical(this, other) ||
+      other is AccountWithTotal &&
+          runtimeType == other.runtimeType &&
+          account.id == other.account.id &&
+          total == other.total;
 }
 
 class HydratedTransaction {
@@ -241,4 +240,14 @@ class DateTextConverter extends TypeConverter<DateTime, String> {
 
   @override
   String toSql(DateTime value) => formatter.format(value);
+}
+
+class DateTimeTextConverter extends TypeConverter<DateTime, String> {
+  const DateTimeTextConverter();
+
+  @override
+  DateTime fromSql(String fromDb) => DateTime.parse(fromDb);
+
+  @override
+  String toSql(DateTime value) => value.toIso8601String();
 }

@@ -1608,6 +1608,16 @@ class $TransactionsTable extends Transactions
         requiredDuringInsert: true,
       ).withConverter<DateTime>($TransactionsTable.$converterdate);
   @override
+  late final GeneratedColumnWithTypeConverter<DateTime, String> createdAt =
+      GeneratedColumn<String>(
+        'created_at',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => DateTime.now().toIso8601String(),
+      ).withConverter<DateTime>($TransactionsTable.$convertercreatedAt);
+  @override
   late final GeneratedColumnWithTypeConverter<TransactionType, int> type =
       GeneratedColumn<int>(
         'type',
@@ -1701,6 +1711,7 @@ class $TransactionsTable extends Transactions
     title,
     amount,
     date,
+    createdAt,
     type,
     isDeleted,
     isArchived,
@@ -1806,6 +1817,12 @@ class $TransactionsTable extends Transactions
           data['${effectivePrefix}date'],
         )!,
       ),
+      createdAt: $TransactionsTable.$convertercreatedAt.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}created_at'],
+        )!,
+      ),
       type: $TransactionsTable.$convertertype.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.int,
@@ -1848,6 +1865,8 @@ class $TransactionsTable extends Transactions
 
   static TypeConverter<DateTime, String> $converterdate =
       const DateTextConverter();
+  static TypeConverter<DateTime, String> $convertercreatedAt =
+      const DateTimeTextConverter();
   static JsonTypeConverter2<TransactionType, int, int> $convertertype =
       const EnumIndexConverter<TransactionType>(TransactionType.values);
 }
@@ -1857,6 +1876,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   final String title;
   final double amount;
   final DateTime date;
+  final DateTime createdAt;
   final TransactionType type;
   final bool isDeleted;
   final bool isArchived;
@@ -1869,6 +1889,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     required this.title,
     required this.amount,
     required this.date,
+    required this.createdAt,
     required this.type,
     required this.isDeleted,
     required this.isArchived,
@@ -1886,6 +1907,11 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     {
       map['date'] = Variable<String>(
         $TransactionsTable.$converterdate.toSql(date),
+      );
+    }
+    {
+      map['created_at'] = Variable<String>(
+        $TransactionsTable.$convertercreatedAt.toSql(createdAt),
       );
     }
     {
@@ -1916,6 +1942,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       title: Value(title),
       amount: Value(amount),
       date: Value(date),
+      createdAt: Value(createdAt),
       type: Value(type),
       isDeleted: Value(isDeleted),
       isArchived: Value(isArchived),
@@ -1944,6 +1971,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       title: serializer.fromJson<String>(json['title']),
       amount: serializer.fromJson<double>(json['amount']),
       date: serializer.fromJson<DateTime>(json['date']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       type: $TransactionsTable.$convertertype.fromJson(
         serializer.fromJson<int>(json['type']),
       ),
@@ -1963,6 +1991,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       'title': serializer.toJson<String>(title),
       'amount': serializer.toJson<double>(amount),
       'date': serializer.toJson<DateTime>(date),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
       'type': serializer.toJson<int>(
         $TransactionsTable.$convertertype.toJson(type),
       ),
@@ -1980,6 +2009,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     String? title,
     double? amount,
     DateTime? date,
+    DateTime? createdAt,
     TransactionType? type,
     bool? isDeleted,
     bool? isArchived,
@@ -1992,6 +2022,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     title: title ?? this.title,
     amount: amount ?? this.amount,
     date: date ?? this.date,
+    createdAt: createdAt ?? this.createdAt,
     type: type ?? this.type,
     isDeleted: isDeleted ?? this.isDeleted,
     isArchived: isArchived ?? this.isArchived,
@@ -2006,6 +2037,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       title: data.title.present ? data.title.value : this.title,
       amount: data.amount.present ? data.amount.value : this.amount,
       date: data.date.present ? data.date.value : this.date,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       type: data.type.present ? data.type.value : this.type,
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
       isArchived:
@@ -2024,6 +2056,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           ..write('title: $title, ')
           ..write('amount: $amount, ')
           ..write('date: $date, ')
+          ..write('createdAt: $createdAt, ')
           ..write('type: $type, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('isArchived: $isArchived, ')
@@ -2041,6 +2074,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     title,
     amount,
     date,
+    createdAt,
     type,
     isDeleted,
     isArchived,
@@ -2057,6 +2091,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           other.title == this.title &&
           other.amount == this.amount &&
           other.date == this.date &&
+          other.createdAt == this.createdAt &&
           other.type == this.type &&
           other.isDeleted == this.isDeleted &&
           other.isArchived == this.isArchived &&
@@ -2071,6 +2106,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   final Value<String> title;
   final Value<double> amount;
   final Value<DateTime> date;
+  final Value<DateTime> createdAt;
   final Value<TransactionType> type;
   final Value<bool> isDeleted;
   final Value<bool> isArchived;
@@ -2084,6 +2120,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.title = const Value.absent(),
     this.amount = const Value.absent(),
     this.date = const Value.absent(),
+    this.createdAt = const Value.absent(),
     this.type = const Value.absent(),
     this.isDeleted = const Value.absent(),
     this.isArchived = const Value.absent(),
@@ -2098,6 +2135,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     required String title,
     required double amount,
     required DateTime date,
+    this.createdAt = const Value.absent(),
     required TransactionType type,
     this.isDeleted = const Value.absent(),
     this.isArchived = const Value.absent(),
@@ -2115,6 +2153,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Expression<String>? title,
     Expression<double>? amount,
     Expression<String>? date,
+    Expression<String>? createdAt,
     Expression<int>? type,
     Expression<bool>? isDeleted,
     Expression<bool>? isArchived,
@@ -2129,6 +2168,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       if (title != null) 'title': title,
       if (amount != null) 'amount': amount,
       if (date != null) 'date': date,
+      if (createdAt != null) 'created_at': createdAt,
       if (type != null) 'type': type,
       if (isDeleted != null) 'is_deleted': isDeleted,
       if (isArchived != null) 'is_archived': isArchived,
@@ -2145,6 +2185,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Value<String>? title,
     Value<double>? amount,
     Value<DateTime>? date,
+    Value<DateTime>? createdAt,
     Value<TransactionType>? type,
     Value<bool>? isDeleted,
     Value<bool>? isArchived,
@@ -2159,6 +2200,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       title: title ?? this.title,
       amount: amount ?? this.amount,
       date: date ?? this.date,
+      createdAt: createdAt ?? this.createdAt,
       type: type ?? this.type,
       isDeleted: isDeleted ?? this.isDeleted,
       isArchived: isArchived ?? this.isArchived,
@@ -2185,6 +2227,11 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     if (date.present) {
       map['date'] = Variable<String>(
         $TransactionsTable.$converterdate.toSql(date.value),
+      );
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(
+        $TransactionsTable.$convertercreatedAt.toSql(createdAt.value),
       );
     }
     if (type.present) {
@@ -2223,6 +2270,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
           ..write('title: $title, ')
           ..write('amount: $amount, ')
           ..write('date: $date, ')
+          ..write('createdAt: $createdAt, ')
           ..write('type: $type, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('isArchived: $isArchived, ')
@@ -3396,6 +3444,7 @@ typedef $$TransactionsTableCreateCompanionBuilder =
       required String title,
       required double amount,
       required DateTime date,
+      Value<DateTime> createdAt,
       required TransactionType type,
       Value<bool> isDeleted,
       Value<bool> isArchived,
@@ -3411,6 +3460,7 @@ typedef $$TransactionsTableUpdateCompanionBuilder =
       Value<String> title,
       Value<double> amount,
       Value<DateTime> date,
+      Value<DateTime> createdAt,
       Value<TransactionType> type,
       Value<bool> isDeleted,
       Value<bool> isArchived,
@@ -3509,6 +3559,12 @@ class $$TransactionsTableFilterComposer
   ColumnWithTypeConverterFilters<DateTime, DateTime, String> get date =>
       $composableBuilder(
         column: $table.date,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnWithTypeConverterFilters<DateTime, DateTime, String> get createdAt =>
+      $composableBuilder(
+        column: $table.createdAt,
         builder: (column) => ColumnWithTypeConverterFilters(column),
       );
 
@@ -3632,6 +3688,11 @@ class $$TransactionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get type => $composableBuilder(
     column: $table.type,
     builder: (column) => ColumnOrderings(column),
@@ -3742,6 +3803,9 @@ class $$TransactionsTableAnnotationComposer
 
   GeneratedColumnWithTypeConverter<DateTime, String> get date =>
       $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<DateTime, String> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
   GeneratedColumnWithTypeConverter<TransactionType, int> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
@@ -3860,6 +3924,7 @@ class $$TransactionsTableTableManager
                 Value<String> title = const Value.absent(),
                 Value<double> amount = const Value.absent(),
                 Value<DateTime> date = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
                 Value<TransactionType> type = const Value.absent(),
                 Value<bool> isDeleted = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
@@ -3873,6 +3938,7 @@ class $$TransactionsTableTableManager
                 title: title,
                 amount: amount,
                 date: date,
+                createdAt: createdAt,
                 type: type,
                 isDeleted: isDeleted,
                 isArchived: isArchived,
@@ -3888,6 +3954,7 @@ class $$TransactionsTableTableManager
                 required String title,
                 required double amount,
                 required DateTime date,
+                Value<DateTime> createdAt = const Value.absent(),
                 required TransactionType type,
                 Value<bool> isDeleted = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
@@ -3901,6 +3968,7 @@ class $$TransactionsTableTableManager
                 title: title,
                 amount: amount,
                 date: date,
+                createdAt: createdAt,
                 type: type,
                 isDeleted: isDeleted,
                 isArchived: isArchived,

@@ -116,9 +116,11 @@ class TransactionPreviewer extends StatelessWidget {
           if (!snapshot.hasData) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return ErrorInset('Error: ${snapshot.error}');
             }
           } else {
-            if (snapshot.data!.isEmpty) {
+            if (snapshot.data == null || snapshot.data!.isEmpty) {
               return ErrorInset('No activity');
             }
           }
