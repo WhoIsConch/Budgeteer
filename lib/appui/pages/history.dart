@@ -159,15 +159,41 @@ class _HistoryState extends State<History> {
           onDaySelected: _onDaySelected,
           onPageChanged: _onPageChanged,
           eventLoader: _getEventsForDay,
+          calendarStyle: CalendarStyle(
+            markersAutoAligned: false,
+            markersAlignment: Alignment.topRight,
+            markerMargin: EdgeInsets.all(4.0),
+            markersMaxCount: 1,
+            markerSize: 16,
+            markerDecoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.tertiary,
+              shape: BoxShape.circle,
+            ),
+            selectedDecoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              shape: BoxShape.circle,
+            ),
+            selectedTextStyle: TextStyle(
+              color: Theme.of(context).colorScheme.onPrimary,
+            ),
+            todayDecoration: BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.secondary,
+                width: 2,
+              ),
+              shape: BoxShape.circle,
+            ),
+            todayTextStyle: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
         ),
         const SizedBox(height: 12),
         Expanded(
           child: ValueListenableBuilder<List<Transaction>>(
             valueListenable: _selectedEvents,
             builder:
-                (context, value, _) => TransactionsList(
-                  transactions: value,
-                ),
+                (context, value, _) => TransactionsList(transactions: value),
           ),
         ),
       ],
