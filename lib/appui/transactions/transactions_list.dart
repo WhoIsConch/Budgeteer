@@ -215,7 +215,8 @@ class _TransactionsListState extends State<TransactionsList> {
     if (isMultiselect) {
       actionButton = FloatingActionButton(
         heroTag: 'list_fab',
-        child: const Icon(size: 28, Icons.delete),
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         onPressed: () {
           deletionManager.stageObjectsForDeletion<Transaction>(
             selectedTransactions.map((t) => t.id).toList(),
@@ -226,11 +227,13 @@ class _TransactionsListState extends State<TransactionsList> {
             isMultiselect = false;
           });
         },
+        child: const Icon(size: 28, Icons.delete),
       );
     } else if (widget.showActionButton) {
       actionButton = FloatingActionButton(
         heroTag: 'list_fab',
-        child: const Icon(size: 28, Icons.add),
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         onPressed:
             () => Navigator.push(
               context,
@@ -238,6 +241,7 @@ class _TransactionsListState extends State<TransactionsList> {
                 builder: (context) => const ManageTransactionPage(),
               ),
             ),
+        child: const Icon(size: 28, Icons.add),
       );
     } else {
       actionButton = null;
