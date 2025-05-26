@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:budget/appui/components/pie_chart.dart';
 import 'package:budget/appui/components/status.dart';
+import 'package:budget/appui/components/top_containers.dart';
 import 'package:budget/models/data.dart';
 import 'package:budget/models/filters.dart';
 import 'package:budget/providers/transaction_provider.dart';
@@ -127,6 +128,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 const SizedBox(height: 8.0),
                 // const LineChartCard(),
                 const SpendingBarChart(),
+                const SizedBox(height: 8.0),
+                const TopContainers(),
                 const SizedBox(height: 60), // To give the FAB somewhere to go
               ],
             ),

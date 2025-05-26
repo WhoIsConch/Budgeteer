@@ -12,8 +12,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-enum PieChartType { category, account, goal }
-
 class PieChartSelectionData<T> {
   final T type;
   final int index;
@@ -42,17 +40,17 @@ class PieChartSelectionData<T> {
   );
 
   static const categoryType = PieChartSelectionData(
-    type: PieChartType.category,
+    type: ContainerType.category,
     index: 0,
     label: 'Category',
   );
   static const accountType = PieChartSelectionData(
-    type: PieChartType.account,
+    type: ContainerType.account,
     index: 1,
     label: 'Account',
   );
   static const goalType = PieChartSelectionData(
-    type: PieChartType.goal,
+    type: ContainerType.goal,
     index: 2,
     label: 'Goal',
   );
@@ -204,7 +202,7 @@ class _PieChartCardState extends State<PieChartCard> {
   // In this case, goals, categories, and accounts are containers
   PieChartSelectionData<TransactionType?> _selectedType =
       PieChartSelectionData.netType;
-  PieChartSelectionData<PieChartType> _selectedContainer =
+  PieChartSelectionData<ContainerType> _selectedContainer =
       PieChartSelectionData.categoryType;
 
   final chartCenterRadius = 60.0; // Don't let the text go beyond that radius
@@ -365,7 +363,7 @@ class _PieChartCardState extends State<PieChartCard> {
     final bool net = _selectedType.type != null;
 
     switch (_selectedContainer.type) {
-      case PieChartType.account:
+      case ContainerType.account:
         return db.accountDao
             .watchAccounts(filters: provider.filters, net: net)
             .map((List<AccountWithTotal> accounts) {
@@ -381,7 +379,7 @@ class _PieChartCardState extends State<PieChartCard> {
                       .toList();
               return [...objects, null];
             });
-      case PieChartType.category:
+      case ContainerType.category:
         return db.categoryDao
             .watchCategories(
               filters: provider.filters,
@@ -402,7 +400,7 @@ class _PieChartCardState extends State<PieChartCard> {
 
               return [...objects, null];
             });
-      case PieChartType.goal:
+      case ContainerType.goal:
         return db.goalDao.watchGoals(filters: provider.filters, net: net).map((
           List<GoalWithAchievedAmount> goals,
         ) {
@@ -531,7 +529,7 @@ class _PieChartCardState extends State<PieChartCard> {
                       },
                     ),
                     const Divider(),
-                    ..._buildVerticalTabs<PieChartType>(
+                    ..._buildVerticalTabs<ContainerType>(
                       PieChartSelectionData.containerList,
                       _selectedContainer,
                       (newContainer) =>
