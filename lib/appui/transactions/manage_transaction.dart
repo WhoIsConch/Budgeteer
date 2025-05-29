@@ -269,7 +269,11 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
             SegmentButtonData(label: 'Income', value: TransactionType.income),
           ],
         ),
-        TextInputEditField(label: 'Title', controller: controllers['title']),
+        TextInputEditField(
+          label: 'Title',
+          controller: controllers['title'],
+          validator: validateTitle,
+        ),
         Row(
           spacing: 16.0,
           children: [
