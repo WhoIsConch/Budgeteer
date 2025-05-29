@@ -24,6 +24,7 @@ class TextOverviewHeader extends StatelessWidget {
         if (title != null)
           Text(
             title!,
+            textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.displaySmall!.copyWith(
               color: textColor,
               fontWeight: FontWeight.bold,
@@ -32,6 +33,7 @@ class TextOverviewHeader extends StatelessWidget {
         if (description != null)
           Text(
             description!,
+            textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleLarge!,
             softWrap: true,
           ),

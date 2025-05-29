@@ -232,7 +232,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   @override
   Widget build(BuildContext context) {
     return EditFormScreen(
-      title: 'Edit transaction',
+      title: isEditing ? 'Edit transaction' : 'Create transaction',
       onConfirm: () async {
         final newTransaction = _buildTransaction();
 
