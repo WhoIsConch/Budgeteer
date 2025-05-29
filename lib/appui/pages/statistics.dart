@@ -27,10 +27,10 @@ class StatisticsPage extends StatefulWidget {
 class _StatisticsPageState extends State<StatisticsPage> {
   final TextEditingController _rangeController = TextEditingController();
 
-  DateTimeRange? _getCurrentRange(BuildContext context) =>
-      context.watch<TransactionProvider>().getFilterValue<DateTimeRange>();
-
-  void pickDateRange({DateTimeRange? initialRange}) async {
+  void pickDateRange(
+    BuildContext context, {
+    DateTimeRange? initialRange,
+  }) async {
     final provider = context.read<TransactionProvider>();
 
     DateTimeRange? newRange = await showDateRangePicker(
@@ -48,7 +48,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
   }
 
   DropdownMenu getDateRangeDropdown(BuildContext context) {
-    final currentDateRange = _getCurrentRange(context);
+    final currentDateRange =
+        context.read<TransactionProvider>().getFilterValue<DateTimeRange>();
 
     List<DropdownMenuEntry<DateTimeRange?>> entries =
         RelativeDateRange.values
@@ -80,12 +81,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
       initialSelection: currentDateRange,
       onSelected: (range) async {
         if (range == null) {
-          pickDateRange(initialRange: currentDateRange);
+          pickDateRange(context, initialRange: currentDateRange);
         } else {
-          setState(
-            () => context.read<TransactionProvider>().updateFilter(
-              TransactionFilter<DateTimeRange>(range),
-            ),
+          context.read<TransactionProvider>().updateFilter(
+            TransactionFilter<DateTimeRange>(range),
           );
         }
       },
@@ -103,37 +102,42 @@ class _StatisticsPageState extends State<StatisticsPage> {
           TransactionFilter<DateTimeRange>(RelativeDateRange.today.getRange()),
         );
 
-        return filterProvider;
+        return filterProvider; // Ensure the buttons update
       },
-      builder:
-          (context, _) => SingleChildScrollView(
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(child: getDateRangeDropdown(context)),
-                    const SizedBox(width: 4),
-                    IconButton(
-                      iconSize: 32,
-                      icon: const Icon(Icons.date_range),
-                      onPressed:
-                          () => pickDateRange(
-                            initialRange: _getCurrentRange(context),
-                          ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8.0), // Bottom padding
-                const PieChartCard(),
-                const SizedBox(height: 8.0),
-                // const LineChartCard(),
-                const SpendingBarChart(),
-                const SizedBox(height: 8.0),
-                const TopContainers(),
-                const SizedBox(height: 60), // To give the FAB somewhere to go
-              ],
-            ),
+      builder: (context, _) {
+        DateTimeRange? initialRange =
+            context
+                .watch<TransactionProvider>()
+                .getFilterValue<DateTimeRange>();
+
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(child: getDateRangeDropdown(context)),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    iconSize: 32,
+                    icon: const Icon(Icons.date_range),
+                    onPressed:
+                        () =>
+                            pickDateRange(context, initialRange: initialRange),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8.0), // Bottom padding
+              const PieChartCard(),
+              const SizedBox(height: 8.0),
+              // const LineChartCard(),
+              const SpendingBarChart(),
+              const SizedBox(height: 8.0),
+              const TopContainers(),
+              const SizedBox(height: 60), // To give the FAB somewhere to go
+            ],
           ),
+        );
+      },
     );
   }
 }
