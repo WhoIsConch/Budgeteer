@@ -405,6 +405,61 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     with _$TransactionDaoMixin {
   TransactionDao(super.db);
 
+  void _applyTransactionFilters(
+    SimpleSelectStatement<$TransactionsTable, Transaction> query,
+    List<TransactionFilter> filters,
+  ) {
+    for (final TransactionFilter filter in filters) {
+      switch (filter) {
+        case TransactionFilter<AmountFilter> f:
+          switch (f.value.type!) {
+            case AmountFilterType.greaterThan:
+              query.where((t) => t.amount.isBiggerThanValue(f.value.amount!));
+              break;
+            case AmountFilterType.lessThan:
+              query.where((t) => t.amount.isSmallerThanValue(f.value.amount!));
+              break;
+            case AmountFilterType.exactly:
+              query.where((t) => t.amount.equals(f.value.amount!));
+              break;
+          }
+          break;
+        case TransactionFilter<String> f:
+          // TODO: Figure out if this can be converted to partial text search
+          query.where(
+            (t) =>
+                t.title.lower().equals(f.value.toLowerCase()) |
+                t.notes.lower().equals(f.value.toLowerCase()),
+          );
+          break;
+        case TransactionFilter<DateTimeRange> f:
+          query.where(
+            (t) => t.date.isBetweenValues(
+              formatter.format(f.value.start),
+              formatter.format(f.value.end),
+            ),
+          );
+          break;
+        case TransactionFilter<TransactionType> f:
+          query.where((t) => t.type.equals(f.value.value));
+          break;
+        case TransactionFilter<List<CategoryWithAmount>> f:
+          query.where(
+            (t) => t.category.isIn(f.value.map((e) => e.category.id)),
+          );
+          break;
+        case TransactionFilter<List<GoalWithAchievedAmount>> f:
+          query.where((t) => t.goalId.isIn(f.value.map((g) => g.goal.id)));
+          break;
+        case TransactionFilter<List<AccountWithTotal>> f:
+          query.where(
+            (t) => t.accountId.isIn(f.value.map((a) => a.account.id)),
+          );
+          break;
+      }
+    }
+  }
+
   Stream<List<Transaction>> watchTransactionsPage({
     List<TransactionFilter>? filters,
     Sort? sort,
@@ -418,68 +473,11 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
       query = query..where((t) => t.isArchived.not());
     }
 
-    filters ??= [];
-
-    for (final TransactionFilter filter in filters) {
-      switch (filter) {
-        case TransactionFilter<AmountFilter> f:
-          switch (f.value.type!) {
-            case AmountFilterType.greaterThan:
-              query =
-                  query
-                    ..where((t) => t.amount.isBiggerThanValue(f.value.amount!));
-              break;
-            case AmountFilterType.lessThan:
-              query =
-                  query..where(
-                    (t) => t.amount.isSmallerThanValue(f.value.amount!),
-                  );
-              break;
-            case AmountFilterType.exactly:
-              query = query..where((t) => t.amount.equals(f.value.amount!));
-              break;
-          }
-          break;
-        case TransactionFilter<String> f:
-          // TODO: Figure out if this can be converted to partial text search
-          query =
-              query..where(
-                (t) =>
-                    t.title.lower().equals(f.value.toLowerCase()) |
-                    t.notes.lower().equals(f.value.toLowerCase()),
-              );
-          break;
-        case TransactionFilter<DateTimeRange> f:
-          query =
-              query..where(
-                (t) =>
-                    t.date.isBiggerOrEqualValue(
-                      formatter.format(f.value.start),
-                    ) &
-                    t.date.isSmallerOrEqualValue(formatter.format(f.value.end)),
-              );
-          break;
-        case TransactionFilter<TransactionType> f:
-          query = query..where((t) => t.type.equals(f.value.value));
-          break;
-        case TransactionFilter<List<CategoryWithAmount>> f:
-          query =
-              query..where(
-                (t) => t.category.isIn(f.value.map((e) => e.category.id)),
-              );
-          break;
-        case TransactionFilter<List<GoalWithAchievedAmount>> f:
-          query =
-              query..where((t) => t.goalId.isIn(f.value.map((g) => g.goal.id)));
-          break;
-        case TransactionFilter<List<AccountWithTotal>> f:
-          query =
-              query..where(
-                (t) => t.accountId.isIn(f.value.map((a) => a.account.id)),
-              );
-          break;
-      }
+    if (filters != null) {
+      _applyTransactionFilters(query, filters);
     }
+
+    filters ??= [];
 
     if (sort != null) {
       OrderingMode sortMode =
@@ -517,10 +515,10 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
   }
 
   Stream<double?> watchTotalAmount({
-    TransactionType? type,
-    DateTimeRange? dateRange,
-    Category? category,
-    bool nullCategory = false,
+    List<TransactionFilter>? filters,
+    bool nullCategory = false, // TODO: Integrate these with filters
+    bool nullAccount = false,
+    bool nullGoal = false,
     bool net = true,
   }) {
     // Unfortunately, we need to use isNotExp(Constant(true)) since these fields are
@@ -530,27 +528,22 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     var query = select(transactions)
       ..where((t) => t.isDeleted.not() & t.isArchived.not());
 
-    if (type != null) {
-      query = query..where((t) => t.type.equalsValue(type));
+    if (filters != null) _applyTransactionFilters(query, filters);
+
+    if (nullCategory) {
+      query.where((t) => t.category.isNull());
     }
 
-    if (category != null) {
-      query = query..where((t) => t.category.equals(category.id));
-    } else if (nullCategory) {
-      query = query..where((t) => t.category.isNull());
+    if (nullGoal) {
+      query.where((t) => t.goalId.isNull());
     }
 
-    if (dateRange != null) {
-      query =
-          query..where(
-            (t) => t.date.isBetweenValues(
-              formatter.format(dateRange.start),
-              formatter.format(dateRange.end),
-            ),
-          );
+    if (nullAccount) {
+      query.where((t) => t.accountId.isNull());
     }
-
     final sumQuery = db.getSignedTransactionSumQuery();
+
+    final type = filters?.whereType<TransactionFilter<TransactionType>>();
 
     if (type == null && net) {
       // If the type is null, we want to get the net amount
@@ -598,13 +591,17 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
   Future<FinancialDataPoint> getPointFromRange(DateTimeRange range) async {
     final totalSpent =
         await watchTotalAmount(
-          dateRange: range,
-          type: TransactionType.expense,
+          filters: [
+            TransactionFilter<DateTimeRange>(range),
+            TransactionFilter<TransactionType>(TransactionType.expense),
+          ],
         ).first;
     final totalEarned =
         await watchTotalAmount(
-          dateRange: range,
-          type: TransactionType.income,
+          filters: [
+            TransactionFilter<DateTimeRange>(range),
+            TransactionFilter<TransactionType>(TransactionType.income),
+          ],
         ).first;
 
     return FinancialDataPoint(

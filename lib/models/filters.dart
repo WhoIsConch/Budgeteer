@@ -27,6 +27,8 @@ class TransactionFilter<T> {
 
   const TransactionFilter(this.value);
 
+  bool get isSet => value != null;
+
   @override
   bool operator ==(Object other) {
     return other is TransactionFilter && value == other.value;
