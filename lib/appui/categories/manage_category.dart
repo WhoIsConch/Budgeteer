@@ -39,9 +39,9 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
   CategoriesCompanion _buildCategory() {
     return CategoriesCompanion(
       id: Value.absentIfNull(widget.category?.category.id),
-      name: Value(_controllers['name']!.text),
+      name: Value(_controllers['name']!.text.trim()),
       balance: Value.absentIfNull(
-        double.tryParse(_controllers['amount']!.text),
+        double.tryParse(_controllers['amount']!.text.trim()),
       ),
       notes:
           _controllers['notes']!.text.trim().isEmpty

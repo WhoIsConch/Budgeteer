@@ -43,7 +43,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
 
   Value<String> getControllerValue(String id) =>
       controllers[id] != null
-          ? Value(controllers[id]!.text)
+          ? Value(controllers[id]!.text.trim())
           : const Value.absent();
 
   TransactionsCompanion _buildTransaction() => TransactionsCompanion(

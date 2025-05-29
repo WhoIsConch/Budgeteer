@@ -49,7 +49,7 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
 
   Value<String> getControllerValue(String id) =>
       _controllers[id] != null
-          ? Value(_controllers[id]!.text)
+          ? Value(_controllers[id]!.text.trim())
           : const Value.absent();
 
   void _updateDateControllerText() {
