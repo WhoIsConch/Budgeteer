@@ -1,5 +1,4 @@
 import 'package:budget/models/database_extensions.dart';
-import 'package:budget/utils/tools.dart';
 import 'package:budget/appui/transactions/transactions_list.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/enums.dart';
@@ -11,7 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class TransactionSearch extends StatefulWidget {
-  final List<TransactionFilter>? initialFilters;
+  final List<Filter>? initialFilters;
   final Sort? initialSortType;
 
   const TransactionSearch({
@@ -35,39 +34,38 @@ class _TransactionSearchState extends State<TransactionSearch> {
     DateFormat dateFormat = DateFormat('MM/dd');
     final provider = context.watch<TransactionProvider>();
 
-    for (TransactionFilter filter in provider.filters) {
+    for (Filter filter in provider.filters) {
       String label = switch (filter) {
-        TransactionFilter<String> t => '"${t.value}"', // "Value"
-        TransactionFilter<AmountFilter> t =>
-          '${t.value.type!.symbol} \$${formatAmount(t.value.amount ?? 0, exact: true)}', // > $Value
-        TransactionFilter<List<CategoryWithAmount>> t =>
-          t.value.length > 3
-              ? '${t.value.length} categories'
-              : t.value.map((e) => e.category.name).join(', '),
-        TransactionFilter<DateTimeRange> t =>
-          '${dateFormat.format(t.value.start)}–${dateFormat.format(t.value.end)}',
-        TransactionFilter<RelativeDateRange> t =>
-          '${dateFormat.format(t.value.getRange().start)}–${dateFormat.format(t.value.getRange().end)}',
-        TransactionFilter<TransactionType> t =>
-          t.value == TransactionType.expense ? 'Expense' : 'Income',
-        _ => 'ERR',
+        TextFilter t => '"${t.text}"', // "Value"
+        AmountFilter t =>
+          '${t.type.symbol} \$${formatAmount(t.amount, exact: true)}', // > $Value
+        CategoryFilter t =>
+          t.categories.length > 3
+              ? '${t.categories.length} categories'
+              : t.categories.map((e) => e.category.name).join(', '),
+        AccountFilter t =>
+          t.accounts.length > 3
+              ? '${t.accounts.length} accounts'
+              : t.accounts.map((e) => e.account.name).join(', '),
+        GoalFilter t =>
+          t.goals.length > 3
+              ? '${t.goals.length} goals'
+              : t.goals.map((e) => e.goal.name).join(', '),
+        DateRangeFilter t =>
+          '${dateFormat.format(t.dateRange.start)}–${dateFormat.format(t.dateRange.end)}',
+        TypeFilter t =>
+          t.type == TransactionType.expense ? 'Expense' : 'Income',
       };
-
-      if (label.startsWith('ERR')) {
-        AppLogger().logger.e(
-          'Failed to filter transactions: Unexpected value:\n${filter.value}',
-        );
-      }
 
       chips.add(
         GestureDetector(
-          onTap: () => _activateFilter(context, filter.value.runtimeType),
+          onTap: () => _activateFilter(context, filter: filter),
           child: Chip(
             label: Text(label),
             deleteIcon: const Icon(Icons.close),
             onDeleted: () {
               searchController.clear();
-              provider.removeFilter(filterType: filter.value.runtimeType);
+              provider.removeFilter(filterType: filter.runtimeType);
             },
           ),
         ),
@@ -90,30 +88,29 @@ class _TransactionSearchState extends State<TransactionSearch> {
     return const Text('Transactions');
   }
 
-  Future<TransactionFilter?> _showAmountFilterDialog(
-    BuildContext context,
-  ) async {
+  Future<AmountFilter?> _showAmountFilterDialog(BuildContext context) async {
     final provider = context.read<TransactionProvider>();
     // Shows a dialog inline with a dropdown showing the filter type first,
     // then the amount as an input.
     TextEditingController controller = TextEditingController();
     // Either get the current amountFilter or create a new one
-    AmountFilter amountFilter =
-        provider.getFilterValue<AmountFilter>() ?? AmountFilter();
+    AmountFilter? amountFilter = provider.getFilter<AmountFilter>();
     // Update the text to match
-    controller.text = amountFilter.amount?.toStringAsFixed(2) ?? '';
+    controller.text = amountFilter?.amount.toStringAsFixed(2) ?? '';
 
     // Listen for changes on the controller since it's easier and better-looking
     // than redoing it in the end, though probably less performant
-    controller.addListener(
-      () =>
-          amountFilter = AmountFilter(
-            type: amountFilter.type,
-            amount: double.tryParse(controller.text) ?? amountFilter.amount,
-          ),
-    );
+    controller.addListener(() {
+      final amount = double.tryParse(controller.text) ?? amountFilter?.amount;
 
-    return showDialog<TransactionFilter>(
+      if (amountFilter?.type == null || amount == null) {
+        return;
+      }
+
+      amountFilter = AmountFilter(amountFilter!.type, amount);
+    });
+
+    return showDialog<AmountFilter>(
       context: context,
       builder: (context) {
         return StatefulBuilder(
@@ -127,12 +124,12 @@ class _TransactionSearchState extends State<TransactionSearch> {
                     onSelectionChanged:
                         (type) => setState(() {
                           amountFilter = AmountFilter(
-                            type: type.first,
-                            amount: amountFilter.amount,
+                            type.first,
+                            amountFilter?.amount ?? 0,
                           );
                         }),
                     showSelectedIcon: false,
-                    selected: {amountFilter.type ?? AmountFilterType.exactly},
+                    selected: {amountFilter?.type ?? AmountFilterType.exactly},
                     segments:
                         AmountFilterType.values
                             .map(
@@ -173,10 +170,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
                       return Navigator.pop(context);
                     }
 
-                    return Navigator.pop(
-                      context,
-                      TransactionFilter<AmountFilter>(amountFilter),
-                    );
+                    return Navigator.pop(context, amountFilter);
                   },
                   child: const Text('OK'),
                 ),
@@ -199,7 +193,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
     final provider = context.read<TransactionProvider>();
 
     List<CategoryWithAmount> selectedCategories =
-        provider.getFilterValue<List<CategoryWithAmount>>() ?? [];
+        provider.getFilter<CategoryFilter>()?.categories ?? [];
 
     if (!context.mounted) {
       return [];
@@ -284,40 +278,40 @@ class _TransactionSearchState extends State<TransactionSearch> {
     final provider = context.read<TransactionProvider>();
 
     TransactionType? typeFilterValue =
-        provider.getFilterValue<TransactionType>();
-    TransactionFilter? filter;
+        provider.getFilter<TypeFilter>()?.type;
+    TypeFilter? filter;
 
     if (typeFilterValue == null || typeFilterValue == TransactionType.expense) {
-      filter = const TransactionFilter<TransactionType>(TransactionType.income);
+      filter = TypeFilter(TransactionType.income);
     } else if (typeFilterValue == TransactionType.income) {
-      filter = const TransactionFilter<TransactionType>(
+      filter = TypeFilter(
         TransactionType.expense,
       );
     }
 
     if (filter == null) {
-      provider.removeFilter<TransactionType>();
+      provider.removeFilter<TypeFilter>();
     } else {
-      provider.updateFilter(filter);
+      provider.updateFilter<TypeFilter>(filter);
     }
   }
 
   List<Widget> _getFilterMenuButtons(BuildContext context) => [
     MenuItemButton(
       child: const Text('Date'),
-      onPressed: () => _activateFilter(context, DateTimeRange),
+      onPressed: () => _activateFilter<DateRangeFilter>(context),
     ),
     MenuItemButton(
       child: const Text('Amount'),
-      onPressed: () => _activateFilter(context, AmountFilter),
+      onPressed: () => _activateFilter<AmountFilter>(context),
     ),
     MenuItemButton(
       child: const Text('Type'),
-      onPressed: () => _activateFilter(context, TransactionType),
+      onPressed: () => _activateFilter<TypeFilter>(context),
     ),
     MenuItemButton(
       child: const Text('Category'),
-      onPressed: () => _activateFilter(context, List<CategoryWithAmount>),
+      onPressed: () => _activateFilter<CategoryFilter>(context),
     ),
   ];
 
@@ -389,48 +383,54 @@ class _TransactionSearchState extends State<TransactionSearch> {
     final provider = context.read<TransactionProvider>();
 
     return {
-      DateTimeRange:
+      DateRangeFilter:
           () => showDateRangePicker(
             context: context,
-            initialDateRange: provider.getFilterValue<DateTimeRange>(),
+            initialDateRange: provider.getFilter<DateRangeFilter>()?.dateRange,
             firstDate: DateTime.now().subtract(const Duration(days: 365 * 10)),
             lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
           ).then((DateTimeRange? value) {
             if (value == null) return;
 
-            provider.updateFilter(TransactionFilter<DateTimeRange>(value));
+            provider.updateFilter(DateRangeFilter(value));
           }),
-      String: () => setState(() => isSearching = true),
+      TextFilter: () => setState(() => isSearching = true),
       AmountFilter:
           () => _showAmountFilterDialog(context).then((value) {
             if (value == null) {
               return;
             }
-            provider.updateFilter(value as TransactionFilter<AmountFilter>);
+            provider.updateFilter<AmountFilter>(value);
           }),
-      TransactionType: () => toggleTransactionType(context),
-      List<CategoryWithAmount>:
+      TypeFilter: () => toggleTransactionType(context),
+      CategoryFilter:
           () => _showCategoryInputDialog(context).then((value) {
             if (value == null) {
               return;
             } else if (value.isEmpty) {
-              provider.removeFilter<List<CategoryWithAmount>>();
+              provider.removeFilter<CategoryFilter>();
             } else {
               provider.updateFilter(
-                TransactionFilter<List<CategoryWithAmount>>(value),
+                CategoryFilter(value),
               );
             }
           }),
     };
   }
 
-  void _activateFilter(BuildContext context, Type type) {
-    final action = _getFilterActions(context)[type];
-
-    if (action != null) {
-      action();
+  void _activateFilter<F extends Filter>(BuildContext context, {F? filter}) {
+    Function? filterAction;
+    
+    if (filter != null) {
+      filterAction = _getFilterActions(context)[filter.runtimeType];
     } else {
-      throw FilterTypeException(type);
+      filterAction = _getFilterActions(context)[F];
+    }
+
+    if (filterAction != null) {
+      filterAction();
+    } else {
+      throw FilterTypeException(F);
     }
   }
 
@@ -482,9 +482,9 @@ class _TransactionSearchState extends State<TransactionSearch> {
                   text = '${text.substring(0, 27)}...';
                 }
 
-                TransactionFilter<String> filter = TransactionFilter(text);
+                TextFilter filter = TextFilter(text);
 
-                if (provider.filters.contains(filter) || filter.value.isEmpty) {
+                if (provider.filters.contains(filter) || filter.text.isEmpty) {
                   // The list of filters already has the exact same filter,
                   // so we don't do anything other than stop searching.
                   setState(() => isSearching = false);

@@ -104,7 +104,7 @@ class TransactionPreviewer extends StatelessWidget {
         stream: db.transactionDao.watchTransactionsPage(
           limit: 10,
           filters: [
-            TransactionFilter<DateTimeRange>(
+            DateRangeFilter(
               DateTimeRange(
                 start: DateTime.now().subtract(const Duration(days: 7)),
                 end: DateTime.now(),
