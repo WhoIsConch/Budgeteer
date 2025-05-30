@@ -142,36 +142,36 @@ sealed class ContainerFilter extends Filter {
 }
 
 final class CategoryFilter extends ContainerFilter {
-  final List<Category> categories;
+  final List<CategoryWithAmount> categories;
 
   CategoryFilter(this.categories, {super.includeNull});
 
   @override
-  List<String> get itemIds => categories.map((e) => e.id).toList();
+  List<String> get itemIds => categories.map((e) => e.category.id).toList();
 
   @override
   TextColumn getColumn(Transactions table) => table.category;
 }
 
 final class AccountFilter extends ContainerFilter {
-  final List<Account> accounts;
+  final List<AccountWithTotal> accounts;
 
   AccountFilter(this.accounts, {super.includeNull});
 
   @override
-  List<String> get itemIds => accounts.map((e) => e.id).toList();
+  List<String> get itemIds => accounts.map((e) => e.account.id).toList();
 
   @override
   TextColumn getColumn(Transactions table) => table.accountId;
 }
 
 final class GoalFilter extends ContainerFilter {
-  final List<Goal> goals;
+  final List<GoalWithAchievedAmount> goals;
 
   GoalFilter(this.goals, {super.includeNull});
 
   @override
-  List<String> get itemIds => goals.map((e) => e.id).toList();
+  List<String> get itemIds => goals.map((e) => e.goal.id).toList();
 
   @override
   TextColumn getColumn(Transactions table) => table.goalId;
@@ -181,9 +181,9 @@ extension FilterQueryBuilder on List<Filter> {
   Expression<bool> buildWhereClause(Transactions table) {
     // final validFilters = where((filter) => filter.isValid);
 
-    // if (validFilters.isEmpty) {
-    //   return const Constant(true);
-    // }
+    if (isEmpty) {
+      return const Constant(true);
+    }
 
     return map(
       (filter) => filter.buildCondition(table),

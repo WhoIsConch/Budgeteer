@@ -42,19 +42,19 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
     if (newRange == null) return;
 
-    provider.updateFilter<DateTimeRange>(
-      TransactionFilter<DateTimeRange>(newRange),
+    provider.updateFilter(
+      DateRangeFilter(newRange),
     );
   }
 
   DropdownMenu getDateRangeDropdown(BuildContext context) {
-    final currentDateRange =
-        context.read<TransactionProvider>().getFilterValue<DateTimeRange>();
+    final dateFilter =
+        context.read<TransactionProvider>().getFilter<DateRangeFilter>();
 
-    List<DropdownMenuEntry<DateTimeRange?>> entries =
+    List<DropdownMenuEntry<DateTimeRange>> entries =
         RelativeDateRange.values
             .map(
-              (e) => DropdownMenuEntry<DateTimeRange?>(
+              (e) => DropdownMenuEntry<DateTimeRange>(
                 value: e.getRange(),
                 label: e.name,
               ),
@@ -65,26 +65,26 @@ class _StatisticsPageState extends State<StatisticsPage> {
         .firstWhereOrNull(
           (element) =>
               element.getRange() ==
-              (currentDateRange ?? RelativeDateRange.today.getRange()),
+              (dateFilter?.dateRange ?? RelativeDateRange.today.getRange()),
         );
 
     if (selectedRelRange != null) {
       _rangeController.text = selectedRelRange.name;
     } else {
       // This means a custom range
-      _rangeController.text = currentDateRange!.asString();
+      _rangeController.text = dateFilter!.dateRange.asString();
     }
 
-    return DropdownMenu(
+    return DropdownMenu<DateTimeRange>(
       controller: _rangeController,
       expandedInsets: EdgeInsets.zero,
-      initialSelection: currentDateRange,
+      initialSelection: dateFilter?.dateRange,
       onSelected: (range) async {
         if (range == null) {
-          pickDateRange(context, initialRange: currentDateRange);
+          pickDateRange(context, initialRange: dateFilter?.dateRange);
         } else {
           context.read<TransactionProvider>().updateFilter(
-            TransactionFilter<DateTimeRange>(range),
+            DateRangeFilter(range),
           );
         }
       },
@@ -99,16 +99,16 @@ class _StatisticsPageState extends State<StatisticsPage> {
         final filterProvider = TransactionProvider();
 
         filterProvider.updateFilter(
-          TransactionFilter<DateTimeRange>(RelativeDateRange.today.getRange()),
+          DateRangeFilter(RelativeDateRange.today.getRange()),
         );
 
         return filterProvider; // Ensure the buttons update
       },
       builder: (context, _) {
-        DateTimeRange? initialRange =
+        DateRangeFilter? initialRange =
             context
                 .watch<TransactionProvider>()
-                .getFilterValue<DateTimeRange>();
+                .getFilter<DateRangeFilter>();
 
         return SingleChildScrollView(
           child: Column(
@@ -122,7 +122,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                     icon: const Icon(Icons.date_range),
                     onPressed:
                         () =>
-                            pickDateRange(context, initialRange: initialRange),
+                            pickDateRange(context, initialRange: initialRange?.dateRange),
                   ),
                 ],
               ),
@@ -153,7 +153,7 @@ class _LineChartCardState extends State<LineChartCard> {
   late TransactionProvider _filtersProvider;
 
   DateTimeRange get dateRange =>
-      _filtersProvider.getFilterValue<DateTimeRange>() ??
+      _filtersProvider.getFilter<DateRangeFilter>()?.dateRange ??
       RelativeDateRange.today.getRange();
 
   Future<LineChartCalculationData> _calculateData() async {
@@ -350,7 +350,7 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
   }
 
   DateTimeRange get dateRange =>
-      _filterProvider.getFilterValue<DateTimeRange>() ??
+      _filterProvider.getFilter<DateRangeFilter>()?.dateRange ??
       RelativeDateRange.today.getRange();
 
   AxisTitles get noTitlesWidget =>

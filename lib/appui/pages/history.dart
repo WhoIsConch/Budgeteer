@@ -67,7 +67,7 @@ class _HistoryState extends State<History> {
     _transactionsSubscription = _db.transactionDao
         .watchTransactionsPage(
           filters: [
-            TransactionFilter<DateTimeRange>(
+            DateRangeFilter(
               DateTimeRange(start: start, end: end),
             ),
           ],

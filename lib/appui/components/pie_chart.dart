@@ -571,10 +571,10 @@ class _PieChartCardState extends State<PieChartCard> {
                         final provider = context.read<TransactionProvider>();
 
                         if (newType.type == null) {
-                          provider.removeFilter<TransactionType>();
+                          provider.removeFilter<TypeFilter>();
                         } else {
                           provider.updateFilter(
-                            TransactionFilter<TransactionType>(newType.type!),
+                            TypeFilter(newType.type!),
                           );
                         }
                       },

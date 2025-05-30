@@ -26,17 +26,26 @@ class TransactionProvider extends ChangeNotifier {
     }
   }
 
-  T? getFilter<T extends Filter>() => filters.whereType<T>().first;
+  T? getFilter<T extends Filter>() {
+    final selectedFilters = filters.whereType<T>();
+
+    if (selectedFilters.isEmpty) {
+      return null;
+    } else {
+      return selectedFilters.first;
+    }
+    
+    }
 
   void updateFilter<T extends Filter>(T filter, {bool notify = true}) {
-    removeFilter<T>(T, notify: false);
+    removeFilter<T>(notify: false);
 
     filters.add(filter);
     if (notify) notifyListeners();
   }
 
-  void removeFilter<T extends Filter>(Type filterType, {bool notify = true}) {
-    filters.removeWhere((e) => e.runtimeType is T);
+  void removeFilter<T extends Filter>({Type? filterType, bool notify = true}) {
+    filters.removeWhere((e) => e.runtimeType == T || e.runtimeType == filterType);
     if (notify) notifyListeners();
   }
 }

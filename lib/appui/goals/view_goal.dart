@@ -140,7 +140,7 @@ class _GoalViewerState extends State<GoalViewer> {
           body: Expanded(
             child: TransactionsList(
               filters: [
-                TransactionFilter<List<GoalWithAchievedAmount>>([goalPair]),
+                GoalFilter([goalPair]),
               ],
             ),
           ),
