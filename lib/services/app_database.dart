@@ -913,17 +913,18 @@ class AppDatabase extends _$AppDatabase {
     // Mainly uses "summed" for backwards compatibility with code I wrote less
     // than an hour ago
     List<CaseWhen<bool, double>> cases;
+    final dateExpr = transactions.date.isSmallerOrEqualValue(formatter.format(DateTime.now()));
 
     if (includeArchived) {
       cases = [
         CaseWhen(
           transactions.type.equalsValue(TransactionType.income) &
-              transactions.isDeleted.not(),
+              transactions.isDeleted.not() & dateExpr,
           then: transactions.amount,
         ),
         CaseWhen(
           transactions.type.equalsValue(TransactionType.expense) &
-              transactions.isDeleted.not(),
+              transactions.isDeleted.not() & dateExpr,
           then: -transactions.amount,
         ),
       ];
@@ -932,13 +933,13 @@ class AppDatabase extends _$AppDatabase {
         CaseWhen(
           transactions.type.equalsValue(TransactionType.income) &
               transactions.isDeleted.not() &
-              transactions.isArchived.not(),
+              transactions.isArchived.not() & dateExpr,
           then: transactions.amount,
         ),
         CaseWhen(
           transactions.type.equalsValue(TransactionType.expense) &
               transactions.isDeleted.not() &
-              transactions.isArchived.not(),
+              transactions.isArchived.not() & dateExpr,
           then: -transactions.amount,
         ),
       ];
