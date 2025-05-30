@@ -622,7 +622,8 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
 
     switch (aggregationLevel) {
       case AggregationLevel.daily:
-        for (int i = 0; i < range.duration.inDays; i++) {
+        // +1 to ensure the duration includes today's activities
+        for (int i = 0; i < range.duration.inDays + 1; i++) {
           final day = range.start.add(Duration(days: i));
 
           points.add(
@@ -646,7 +647,7 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
 
           points.add(
             await getPointFromRange(
-              DateTimeRange(start: start, end: actualEnd).makeInclusive(),
+              DateTimeRange(start: start, end: actualEnd),
             ),
           );
           start = chunkEnd.add(
