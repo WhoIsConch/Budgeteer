@@ -22,7 +22,7 @@ class TransactionsList extends StatefulWidget {
 
   final bool showActionButton;
   final bool showBackground;
-  final List<TransactionFilter>? filters;
+  final List<Filter>? filters;
   final List<Transaction>? transactions;
   final Sort? sort;
 

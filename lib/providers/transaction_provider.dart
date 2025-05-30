@@ -4,23 +4,18 @@ import 'package:budget/providers/snackbar_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/models/filters.dart';
 import 'package:flutter/material.dart';
-import 'package:collection/collection.dart';
 import 'package:provider/provider.dart';
 
 class TransactionProvider extends ChangeNotifier {
   // Allows the rest of the app to know when transaction filters
   // change
-  List<TransactionFilter> _filters = [];
+  List<Filter> _filters = [];
   Sort _sort = const Sort(SortType.date, SortOrder.descending);
 
-  List<TransactionFilter> get filters => _filters;
+  List<Filter> get filters => _filters;
   Sort get sort => _sort;
 
-  void update({
-    List<TransactionFilter>? filters,
-    Sort? sort,
-    bool notify = true,
-  }) {
+  void update({List<Filter>? filters, Sort? sort, bool notify = true}) {
     bool hasFiltersChanged = filters != null && filters != _filters;
     bool hasSortChanged = sort != null && sort != _sort;
 
@@ -31,17 +26,17 @@ class TransactionProvider extends ChangeNotifier {
     }
   }
 
-  T? getFilterValue<T>() =>
-      filters.firstWhereOrNull((e) => e.value.runtimeType == T)?.value;
+  T? getFilter<T extends Filter>() => filters.whereType<T>().first;
 
-  void updateFilter<T>(TransactionFilter<T> filter, {bool notify = true}) {
-    filters.removeWhere((e) => e.value.runtimeType == filter.value.runtimeType);
+  void updateFilter<T extends Filter>(T filter, {bool notify = true}) {
+    removeFilter<T>(T, notify: false);
+
     filters.add(filter);
     if (notify) notifyListeners();
   }
 
-  void removeFilter<T>({Type? filterType, bool notify = true}) {
-    filters.removeWhere((e) => e.value.runtimeType == (filterType ?? T));
+  void removeFilter<T extends Filter>(Type filterType, {bool notify = true}) {
+    filters.removeWhere((e) => e.runtimeType is T);
     if (notify) notifyListeners();
   }
 }

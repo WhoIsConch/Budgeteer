@@ -11,7 +11,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class TransactionSearch extends StatefulWidget {
-  final List<TransactionFilter>? initialFilters;
+  final List<Filter>? initialFilters;
   final Sort? initialSortType;
 
   const TransactionSearch({
@@ -35,39 +35,38 @@ class _TransactionSearchState extends State<TransactionSearch> {
     DateFormat dateFormat = DateFormat('MM/dd');
     final provider = context.watch<TransactionProvider>();
 
-    for (TransactionFilter filter in provider.filters) {
+    for (Filter filter in provider.filters) {
       String label = switch (filter) {
-        TransactionFilter<String> t => '"${t.value}"', // "Value"
-        TransactionFilter<AmountFilter> t =>
-          '${t.value.type!.symbol} \$${formatAmount(t.value.amount ?? 0, exact: true)}', // > $Value
-        TransactionFilter<List<CategoryWithAmount>> t =>
-          t.value.length > 3
-              ? '${t.value.length} categories'
-              : t.value.map((e) => e.category.name).join(', '),
-        TransactionFilter<DateTimeRange> t =>
-          '${dateFormat.format(t.value.start)}–${dateFormat.format(t.value.end)}',
-        TransactionFilter<RelativeDateRange> t =>
-          '${dateFormat.format(t.value.getRange().start)}–${dateFormat.format(t.value.getRange().end)}',
-        TransactionFilter<TransactionType> t =>
-          t.value == TransactionType.expense ? 'Expense' : 'Income',
-        _ => 'ERR',
+        TextFilter t => '"${t.text}"', // "Value"
+        AmountFilter t =>
+          '${t.type.symbol} \$${formatAmount(t.amount, exact: true)}', // > $Value
+        CategoryFilter t =>
+          t.categories.length > 3
+              ? '${t.categories.length} categories'
+              : t.categories.map((e) => e.name).join(', '),
+        AccountFilter t =>
+          t.accounts.length > 3
+              ? '${t.accounts.length} accounts'
+              : t.accounts.map((e) => e.name).join(', '),
+        GoalFilter t =>
+          t.goals.length > 3
+              ? '${t.goals.length} goals'
+              : t.goals.map((e) => e.name).join(', '),
+        DateRangeFilter t =>
+          '${dateFormat.format(t.dateRange.start)}–${dateFormat.format(t.dateRange.end)}',
+        TypeFilter t =>
+          t.type == TransactionType.expense ? 'Expense' : 'Income',
       };
-
-      if (label.startsWith('ERR')) {
-        AppLogger().logger.e(
-          'Failed to filter transactions: Unexpected value:\n${filter.value}',
-        );
-      }
 
       chips.add(
         GestureDetector(
-          onTap: () => _activateFilter(context, filter.value.runtimeType),
+          onTap: () => _activateFilter(context, filter),
           child: Chip(
             label: Text(label),
             deleteIcon: const Icon(Icons.close),
             onDeleted: () {
               searchController.clear();
-              provider.removeFilter(filterType: filter.value.runtimeType);
+              provider.removeFilter(filter.runtimeType);
             },
           ),
         ),
@@ -90,30 +89,29 @@ class _TransactionSearchState extends State<TransactionSearch> {
     return const Text('Transactions');
   }
 
-  Future<TransactionFilter?> _showAmountFilterDialog(
-    BuildContext context,
-  ) async {
+  Future<Filter?> _showAmountFilterDialog(BuildContext context) async {
     final provider = context.read<TransactionProvider>();
     // Shows a dialog inline with a dropdown showing the filter type first,
     // then the amount as an input.
     TextEditingController controller = TextEditingController();
     // Either get the current amountFilter or create a new one
-    AmountFilter amountFilter =
-        provider.getFilterValue<AmountFilter>() ?? AmountFilter();
+    AmountFilter? amountFilter = provider.getFilter<AmountFilter>();
     // Update the text to match
-    controller.text = amountFilter.amount?.toStringAsFixed(2) ?? '';
+    controller.text = amountFilter?.amount.toStringAsFixed(2) ?? '';
 
     // Listen for changes on the controller since it's easier and better-looking
     // than redoing it in the end, though probably less performant
-    controller.addListener(
-      () =>
-          amountFilter = AmountFilter(
-            type: amountFilter.type,
-            amount: double.tryParse(controller.text) ?? amountFilter.amount,
-          ),
-    );
+    controller.addListener(() {
+      final amount = double.tryParse(controller.text) ?? amountFilter?.amount;
 
-    return showDialog<TransactionFilter>(
+      if (amountFilter?.type == null || amount == null) {
+        return;
+      }
+
+      amountFilter = AmountFilter(amountFilter!.type, amount);
+    });
+
+    return showDialog<AmountFilter>(
       context: context,
       builder: (context) {
         return StatefulBuilder(
@@ -127,12 +125,12 @@ class _TransactionSearchState extends State<TransactionSearch> {
                     onSelectionChanged:
                         (type) => setState(() {
                           amountFilter = AmountFilter(
-                            type: type.first,
-                            amount: amountFilter.amount,
+                            type.first,
+                            amountFilter?.amount ?? 0,
                           );
                         }),
                     showSelectedIcon: false,
-                    selected: {amountFilter.type ?? AmountFilterType.exactly},
+                    selected: {amountFilter?.type ?? AmountFilterType.exactly},
                     segments:
                         AmountFilterType.values
                             .map(
@@ -173,10 +171,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
                       return Navigator.pop(context);
                     }
 
-                    return Navigator.pop(
-                      context,
-                      TransactionFilter<AmountFilter>(amountFilter),
-                    );
+                    return Navigator.pop(context, amountFilter);
                   },
                   child: const Text('OK'),
                 ),
@@ -424,7 +419,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
     };
   }
 
-  void _activateFilter(BuildContext context, Type type) {
+  void _activateFilter(BuildContext context, Filter filter) {
     final action = _getFilterActions(context)[type];
 
     if (action != null) {
