@@ -143,7 +143,7 @@ class _HistoryState extends State<History> {
                 onPressed:
                     () => Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const TransactionSearch(),
+                        builder: (_) => const TransactionSearchPage(),
                       ),
                     ),
               ),

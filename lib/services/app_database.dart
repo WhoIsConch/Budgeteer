@@ -844,6 +844,10 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
 
   Future<int> permanentlyDeleteCategories(List<String> ids) =>
       (delete(categories)..where((c) => c.id.isIn(ids))).go();
+
+  Stream<int> watchCategoryCount() {
+    return categories.count().watchSingle();
+  }
 }
 
 @DriftDatabase(

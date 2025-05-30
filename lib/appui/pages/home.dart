@@ -54,7 +54,7 @@ class _HomePageState extends State<HomePage> {
                     onPressed:
                         () => Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => const TransactionSearch(),
+                            builder: (_) => const TransactionSearchPage(),
                           ),
                         ),
                     child: Row(

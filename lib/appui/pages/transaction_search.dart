@@ -9,8 +9,36 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+class TransactionSearchPage extends StatelessWidget {
+  final Set<Filter>? initialFilters;
+  final Sort? initialSortType;
+
+  const TransactionSearchPage({
+    super.key,
+    this.initialFilters,
+    this.initialSortType,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create:
+          (_) =>
+              TransactionProvider()..update(
+                filters: initialFilters?.toList(),
+                sort: initialSortType,
+                notify: false,
+              ),
+      child: TransactionSearch(
+        initialFilters: initialFilters,
+        initialSortType: initialSortType,
+      ),
+    );
+  }
+}
+
 class TransactionSearch extends StatefulWidget {
-  final List<Filter>? initialFilters;
+  final Set<Filter>? initialFilters;
   final Sort? initialSortType;
 
   const TransactionSearch({
@@ -29,7 +57,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
   bool isSearching = false; // Is the title bar a search field?
   TextEditingController searchController = TextEditingController();
 
-  List<Widget> getFilterChips(BuildContext context) {
+  List<Widget> getFilterChips() {
     List<Widget> chips = [];
     DateFormat dateFormat = DateFormat('MM/dd');
     final provider = context.watch<TransactionProvider>();
@@ -88,7 +116,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
     return const Text('Transactions');
   }
 
-  Future<AmountFilter?> _showAmountFilterDialog(BuildContext context) async {
+  Future<AmountFilter?> _showAmountFilterDialog() async {
     final provider = context.read<TransactionProvider>();
     // Shows a dialog inline with a dropdown showing the filter type first,
     // then the amount as an input.
@@ -182,9 +210,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
     );
   }
 
-  Future<List<CategoryWithAmount>?> _showCategoryInputDialog(
-    BuildContext context,
-  ) async {
+  Future<List<CategoryWithAmount>?> _showCategoryInputDialog() async {
     // Shows a dropdown of all available categories.
     // Returns a list of selected categories.
     // This shows an AlertDialog with nothing in it other than a dropdown
@@ -277,16 +303,13 @@ class _TransactionSearchState extends State<TransactionSearch> {
   void toggleTransactionType(BuildContext context) {
     final provider = context.read<TransactionProvider>();
 
-    TransactionType? typeFilterValue =
-        provider.getFilter<TypeFilter>()?.type;
+    TransactionType? typeFilterValue = provider.getFilter<TypeFilter>()?.type;
     TypeFilter? filter;
 
     if (typeFilterValue == null || typeFilterValue == TransactionType.expense) {
       filter = TypeFilter(TransactionType.income);
     } else if (typeFilterValue == TransactionType.income) {
-      filter = TypeFilter(
-        TransactionType.expense,
-      );
+      filter = TypeFilter(TransactionType.expense);
     }
 
     if (filter == null) {
@@ -296,24 +319,45 @@ class _TransactionSearchState extends State<TransactionSearch> {
     }
   }
 
-  List<Widget> _getFilterMenuButtons(BuildContext context) => [
-    MenuItemButton(
-      child: const Text('Date'),
-      onPressed: () => _activateFilter<DateRangeFilter>(context),
-    ),
-    MenuItemButton(
-      child: const Text('Amount'),
-      onPressed: () => _activateFilter<AmountFilter>(context),
-    ),
-    MenuItemButton(
-      child: const Text('Type'),
-      onPressed: () => _activateFilter<TypeFilter>(context),
-    ),
-    MenuItemButton(
-      child: const Text('Category'),
-      onPressed: () => _activateFilter<CategoryFilter>(context),
-    ),
-  ];
+  List<Widget> _getFilterMenuButtons(BuildContext context) {
+    final widgetContext = context;
+
+    return [
+      MenuItemButton(
+        child: const Text('Date'),
+        onPressed: () => _activateFilter<DateRangeFilter>(widgetContext),
+      ),
+      MenuItemButton(
+        child: const Text('Amount'),
+        onPressed: () => _activateFilter<AmountFilter>(widgetContext),
+      ),
+      MenuItemButton(
+        child: const Text('Type'),
+        onPressed: () => _activateFilter<TypeFilter>(widgetContext),
+      ),
+      StreamBuilder(
+        stream: context.read<AppDatabase>().categoryDao.watchCategoryCount(),
+        builder: (streamContext, snapshot) {
+          final hasCategories = snapshot.hasData && snapshot.data! > 0;
+
+          return MenuItemButton(
+            onPressed:
+                hasCategories
+                    ? () => _activateFilter<CategoryFilter>(widgetContext)
+                    : null,
+
+            child: Text(
+              'Category',
+              style:
+                  hasCategories
+                      ? null
+                      : TextStyle(color: Theme.of(streamContext).disabledColor),
+            ),
+          );
+        },
+      ),
+    ];
+  }
 
   List<Widget> _getSortMenuButtons(BuildContext context) {
     final provider = context.read<TransactionProvider>();
@@ -379,9 +423,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
             ),
   );
 
-  Map<Type, Function> _getFilterActions(BuildContext context) {
-    final provider = context.read<TransactionProvider>();
-
+  Map<Type, Function> _getFilterActions(TransactionProvider provider) {
     return {
       DateRangeFilter:
           () => showDateRangePicker(
@@ -396,7 +438,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
           }),
       TextFilter: () => setState(() => isSearching = true),
       AmountFilter:
-          () => _showAmountFilterDialog(context).then((value) {
+          () => _showAmountFilterDialog().then((value) {
             if (value == null) {
               return;
             }
@@ -404,15 +446,13 @@ class _TransactionSearchState extends State<TransactionSearch> {
           }),
       TypeFilter: () => toggleTransactionType(context),
       CategoryFilter:
-          () => _showCategoryInputDialog(context).then((value) {
+          () => _showCategoryInputDialog().then((value) {
             if (value == null) {
               return;
             } else if (value.isEmpty) {
               provider.removeFilter<CategoryFilter>();
             } else {
-              provider.updateFilter(
-                CategoryFilter(value),
-              );
+              provider.updateFilter(CategoryFilter(value));
             }
           }),
     };
@@ -420,11 +460,12 @@ class _TransactionSearchState extends State<TransactionSearch> {
 
   void _activateFilter<F extends Filter>(BuildContext context, {F? filter}) {
     Function? filterAction;
-    
+    final provider = context.read<TransactionProvider>();
+
     if (filter != null) {
-      filterAction = _getFilterActions(context)[filter.runtimeType];
+      filterAction = _getFilterActions(provider)[filter.runtimeType];
     } else {
-      filterAction = _getFilterActions(context)[F];
+      filterAction = _getFilterActions(provider)[F];
     }
 
     if (filterAction != null) {
@@ -442,24 +483,11 @@ class _TransactionSearchState extends State<TransactionSearch> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) {
-        final provider = TransactionProvider();
-
-        provider.update(
-          filters: widget.initialFilters,
-          sort: widget.initialSortType,
-          notify: false,
-        );
-
-        return provider;
-      },
-      builder: (context, _) {
+    return Consumer<TransactionProvider>(
+      builder: (context, provider, _) {
         List<Widget> appBarActions = [];
         Widget body;
         Widget? leading;
-
-        final provider = context.watch<TransactionProvider>();
 
         if (!isSearching) {
           appBarActions = [
@@ -509,7 +537,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
             if (provider.filters.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Wrap(spacing: 4, children: getFilterChips(context)),
+                child: Wrap(spacing: 4, children: getFilterChips()),
               ),
             Expanded(
               child: Padding(
