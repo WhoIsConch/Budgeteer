@@ -43,7 +43,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
 
   Value<String> getControllerValue(String id) =>
       controllers[id] != null
-          ? Value(controllers[id]!.text)
+          ? Value(controllers[id]!.text.trim())
           : const Value.absent();
 
   TransactionsCompanion _buildTransaction() => TransactionsCompanion(
@@ -232,7 +232,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   @override
   Widget build(BuildContext context) {
     return EditFormScreen(
-      title: 'Edit transaction',
+      title: isEditing ? 'Edit transaction' : 'Create transaction',
       onConfirm: () async {
         final newTransaction = _buildTransaction();
 
@@ -269,7 +269,11 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
             SegmentButtonData(label: 'Income', value: TransactionType.income),
           ],
         ),
-        TextInputEditField(label: 'Title', controller: controllers['title']),
+        TextInputEditField(
+          label: 'Title',
+          controller: controllers['title'],
+          validator: validateTitle,
+        ),
         Row(
           spacing: 16.0,
           children: [

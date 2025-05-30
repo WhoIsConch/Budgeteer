@@ -49,7 +49,7 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
 
   Value<String> getControllerValue(String id) =>
       _controllers[id] != null
-          ? Value(_controllers[id]!.text)
+          ? Value(_controllers[id]!.text.trim())
           : const Value.absent();
 
   void _updateDateControllerText() {
@@ -82,7 +82,7 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
 
       _selectedDate = initialGoal!.goal.dueDate ?? DateTime.now();
       _selectedColor = initialGoal!.goal.color;
-      _isFinished = initialGoal!.goal.isArchived ?? false;
+      _isFinished = initialGoal!.goal.isArchived;
     }
 
     _controllers = tempControllers;

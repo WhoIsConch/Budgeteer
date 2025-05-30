@@ -13,6 +13,7 @@ const powersyncAppSchema = Schema([
     Column.text('account_id'),
     Column.text('goal_id'),
     Column.integer('is_archived'),
+    Column.text('created_at'),
   ]),
   Table('categories', [
     Column.text('user_id'),

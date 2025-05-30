@@ -1,5 +1,5 @@
 import 'package:auto_size_text/auto_size_text.dart';
-import 'package:dynamic_color/dynamic_color.dart';
+import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'package:flutter/material.dart';
 
 class TextOverviewHeader extends StatelessWidget {
@@ -24,6 +24,7 @@ class TextOverviewHeader extends StatelessWidget {
         if (title != null)
           Text(
             title!,
+            textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.displaySmall!.copyWith(
               color: textColor,
               fontWeight: FontWeight.bold,
@@ -32,6 +33,7 @@ class TextOverviewHeader extends StatelessWidget {
         if (description != null)
           Text(
             description!,
+            textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleLarge!,
             softWrap: true,
           ),

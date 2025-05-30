@@ -93,7 +93,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
   Future<TransactionFilter?> _showAmountFilterDialog(
     BuildContext context,
   ) async {
-    final provider = context.watch<TransactionProvider>();
+    final provider = context.read<TransactionProvider>();
     // Shows a dialog inline with a dropdown showing the filter type first,
     // then the amount as an input.
     TextEditingController controller = TextEditingController();
@@ -196,7 +196,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
     // This shows an AlertDialog with nothing in it other than a dropdown
     // which a user can select multiple categories from.
     final db = context.read<AppDatabase>();
-    final provider = context.watch<TransactionProvider>();
+    final provider = context.read<TransactionProvider>();
 
     List<CategoryWithAmount> selectedCategories =
         provider.getFilterValue<List<CategoryWithAmount>>() ?? [];
@@ -281,7 +281,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
   }
 
   void toggleTransactionType(BuildContext context) {
-    final provider = context.watch<TransactionProvider>();
+    final provider = context.read<TransactionProvider>();
 
     TransactionType? typeFilterValue =
         provider.getFilterValue<TransactionType>();
@@ -322,7 +322,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
   ];
 
   List<Widget> _getSortMenuButtons(BuildContext context) {
-    final provider = context.watch<TransactionProvider>();
+    final provider = context.read<TransactionProvider>();
 
     return SortType.values
         .map(

@@ -13,16 +13,9 @@ part 'app_database.g.dart';
 mixin SoftDeletableTable on Table {
   TextColumn get id => text().clientDefault(() => uuid.v4())();
   BoolColumn get isDeleted =>
-      boolean()
-          .nullable()
-          .withDefault(const Constant(false))
-          .named('is_deleted')();
+      boolean().clientDefault(() => false).named('is_deleted')();
   BoolColumn get isArchived =>
-      boolean()
-          .nullable()
-          .withDefault(const Constant(false))
-          .named('is_archived')();
-
+      boolean().clientDefault(() => false).named('is_archived')();
 }
 
 class Transactions extends Table {
@@ -33,17 +26,16 @@ class Transactions extends Table {
   TextColumn get title => text()();
   RealColumn get amount => real()();
   TextColumn get date => text().map(const DateTextConverter())();
+  TextColumn get createdAt =>
+      text()
+          .map(const DateTimeTextConverter())
+          .clientDefault(() => DateTime.now().toIso8601String())
+          .named('created_at')();
   IntColumn get type => intEnum<TransactionType>()();
   BoolColumn get isDeleted =>
-      boolean()
-          .nullable()
-          .withDefault(const Constant(false))
-          .named('is_deleted')();
+      boolean().clientDefault(() => false).named('is_deleted')();
   BoolColumn get isArchived =>
-      boolean()
-          .nullable()
-          .withDefault(const Constant(false))
-          .named('is_archived')();
+      boolean().clientDefault(() => false).named('is_archived')();
   TextColumn get notes => text().nullable()();
 
   TextColumn get category =>
@@ -80,7 +72,7 @@ class Categories extends Table with SoftDeletableTable {
           .withDefault(const Constant(0))
           .named('reset_increment')();
   BoolColumn get allowNegatives =>
-      boolean().withDefault(const Constant(false)).named('allow_negatives')();
+      boolean().clientDefault(() => false).named('allow_negatives')();
   IntColumn get color =>
       integer().clientDefault(genColor).map(const ColorConverter())();
   RealColumn get balance => real().nullable()();
@@ -95,7 +87,7 @@ class Accounts extends Table with SoftDeletableTable {
 
   TextColumn get name => text()();
   TextColumn get notes => text().nullable()();
-  IntColumn get priority => integer().nullable()();
+  IntColumn get priority => integer().nullable().unique()();
 
   IntColumn get color =>
       integer().clientDefault(genColor).map(const ColorConverter())();
@@ -119,16 +111,31 @@ class Goals extends Table with SoftDeletableTable {
 class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
   AccountDao(super.db);
 
+  Future<bool> isPriorityTaken(int newPriority, {String? currentItemId}) async {
+    /// Ensure that a priority field for an account isn't taken.
+    final query = select(accounts)
+      ..where((a) => a.priority.equals(newPriority));
+
+    if (currentItemId != null) {
+      // If an item is being updated, it shouldn't check itself
+      query.where((a) => a.id.equals(currentItemId).not());
+    }
+
+    final existingItems = await query.get();
+    return existingItems.isNotEmpty;
+  }
+
   Stream<List<AccountWithTotal>> watchAccounts({
     List<TransactionFilter>? filters,
     includeArchived = false,
     sortDescending = true,
-    net = true
+    net = true,
   }) {
     final queryWithSum = db.getCombinedQuery(
-      accounts, includeArchived: includeArchived,
-      net: net
-      );
+      accounts,
+      includeArchived: includeArchived,
+      net: net,
+    );
 
     db._applyFilters(queryWithSum.query, filters);
 
@@ -143,9 +150,9 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
 
       accountsWithTotals.sort((a, b) {
         if (a.account.priority != null && b.account.priority == null) {
-          return 1;
-        } else if (a.account.priority == null && b.account.priority != null) {
           return -1;
+        } else if (a.account.priority == null && b.account.priority != null) {
+          return 1;
         } else if (a.account.priority == null && b.account.priority == null) {
           return 0;
         }
@@ -165,7 +172,10 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     String id, {
     bool includeArchived = true,
   }) {
-    final queryWithSum = db.getCombinedQuery(accounts, includeArchived: includeArchived);
+    final queryWithSum = db.getCombinedQuery(
+      accounts,
+      includeArchived: includeArchived,
+    );
     final filteredQuery = queryWithSum.query..where(accounts.id.equals(id));
 
     final mappedSelectable = filteredQuery.map((row) {
@@ -182,7 +192,10 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     String id, {
     bool includeArchived = true,
   }) {
-    final queryWithSum = db.getCombinedQuery(accounts, includeArchived: includeArchived);
+    final queryWithSum = db.getCombinedQuery(
+      accounts,
+      includeArchived: includeArchived,
+    );
     final filteredQuery = queryWithSum.query..where(accounts.id.equals(id));
 
     final mappedSelectable = filteredQuery.map((row) {
@@ -196,6 +209,15 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
   }
 
   Future<Account> createAccount(AccountsCompanion entry) async {
+    if (entry.priority.value != null) {
+      bool isTaken = await isPriorityTaken(entry.priority.value!);
+
+      if (isTaken) {
+        throw ArgumentError(
+          'Account with priority ${entry.priority.value} already exists',
+        );
+      }
+    }
     final id = entry.id.present ? entry.id.value : uuid.v4();
 
     final entryWithId = entry.copyWith(id: Value(id));
@@ -206,6 +228,19 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
 
   Future<Account> updateAccount(AccountsCompanion entry) async {
     assert(entry.id.present, '`id` must be supplied when updating an Account');
+
+    if (entry.priority.value != null) {
+      bool isTaken = await isPriorityTaken(
+        entry.priority.value!,
+        currentItemId: entry.id.value,
+      );
+
+      if (isTaken) {
+        throw ArgumentError(
+          'Account with priority ${entry.priority.value} already exists',
+        );
+      }
+    }
 
     final account = await (update(accounts)
       ..where((a) => a.id.equals(entry.id.value))).writeReturning(entry);
@@ -238,7 +273,10 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     bool net = true,
   }) {
     final queryWithSum = db.getCombinedQuery(
-      goals, includeArchived: includeFinished, net: net);
+      goals,
+      includeArchived: includeFinished,
+      net: net,
+    );
 
     db._applyFilters(queryWithSum.query, filters);
 
@@ -314,7 +352,10 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     String id, {
     bool includeFinished = true,
   }) {
-    final queryWithSum = db.getCombinedQuery(goals, includeArchived: includeFinished);
+    final queryWithSum = db.getCombinedQuery(
+      goals,
+      includeArchived: includeFinished,
+    );
 
     final filteredQuery = queryWithSum.query..where(goals.id.equals(id));
 
@@ -332,7 +373,10 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     String id, {
     bool includeFinished = true,
   }) {
-    final queryWithSum = db.getCombinedQuery(goals, includeArchived: includeFinished);
+    final queryWithSum = db.getCombinedQuery(
+      goals,
+      includeArchived: includeFinished,
+    );
 
     final filteredQuery = queryWithSum.query..where(goals.id.equals(id));
 
@@ -361,6 +405,61 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     with _$TransactionDaoMixin {
   TransactionDao(super.db);
 
+  void _applyTransactionFilters(
+    SimpleSelectStatement<$TransactionsTable, Transaction> query,
+    List<TransactionFilter> filters,
+  ) {
+    for (final TransactionFilter filter in filters) {
+      switch (filter) {
+        case TransactionFilter<AmountFilter> f:
+          switch (f.value.type!) {
+            case AmountFilterType.greaterThan:
+              query.where((t) => t.amount.isBiggerThanValue(f.value.amount!));
+              break;
+            case AmountFilterType.lessThan:
+              query.where((t) => t.amount.isSmallerThanValue(f.value.amount!));
+              break;
+            case AmountFilterType.exactly:
+              query.where((t) => t.amount.equals(f.value.amount!));
+              break;
+          }
+          break;
+        case TransactionFilter<String> f:
+          // TODO: Figure out if this can be converted to partial text search
+          query.where(
+            (t) =>
+                t.title.lower().equals(f.value.toLowerCase()) |
+                t.notes.lower().equals(f.value.toLowerCase()),
+          );
+          break;
+        case TransactionFilter<DateTimeRange> f:
+          query.where(
+            (t) => t.date.isBetweenValues(
+              formatter.format(f.value.start),
+              formatter.format(f.value.end),
+            ),
+          );
+          break;
+        case TransactionFilter<TransactionType> f:
+          query.where((t) => t.type.equals(f.value.value));
+          break;
+        case TransactionFilter<List<CategoryWithAmount>> f:
+          query.where(
+            (t) => t.category.isIn(f.value.map((e) => e.category.id)),
+          );
+          break;
+        case TransactionFilter<List<GoalWithAchievedAmount>> f:
+          query.where((t) => t.goalId.isIn(f.value.map((g) => g.goal.id)));
+          break;
+        case TransactionFilter<List<AccountWithTotal>> f:
+          query.where(
+            (t) => t.accountId.isIn(f.value.map((a) => a.account.id)),
+          );
+          break;
+      }
+    }
+  }
+
   Stream<List<Transaction>> watchTransactionsPage({
     List<TransactionFilter>? filters,
     Sort? sort,
@@ -368,75 +467,17 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     int? offset,
     bool showArchived = false,
   }) {
-    var query = db.select(db.transactions)
-      ..where((t) => t.isDeleted.isNotExp(const Constant(true)));
+    var query = db.select(db.transactions)..where((t) => t.isDeleted.not());
 
     if (!showArchived) {
-      query = query..where((t) => t.isArchived.isNotExp(const Constant(true)));
+      query = query..where((t) => t.isArchived.not());
+    }
+
+    if (filters != null) {
+      _applyTransactionFilters(query, filters);
     }
 
     filters ??= [];
-
-    for (final TransactionFilter filter in filters) {
-      switch (filter) {
-        case TransactionFilter<AmountFilter> f:
-          switch (f.value.type!) {
-            case AmountFilterType.greaterThan:
-              query =
-                  query
-                    ..where((t) => t.amount.isBiggerThanValue(f.value.amount!));
-              break;
-            case AmountFilterType.lessThan:
-              query =
-                  query..where(
-                    (t) => t.amount.isSmallerThanValue(f.value.amount!),
-                  );
-              break;
-            case AmountFilterType.exactly:
-              query = query..where((t) => t.amount.equals(f.value.amount!));
-              break;
-          }
-          break;
-        case TransactionFilter<String> f:
-          // TODO: Figure out if this can be converted to partial text search
-          query =
-              query..where(
-                (t) =>
-                    t.title.lower().equals(f.value.toLowerCase()) |
-                    t.notes.lower().equals(f.value.toLowerCase()),
-              );
-          break;
-        case TransactionFilter<DateTimeRange> f:
-          query =
-              query..where(
-                (t) =>
-                    t.date.isBiggerOrEqualValue(
-                      formatter.format(f.value.start),
-                    ) &
-                    t.date.isSmallerOrEqualValue(formatter.format(f.value.end)),
-              );
-          break;
-        case TransactionFilter<TransactionType> f:
-          query = query..where((t) => t.type.equals(f.value.value));
-          break;
-        case TransactionFilter<List<CategoryWithAmount>> f:
-          query =
-              query..where(
-                (t) => t.category.isIn(f.value.map((e) => e.category.id)),
-              );
-          break;
-        case TransactionFilter<List<GoalWithAchievedAmount>> f:
-          query =
-              query..where((t) => t.goalId.isIn(f.value.map((g) => g.goal.id)));
-          break;
-        case TransactionFilter<List<AccountWithTotal>> f:
-          query =
-              query..where(
-                (t) => t.accountId.isIn(f.value.map((a) => a.account.id)),
-              );
-          break;
-      }
-    }
 
     if (sort != null) {
       OrderingMode sortMode =
@@ -456,9 +497,14 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
                       }
                       as Expression<Object>,
             ),
+            (t) => OrderingTerm(mode: sortMode, expression: t.createdAt),
           ]);
     } else {
-      query = query..orderBy([(t) => OrderingTerm.desc(t.date)]);
+      query =
+          query..orderBy([
+            (t) => OrderingTerm.desc(t.date),
+            (t) => OrderingTerm.desc(t.createdAt),
+          ]);
     }
 
     if (limit != null) {
@@ -469,43 +515,35 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
   }
 
   Stream<double?> watchTotalAmount({
-    TransactionType? type,
-    DateTimeRange? dateRange,
-    Category? category,
-    bool nullCategory = false,
+    List<TransactionFilter>? filters,
+    bool nullCategory = false, // TODO: Integrate these with filters
+    bool nullAccount = false,
+    bool nullGoal = false,
     bool net = true,
   }) {
     // Unfortunately, we need to use isNotExp(Constant(true)) since these fields are
     // nullable. This is because something (either Supabase, Drift, or PowerSync)
     // doesn't think transactions are capable of handling non-null booleans.
     // My money is on PowerSync being the issue.
-    var query = select(transactions)..where(
-      (t) =>
-          t.isDeleted.isNotExp(const Constant(true)) &
-          t.isArchived.isNotExp(const Constant(true)),
-    );
+    var query = select(transactions)
+      ..where((t) => t.isDeleted.not() & t.isArchived.not());
 
-    if (type != null) {
-      query = query..where((t) => t.type.equalsValue(type));
+    if (filters != null) _applyTransactionFilters(query, filters);
+
+    if (nullCategory) {
+      query.where((t) => t.category.isNull());
     }
 
-    if (category != null) {
-      query = query..where((t) => t.category.equals(category.id));
-    } else if (nullCategory) {
-      query = query..where((t) => t.category.isNull());
+    if (nullGoal) {
+      query.where((t) => t.goalId.isNull());
     }
 
-    if (dateRange != null) {
-      query =
-          query..where(
-            (t) => t.date.isBetweenValues(
-              formatter.format(dateRange.start),
-              formatter.format(dateRange.end),
-            ),
-          );
+    if (nullAccount) {
+      query.where((t) => t.accountId.isNull());
     }
-
     final sumQuery = db.getSignedTransactionSumQuery();
+
+    final type = filters?.whereType<TransactionFilter<TransactionType>>();
 
     if (type == null && net) {
       // If the type is null, we want to get the net amount
@@ -553,13 +591,17 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
   Future<FinancialDataPoint> getPointFromRange(DateTimeRange range) async {
     final totalSpent =
         await watchTotalAmount(
-          dateRange: range,
-          type: TransactionType.expense,
+          filters: [
+            TransactionFilter<DateTimeRange>(range),
+            TransactionFilter<TransactionType>(TransactionType.expense),
+          ],
         ).first;
     final totalEarned =
         await watchTotalAmount(
-          dateRange: range,
-          type: TransactionType.income,
+          filters: [
+            TransactionFilter<DateTimeRange>(range),
+            TransactionFilter<TransactionType>(TransactionType.income),
+          ],
         ).first;
 
     return FinancialDataPoint(
@@ -580,7 +622,8 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
 
     switch (aggregationLevel) {
       case AggregationLevel.daily:
-        for (int i = 0; i < range.duration.inDays; i++) {
+        // +1 to ensure the duration includes today's activities
+        for (int i = 0; i < range.duration.inDays + 1; i++) {
           final day = range.start.add(Duration(days: i));
 
           points.add(
@@ -604,7 +647,7 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
 
           points.add(
             await getPointFromRange(
-              DateTimeRange(start: start, end: actualEnd).makeInclusive(),
+              DateTimeRange(start: start, end: actualEnd),
             ),
           );
           start = chunkEnd.add(
@@ -759,13 +802,21 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     return QueryWithSum(queryWithSum, conditionalSum);
   }
 
-  QueryWithSum _getQueryWithSum({bool includeArchived = false, bool net = true, bool sumByResetIncrement = true}) {
+  QueryWithSum _getQueryWithSum({
+    bool includeArchived = false,
+    bool net = true,
+    bool sumByResetIncrement = true,
+  }) {
     QueryWithSum queryWithSum;
 
     if (sumByResetIncrement) {
       queryWithSum = _getCategoriesWithAmountsQuery();
     } else {
-      queryWithSum = db.getCombinedQuery(categories, includeArchived: includeArchived, net: net);
+      queryWithSum = db.getCombinedQuery(
+        categories,
+        includeArchived: includeArchived,
+        net: net,
+      );
     }
 
     return queryWithSum;
@@ -775,12 +826,12 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     List<TransactionFilter>? filters,
     bool includeArchived = false,
     bool net = true,
-    bool sumByResetIncrement = true
+    bool sumByResetIncrement = true,
   }) {
     final queryWithSum = _getQueryWithSum(
       includeArchived: includeArchived,
       net: net,
-      sumByResetIncrement: sumByResetIncrement
+      sumByResetIncrement: sumByResetIncrement,
     );
 
     db._applyFilters(queryWithSum.query, filters);
@@ -799,17 +850,16 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
   }
 
   Future<CategoryWithAmount?> getCategoryById(
-    String id,{
+    String id, {
     bool includeArchived = false,
     bool net = true,
     bool sumByResetIncrement = true,
-    }) async {
+  }) async {
     final queryWithSum = _getQueryWithSum(
       includeArchived: includeArchived,
       net: net,
-      sumByResetIncrement: sumByResetIncrement
+      sumByResetIncrement: sumByResetIncrement,
     );
-
 
     final singleCategoryQuery =
         queryWithSum.query..where(categories.id.equals(id));
@@ -870,21 +920,17 @@ class AppDatabase extends _$AppDatabase {
 
   QueryWithSum getCombinedQuery<T extends SoftDeletableTable>(
     TableInfo<T, dynamic> relatedTable, {
-      bool includeArchived = false,
-      bool net = true,
-    }
-  ) {
-    var query = select(relatedTable).join([
-      leftOuterJoin(transactions, _getJoinCondition(relatedTable))
-    ]);
+    bool includeArchived = false,
+    bool net = true,
+  }) {
+    var query = select(
+      relatedTable,
+    ).join([leftOuterJoin(transactions, _getJoinCondition(relatedTable))]);
 
-    query.where(
-      transactions.isDeleted.isNotExp(const Constant(true)) &
-      relatedTable.asDslTable.isDeleted.isNotExp(const Constant(true))
-    );
+    query.where(relatedTable.asDslTable.isDeleted.not());
 
     if (!includeArchived) {
-      query.where(relatedTable.asDslTable.isArchived.isNotExp(const Constant(true)));
+      query.where(relatedTable.asDslTable.isArchived.not());
     }
 
     Expression<double> sumExpression;
@@ -901,7 +947,9 @@ class AppDatabase extends _$AppDatabase {
     return QueryWithSum(query, sumExpression);
   }
 
-  Expression<bool> _getJoinCondition<T extends Table>(TableInfo<T, dynamic> table) {
+  Expression<bool> _getJoinCondition<T extends Table>(
+    TableInfo<T, dynamic> table,
+  ) {
     switch (table.actualTableName) {
       case 'categories':
         return transactions.category.equalsExp(categories.id);
@@ -939,20 +987,46 @@ class AppDatabase extends _$AppDatabase {
     }
   }
 
-  Expression<double> getSignedTransactionSumQuery({bool summed = true}) {
+  Expression<double> getSignedTransactionSumQuery({
+    bool includeArchived = false,
+    bool summed = true,
+  }) {
     // Mainly uses "summed" for backwards compatibility with code I wrote less
     // than an hour ago
-    final expression = CaseWhenExpression(
-      cases: [
+    List<CaseWhen<bool, double>> cases;
+
+    if (includeArchived) {
+      cases = [
         CaseWhen(
-          transactions.type.equalsValue(TransactionType.income),
+          transactions.type.equalsValue(TransactionType.income) &
+              transactions.isDeleted.not(),
           then: transactions.amount,
         ),
         CaseWhen(
-          transactions.type.equalsValue(TransactionType.expense),
+          transactions.type.equalsValue(TransactionType.expense) &
+              transactions.isDeleted.not(),
           then: -transactions.amount,
         ),
-      ],
+      ];
+    } else {
+      cases = [
+        CaseWhen(
+          transactions.type.equalsValue(TransactionType.income) &
+              transactions.isDeleted.not() &
+              transactions.isArchived.not(),
+          then: transactions.amount,
+        ),
+        CaseWhen(
+          transactions.type.equalsValue(TransactionType.expense) &
+              transactions.isDeleted.not() &
+              transactions.isArchived.not(),
+          then: -transactions.amount,
+        ),
+      ];
+    }
+
+    final expression = CaseWhenExpression(
+      cases: cases,
       orElse: const Constant(0.0),
     );
     if (summed) {

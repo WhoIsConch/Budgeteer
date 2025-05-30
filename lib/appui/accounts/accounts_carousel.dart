@@ -79,21 +79,27 @@ class _AccountsCarouselState extends State<AccountsCarousel> {
   Widget _getTotalStreamCard() => StreamBuilder<double?>(
     stream: context.read<AppDatabase>().transactionDao.watchTotalAmount(),
     builder: (context, snapshot) {
-      if (snapshot.data == null) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return LinearProgressIndicator();
-        } else {
-          return Text('No transactions'); // Should never happen
-        }
+      // Just in case, if there were no transactions, watchTotalAmount would
+      // attempt to return null
+      var amount = snapshot.data ?? 0;
+
+      // Still check for hasData though because if the stream returns a null
+      // value, hasData would be true
+      if (!snapshot.hasData &&
+          snapshot.connectionState == ConnectionState.waiting) {
+        return Align(
+          alignment: Alignment.center,
+          child: CircularProgressIndicator(),
+        );
       }
 
-      final prefix = snapshot.data!.isNegative ? '-' : '';
+      final prefix = amount.isNegative ? '-' : '';
 
       return _getCardStack(
         CarouselCardPair(
           'Total balance',
-          '$prefix\$${formatAmount(snapshot.data!.abs(), exact: true)}',
-          isNegative: snapshot.data!.isNegative,
+          '$prefix\$${formatAmount(amount.abs(), exact: true)}',
+          isNegative: amount.isNegative,
         ),
       );
     },
@@ -104,18 +110,14 @@ class _AccountsCarouselState extends State<AccountsCarousel> {
     return StreamBuilder<List<AccountWithTotal>>(
       stream: context.read<AppDatabase>().accountDao.watchAccounts(),
       builder: (context, snapshot) {
-        if (snapshot.data == null || snapshot.data!.isEmpty) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return LinearProgressIndicator();
-          } else {
-            return _getTotalStreamCard();
-          }
-        }
+        // Don't check for the status of the snapshot since we always want to
+        // show the total anyway
+        var data = snapshot.data ?? [];
 
         // Include null so we know where to put the card for the total later
         List<CarouselCardPair?> items = [
           null,
-          ...snapshot.data!.map((a) {
+          ...data.map((a) {
             String formattedAmount = formatAmount(a.total.abs(), exact: true);
             String? prefix = a.total.isNegative ? '-' : '';
 

@@ -12,8 +12,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-enum PieChartType { category, account, goal }
-
 class PieChartSelectionData<T> {
   final T type;
   final int index;
@@ -42,17 +40,17 @@ class PieChartSelectionData<T> {
   );
 
   static const categoryType = PieChartSelectionData(
-    type: PieChartType.category,
+    type: ContainerType.category,
     index: 0,
     label: 'Category',
   );
   static const accountType = PieChartSelectionData(
-    type: PieChartType.account,
+    type: ContainerType.account,
     index: 1,
     label: 'Account',
   );
   static const goalType = PieChartSelectionData(
-    type: PieChartType.goal,
+    type: ContainerType.goal,
     index: 2,
     label: 'Goal',
   );
@@ -204,7 +202,7 @@ class _PieChartCardState extends State<PieChartCard> {
   // In this case, goals, categories, and accounts are containers
   PieChartSelectionData<TransactionType?> _selectedType =
       PieChartSelectionData.netType;
-  PieChartSelectionData<PieChartType> _selectedContainer =
+  PieChartSelectionData<ContainerType> _selectedContainer =
       PieChartSelectionData.categoryType;
 
   final chartCenterRadius = 60.0; // Don't let the text go beyond that radius
@@ -364,66 +362,111 @@ class _PieChartCardState extends State<PieChartCard> {
     final db = context.read<AppDatabase>();
     final bool net = _selectedType.type != null;
 
+    // TODO: Fix the way the total amount and container streams are joined...
+    // probably make this less repetitive
     switch (_selectedContainer.type) {
-      case PieChartType.account:
-        return db.accountDao.watchAccounts(
-          filters: provider.filters,
-          net: net,
-        ).map((
-          List<AccountWithTotal> accounts,
-        ) {
-          final List<PieChartObject> objects =
-              accounts
-                  .map(
-                    (account) => PieChartObject(
-                      name: account.account.name,
-                      color: account.account.color,
-                      amount: account.total,
-                    ),
-                  )
-                  .toList();
-          return [...objects, null];
-        });
-      case PieChartType.category:
-        return db.categoryDao.watchCategories(
-          filters: provider.filters,
-          net: net,
-          sumByResetIncrement: false,
-        ).map((
-          List<CategoryWithAmount> categories,
-        ) {
-          final List<PieChartObject> objects =
-              categories
-                  .map(
-                    (category) => PieChartObject(
-                      name: category.category.name,
-                      color: category.category.color,
-                      amount: category.amount ?? 0,
-                    ),
-                  )
-                  .toList();
+      case ContainerType.account:
+        return db.accountDao
+            .watchAccounts(filters: provider.filters, net: net)
+            .asyncMap((List<AccountWithTotal> accounts) async {
+              final noAccounts =
+                  await db.transactionDao
+                      .watchTotalAmount(
+                        filters: provider.filters,
+                        net: net,
+                        nullAccount: true,
+                      )
+                      .first;
 
-          return [...objects, null];
-        });
-      case PieChartType.goal:
-        return db.goalDao.watchGoals(
-          filters: provider.filters,
-          net: net
-        ).map((
-          List<GoalWithAchievedAmount> goals,
-        ) {
-          final List<PieChartObject> objects =
-              goals
-                  .map(
-                    (goal) => PieChartObject(
-                      name: goal.goal.name,
-                      color: goal.goal.color,
-                      amount: goal.achievedAmount,
-                    ),
-                  )
-                  .toList();
-          return [...objects, null];
-        });
+              final List<PieChartObject> objects =
+                  accounts
+                      .map(
+                        (account) => PieChartObject(
+                          name: account.account.name,
+                          color: account.account.color,
+                          amount: account.total,
+                        ),
+                      )
+                      .toList();
+              return [
+                ...objects,
+                PieChartObject(
+                  name: 'No account',
+                  color: Colors.grey,
+                  amount: noAccounts ?? 0,
+                ),
+              ];
+            });
+      case ContainerType.category:
+        return db.categoryDao
+            .watchCategories(
+              filters: provider.filters,
+              net: net,
+              sumByResetIncrement: false,
+            )
+            .asyncMap((List<CategoryWithAmount> categories) async {
+              // Despite not being watched, the number seems to update anyway
+              final uncatAmount =
+                  await db.transactionDao
+                      .watchTotalAmount(
+                        filters: provider.filters,
+                        net: net,
+                        nullCategory: true,
+                      )
+                      .first;
+
+              final List<PieChartObject> objects =
+                  categories
+                      .map(
+                        (category) => PieChartObject(
+                          name: category.category.name,
+                          color: category.category.color,
+                          amount: category.amount ?? 0,
+                        ),
+                      )
+                      .toList();
+
+              return [
+                ...objects,
+                PieChartObject(
+                  name: 'Uncategorized',
+                  color: Colors.grey,
+                  amount: uncatAmount ?? 0,
+                ),
+              ];
+            });
+      case ContainerType.goal:
+        return db.goalDao
+            .watchGoals(filters: provider.filters, net: net)
+            .asyncMap((List<GoalWithAchievedAmount> goals) async {
+              final noGoals =
+                  await db.transactionDao
+                      .watchTotalAmount(
+                        filters: provider.filters,
+                        net: net,
+                        nullGoal: true,
+                      )
+                      .first;
+
+              final List<PieChartObject> objects =
+                  goals
+                      .map(
+                        (goal) => PieChartObject(
+                          name: goal.goal.name,
+                          color: goal.goal.color,
+                          amount: goal.achievedAmount,
+                        ),
+                      )
+                      .toList();
+              return [
+                ...objects,
+                PieChartObject(
+                  name: 'No goal',
+                  color: Colors.grey,
+                  amount: noGoals ?? 0,
+                ),
+              ];
+            });
     }
   }
 
@@ -431,7 +474,7 @@ class _PieChartCardState extends State<PieChartCard> {
   Widget build(BuildContext context) {
     return Card(
       margin: EdgeInsets.zero,
-      color: getAdjustedColor(context, Theme.of(context).colorScheme.surface),
+      color: Theme.of(context).colorScheme.surfaceContainer,
       child: SizedBox(
         height:
             (48 * 6) +
@@ -530,12 +573,14 @@ class _PieChartCardState extends State<PieChartCard> {
                         if (newType.type == null) {
                           provider.removeFilter<TransactionType>();
                         } else {
-                          provider.updateFilter(TransactionFilter<TransactionType>(newType.type!));
+                          provider.updateFilter(
+                            TransactionFilter<TransactionType>(newType.type!),
+                          );
                         }
-                        },
+                      },
                     ),
                     const Divider(),
-                    ..._buildVerticalTabs<PieChartType>(
+                    ..._buildVerticalTabs<ContainerType>(
                       PieChartSelectionData.containerList,
                       _selectedContainer,
                       (newContainer) =>

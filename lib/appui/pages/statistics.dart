@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:budget/appui/components/pie_chart.dart';
 import 'package:budget/appui/components/status.dart';
+import 'package:budget/appui/components/top_containers.dart';
 import 'package:budget/models/data.dart';
 import 'package:budget/models/filters.dart';
 import 'package:budget/providers/transaction_provider.dart';
@@ -10,7 +11,7 @@ import 'package:budget/utils/enums.dart';
 import 'package:budget/utils/tools.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:collection/collection.dart';
-import 'package:dynamic_color/dynamic_color.dart';
+import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -26,7 +27,10 @@ class StatisticsPage extends StatefulWidget {
 class _StatisticsPageState extends State<StatisticsPage> {
   final TextEditingController _rangeController = TextEditingController();
 
-  void pickDateRange(BuildContext context, {DateTimeRange? initialRange}) async {
+  void pickDateRange(
+    BuildContext context, {
+    DateTimeRange? initialRange,
+  }) async {
     final provider = context.read<TransactionProvider>();
 
     DateTimeRange? newRange = await showDateRangePicker(
@@ -38,14 +42,14 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
     if (newRange == null) return;
 
-    provider.updateFilter<DateTimeRange>(TransactionFilter<DateTimeRange>(newRange));
+    provider.updateFilter<DateTimeRange>(
+      TransactionFilter<DateTimeRange>(newRange),
+    );
   }
 
   DropdownMenu getDateRangeDropdown(BuildContext context) {
-    final provider = context.watch<TransactionProvider>();
-
-    final currentDateRange = provider.getFilterValue<DateTimeRange>();
-
+    final currentDateRange =
+        context.read<TransactionProvider>().getFilterValue<DateTimeRange>();
 
     List<DropdownMenuEntry<DateTimeRange?>> entries =
         RelativeDateRange.values
@@ -79,10 +83,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
         if (range == null) {
           pickDateRange(context, initialRange: currentDateRange);
         } else {
-          setState(
-            () => context.read<TransactionProvider>().updateFilter(
-              TransactionFilter<DateTimeRange>(range),
-            ),
+          context.read<TransactionProvider>().updateFilter(
+            TransactionFilter<DateTimeRange>(range),
           );
         }
       },
@@ -96,34 +98,46 @@ class _StatisticsPageState extends State<StatisticsPage> {
       create: (context) {
         final filterProvider = TransactionProvider();
 
-        filterProvider.updateFilter(TransactionFilter<DateTimeRange>(RelativeDateRange.today.getRange()));
+        filterProvider.updateFilter(
+          TransactionFilter<DateTimeRange>(RelativeDateRange.today.getRange()),
+        );
 
-        return filterProvider;
+        return filterProvider; // Ensure the buttons update
       },
-      builder: (context, _) => SingleChildScrollView(
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Expanded(child: getDateRangeDropdown(context)),
-                const SizedBox(width: 4),
-                IconButton(
-                  iconSize: 32,
-                  icon: const Icon(Icons.date_range),
-                  onPressed:
-                      () => pickDateRange(context, initialRange: context.read<TransactionProvider>().getFilterValue<DateTimeRange>()),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8.0), // Bottom padding
-            const PieChartCard(),
-            const SizedBox(height: 8.0),
-            // const LineChartCard(),
-            const SpendingBarChart(),
-            const SizedBox(height: 60), // To give the FAB somewhere to go
-          ],
-        ),
-      ),
+      builder: (context, _) {
+        DateTimeRange? initialRange =
+            context
+                .watch<TransactionProvider>()
+                .getFilterValue<DateTimeRange>();
+
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(child: getDateRangeDropdown(context)),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    iconSize: 32,
+                    icon: const Icon(Icons.date_range),
+                    onPressed:
+                        () =>
+                            pickDateRange(context, initialRange: initialRange),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8.0), // Bottom padding
+              const PieChartCard(),
+              const SizedBox(height: 8.0),
+              // const LineChartCard(),
+              const SpendingBarChart(),
+              const SizedBox(height: 8.0),
+              const TopContainers(),
+              const SizedBox(height: 60), // To give the FAB somewhere to go
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -285,7 +299,7 @@ class _LineChartCardState extends State<LineChartCard> {
       aspectRatio: 3 / 2,
       child: Card(
         margin: EdgeInsets.zero,
-        color: getAdjustedColor(context, Theme.of(context).colorScheme.surface),
+        color: Theme.of(context).colorScheme.surfaceContainer,
         child: Padding(
           padding: EdgeInsets.all(16.0),
           child: FutureBuilder(
@@ -486,7 +500,7 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
 
     return Card(
       margin: EdgeInsets.zero,
-      color: getAdjustedColor(context, Theme.of(context).colorScheme.surface),
+      color: Theme.of(context).colorScheme.surfaceContainer,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

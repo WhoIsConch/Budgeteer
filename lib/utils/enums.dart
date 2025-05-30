@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 
 enum ObjectManageMode { add, edit } // Normal enum
 
+enum ContainerType { category, account, goal }
+
+enum AggregationLevel { daily, weekly, monthly, yearly }
+
 // Enums with values, in case I need to store them in a database
 enum TransactionType {
   expense(0),
@@ -14,8 +18,6 @@ enum TransactionType {
   factory TransactionType.fromValue(int value) =>
       values.firstWhere((e) => e.value == value);
 }
-
-enum AggregationLevel { daily, weekly, monthly, yearly }
 
 enum RelativeDateRange {
   today('Today'),

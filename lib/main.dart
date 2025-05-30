@@ -5,7 +5,7 @@ import 'package:budget/appui/components/nav_manager.dart';
 import 'package:budget/services/powersync.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:dynamic_color/dynamic_color.dart';
+import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/services/settings.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -97,6 +97,7 @@ class _BudgetAppState extends State<BudgetApp> with WidgetsBindingObserver {
                 lightDynamic?.harmonized() ?? ThemeData.light().colorScheme,
           ),
           darkTheme: ThemeData(
+            useMaterial3: true,
             colorScheme:
                 darkDynamic?.harmonized() ?? ThemeData.dark().colorScheme,
           ),
