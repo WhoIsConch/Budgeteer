@@ -49,6 +49,17 @@ class _TransactionsListState extends State<TransactionsList> {
   ListTile tileFromTransaction(Transaction transaction, ThemeData theme) {
     Widget leadingWidget;
 
+    final isInFuture = transaction.date.isAfter(DateTime.now());
+    final containerColor =
+        isInFuture
+            ? Theme.of(context).colorScheme.surfaceContainerHigh
+            : Theme.of(context).colorScheme.secondaryContainer;
+
+    final onColor =
+        isInFuture
+            ? Theme.of(context).colorScheme.onSurface
+            : Theme.of(context).colorScheme.onSecondaryContainer;
+
     if (isMultiselect) {
       leadingWidget = SizedBox(
         height: 48,
@@ -73,14 +84,8 @@ class _TransactionsListState extends State<TransactionsList> {
       leadingWidget = IconButton(
         icon:
             (transaction.type == TransactionType.expense)
-                ? Icon(
-                  Icons.remove_circle,
-                  color: theme.colorScheme.onSecondaryContainer,
-                )
-                : Icon(
-                  Icons.add_circle,
-                  color: theme.colorScheme.onSecondaryContainer,
-                ),
+                ? Icon(Icons.remove_circle, color: onColor)
+                : Icon(Icons.add_circle, color: onColor),
         onPressed: () {
           if (!widget.showActionButton) return;
 
@@ -90,6 +95,14 @@ class _TransactionsListState extends State<TransactionsList> {
           });
         },
       );
+    }
+
+    String subtitle;
+
+    if (isInFuture) {
+      subtitle = '${transaction.formatDate()} (Future)';
+    } else {
+      subtitle = transaction.formatDate();
     }
 
     return ListTile(
@@ -108,7 +121,7 @@ class _TransactionsListState extends State<TransactionsList> {
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
-      subtitle: Text(transaction.formatDate()),
+      subtitle: Text(subtitle),
       onTap: () async {
         var hydratedTransaction = await context
             .read<AppDatabase>()
@@ -125,18 +138,14 @@ class _TransactionsListState extends State<TransactionsList> {
                     ViewTransaction(transactionData: hydratedTransaction),
           ),
         );
-        
       },
       onLongPress: () => showOptionsDialog(context, transaction),
       trailing: IconButton(
-        icon: Icon(
-          Icons.more_vert,
-          color: theme.colorScheme.onSecondaryContainer,
-        ),
+        icon: Icon(Icons.more_vert, color: onColor),
         onPressed: () => showOptionsDialog(context, transaction),
       ),
-      tileColor: theme.colorScheme.secondaryContainer,
-      textColor: theme.colorScheme.onSecondaryContainer,
+      tileColor: containerColor,
+      textColor: onColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
     );
   }
