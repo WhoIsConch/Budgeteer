@@ -278,6 +278,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
       goals,
       includeArchived: includeFinished,
       net: net,
+      showGoals: true,
     );
 
     if (filters != null) {
@@ -320,7 +321,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
           t.isArchived.equals(true).not(),
     );
 
-    final signedSumQuery = db.getSignedTransactionSumQuery();
+    final signedSumQuery = db.getSignedTransactionSumQuery(showGoals: true);
 
     return query
         .addColumns([signedSumQuery])
@@ -359,6 +360,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     final queryWithSum = db.getCombinedQuery(
       goals,
       includeArchived: includeFinished,
+      showGoals: true,
     );
 
     final filteredQuery = queryWithSum.query..where(goals.id.equals(id));
@@ -380,6 +382,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     final queryWithSum = db.getCombinedQuery(
       goals,
       includeArchived: includeFinished,
+      showGoals: true,
     );
 
     final filteredQuery = queryWithSum.query..where(goals.id.equals(id));
@@ -866,6 +869,7 @@ class AppDatabase extends _$AppDatabase {
     TableInfo<T, dynamic> relatedTable, {
     bool includeArchived = false,
     bool net = true,
+    bool showGoals = false,
   }) {
     var query = select(
       relatedTable,
@@ -880,7 +884,7 @@ class AppDatabase extends _$AppDatabase {
     Expression<double> sumExpression;
 
     if (net) {
-      sumExpression = getSignedTransactionSumQuery();
+      sumExpression = getSignedTransactionSumQuery(showGoals: showGoals);
     } else {
       sumExpression = transactions.amount.sum();
     }
@@ -909,22 +913,30 @@ class AppDatabase extends _$AppDatabase {
   Expression<double> getSignedTransactionSumQuery({
     bool includeArchived = false,
     bool summed = true,
+    bool showGoals = false,
   }) {
     // Mainly uses "summed" for backwards compatibility with code I wrote less
     // than an hour ago
+
+    // Don't show transactions with goals in totals, since the money should be
+    // 'put away' into a goal.
     List<CaseWhen<bool, double>> cases;
-    final dateExpr = transactions.date.isSmallerOrEqualValue(formatter.format(DateTime.now()));
+    final dateExpr = transactions.date.isSmallerOrEqualValue(
+      formatter.format(DateTime.now()),
+    );
 
     if (includeArchived) {
       cases = [
         CaseWhen(
           transactions.type.equalsValue(TransactionType.income) &
-              transactions.isDeleted.not() & dateExpr,
+              transactions.isDeleted.not() &
+              dateExpr,
           then: transactions.amount,
         ),
         CaseWhen(
           transactions.type.equalsValue(TransactionType.expense) &
-              transactions.isDeleted.not() & dateExpr,
+              transactions.isDeleted.not() &
+              dateExpr,
           then: -transactions.amount,
         ),
       ];
@@ -933,16 +945,26 @@ class AppDatabase extends _$AppDatabase {
         CaseWhen(
           transactions.type.equalsValue(TransactionType.income) &
               transactions.isDeleted.not() &
-              transactions.isArchived.not() & dateExpr,
+              transactions.isArchived.not() &
+              dateExpr,
           then: transactions.amount,
         ),
         CaseWhen(
           transactions.type.equalsValue(TransactionType.expense) &
               transactions.isDeleted.not() &
-              transactions.isArchived.not() & dateExpr,
+              transactions.isArchived.not() &
+              dateExpr,
           then: -transactions.amount,
         ),
       ];
+    }
+
+    // Make sure this case takes priority
+    if (!showGoals) {
+      cases.insert(
+        0,
+        CaseWhen(transactions.goalId.isNotNull(), then: const Constant(0)),
+      );
     }
 
     final expression = CaseWhenExpression(
