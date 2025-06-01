@@ -542,7 +542,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
             Expanded(
               child: Padding(
                 padding: EdgeInsets.all(8.0),
-                child: TransactionsList(
+                child: ObjectsList<TransactionTileableAdapter>(
                   showBackground: false,
                   showActionButton: true,
                   filters: provider.filters,

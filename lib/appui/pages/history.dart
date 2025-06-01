@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:budget/models/database_extensions.dart';
 import 'package:budget/models/filters.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/appui/transactions/transactions_list.dart';
@@ -66,11 +67,7 @@ class _HistoryState extends State<History> {
 
     _transactionsSubscription = _db.transactionDao
         .watchTransactionsPage(
-          filters: [
-            DateRangeFilter(
-              DateTimeRange(start: start, end: end),
-            ),
-          ],
+          filters: [DateRangeFilter(DateTimeRange(start: start, end: end))],
         )
         .listen((transactionsInRange) {
           final newEvents = LinkedHashMap<DateTime, List<Transaction>>(
@@ -193,7 +190,17 @@ class _HistoryState extends State<History> {
           child: ValueListenableBuilder<List<Transaction>>(
             valueListenable: _selectedEvents,
             builder:
-                (context, value, _) => TransactionsList(transactions: value),
+                (context, value, _) => ObjectsList(
+                  objects:
+                      value
+                          .map(
+                            (t) => TransactionTileableAdapter(
+                              t,
+                              onMultiselect: (_) {},
+                            ),
+                          )
+                          .toList(),
+                ),
           ),
         ),
       ],

@@ -1,16 +1,27 @@
 import 'dart:math';
 
+import 'package:budget/appui/transactions/view_transaction.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/enums.dart';
+import 'package:budget/utils/ui.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:drift/drift.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 final formatter = DateFormat('yyyy-MM-dd');
 
 int genColor() =>
     Color((Random().nextDouble() * 0xFFFFFF).toInt()).withAlpha(255).toARGB32();
+
+abstract class Tileable {
+  String get id;
+
+  void Function(bool?) get onMultiselect;
+
+  Widget getTile(BuildContext context, {bool isMultiselect, bool isSelected});
+}
 
 class GoalWithAchievedAmount {
   final Goal goal;
@@ -219,6 +230,108 @@ extension CategoriesExtension on Category {
 extension TransactionExtensions on Transaction {
   String formatDate() {
     return DateFormat('MM/dd/yyyy').format(date);
+  }
+}
+
+class TransactionTileableAdapter implements Tileable {
+  final Transaction _transaction;
+
+  @override
+  final Function(bool?) onMultiselect;
+
+  @override
+  String get id => _transaction.id;
+
+  TransactionTileableAdapter(this._transaction, {required this.onMultiselect});
+
+  @override
+  Widget getTile(
+    BuildContext context, {
+    bool isMultiselect = false,
+    bool isSelected = false,
+  }) {
+    final theme = Theme.of(context);
+
+    Widget leadingWidget;
+
+    final isInFuture = _transaction.date.isAfter(DateTime.now());
+    final containerColor =
+        isInFuture
+            ? theme.colorScheme.surfaceContainerHigh
+            : theme.colorScheme.secondaryContainer;
+
+    final onColor =
+        isInFuture
+            ? theme.colorScheme.onSurface
+            : theme.colorScheme.onSecondaryContainer;
+
+    if (isMultiselect) {
+      leadingWidget = SizedBox(
+        height: 48,
+        width: 48, // TODO: Make this work
+        child: Checkbox(value: isSelected, onChanged: (_) {}),
+      );
+    } else {
+      leadingWidget = IconButton(
+        icon:
+            (_transaction.type == TransactionType.expense)
+                ? Icon(Icons.remove_circle, color: onColor)
+                : Icon(Icons.add_circle, color: onColor),
+        onPressed: () => onMultiselect(true),
+      );
+    }
+
+    String subtitle;
+
+    if (isInFuture) {
+      subtitle = '${_transaction.formatDate()} (Future)';
+    } else {
+      subtitle = _transaction.formatDate();
+    }
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
+      horizontalTitleGap: 4,
+      leading: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 125),
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return ScaleTransition(scale: animation, child: child);
+        },
+        child: leadingWidget,
+      ),
+      title: Text(
+        // Formats as "$500: Title of the Budget"
+        "${"\$${formatAmount(_transaction.amount)}"}: \"${_transaction.title}\"",
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(subtitle),
+      onTap: () async {
+        var hydratedTransaction = await context
+            .read<AppDatabase>()
+            .transactionDao
+            .hydrateTransaction(_transaction);
+
+        if (!context.mounted) return;
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) =>
+                    ViewTransaction(transactionData: hydratedTransaction),
+          ),
+        );
+      },
+      onLongPress: () => showOptionsDialog(context, _transaction),
+      trailing: IconButton(
+        icon: Icon(Icons.more_vert, color: onColor),
+        onPressed: () => showOptionsDialog(context, _transaction),
+      ),
+      tileColor: containerColor,
+      textColor: onColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+    );
   }
 }
 

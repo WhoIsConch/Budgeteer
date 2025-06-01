@@ -138,7 +138,7 @@ class _GoalViewerState extends State<GoalViewer> {
             properties: _getProperties(context, goalPair),
           ),
           body: Expanded(
-            child: TransactionsList(
+            child: ObjectsList<TransactionTileableAdapter>(
               filters: [
                 GoalFilter([goalPair]),
               ],

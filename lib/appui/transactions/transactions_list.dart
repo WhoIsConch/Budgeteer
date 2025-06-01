@@ -1,20 +1,16 @@
 import 'package:budget/appui/components/status.dart';
-import 'package:budget/appui/transactions/view_transaction.dart';
 import 'package:budget/models/database_extensions.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/models/filters.dart';
 import 'package:budget/providers/transaction_provider.dart';
-import 'package:budget/utils/validators.dart';
-import 'package:budget/utils/ui.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/appui/transactions/manage_transaction.dart';
-import 'package:budget/utils/enums.dart';
 
-class TransactionsList extends StatefulWidget {
-  const TransactionsList({
+class ObjectsList<T extends Tileable> extends StatefulWidget {
+  const ObjectsList({
     super.key,
-    this.transactions,
+    this.objects,
     this.filters,
     this.sort,
     this.showActionButton = false,
@@ -24,19 +20,19 @@ class TransactionsList extends StatefulWidget {
   final bool showActionButton;
   final bool showBackground;
   final List<Filter>? filters;
-  final List<Transaction>? transactions;
+  final List<T>? objects;
   final Sort? sort;
 
   @override
-  State<TransactionsList> createState() => _TransactionsListState();
+  State<ObjectsList> createState() => _ObjectsListState<T>();
 }
 
-class _TransactionsListState extends State<TransactionsList> {
+class _ObjectsListState<T extends Tileable> extends State<ObjectsList<T>> {
   bool isMultiselect = false;
-  List<Transaction> selectedTransactions = [];
+  List<T> selectedObjects = [];
   late final DeletionManager deletionManager;
 
-  List<Transaction>? _lastSuccessfulData;
+  List<T>? _lastSuccessfulData;
 
   // Just in case I need this in the future
   Widget get bottomLoader => const Center(
@@ -46,141 +42,36 @@ class _TransactionsListState extends State<TransactionsList> {
     ),
   );
 
-  ListTile tileFromTransaction(Transaction transaction, ThemeData theme) {
-    Widget leadingWidget;
-
-    final isInFuture = transaction.date.isAfter(DateTime.now());
-    final containerColor =
-        isInFuture
-            ? Theme.of(context).colorScheme.surfaceContainerHigh
-            : Theme.of(context).colorScheme.secondaryContainer;
-
-    final onColor =
-        isInFuture
-            ? Theme.of(context).colorScheme.onSurface
-            : Theme.of(context).colorScheme.onSecondaryContainer;
-
-    if (isMultiselect) {
-      leadingWidget = SizedBox(
-        height: 48,
-        width: 48,
-        child: Checkbox(
-          value: selectedTransactions.contains(transaction),
-          onChanged:
-              (value) => setState(() {
-                if (value != null && value) {
-                  selectedTransactions.add(transaction);
-                } else {
-                  selectedTransactions.remove(transaction);
-
-                  if (selectedTransactions.isEmpty) {
-                    isMultiselect = false;
-                  }
-                }
-              }),
-        ),
-      );
-    } else {
-      leadingWidget = IconButton(
-        icon:
-            (transaction.type == TransactionType.expense)
-                ? Icon(Icons.remove_circle, color: onColor)
-                : Icon(Icons.add_circle, color: onColor),
-        onPressed: () {
-          if (!widget.showActionButton) return;
-
-          setState(() {
-            isMultiselect = true;
-            selectedTransactions.add(transaction);
-          });
-        },
-      );
-    }
-
-    String subtitle;
-
-    if (isInFuture) {
-      subtitle = '${transaction.formatDate()} (Future)';
-    } else {
-      subtitle = transaction.formatDate();
-    }
-
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
-      horizontalTitleGap: 4,
-      leading: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 125),
-        transitionBuilder: (Widget child, Animation<double> animation) {
-          return ScaleTransition(scale: animation, child: child);
-        },
-        child: leadingWidget,
-      ),
-      title: Text(
-        // Formats as "$500: Title of the Budget"
-        "${"\$${formatAmount(transaction.amount)}"}: \"${transaction.title}\"",
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Text(subtitle),
-      onTap: () async {
-        var hydratedTransaction = await context
-            .read<AppDatabase>()
-            .transactionDao
-            .hydrateTransaction(transaction);
-
-        if (!mounted) return;
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (context) =>
-                    ViewTransaction(transactionData: hydratedTransaction),
-          ),
-        );
-      },
-      onLongPress: () => showOptionsDialog(context, transaction),
-      trailing: IconButton(
-        icon: Icon(Icons.more_vert, color: onColor),
-        onPressed: () => showOptionsDialog(context, transaction),
-      ),
-      tileColor: containerColor,
-      textColor: onColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-    );
-  }
-
-  Widget _getListview(List<Transaction> transactions) => ListView.separated(
+  Widget _getListview(List<T> objects) => ListView.separated(
     separatorBuilder: (_, _) => SizedBox(height: 8.0),
-    itemCount: transactions.length,
+    itemCount: objects.length,
     itemBuilder:
         (context, index) => Card(
           margin: EdgeInsets.zero,
-          child: tileFromTransaction(transactions[index], Theme.of(context)),
+          child: objects[index].getTile(
+            context,
+            isMultiselect: isMultiselect,
+            isSelected: selectedObjects.contains(objects[index]),
+          ),
         ),
   );
 
   Widget getList() {
     // Return a stack with a listview in it so we can put that floating
     // action button at the bottom right
-    final db = context.read<AppDatabase>();
     List<Widget> stackChildren;
 
-    if (widget.transactions == null) {
+    if (widget.objects == null) {
       // TODO: Not sure if Streams are lazy by default, but if they aren't
       // or this setup isn't, we should make it lazy.
       stackChildren = [
-        StreamBuilder(
+        StreamBuilder<List<T>>(
           // key: ValueKey(
           //     'tx_stream_${widget.filters.hashCode}_${widget.sort.hashCode}'),
           initialData: const [],
-          stream: db.transactionDao.watchTransactionsPage(
-            filters: widget.filters,
-            sort: widget.sort,
-            showArchived: true,
-          ),
+          stream: _getStream(),
           builder: (context, snapshot) {
-            List<Transaction>? transactionsToDisplay;
+            List<T>? objectsToDisplay;
             bool showLoadingIndicator = false;
 
             if (snapshot.hasError) {
@@ -193,7 +84,7 @@ class _TransactionsListState extends State<TransactionsList> {
               case ConnectionState.none:
               case ConnectionState.waiting:
                 if (_lastSuccessfulData != null) {
-                  transactionsToDisplay = _lastSuccessfulData;
+                  objectsToDisplay = _lastSuccessfulData;
                   showLoadingIndicator = true;
                 } else {
                   return const Center(child: CircularProgressIndicator());
@@ -201,14 +92,14 @@ class _TransactionsListState extends State<TransactionsList> {
                 break;
               case ConnectionState.active:
               case ConnectionState.done:
-                _lastSuccessfulData = snapshot.data as List<Transaction>? ?? [];
-                transactionsToDisplay = _lastSuccessfulData;
+                _lastSuccessfulData = snapshot.data ?? [];
+                objectsToDisplay = _lastSuccessfulData;
 
                 showLoadingIndicator = false;
                 break;
             }
 
-            final currentList = transactionsToDisplay ?? [];
+            final currentList = objectsToDisplay ?? [];
 
             Widget listContent;
             if (currentList.isEmpty && !showLoadingIndicator) {
@@ -222,10 +113,10 @@ class _TransactionsListState extends State<TransactionsList> {
         ),
       ];
     } else {
-      if (widget.transactions!.isEmpty) {
+      if (widget.objects!.isEmpty) {
         stackChildren = [ErrorInset.noTransactions];
       } else {
-        stackChildren = [_getListview(widget.transactions!)];
+        stackChildren = [_getListview(widget.objects!)];
       }
     }
 
@@ -236,16 +127,7 @@ class _TransactionsListState extends State<TransactionsList> {
         heroTag: 'list_fab',
         backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
         foregroundColor: Theme.of(context).colorScheme.onSurface,
-        onPressed: () {
-          deletionManager.stageObjectsForDeletion<Transaction>(
-            selectedTransactions.map((t) => t.id).toList(),
-          );
-
-          setState(() {
-            selectedTransactions.clear();
-            isMultiselect = false;
-          });
-        },
+        onPressed: _onDelete,
         child: const Icon(size: 28, Icons.delete),
       );
     } else if (widget.showActionButton) {
@@ -253,13 +135,7 @@ class _TransactionsListState extends State<TransactionsList> {
         heroTag: 'list_fab',
         backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
         foregroundColor: Theme.of(context).colorScheme.onSurface,
-        onPressed:
-            () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ManageTransactionPage(),
-              ),
-            ),
+        onPressed: _onCreate,
         child: const Icon(size: 28, Icons.add),
       );
     } else {
@@ -276,6 +152,79 @@ class _TransactionsListState extends State<TransactionsList> {
     }
 
     return Stack(children: stackChildren);
+  }
+
+  void _onDelete() {
+    final deletionManager = DeletionManager(context);
+
+    switch (T) {
+      case TransactionTileableAdapter:
+        deletionManager.stageObjectsForDeletion<Transaction>(
+          selectedObjects.map((t) => t.id).toList(),
+        );
+
+        setState(() {
+          selectedObjects.clear();
+          isMultiselect = false;
+        });
+        break;
+      // case GoalTileableAdapter:
+      //
+    }
+  }
+
+  void _onCreate() {
+    switch (T) {
+      case TransactionTileableAdapter:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ManageTransactionPage(),
+          ),
+        );
+        break;
+    }
+  }
+
+  Stream<List<T>>? _getStream() {
+    final db = context.read<AppDatabase>();
+
+    switch (T) {
+      case TransactionTileableAdapter:
+        final Stream<List<Transaction>> sourceStream = db.transactionDao
+            .watchTransactionsPage(
+              filters: widget.filters,
+              sort: widget.sort,
+              showArchived: true,
+            );
+        final Stream<List<TransactionTileableAdapter>> mappedStream =
+            sourceStream.map(
+              (e) =>
+                  e
+                      .map(
+                        (t) => TransactionTileableAdapter(
+                          t,
+                          onMultiselect: (_) {}, // TODO: Make this work
+                          // onMultiselect: (value) => setState(() {
+                          //   if (value != null && value) {
+                          //     selectedObjects.add();
+                          //   } else {
+                          //     selectedObjects.remove(transaction);
+
+                          //     if (selectedObjects.isEmpty) {
+                          //       isMultiselect = false;
+                          //     }
+                          //   }
+                          // }),
+                        ),
+                      )
+                      .toList(),
+            );
+
+        return mappedStream as Stream<List<T>>;
+    }
+
+    return null;
   }
 
   @override
