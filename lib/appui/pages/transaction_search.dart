@@ -1,5 +1,5 @@
 import 'package:budget/models/database_extensions.dart';
-import 'package:budget/appui/transactions/transactions_list.dart';
+import 'package:budget/appui/components/objects_list.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/enums.dart';
 import 'package:budget/models/filters.dart';

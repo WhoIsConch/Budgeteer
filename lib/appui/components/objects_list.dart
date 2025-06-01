@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/appui/transactions/manage_transaction.dart';
 
-class ObjectsList<T extends Tileable> extends StatefulWidget {
+class ObjectsList<T extends Tileable<T>> extends StatefulWidget {
   const ObjectsList({
     super.key,
     this.objects,
@@ -27,7 +27,7 @@ class ObjectsList<T extends Tileable> extends StatefulWidget {
   State<ObjectsList> createState() => _ObjectsListState<T>();
 }
 
-class _ObjectsListState<T extends Tileable> extends State<ObjectsList<T>> {
+class _ObjectsListState<T extends Tileable<T>> extends State<ObjectsList<T>> {
   bool isMultiselect = false;
   List<T> selectedObjects = [];
   late final DeletionManager deletionManager;
@@ -204,18 +204,19 @@ class _ObjectsListState<T extends Tileable> extends State<ObjectsList<T>> {
                       .map(
                         (t) => TransactionTileableAdapter(
                           t,
-                          onMultiselect: (_) {}, // TODO: Make this work
-                          // onMultiselect: (value) => setState(() {
-                          //   if (value != null && value) {
-                          //     selectedObjects.add();
-                          //   } else {
-                          //     selectedObjects.remove(transaction);
+                          onMultiselect:
+                              (value, object) => setState(() {
+                                if (value != null && value) {
+                                  isMultiselect = true;
+                                  selectedObjects.add(object as T);
+                                } else {
+                                  selectedObjects.remove(object);
 
-                          //     if (selectedObjects.isEmpty) {
-                          //       isMultiselect = false;
-                          //     }
-                          //   }
-                          // }),
+                                  if (selectedObjects.isEmpty) {
+                                    isMultiselect = false;
+                                  }
+                                }
+                              }),
                         ),
                       )
                       .toList(),

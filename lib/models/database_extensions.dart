@@ -15,10 +15,12 @@ final formatter = DateFormat('yyyy-MM-dd');
 int genColor() =>
     Color((Random().nextDouble() * 0xFFFFFF).toInt()).withAlpha(255).toARGB32();
 
-abstract class Tileable {
+abstract class Tileable<T extends Tileable<T>> {
   String get id;
 
-  void Function(bool?) get onMultiselect;
+  final void Function(bool? isSelected, T adapterInstance) onMultiselect;
+
+  Tileable({required this.onMultiselect});
 
   Widget getTile(BuildContext context, {bool isMultiselect, bool isSelected});
 }
@@ -233,16 +235,13 @@ extension TransactionExtensions on Transaction {
   }
 }
 
-class TransactionTileableAdapter implements Tileable {
+class TransactionTileableAdapter extends Tileable<TransactionTileableAdapter> {
   final Transaction _transaction;
-
-  @override
-  final Function(bool?) onMultiselect;
 
   @override
   String get id => _transaction.id;
 
-  TransactionTileableAdapter(this._transaction, {required this.onMultiselect});
+  TransactionTileableAdapter(this._transaction, {required super.onMultiselect});
 
   @override
   Widget getTile(
@@ -268,8 +267,11 @@ class TransactionTileableAdapter implements Tileable {
     if (isMultiselect) {
       leadingWidget = SizedBox(
         height: 48,
-        width: 48, // TODO: Make this work
-        child: Checkbox(value: isSelected, onChanged: (_) {}),
+        width: 48,
+        child: Checkbox(
+          value: isSelected,
+          onChanged: (value) => onMultiselect(value, this),
+        ),
       );
     } else {
       leadingWidget = IconButton(
@@ -277,7 +279,7 @@ class TransactionTileableAdapter implements Tileable {
             (_transaction.type == TransactionType.expense)
                 ? Icon(Icons.remove_circle, color: onColor)
                 : Icon(Icons.add_circle, color: onColor),
-        onPressed: () => onMultiselect(true),
+        onPressed: () => onMultiselect(true, this),
       );
     }
 
@@ -333,6 +335,15 @@ class TransactionTileableAdapter implements Tileable {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is TransactionTileableAdapter && id == other.id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 class ColorConverter extends TypeConverter<Color, int> {

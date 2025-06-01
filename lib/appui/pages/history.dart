@@ -4,7 +4,7 @@ import 'dart:collection';
 import 'package:budget/models/database_extensions.dart';
 import 'package:budget/models/filters.dart';
 import 'package:budget/services/app_database.dart';
-import 'package:budget/appui/transactions/transactions_list.dart';
+import 'package:budget/appui/components/objects_list.dart';
 import 'package:budget/appui/pages/transaction_search.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -196,7 +196,7 @@ class _HistoryState extends State<History> {
                           .map(
                             (t) => TransactionTileableAdapter(
                               t,
-                              onMultiselect: (_) {},
+                              onMultiselect: (_, _) {},
                             ),
                           )
                           .toList(),
