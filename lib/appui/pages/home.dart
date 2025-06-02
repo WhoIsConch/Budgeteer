@@ -14,6 +14,7 @@ import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -25,67 +26,96 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late AppDatabase db;
 
+  final GlobalKey _tourAccounts = GlobalKey();
+  final GlobalKey _tourRecents = GlobalKey();
+
   @override
   Widget build(BuildContext context) {
     db = context.watch<AppDatabase>();
 
     return Scaffold(
-      body: SingleChildScrollView(
-        clipBehavior: Clip.none,
-        // The main content
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const WelcomeHeader(),
-            AccountsCarousel(),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 0),
-              child: Row(
+      body: ShowCaseWidget(
+        builder:
+            (context) => SingleChildScrollView(
+              clipBehavior: Clip.none,
+              // The main content
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'Recent activity',
-                    style: Theme.of(context).textTheme.headlineMedium!.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
+                  const WelcomeHeader(),
+                  Showcase(
+                    key: _tourAccounts,
+                    title: 'Accounts',
+                    description:
+                        'Shows all of your current account balances, as well as your net balance across all accounts.',
+                    child: AccountsCarousel(),
                   ),
-                  const Spacer(),
-                  TextButton(
-                    style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                    onPressed:
-                        () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const TransactionSearchPage(),
-                          ),
-                        ),
-                    child: Row(
+                  Showcase(
+                    key: _tourRecents,
+
+                    description:
+                        'Displays your transactions from the last seven days',
+                    child: Column(
                       children: [
-                        Text(
-                          'View all',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyLarge!.copyWith(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withAlpha(200),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 0),
+                          child: Row(
+                            children: [
+                              Text(
+                                'Recent activity',
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineMedium!.copyWith(
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                              const Spacer(),
+                              TextButton(
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                ),
+                                onPressed:
+                                    () => Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder:
+                                            (_) =>
+                                                const TransactionSearchPage(),
+                                      ),
+                                    ),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      'View all',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodyLarge!.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface.withAlpha(200),
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.chevron_right,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface.withAlpha(200),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        Icon(
-                          Icons.chevron_right,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withAlpha(200),
-                        ),
+                        const TransactionPreviewer(),
                       ],
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  const GoalPreviewCard(),
                 ],
               ),
             ),
-            const TransactionPreviewer(),
-            const SizedBox(height: 8),
-            const GoalPreviewCard(),
-          ],
-        ),
       ),
     );
   }

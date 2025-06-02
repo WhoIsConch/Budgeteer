@@ -61,6 +61,7 @@ dependencies:
   test: ^1.25.15
   logger: ^2.5.0
   material_symbols_icons: ^4.2815.0
+  showcaseview: ^4.0.1
 
 dev_dependencies:
   flutter_test:
