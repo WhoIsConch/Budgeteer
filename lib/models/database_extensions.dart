@@ -346,6 +346,33 @@ class TransactionTileableAdapter extends Tileable<TransactionTileableAdapter> {
   int get hashCode => id.hashCode;
 }
 
+class GoalTileableAdapter extends Tileable<GoalTileableAdapter> {
+  final Goal _goal;
+
+  @override
+  String get id => _goal.id;
+
+  GoalTileableAdapter(this._goal, {required super.onMultiselect});
+
+  @override
+  Widget getTile(
+    BuildContext context, {
+    bool isMultiselect = false,
+    bool isSelected = false,
+  }) {
+    return Placeholder();
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is GoalTileableAdapter && id == other.id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
+}
+
 class ColorConverter extends TypeConverter<Color, int> {
   const ColorConverter();
 
