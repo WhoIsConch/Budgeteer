@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:budget/appui/goals/view_goal.dart';
 import 'package:budget/appui/transactions/view_transaction.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/enums.dart';
@@ -347,12 +348,15 @@ class TransactionTileableAdapter extends Tileable<TransactionTileableAdapter> {
 }
 
 class GoalTileableAdapter extends Tileable<GoalTileableAdapter> {
-  final Goal _goal;
+  final GoalWithAchievedAmount _goalPair;
 
   @override
-  String get id => _goal.id;
+  String get id => _goalPair.goal.id;
 
-  GoalTileableAdapter(this._goal, {required super.onMultiselect});
+  double get amount => _goalPair.achievedAmount;
+  Goal get goal => _goalPair.goal;
+
+  GoalTileableAdapter(this._goalPair, {required super.onMultiselect});
 
   @override
   Widget getTile(
@@ -360,7 +364,56 @@ class GoalTileableAdapter extends Tileable<GoalTileableAdapter> {
     bool isMultiselect = false,
     bool isSelected = false,
   }) {
-    return Placeholder();
+    final theme = Theme.of(context);
+
+    final percentage = _goalPair.calculatePercentage();
+    final isFinished = percentage >= 1 || goal.isArchived;
+
+    final containerColor =
+        isFinished
+            ? theme.colorScheme.surfaceContainerHigh
+            : theme.colorScheme.secondaryContainer;
+
+    final onColor =
+        isFinished
+            ? theme.colorScheme.onSurface
+            : theme.colorScheme.onSecondaryContainer;
+
+    // Decide whether to show the checkmark with the leading progress indicator
+    final progressIndicator = CircularProgressIndicator(
+      value: _goalPair.calculatePercentage(),
+      backgroundColor: theme.colorScheme.onSecondaryContainer.withAlpha(68),
+      strokeCap: StrokeCap.round,
+    );
+
+    Widget leadingWidget;
+
+    if (isFinished) {
+      leadingWidget = Stack(
+        alignment: Alignment.center,
+        children: [
+          progressIndicator,
+          Icon(Icons.check, color: theme.colorScheme.primary),
+        ],
+      );
+    } else {
+      leadingWidget = progressIndicator;
+    }
+
+    return ListTile(
+      title: Text(goal.name),
+      leading: leadingWidget,
+      subtitle: Text('\$${formatAmount(amount)}/\$${formatAmount(goal.cost)}'),
+      tileColor: containerColor,
+      textColor: onColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+      onTap:
+          () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => GoalViewer(initialGoalPair: _goalPair),
+            ),
+          ),
+    );
   }
 
   @override

@@ -186,6 +186,19 @@ class _ObjectsListState<T extends Tileable<T>> extends State<ObjectsList<T>> {
     }
   }
 
+  void _onMultiselect(value, object) => setState(() {
+    if (value != null && value) {
+      isMultiselect = true;
+      selectedObjects.add(object as T);
+    } else {
+      selectedObjects.remove(object);
+
+      if (selectedObjects.isEmpty) {
+        isMultiselect = false;
+      }
+    }
+  });
+
   Stream<List<T>>? _getStream() {
     final db = context.read<AppDatabase>();
 
@@ -204,23 +217,26 @@ class _ObjectsListState<T extends Tileable<T>> extends State<ObjectsList<T>> {
                       .map(
                         (t) => TransactionTileableAdapter(
                           t,
-                          onMultiselect:
-                              (value, object) => setState(() {
-                                if (value != null && value) {
-                                  isMultiselect = true;
-                                  selectedObjects.add(object as T);
-                                } else {
-                                  selectedObjects.remove(object);
-
-                                  if (selectedObjects.isEmpty) {
-                                    isMultiselect = false;
-                                  }
-                                }
-                              }),
+                          onMultiselect: _onMultiselect,
                         ),
                       )
                       .toList(),
             );
+
+        return mappedStream as Stream<List<T>>;
+      case GoalTileableAdapter:
+        final Stream<List<GoalWithAchievedAmount>> sourceStream =
+            db.goalDao.watchGoals();
+
+        final Stream<List<GoalTileableAdapter>> mappedStream = sourceStream.map(
+          (e) =>
+              e
+                  .map(
+                    (g) =>
+                        GoalTileableAdapter(g, onMultiselect: _onMultiselect),
+                  )
+                  .toList(),
+        );
 
         return mappedStream as Stream<List<T>>;
     }

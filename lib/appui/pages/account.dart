@@ -1,3 +1,5 @@
+import 'package:budget/appui/components/objects_list.dart';
+import 'package:budget/models/database_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
@@ -80,6 +82,7 @@ class Account extends StatelessWidget {
               },
               child: Text('Print color information'),
             ),
+            SizedBox(height: 400, child: ObjectsList<GoalTileableAdapter>()),
           ],
         ),
         Divider(),
