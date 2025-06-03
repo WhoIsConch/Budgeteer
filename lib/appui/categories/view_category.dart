@@ -45,7 +45,7 @@ class CategoryViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double progress = categoryPair.amount ?? 0;
+    double progress = categoryPair.amount;
     double remaining = categoryPair.remainingAmount ?? 0;
     double total = category.balance ?? 0;
     String remainingText;
@@ -71,7 +71,7 @@ class CategoryViewer extends StatelessWidget {
         insidePrimary: '$progressPrefix\$$formattedProgress',
         insideSecondary:
             '$progressPrefix\$$formattedProgress/\$$formattedTotal',
-        progress: (categoryPair.amount?.abs() ?? 0) / (category.balance ?? 1),
+        progress: (categoryPair.amount.abs()) / (category.balance ?? 1),
       );
     } else {
       header = TextOverviewHeader(

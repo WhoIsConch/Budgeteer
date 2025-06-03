@@ -159,7 +159,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     if (_selectedCategoryPair == null) return null;
 
     final originalBalance =
-        _selectedCategoryPair!.amount! +
+        _selectedCategoryPair!.amount +
         _selectedCategoryPair!.category.balance!;
 
     double adjustedBalance = originalBalance;

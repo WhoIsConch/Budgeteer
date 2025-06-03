@@ -785,7 +785,7 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
               .map(
                 (row) => CategoryWithAmount(
                   category: row.readTable(categories),
-                  amount: row.read<double>(queryWithSum.sum),
+                  amount: row.read<double>(queryWithSum.sum) ?? 0,
                 ),
               )
               .toList(),
@@ -813,7 +813,7 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
       final category = row.readTable(categories);
       final amount = row.read<double>(queryWithSum.sum);
 
-      return CategoryWithAmount(category: category, amount: amount);
+      return CategoryWithAmount(category: category, amount: amount ?? 0);
     } else {
       return null;
     }

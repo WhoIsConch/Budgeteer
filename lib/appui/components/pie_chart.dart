@@ -421,7 +421,7 @@ class _PieChartCardState extends State<PieChartCard> {
                         (category) => PieChartObject(
                           name: category.category.name,
                           color: category.category.color,
-                          amount: category.amount ?? 0,
+                          amount: category.amount,
                         ),
                       )
                       .toList();
@@ -573,9 +573,7 @@ class _PieChartCardState extends State<PieChartCard> {
                         if (newType.type == null) {
                           provider.removeFilter<TypeFilter>();
                         } else {
-                          provider.updateFilter(
-                            TypeFilter(newType.type!),
-                          );
+                          provider.updateFilter(TypeFilter(newType.type!));
                         }
                       },
                     ),
