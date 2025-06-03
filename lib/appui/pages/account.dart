@@ -1,3 +1,4 @@
+import 'package:budget/appui/components/help_popup.dart';
 import 'package:budget/appui/components/objects_list.dart';
 import 'package:budget/models/database_extensions.dart';
 import 'package:flutter/material.dart';
@@ -81,6 +82,18 @@ class Account extends StatelessWidget {
                 print(colors.inversePrimary.toHexString());
               },
               child: Text('Print color information'),
+            ),
+            TextButton(
+              child: Text('View help dialog'),
+              onPressed:
+                  () => showDialog(
+                    context: context,
+                    builder:
+                        (_) => HelpPopup(
+                          title: 'Help me',
+                          description: 'You are being helped',
+                        ),
+                  ),
             ),
             SizedBox(height: 400, child: ObjectsList<GoalTileableAdapter>()),
           ],
