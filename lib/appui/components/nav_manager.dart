@@ -12,6 +12,7 @@ import 'package:budget/appui/pages/home.dart';
 import 'package:budget/appui/pages/account.dart';
 import 'package:budget/appui/pages/statistics.dart';
 import 'package:provider/provider.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class NavManager extends StatefulWidget {
@@ -37,6 +38,12 @@ class _NavManagerState extends State<NavManager>
     _isMenuOpen = !_isMenuOpen;
     if (_isMenuOpen) {
       _animationController.forward();
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ShowCaseWidget.of(context).startShowCase(
+          _expandedButtonsData.map((d) => d.showcaseKey).toList(),
+        );
+      });
     } else {
       _animationController.reverse();
     }
@@ -65,6 +72,9 @@ class _NavManagerState extends State<NavManager>
         ).push(MaterialPageRoute(builder: (_) => const ManageAccountForm()));
         _toggleFabMenu();
       },
+      helpTitle: 'Accounts',
+      helpDescription:
+          'Accounts let you specify where your money is stored. You can have accounts like cash, checking, savings, etc.\nThe total balance card displays your total available funds across all of your accounts.',
     ),
     ExpandedButtonData(
       text: 'Goal',
@@ -75,6 +85,9 @@ class _NavManagerState extends State<NavManager>
         ).push(MaterialPageRoute(builder: (_) => const ManageGoalPage()));
         _toggleFabMenu();
       },
+      helpTitle: 'Goals',
+      helpDescription:
+          'Goals allow you to save up your money to achieve a financial goal, like buying something.',
     ),
     ExpandedButtonData(
       text: 'Transaction',
@@ -85,17 +98,27 @@ class _NavManagerState extends State<NavManager>
         );
         _toggleFabMenu();
       },
+      helpTitle: 'Transactions',
+      helpDescription:
+          'Transactions are the star of the show. They represent any spending or receiving of money.',
     ),
   ];
 
-  List<Widget> _buildActionButtons() => List.generate(
-    _expandedButtonsData.length,
-    (index) => ScaleTransition(
-      alignment: Alignment.centerRight,
-      scale: _scaleAnimation,
-      child: SpeedDialExpandedButton(data: _expandedButtonsData[index]),
-    ),
-  );
+  List<Widget> _buildActionButtons() =>
+      List.generate(_expandedButtonsData.length, (index) {
+        final data = _expandedButtonsData[index];
+
+        return ScaleTransition(
+          alignment: Alignment.centerRight,
+          scale: _scaleAnimation,
+          child: Showcase(
+            key: data.showcaseKey,
+            title: data.helpTitle,
+            description: data.helpDescription,
+            child: SpeedDialExpandedButton(data: data),
+          ),
+        );
+      });
 
   @override
   void dispose() {
@@ -256,11 +279,17 @@ class ExpandedButtonData {
   final Icon icon;
   final String text;
   final void Function() onPressed;
+  final String? helpTitle;
+  final String? helpDescription;
 
-  const ExpandedButtonData({
+  final GlobalKey showcaseKey = GlobalKey();
+
+  ExpandedButtonData({
     required this.icon,
     required this.text,
     required this.onPressed,
+    this.helpTitle,
+    this.helpDescription,
   });
 }
 
@@ -304,27 +333,30 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<AuthState>(
-      stream: Supabase.instance.client.auth.onAuthStateChange,
-      builder: (BuildContext context, AsyncSnapshot snapshot) {
-        Widget body;
+    return ShowCaseWidget(
+      builder:
+          (context) => StreamBuilder<AuthState>(
+            stream: Supabase.instance.client.auth.onAuthStateChange,
+            builder: (BuildContext context, AsyncSnapshot snapshot) {
+              Widget body;
 
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          body = const Scaffold(
-            key: ValueKey('loading'),
-            body: Center(child: CircularProgressIndicator()),
-          );
-        } else if (Supabase.instance.client.auth.currentUser != null) {
-          body = const NavManager(key: ValueKey('home'));
-        } else {
-          body = const LoginPage(key: ValueKey('login'));
-        }
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                body = const Scaffold(
+                  key: ValueKey('loading'),
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              } else if (Supabase.instance.client.auth.currentUser != null) {
+                body = const NavManager(key: ValueKey('home'));
+              } else {
+                body = const LoginPage(key: ValueKey('login'));
+              }
 
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 250),
-          child: body,
-        );
-      },
+              return AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                child: body,
+              );
+            },
+          ),
     );
   }
 }

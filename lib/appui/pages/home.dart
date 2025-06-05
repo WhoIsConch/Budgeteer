@@ -26,96 +26,73 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late AppDatabase db;
 
-  final GlobalKey _tourAccounts = GlobalKey();
-  final GlobalKey _tourRecents = GlobalKey();
-
   @override
   Widget build(BuildContext context) {
     db = context.watch<AppDatabase>();
 
     return Scaffold(
-      body: ShowCaseWidget(
-        builder:
-            (context) => SingleChildScrollView(
-              clipBehavior: Clip.none,
-              // The main content
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const WelcomeHeader(),
-                  Showcase(
-                    key: _tourAccounts,
-                    title: 'Accounts',
-                    description:
-                        'Shows all of your current account balances, as well as your net balance across all accounts.',
-                    child: AccountsCarousel(),
-                  ),
-                  Showcase(
-                    key: _tourRecents,
-
-                    description:
-                        'Displays your transactions from the last seven days',
-                    child: Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 0),
-                          child: Row(
-                            children: [
-                              Text(
-                                'Recent activity',
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.headlineMedium!.copyWith(
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
-                                ),
-                              ),
-                              const Spacer(),
-                              TextButton(
-                                style: TextButton.styleFrom(
-                                  padding: EdgeInsets.zero,
-                                ),
-                                onPressed:
-                                    () => Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder:
-                                            (_) =>
-                                                const TransactionSearchPage(),
-                                      ),
-                                    ),
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      'View all',
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodyLarge!.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurface.withAlpha(200),
-                                      ),
-                                    ),
-                                    Icon(
-                                      Icons.chevron_right,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface.withAlpha(200),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+      body: SingleChildScrollView(
+        clipBehavior: Clip.none,
+        // The main content
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const WelcomeHeader(),
+            AccountsCarousel(),
+            Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 0),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Recent activity',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.headlineMedium!.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
-                        const TransactionPreviewer(),
-                      ],
-                    ),
+                      ),
+                      const Spacer(),
+                      TextButton(
+                        style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                        onPressed:
+                            () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const TransactionSearchPage(),
+                              ),
+                            ),
+                        child: Row(
+                          children: [
+                            Text(
+                              'View all',
+                              style: Theme.of(
+                                context,
+                              ).textTheme.bodyLarge!.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withAlpha(200),
+                              ),
+                            ),
+                            Icon(
+                              Icons.chevron_right,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withAlpha(200),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  const GoalPreviewCard(),
-                ],
-              ),
+                ),
+                const TransactionPreviewer(),
+              ],
             ),
+            const SizedBox(height: 8),
+            const GoalPreviewCard(),
+          ],
+        ),
       ),
     );
   }
