@@ -139,6 +139,7 @@ class _GoalViewerState extends State<GoalViewer> {
           ),
           body: Expanded(
             child: ObjectsList<TransactionTileableAdapter>(
+              showBackground: false,
               filters: [
                 GoalFilter([goalPair]),
               ],

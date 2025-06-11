@@ -34,8 +34,8 @@ class _NavManagerState extends State<NavManager>
 
   final LayerLink _appBarLink = LayerLink();
 
-  void _toggleFabMenu() => setState(() {
-    _isMenuOpen = !_isMenuOpen;
+  void _toggleFabMenu() {
+    setState(() => _isMenuOpen = !_isMenuOpen);
     if (_isMenuOpen) {
       _animationController.forward();
 
@@ -47,12 +47,12 @@ class _NavManagerState extends State<NavManager>
     } else {
       _animationController.reverse();
     }
-  });
+  }
 
   List<ExpandedButtonData> get _expandedButtonsData => [
     ExpandedButtonData(
-      icon: const Icon(Icons.account_balance_wallet_outlined),
       text: 'Category',
+      icon: const Icon(Icons.account_balance_wallet_outlined),
       onPressed: () {
         Navigator.of(context).push(
           DialogRoute(

@@ -180,7 +180,7 @@ class ObjectPropertiesList extends StatelessWidget {
                 padding: EdgeInsets.all(8.0),
                 child: Icon(
                   property.icon,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
                 ),
               ),
               Expanded(
@@ -192,14 +192,16 @@ class ObjectPropertiesList extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w500,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        color:
+                            Theme.of(context).colorScheme.onSecondaryContainer,
                       ),
                     ),
                     Text(
                       property.description,
                       style: TextStyle(
                         fontSize: 16,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        color:
+                            Theme.of(context).colorScheme.onSecondaryContainer,
                       ),
                       maxLines: 5,
                       overflow: TextOverflow.ellipsis,
@@ -239,7 +241,7 @@ class ObjectPropertiesList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: Theme.of(context).colorScheme.primaryContainer,
+      color: Theme.of(context).colorScheme.secondaryContainer,
       margin: EdgeInsets.zero,
       child: Padding(
         padding: EdgeInsets.all(12.0),
@@ -380,6 +382,7 @@ class ViewerScreen extends StatelessWidget {
         child: Column(
           spacing: 28.0,
           children: [
+            SizedBox(height: 24),
             header,
             SizedBox(height: 20),
             properties,

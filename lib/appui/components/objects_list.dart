@@ -133,8 +133,8 @@ class _ObjectsListState<T extends Tileable<T>> extends State<ObjectsList<T>> {
     } else if (widget.showActionButton) {
       actionButton = FloatingActionButton(
         heroTag: 'list_fab',
-        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+        foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
         onPressed: _onCreate,
         child: const Icon(size: 28, Icons.add),
       );

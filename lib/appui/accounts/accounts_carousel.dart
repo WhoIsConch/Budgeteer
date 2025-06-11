@@ -40,7 +40,7 @@ class _AccountsCarouselState extends State<AccountsCarousel> {
         child: Text(
           data.title,
           style: Theme.of(context).textTheme.headlineMedium!.copyWith(
-            color: Theme.of(context).colorScheme.onPrimaryContainer,
+            color: Theme.of(context).colorScheme.onSecondaryContainer,
           ),
         ),
       ),
@@ -53,7 +53,7 @@ class _AccountsCarouselState extends State<AccountsCarousel> {
             color:
                 data.isNegative
                     ? Theme.of(context).colorScheme.error
-                    : Theme.of(context).colorScheme.onPrimaryContainer,
+                    : Theme.of(context).colorScheme.onSecondaryContainer,
           ),
         ),
       ),
@@ -62,7 +62,7 @@ class _AccountsCarouselState extends State<AccountsCarousel> {
           alignment: Alignment.topRight,
           child: IconButton(
             icon: Icon(Icons.settings),
-            color: Theme.of(context).colorScheme.onPrimaryContainer,
+            color: Theme.of(context).colorScheme.onSecondaryContainer,
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
@@ -132,7 +132,7 @@ class _AccountsCarouselState extends State<AccountsCarousel> {
 
         return Card(
           margin: const EdgeInsets.all(4),
-          color: Theme.of(context).colorScheme.primaryContainer,
+          color: Theme.of(context).colorScheme.secondaryContainer,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Stack(
@@ -176,7 +176,7 @@ class _AccountsCarouselState extends State<AccountsCarousel> {
                           context,
                         ).colorScheme.onPrimaryContainer.withAlpha(68),
                         activeDotColor:
-                            Theme.of(context).colorScheme.onPrimaryContainer,
+                            Theme.of(context).colorScheme.onSecondaryContainer,
                       ),
                     ),
                   ),

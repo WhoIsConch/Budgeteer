@@ -161,7 +161,7 @@ class _HistoryState extends State<History> {
             markersAlignment: Alignment.topRight,
             markerMargin: EdgeInsets.all(4.0),
             markersMaxCount: 1,
-            markerSize: 16,
+            markerSize: 12,
             markerDecoration: BoxDecoration(
               color: Theme.of(context).colorScheme.tertiary,
               shape: BoxShape.circle,
