@@ -34,6 +34,8 @@ class _NavManagerState extends State<NavManager>
 
   final LayerLink _appBarLink = LayerLink();
 
+  late final List<ExpandedButtonData> _expandedButtonsData;
+
   void _toggleFabMenu() {
     setState(() => _isMenuOpen = !_isMenuOpen);
     if (_isMenuOpen) {
@@ -49,72 +51,23 @@ class _NavManagerState extends State<NavManager>
     }
   }
 
-  List<ExpandedButtonData> get _expandedButtonsData => [
-    ExpandedButtonData(
-      text: 'Category',
-      icon: const Icon(Icons.account_balance_wallet_outlined),
-      onPressed: () {
-        Navigator.of(context).push(
-          DialogRoute(
-            context: context,
-            builder: (_) => const ManageCategoryDialog(),
-          ),
-        );
-        _toggleFabMenu();
-      },
-    ),
-    ExpandedButtonData(
-      text: 'Account',
-      icon: const Icon(Icons.wallet),
-      onPressed: () {
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const ManageAccountForm()));
-        _toggleFabMenu();
-      },
-      helpTitle: 'Accounts',
-      helpDescription:
-          'Accounts let you specify where your money is stored. You can have accounts like cash, checking, savings, etc.\nThe total balance card displays your total available funds across all of your accounts.',
-    ),
-    ExpandedButtonData(
-      text: 'Goal',
-      icon: const Icon(Icons.flag),
-      onPressed: () {
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const ManageGoalPage()));
-        _toggleFabMenu();
-      },
-      helpTitle: 'Goals',
-      helpDescription:
-          'Goals allow you to save up your money to achieve a financial goal, like buying something.',
-    ),
-    ExpandedButtonData(
-      text: 'Transaction',
-      icon: const Icon(Icons.attach_money),
-      onPressed: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const ManageTransactionPage()),
-        );
-        _toggleFabMenu();
-      },
-      helpTitle: 'Transactions',
-      helpDescription:
-          'Transactions are the star of the show. They represent any spending or receiving of money.',
-    ),
-  ];
+  // final List<ExpandedButtonData>
 
   List<Widget> _buildActionButtons() =>
       List.generate(_expandedButtonsData.length, (index) {
         final data = _expandedButtonsData[index];
 
-        return ScaleTransition(
-          alignment: Alignment.centerRight,
-          scale: _scaleAnimation,
-          child: Showcase(
-            key: data.showcaseKey,
-            title: data.helpTitle,
-            description: data.helpDescription,
+        return Showcase(
+          tooltipBackgroundColor:
+              Theme.of(context).colorScheme.surfaceContainerHigh,
+          textColor: Theme.of(context).colorScheme.onSurface,
+          tooltipPosition: TooltipPosition.top,
+          key: data.showcaseKey,
+          title: data.helpTitle,
+          description: data.helpDescription,
+          child: ScaleTransition(
+            alignment: Alignment.centerRight,
+            scale: _scaleAnimation,
             child: SpeedDialExpandedButton(data: data),
           ),
         );
@@ -146,6 +99,66 @@ class _NavManagerState extends State<NavManager>
       parent: _animationController,
       curve: Curves.easeOutBack,
     );
+
+    // ExpandedButtonsData needs to be defined here so the GlobalKeys are
+    // constant
+    _expandedButtonsData = [
+      ExpandedButtonData(
+        text: 'Category',
+        icon: const Icon(Icons.account_balance_wallet_outlined),
+        onPressed: () {
+          Navigator.of(context).push(
+            DialogRoute(
+              context: context,
+              builder: (_) => const ManageCategoryDialog(),
+            ),
+          );
+          _toggleFabMenu();
+        },
+        helpTitle: 'Categories',
+        helpDescription:
+            'Categories are for sorting transactions into spending groups, which helps to understand where your money is going',
+      ),
+      ExpandedButtonData(
+        text: 'Account',
+        icon: const Icon(Icons.wallet),
+        onPressed: () {
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const ManageAccountForm()));
+          _toggleFabMenu();
+        },
+        helpTitle: 'Accounts',
+        helpDescription:
+            'Accounts let you specify where your money is stored. You can have accounts like cash, checking, and savings.',
+      ),
+      ExpandedButtonData(
+        text: 'Goal',
+        icon: const Icon(Icons.flag),
+        onPressed: () {
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const ManageGoalPage()));
+          _toggleFabMenu();
+        },
+        helpTitle: 'Goals',
+        helpDescription:
+            'Goals allow you to save up your money to achieve a financial goal, like buying something.',
+      ),
+      ExpandedButtonData(
+        text: 'Transaction',
+        icon: const Icon(Icons.attach_money),
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const ManageTransactionPage()),
+          );
+          _toggleFabMenu();
+        },
+        helpTitle: 'Transactions',
+        helpDescription:
+            'Transactions are the star of the show. They represent any spending or receiving of money.',
+      ),
+    ];
   }
 
   void indexCallback(PageType page) {
@@ -254,7 +267,7 @@ class _NavManagerState extends State<NavManager>
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (!_animationController.isDismissed) ..._buildActionButtons(),
+              ..._buildActionButtons(),
               const SizedBox(height: 4),
               FloatingActionButton(
                 backgroundColor: Theme.of(context).colorScheme.primaryContainer,
