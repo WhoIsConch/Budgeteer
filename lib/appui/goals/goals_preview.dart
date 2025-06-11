@@ -131,40 +131,43 @@ class _GoalPreviewCardState extends State<GoalPreviewCard> {
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
-                hasGoals ? 'Your goals' : 'No goals',
+                'Your goals',
                 style: Theme.of(context).textTheme.headlineMedium!.copyWith(
                   color: Theme.of(context).colorScheme.onSecondaryContainer,
                 ),
               ),
             ),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 200),
-              child: StreamBuilder<List<GoalWithAchievedAmount>>(
-                stream: db.goalDao.watchGoals(includeFinished: false),
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    AppLogger().logger.e(snapshot.error.toString());
-                    return ErrorInset('Error loading goals');
-                  }
+            StreamBuilder<List<GoalWithAchievedAmount>>(
+              stream: db.goalDao.watchGoals(includeFinished: false),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  AppLogger().logger.e(snapshot.error.toString());
+                  return SizedBox(
+                    height: 100,
+                    child: ErrorInset('Error loading goals'),
+                  );
+                }
 
-                  if (!snapshot.hasData) {
-                    return const LinearProgressIndicator();
-                  } else if (snapshot.hasData && snapshot.data!.isEmpty) {
-                    hasGoals = false;
-                    return ErrorInset('No goals');
-                  }
+                if (!snapshot.hasData) {
+                  return const LinearProgressIndicator();
+                } else if (snapshot.hasData && snapshot.data!.isEmpty) {
+                  hasGoals = false;
+                  return SizedBox(height: 100, child: ErrorInset('No goals'));
+                }
 
-                  hasGoals = true;
+                hasGoals = true;
 
-                  return ListView.builder(
+                return ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 200),
+                  child: ListView.builder(
                     shrinkWrap: true,
                     itemCount: snapshot.data!.length,
                     itemBuilder:
                         (context, index) =>
                             GoalPreviewButton(goalPair: snapshot.data![index]),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
           ],
         ),
