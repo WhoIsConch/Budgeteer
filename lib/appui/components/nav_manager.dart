@@ -352,6 +352,7 @@ class AuthWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return ShowCaseWidget(
       onFinish: () {
+        // Ensure the tour doesn't play again when the user is finished with it
         final settings = context.read<SettingsService>();
 
         settings.setSetting('_showTour', false);
