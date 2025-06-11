@@ -10,37 +10,15 @@ import 'package:provider/provider.dart';
 import 'package:budget/services/settings.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-ThemeMode? theme;
-
-Future<void> setup() async {
-  final logger = AppLogger().logger;
-
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-
-  var settings = await loadSettings();
-
-  logger.i('Loaded settings');
-  logger.d(
-    'Settings: ${settings.map((e) => "${e.type.name} ${e.name}: ${e.value}")}',
-  );
-
-  switch (settings.where((element) => element.name == 'Theme').first.value) {
-    case 'System':
-      theme = ThemeMode.system;
-    case 'Dark':
-      theme = ThemeMode.dark;
-    case 'Light':
-      theme = ThemeMode.light;
-    default:
-      theme = ThemeMode.system;
-  }
-}
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   await dotenv.load();
   await openDatabase();
+
+  final settingsService = SettingsService();
+  await settingsService.loadSettings();
 
   // Define the providers
   // I have a lot of providers
@@ -53,11 +31,11 @@ void main() async {
     create: (_) => SnackbarProvider(),
   );
 
-  await setup();
+  final settingsProvider = ChangeNotifierProvider.value(value: settingsService);
 
   runApp(
     MultiProvider(
-      providers: [dbProvider, snackBarProvider],
+      providers: [dbProvider, snackBarProvider, settingsProvider],
       child: const BudgetApp(),
     ),
   );
@@ -101,7 +79,6 @@ class _BudgetAppState extends State<BudgetApp> with WidgetsBindingObserver {
             colorScheme:
                 darkDynamic?.harmonized() ?? ThemeData.dark().colorScheme,
           ),
-          themeMode: theme,
         );
       },
     );

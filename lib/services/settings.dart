@@ -1,52 +1,56 @@
+import 'package:budget/utils/tools.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // I realize these settings need a major rewrite
 
-enum SettingType { boolean, multi, button }
-
-class Setting {
+class Setting<T> {
   final String name;
-  final SettingType type;
-  List<dynamic> options;
-  dynamic value;
+  List<T> options;
+  T value;
 
-  Setting(this.name, this.type, this.options);
+  Setting({required this.name, required this.options, required this.value});
 }
 
-final List<Setting> allSettings = [
-  Setting('Theme', SettingType.multi, ['System', 'Dark', 'Light']),
-  Setting('Starting Weekday', SettingType.multi, ['Sunday', 'Monday']),
-  Setting('Account', SettingType.button, ['Manage']),
-];
+class SettingsService with ChangeNotifier {
+  // Before settings are loaded, the value acts as a default
+  Map<String, dynamic> settings = {
+    'Theme': ThemeMode.system,
+    'Starting Weekday': 'Sunday',
+    '_showTour': true,
+  };
 
-Future<List<Setting>> loadSettings() async {
-  final prefs = await SharedPreferences.getInstance();
+  Future<void> loadSettings() async {
+    final SharedPreferencesWithCache prefs =
+        await SharedPreferencesWithCache.create(
+          cacheOptions: SharedPreferencesWithCacheOptions(
+            allowList: settings.keys.toSet(),
+          ),
+        );
 
-  for (var setting in allSettings) {
-    if (setting.type == SettingType.button) {
-      continue;
-    }
+    final logger = AppLogger().logger;
 
-    var value = prefs.get(setting.name);
+    for (var entry in settings.entries) {
+      var value = prefs.get(entry.key);
 
-    if (setting.value == null || setting.value!.isEmpty) {
-      switch (setting.type) {
-        case SettingType.boolean:
-          {
-            await prefs.setBool(setting.name, setting.options.first);
-          }
-
-        default:
-          {
-            await prefs.setString(setting.name, setting.options.first);
-          }
+      if (value == null) {
+        switch (entry.value) {
+          case String v:
+            prefs.setString(entry.key, v);
+            break;
+          case bool v:
+            prefs.setBool(entry.key, v);
+            break;
+          case Enum v:
+            prefs.setInt(entry.key, v.index);
+            break;
+        }
+        logger.i('Set setting ${entry.key} to ${entry.value}');
+      } else {
+        settings[entry.key] = value;
       }
-
-      setting.value = setting.options.first;
-    } else {
-      setting.value = value.toString();
     }
-  }
 
-  return allSettings;
+    logger.i('Settings loaded: $settings');
+  }
 }
