@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'package:provider/provider.dart';
-import 'package:budget/services/settings.dart';
+import 'package:budget/providers/settings.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
