@@ -1,5 +1,4 @@
 import 'package:budget/appui/categories/view_category.dart';
-import 'package:budget/appui/components/edit_screen.dart';
 import 'package:budget/appui/components/status.dart';
 import 'package:budget/appui/goals/view_goal.dart';
 import 'package:budget/providers/transaction_provider.dart';
@@ -155,13 +154,13 @@ class _TopContainersState extends State<TopContainers> {
             StreamBuilder(
               stream: _getStream(),
               builder: (context, snapshot) {
-                // The snapshot is probably loading or waiting
-                if (!snapshot.hasData) {
-                  return ErrorInset.noData;
+                // The snapshot is probably loading or waiting, or there is no data
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24.0),
+                    child: ErrorInset.noData,
+                  );
                 }
-
-                // The snapshot finished, but the list is empty
-                if (snapshot.data!.isEmpty) return ErrorInset.noData;
 
                 return ListView.builder(
                   physics: NeverScrollableScrollPhysics(),
