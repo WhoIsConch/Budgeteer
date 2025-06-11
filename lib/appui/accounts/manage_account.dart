@@ -118,8 +118,7 @@ class _ManageAccountFormState extends State<ManageAccountForm> {
           controller: _controllers['name'],
           validator: validateTitle,
         ),
-        Row(
-          spacing: 16.0,
+        EditFieldRow(
           children: [
             Expanded(
               child: TextInputEditField(

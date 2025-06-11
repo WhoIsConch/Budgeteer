@@ -128,8 +128,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
         }
       },
       formFields: [
-        Row(
-          spacing: 16.0,
+        EditFieldRow(
           children: [
             Expanded(
               child: TextInputEditField(
@@ -145,8 +144,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
             ),
           ],
         ),
-        Row(
-          spacing: 16.0,
+        EditFieldRow(
           children: [
             Expanded(
               child: AmountEditField(

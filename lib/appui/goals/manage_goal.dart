@@ -124,8 +124,8 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
           }
         } catch (e) {
           AppLogger().logger.e('Unable to save goal: $e');
-          
-          if (!context.mounted) return; 
+
+          if (!context.mounted) return;
 
           context.read<SnackbarProvider>().showSnackBar(
             const SnackBar(content: Text('Unable to save goal')),
@@ -133,8 +133,7 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
         }
       },
       formFields: [
-        Row(
-          spacing: 16.0,
+        EditFieldRow(
           children: [
             Expanded(
               child: TextInputEditField(
@@ -151,8 +150,7 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
             ),
           ],
         ),
-        Row(
-          spacing: 16.0,
+        EditFieldRow(
           children: [
             Expanded(
               child: DatePickerEditField(

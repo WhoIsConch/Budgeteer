@@ -461,6 +461,22 @@ class MultisegmentButton<T> extends StatelessWidget {
   }
 }
 
+class EditFieldRow extends StatelessWidget {
+  final List<Widget> children;
+  final double spacing;
+
+  const EditFieldRow({super.key, required this.children, this.spacing = 16.0});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      spacing: spacing,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
+    );
+  }
+}
+
 class EditFormScreen extends StatefulWidget {
   final String title;
   final Function() onConfirm;

@@ -274,8 +274,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
           controller: controllers['title'],
           validator: validateTitle,
         ),
-        Row(
-          spacing: 16.0,
+        EditFieldRow(
           children: [
             Expanded(
               child: AmountEditField(
@@ -314,8 +313,8 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
             return null;
           },
           builder: (state) {
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            return EditFieldRow(
+              spacing: 0,
               children: [
                 Expanded(
                   child: StreamBuilder(
@@ -404,8 +403,8 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
         ),
         FormField<GoalWithAchievedAmount?>(
           builder: (fieldState) {
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            return EditFieldRow(
+              spacing: 0,
               children: [
                 Expanded(
                   child: StreamBuilder(
@@ -479,8 +478,8 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
         ),
         FormField<AccountWithTotal?>(
           builder: (fieldState) {
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            return EditFieldRow(
+              spacing: 0,
               children: [
                 Expanded(
                   child: StreamBuilder(
