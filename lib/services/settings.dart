@@ -20,31 +20,23 @@ class SettingsService with ChangeNotifier {
     '_showTour': true,
   };
 
+  late final SharedPreferencesWithCache _prefs;
+
   Future<void> loadSettings() async {
-    final SharedPreferencesWithCache prefs =
-        await SharedPreferencesWithCache.create(
-          cacheOptions: SharedPreferencesWithCacheOptions(
-            allowList: settings.keys.toSet(),
-          ),
-        );
+    _prefs = await SharedPreferencesWithCache.create(
+      cacheOptions: SharedPreferencesWithCacheOptions(
+        allowList: settings.keys.toSet(),
+      ),
+    );
 
     final logger = AppLogger().logger;
 
     for (var entry in settings.entries) {
-      var value = prefs.get(entry.key);
+      var value = _prefs.get(entry.key);
 
       if (value == null) {
-        switch (entry.value) {
-          case String v:
-            prefs.setString(entry.key, v);
-            break;
-          case bool v:
-            prefs.setBool(entry.key, v);
-            break;
-          case Enum v:
-            prefs.setInt(entry.key, v.index);
-            break;
-        }
+        setSetting(entry.key, entry.value, notify: false);
+
         logger.i('Set setting ${entry.key} to ${entry.value}');
       } else {
         settings[entry.key] = value;
@@ -52,5 +44,27 @@ class SettingsService with ChangeNotifier {
     }
 
     logger.i('Settings loaded: $settings');
+  }
+
+  void setSetting(String name, dynamic value, {bool notify = true}) {
+    if (!settings.containsKey(name)) {
+      throw 'No such setting $name';
+    }
+
+    settings[name] = value;
+
+    if (notify) notifyListeners();
+
+    switch (value) {
+      case String v:
+        _prefs.setString(name, v);
+        break;
+      case bool v:
+        _prefs.setBool(name, v);
+        break;
+      case Enum v:
+        _prefs.setInt(name, v.index);
+        break;
+    }
   }
 }

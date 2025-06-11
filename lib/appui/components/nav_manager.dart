@@ -1,6 +1,7 @@
 import 'package:budget/providers/snackbar_provider.dart';
 import 'package:budget/appui/pages/history.dart';
 import 'package:budget/appui/pages/login.dart';
+import 'package:budget/services/settings.dart';
 import 'package:budget/utils/enums.dart';
 import 'package:budget/appui/accounts/manage_account.dart';
 import 'package:budget/appui/categories/manage_category.dart';
@@ -38,20 +39,23 @@ class _NavManagerState extends State<NavManager>
 
   void _toggleFabMenu() {
     setState(() => _isMenuOpen = !_isMenuOpen);
+
     if (_isMenuOpen) {
       _animationController.forward();
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ShowCaseWidget.of(context).startShowCase(
-          _expandedButtonsData.map((d) => d.showcaseKey).toList(),
-        );
-      });
+      final settings = context.read<SettingsService>();
+
+      if (settings.settings['_showTour']) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ShowCaseWidget.of(context).startShowCase(
+            _expandedButtonsData.map((d) => d.showcaseKey).toList(),
+          );
+        });
+      }
     } else {
       _animationController.reverse();
     }
   }
-
-  // final List<ExpandedButtonData>
 
   List<Widget> _buildActionButtons() =>
       List.generate(_expandedButtonsData.length, (index) {
@@ -347,6 +351,11 @@ class AuthWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ShowCaseWidget(
+      onFinish: () {
+        final settings = context.read<SettingsService>();
+
+        settings.setSetting('_showTour', false);
+      },
       builder:
           (context) => StreamBuilder<AuthState>(
             stream: Supabase.instance.client.auth.onAuthStateChange,
