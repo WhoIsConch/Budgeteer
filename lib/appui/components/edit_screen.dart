@@ -249,11 +249,13 @@ class _DatePickerEditFieldState extends State<DatePickerEditField> {
 class AmountEditField extends StatelessWidget {
   final String label;
   final TextEditingController? controller;
+  final bool allowZero;
 
   const AmountEditField({
     super.key,
     required this.label,
     required this.controller,
+    this.allowZero = false,
   });
 
   @override
@@ -270,7 +272,7 @@ class AmountEditField extends StatelessWidget {
         border: const OutlineInputBorder(),
       ),
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      validator: const AmountValidator().validateAmount,
+      validator: AmountValidator(allowZero: allowZero).validateAmount,
     );
   }
 }

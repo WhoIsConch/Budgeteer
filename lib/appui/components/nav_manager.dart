@@ -1,3 +1,4 @@
+import 'package:budget/appui/onboarding/onboarding.dart';
 import 'package:budget/providers/snackbar_provider.dart';
 import 'package:budget/appui/pages/history.dart';
 import 'package:budget/appui/pages/login.dart';
@@ -13,7 +14,6 @@ import 'package:budget/appui/pages/home.dart';
 import 'package:budget/appui/pages/account.dart';
 import 'package:budget/appui/pages/statistics.dart';
 import 'package:provider/provider.dart';
-import 'package:showcaseview/showcaseview.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class NavManager extends StatefulWidget {
@@ -42,16 +42,6 @@ class _NavManagerState extends State<NavManager>
 
     if (_isMenuOpen) {
       _animationController.forward();
-
-      final settings = context.read<SettingsService>();
-
-      if (settings.settings['_showTour']) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ShowCaseWidget.of(context).startShowCase(
-            _expandedButtonsData.map((d) => d.showcaseKey).toList(),
-          );
-        });
-      }
     } else {
       _animationController.reverse();
     }
@@ -61,19 +51,10 @@ class _NavManagerState extends State<NavManager>
       List.generate(_expandedButtonsData.length, (index) {
         final data = _expandedButtonsData[index];
 
-        return Showcase(
-          tooltipBackgroundColor:
-              Theme.of(context).colorScheme.surfaceContainerHigh,
-          textColor: Theme.of(context).colorScheme.onSurface,
-          tooltipPosition: TooltipPosition.top,
-          key: data.showcaseKey,
-          title: data.helpTitle,
-          description: data.helpDescription,
-          child: ScaleTransition(
-            alignment: Alignment.centerRight,
-            scale: _scaleAnimation,
-            child: SpeedDialExpandedButton(data: data),
-          ),
+        return ScaleTransition(
+          alignment: Alignment.centerRight,
+          scale: _scaleAnimation,
+          child: SpeedDialExpandedButton(data: data),
         );
       });
 
@@ -119,9 +100,6 @@ class _NavManagerState extends State<NavManager>
           );
           _toggleFabMenu();
         },
-        helpTitle: 'Categories',
-        helpDescription:
-            'Categories are for sorting transactions into spending groups, which helps to understand where your money is going',
       ),
       ExpandedButtonData(
         text: 'Account',
@@ -132,9 +110,6 @@ class _NavManagerState extends State<NavManager>
           ).push(MaterialPageRoute(builder: (_) => const ManageAccountForm()));
           _toggleFabMenu();
         },
-        helpTitle: 'Accounts',
-        helpDescription:
-            'Accounts let you specify where your money is stored. You can have accounts like cash, checking, and savings.',
       ),
       ExpandedButtonData(
         text: 'Goal',
@@ -145,9 +120,6 @@ class _NavManagerState extends State<NavManager>
           ).push(MaterialPageRoute(builder: (_) => const ManageGoalPage()));
           _toggleFabMenu();
         },
-        helpTitle: 'Goals',
-        helpDescription:
-            'Goals allow you to save up your money to achieve a financial goal, like buying something.',
       ),
       ExpandedButtonData(
         text: 'Transaction',
@@ -158,9 +130,6 @@ class _NavManagerState extends State<NavManager>
           );
           _toggleFabMenu();
         },
-        helpTitle: 'Transactions',
-        helpDescription:
-            'Transactions are the star of the show. They represent any spending or receiving of money.',
       ),
     ];
   }
@@ -296,17 +265,11 @@ class ExpandedButtonData {
   final Icon icon;
   final String text;
   final void Function() onPressed;
-  final String? helpTitle;
-  final String? helpDescription;
-
-  final GlobalKey showcaseKey = GlobalKey();
 
   ExpandedButtonData({
     required this.icon,
     required this.text,
     required this.onPressed,
-    this.helpTitle,
-    this.helpDescription,
   });
 }
 
@@ -350,36 +313,38 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ShowCaseWidget(
-      onFinish: () {
-        // Ensure the tour doesn't play again when the user is finished with it
-        final settings = context.read<SettingsService>();
+    return StreamBuilder<AuthState>(
+      stream: Supabase.instance.client.auth.onAuthStateChange,
+      builder: (BuildContext context, AsyncSnapshot snapshot) {
+        Widget body;
 
-        settings.setSetting('_showTour', false);
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          body = const Scaffold(
+            key: ValueKey('loading'),
+            body: Center(child: CircularProgressIndicator()),
+          );
+        } else if (Supabase.instance.client.auth.currentUser != null) {
+          var createdAt = DateTime.parse(
+            Supabase.instance.client.auth.currentUser!.createdAt,
+          );
+          final settings = context.read<SettingsService>();
+
+          if (settings.settings['_showTour'] &&
+              DateTime.now().difference(createdAt) < Duration(minutes: 5)) {
+            // If the account is less than five minutes old, it's probably new
+            body = const OnboardingManager();
+          } else {
+            body = const NavManager(key: ValueKey('home'));
+          }
+        } else {
+          body = const LoginPage(key: ValueKey('login'));
+        }
+
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          child: body,
+        );
       },
-      builder:
-          (context) => StreamBuilder<AuthState>(
-            stream: Supabase.instance.client.auth.onAuthStateChange,
-            builder: (BuildContext context, AsyncSnapshot snapshot) {
-              Widget body;
-
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                body = const Scaffold(
-                  key: ValueKey('loading'),
-                  body: Center(child: CircularProgressIndicator()),
-                );
-              } else if (Supabase.instance.client.auth.currentUser != null) {
-                body = const NavManager(key: ValueKey('home'));
-              } else {
-                body = const LoginPage(key: ValueKey('login'));
-              }
-
-              return AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                child: body,
-              );
-            },
-          ),
     );
   }
 }
