@@ -33,14 +33,20 @@ class _OnboardingManagerState extends State<OnboardingManager> {
   int currentPageIndex = 0;
 
   List<Widget> get onboardingPages => [
-    OnboardingAccount(key: _accountFormKey, initialData: _accountData),
     OnboardingUserAccount(key: _personalFormKey, initialData: _name),
+    OnboardingAccount(key: _accountFormKey, initialData: _accountData),
+    OnboardingInformation(key: ValueKey('onboardingInfo')),
   ];
 
   void _onNextPressed() {
     // TODO: Switch this based on what currentPageIndex is.
     switch (currentPageIndex) {
       case 0:
+        setState(() {
+          _name = _personalFormKey.currentState?.getName();
+        });
+        break;
+      case 1:
         if (!(_accountFormKey.currentState?.validateForm() ?? false)) return;
 
         final OnboardingAccountData? accountData =
@@ -50,10 +56,7 @@ class _OnboardingManagerState extends State<OnboardingManager> {
           setState(() => _accountData = accountData);
         }
         break;
-      case 1: // This should be the final step
-        setState(() {
-          _name = _personalFormKey.currentState?.getName();
-        });
+      case 2: // This should be the final step
         _onSubmit();
         break;
     }
@@ -136,9 +139,40 @@ class _OnboardingManagerState extends State<OnboardingManager> {
           child: AnimatedSwitcher(
             duration: Duration(milliseconds: 100),
             child: onboardingPages[currentPageIndex],
+            // Custom layout builder is necessary to top-align all items in the
+            // stack to ensure scrollable ones don't get center-positioned and
+            // cause the screen to jump
+            layoutBuilder:
+                (Widget? currentChild, List<Widget> previousChildren) => Stack(
+                  alignment: Alignment.topCenter,
+                  children: [
+                    ...previousChildren,
+                    if (currentChild != null) currentChild,
+                  ],
+                ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class OnboardingHeader extends StatelessWidget {
+  final String title;
+  final String? description;
+
+  const OnboardingHeader({super.key, required this.title, this.description});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(title, style: Theme.of(context).textTheme.headlineLarge),
+        if (description != null) SizedBox(height: 12.0),
+        if (description != null)
+          Text(description!, style: Theme.of(context).textTheme.bodyLarge),
+        SizedBox(height: 32),
+      ],
     );
   }
 }
@@ -172,16 +206,10 @@ class _OnboardingUserAccountState extends State<OnboardingUserAccount> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(
-          'Tell us about yourself',
-          style: Theme.of(context).textTheme.headlineLarge,
+        OnboardingHeader(
+          title: 'Tell us about yourself',
+          description: 'This information is used to personalize Budgeteer',
         ),
-        SizedBox(height: 12.0),
-        Text(
-          'This information is used to personalize Budgeteer',
-          style: Theme.of(context).textTheme.bodyLarge,
-        ),
-        SizedBox(height: 32),
         TextInputEditField(
           label: 'Your first name (optional)',
           controller: controller,
@@ -238,16 +266,11 @@ class _OnboardingAccountState extends State<OnboardingAccount> {
       key: _formKey,
       child: Column(
         children: [
-          Text(
-            'Create your first account',
-            style: Theme.of(context).textTheme.headlineLarge,
+          OnboardingHeader(
+            title: 'Create your first account',
+            description:
+                'Accounts help track where your money is kept, like in a checking account or as cash',
           ),
-          SizedBox(height: 12.0),
-          Text(
-            'Accounts help track where your money is kept, like in a checking account or as cash',
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-          SizedBox(height: 32),
           TextInputEditField(
             label: 'Account Name',
             controller: nameController,
@@ -260,6 +283,75 @@ class _OnboardingAccountState extends State<OnboardingAccount> {
             allowZero: true,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class OnboardingInformation extends StatelessWidget {
+  const OnboardingInformation({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          OnboardingHeader(
+            title: 'Learn more about Budgeteer',
+            description:
+                'Discover the best ways to utilize features within the app',
+          ),
+          ExpandingHelpTile(
+            title: 'Transactions',
+            description:
+                'Transactions are the most fundamental aspect of Budgeteer. They allow you to spend, receive, and transfer funds.',
+          ),
+          SizedBox(height: 8.0),
+          ExpandingHelpTile(
+            title: 'Accounts',
+            description:
+                'Accounts are used to track where your money is stored. For example, a new account may be created for a bank account, a physical wallet, or digital store.',
+          ),
+          SizedBox(height: 8.0),
+          ExpandingHelpTile(
+            title: 'Categories',
+            description:
+                'Categories can be considered "budgets" that help organize transactions into spending groups. You can limit the spending of a category to ensure you don\'t spend too much in a certain amount of time.',
+          ),
+          SizedBox(height: 8.0),
+          ExpandingHelpTile(
+            title: 'Goals',
+            description:
+                'A goal functions similarly to an account, but is used to track money being put toward a financial goal like buying something. While you still physically have the money put toward a goal, Budgeteer will ignore it as if it was already spent.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ExpandingHelpTile extends StatelessWidget {
+  final String title;
+  final String description;
+
+  const ExpandingHelpTile({
+    super.key,
+    required this.title,
+    required this.description,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        shape: const Border(),
+        title: Text(title),
+        expandedAlignment: Alignment.topLeft,
+        childrenPadding: EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
+        children: [Text(description)],
       ),
     );
   }

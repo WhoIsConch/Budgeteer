@@ -1,4 +1,4 @@
-import 'package:budget/appui/onboarding/onboarding.dart';
+import 'package:budget/appui/pages/onboarding.dart';
 import 'package:budget/providers/snackbar_provider.dart';
 import 'package:budget/appui/pages/history.dart';
 import 'package:budget/appui/pages/login.dart';
