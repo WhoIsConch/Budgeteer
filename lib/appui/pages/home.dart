@@ -1,5 +1,6 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:budget/appui/components/status.dart';
+import 'package:budget/appui/pages/settings.dart';
 import 'package:budget/models/filters.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/tools.dart';
@@ -264,7 +265,14 @@ class WelcomeHeader extends StatelessWidget {
               ),
             ),
           ),
-          IconButton(icon: const Icon(Icons.person), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => SettingsPage()));
+            },
+          ),
         ],
       ),
     );

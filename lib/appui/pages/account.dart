@@ -1,5 +1,6 @@
 import 'package:budget/appui/components/help_popup.dart';
 import 'package:budget/appui/components/objects_list.dart';
+import 'package:budget/appui/pages/settings.dart';
 import 'package:budget/models/database_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
@@ -94,6 +95,13 @@ class Account extends StatelessWidget {
                           description: 'You are being helped',
                         ),
                   ),
+            ),
+            TextButton(
+              child: Text('Open settings'),
+              onPressed:
+                  () => Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => SettingsPage())),
             ),
             SizedBox(height: 400, child: ObjectsList<GoalTileableAdapter>()),
           ],

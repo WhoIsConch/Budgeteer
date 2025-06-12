@@ -1,6 +1,7 @@
 import 'package:budget/utils/tools.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // I realize these settings need a major rewrite
 
@@ -66,5 +67,16 @@ class SettingsService with ChangeNotifier {
         _prefs.setInt(name, v.index);
         break;
     }
+  }
+
+  String? get displayName =>
+      Supabase.instance.client.auth.currentUser?.userMetadata?['full_name'];
+
+  set displayName(String? other) {
+    if (other == null) throw 'Display name shouldn\'t be set null';
+
+    Supabase.instance.client.auth.updateUser(
+      UserAttributes(data: {'full_name': other}),
+    );
   }
 }
