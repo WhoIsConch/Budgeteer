@@ -27,7 +27,15 @@ class ManageTransactionPage extends StatefulWidget {
 }
 
 class _ManageTransactionPageState extends State<ManageTransactionPage> {
-  final List<String> _validControllers = ['amount', 'title', 'notes', 'date'];
+  final List<String> _validControllers = [
+    'amount',
+    'title',
+    'notes',
+    'date',
+    'category',
+    'goal',
+    'account',
+  ];
   late final Map<String, TextEditingController> controllers;
 
   DateTime _selectedDate = DateTime.now();
@@ -358,6 +366,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                             (newCategory) => setState(
                               () => _selectedCategoryPair = newCategory,
                             ),
+                        controller: controllers['category'],
                         values: values,
                         labels: labels,
                         errorText: errorText,
@@ -391,6 +400,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                       state.didChange(result);
                       setState(() {
                         _selectedCategoryPair = result;
+                        controllers['category']!.text = result.category.name;
                       });
                     }
 
@@ -439,6 +449,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                         values: goals,
                         labels: labels,
                         helperText: helperText,
+                        controller: controllers['goal'],
                       );
                     },
                   ),
@@ -466,6 +477,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                       fieldState.didChange(result);
                       setState(() {
                         _selectedGoal = result;
+                        controllers['goal']!.text = result.goal.name;
                       });
                     }
 
@@ -538,7 +550,6 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                   tooltip:
                       _selectedAccount == null ? 'New account' : 'Edit account',
                   onPressed: () async {
-                    print("Pressed");
                     final result = await Navigator.of(context).push(
                       MaterialPageRoute(
                         builder:
@@ -548,13 +559,11 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                       ),
                     );
 
-                    print("After");
-
                     if (result is AccountWithTotal) {
-                      print(result);
                       fieldState.didChange(result);
                       setState(() {
                         _selectedAccount = result;
+                        controllers['account']!.text = result.account.name;
                       });
                     }
                   },
