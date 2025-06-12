@@ -42,9 +42,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
     if (newRange == null) return;
 
-    provider.updateFilter(
-      DateRangeFilter(newRange),
-    );
+    provider.updateFilter(DateRangeFilter(newRange));
   }
 
   DropdownMenu getDateRangeDropdown(BuildContext context) {
@@ -106,11 +104,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
       },
       builder: (context, _) {
         DateRangeFilter? initialRange =
-            context
-                .watch<TransactionProvider>()
-                .getFilter<DateRangeFilter>();
+            context.watch<TransactionProvider>().getFilter<DateRangeFilter>();
 
         return SingleChildScrollView(
+          clipBehavior: Clip.none,
           child: Column(
             children: [
               Row(
@@ -121,8 +118,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
                     iconSize: 32,
                     icon: const Icon(Icons.date_range),
                     onPressed:
-                        () =>
-                            pickDateRange(context, initialRange: initialRange?.dateRange),
+                        () => pickDateRange(
+                          context,
+                          initialRange: initialRange?.dateRange,
+                        ),
                   ),
                 ],
               ),
