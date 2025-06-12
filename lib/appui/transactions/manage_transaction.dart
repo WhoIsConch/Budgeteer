@@ -31,7 +31,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   late final Map<String, TextEditingController> controllers;
 
   DateTime _selectedDate = DateTime.now();
-  TransactionType _selectedType = TransactionType.income;
+  TransactionType _selectedType = TransactionType.expense;
   CategoryWithAmount? _selectedCategoryPair;
   AccountWithTotal? _selectedAccount;
   GoalWithAchievedAmount? _selectedGoal;
