@@ -678,7 +678,7 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
-  QueryWithSum _getCategoriesWithAmountsQuery() {
+  QueryWithSum _getCategoriesWithAmountsQuery({bool net = false}) {
     // Get the start and end date to look for the values
     Expression<String> startDate = CaseWhenExpression<String>(
       cases:
@@ -701,7 +701,13 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
 
     // A filter to sign the amount, since we always want the total amount in
     // a category to be the net value
-    final signedAmount = db.getSignedTransactionSumQuery(summed: false);
+    Expression<double> signedAmount;
+
+    if (net) {
+      signedAmount = db.getSignedTransactionSumQuery(summed: false);
+    } else {
+      signedAmount = db.transactions.amount;
+    }
 
     // The actual condition we're going to filter by. If the reset increment is
     // never, we can't filter by dates so we ensure the filter is always true,
@@ -751,7 +757,7 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     QueryWithSum queryWithSum;
 
     if (sumByResetIncrement) {
-      queryWithSum = _getCategoriesWithAmountsQuery();
+      queryWithSum = _getCategoriesWithAmountsQuery(net: net);
     } else {
       queryWithSum = db.getCombinedQuery(
         categories,

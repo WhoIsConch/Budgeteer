@@ -32,14 +32,17 @@ class _TopContainersState extends State<TopContainers> {
 
             categories.sort((a, b) => b.amount.compareTo(a.amount));
 
-            final maxAmount = categories[0].amount;
+            final totalAmount = categories.fold(
+              0.0,
+              (amt, pair) => amt + pair.amount,
+            );
 
             return categories
                 .map(
                   (c) => ContainerTile(
                     title: c.category.name,
                     leadingIcon: Icons.category,
-                    progress: c.amount / maxAmount,
+                    progress: c.amount / totalAmount,
                     amount: c.amount,
                     onTap:
                         () => Navigator.of(context).push(
@@ -59,14 +62,18 @@ class _TopContainersState extends State<TopContainers> {
             if (accounts.isEmpty) return [];
 
             accounts.sort((a, b) => b.total.compareTo(a.total));
-            final maxTotal = accounts[0].total;
+
+            final totalAmount = accounts.fold(
+              0.0,
+              (amt, pair) => amt + pair.total,
+            );
 
             return accounts
                 .map(
                   (a) => ContainerTile(
                     title: a.account.name,
                     leadingIcon: Icons.account_balance,
-                    progress: a.total / maxTotal,
+                    progress: a.total / totalAmount,
                     amount: a.total,
                   ),
                 )
@@ -80,14 +87,18 @@ class _TopContainersState extends State<TopContainers> {
             if (goals.isEmpty) return [];
 
             goals.sort((a, b) => b.achievedAmount.compareTo(a.achievedAmount));
-            final maxAmount = goals[0].achievedAmount;
+
+            final totalAmount = goals.fold(
+              0.0,
+              (amt, pair) => amt + pair.achievedAmount,
+            );
 
             return goals
                 .map(
                   (g) => ContainerTile(
                     title: g.goal.name,
                     leadingIcon: Icons.flag,
-                    progress: g.achievedAmount / maxAmount,
+                    progress: g.achievedAmount / totalAmount,
                     amount: g.achievedAmount,
                     onTap:
                         () => Navigator.of(context).push(
