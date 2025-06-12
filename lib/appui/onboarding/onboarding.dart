@@ -25,6 +25,7 @@ class OnboardingManager extends StatefulWidget {
 
 class _OnboardingManagerState extends State<OnboardingManager> {
   final _accountFormKey = GlobalKey<_OnboardingAccountState>();
+  final _personalFormKey = GlobalKey<_OnboardingUserAccountState>();
 
   OnboardingAccountData? _accountData;
   String? _name;
@@ -33,7 +34,7 @@ class _OnboardingManagerState extends State<OnboardingManager> {
 
   List<Widget> get onboardingPages => [
     OnboardingAccount(key: _accountFormKey, initialData: _accountData),
-    OnboardingUserAccount(),
+    OnboardingUserAccount(key: _personalFormKey, initialData: _name),
   ];
 
   void _onNextPressed() {
@@ -50,6 +51,9 @@ class _OnboardingManagerState extends State<OnboardingManager> {
         }
         break;
       case 1: // This should be the final step
+        setState(() {
+          _name = _personalFormKey.currentState?.getName();
+        });
         _onSubmit();
         break;
     }
@@ -84,8 +88,8 @@ class _OnboardingManagerState extends State<OnboardingManager> {
       );
 
       if (_name != null) {
-        Supabase.instance.client.auth.updateUser(
-          UserAttributes(data: {'display_name': _name}),
+        await Supabase.instance.client.auth.updateUser(
+          UserAttributes(data: {'full_name': _name}),
         );
       }
     }
@@ -140,17 +144,28 @@ class _OnboardingManagerState extends State<OnboardingManager> {
 }
 
 class OnboardingUserAccount extends StatefulWidget {
-  const OnboardingUserAccount({super.key});
+  final String? initialData;
+
+  const OnboardingUserAccount({super.key, this.initialData});
 
   @override
-  State<OnboardingUserAccount> createState() => OnboardingUserAccountState();
+  State<OnboardingUserAccount> createState() => _OnboardingUserAccountState();
 }
 
-class OnboardingUserAccountState extends State<OnboardingUserAccount> {
+class _OnboardingUserAccountState extends State<OnboardingUserAccount> {
   final TextEditingController controller = TextEditingController();
 
   String? getName() {
     return controller.text;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.initialData != null) {
+      controller.text = widget.initialData!;
+    }
   }
 
   @override

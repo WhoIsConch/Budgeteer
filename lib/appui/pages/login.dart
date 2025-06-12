@@ -69,6 +69,7 @@ class _LoginPageState extends State<LoginPage> {
         await supabase.auth.signUp(
           email: usernameController.text,
           password: passwordController.text,
+          data: {'full_name': 'user'},
         );
         canFinish = true;
       } catch (e) {

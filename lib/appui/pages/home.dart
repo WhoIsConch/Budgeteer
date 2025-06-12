@@ -14,6 +14,7 @@ import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -239,16 +240,28 @@ class WelcomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final userInfo = Supabase.instance.client.auth.currentUser;
+    String header;
+
+    if (userInfo == null || userInfo.userMetadata?['full_name'] == null) {
+      header = 'Welcome';
+    } else {
+      header = 'Welcome, ${userInfo.userMetadata!['full_name']}';
+    }
+
     return Padding(
       padding: const EdgeInsets.all(8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'Welcome, Noah',
-            softWrap: true,
-            style: Theme.of(context).textTheme.headlineMedium!.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
+          Expanded(
+            child: Text(
+              header,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.headlineMedium!.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ),
           IconButton(icon: const Icon(Icons.person), onPressed: () {}),
