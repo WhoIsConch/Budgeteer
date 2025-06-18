@@ -20,13 +20,17 @@ class AmountValidator {
   bypasses the input formatter somehow, this is a reasonable failsafe. 
   */
 
-    if (value == null) {
-      return 'Please enter an amount';
+    if (value == null || value.isEmpty) {
+      if (!allowZero) {
+        return 'Please enter an amount';
+      } else {
+        value = '0';
+      }
     }
 
     double? amount = double.tryParse(value);
 
-    if (amount == null || (!allowZero && amount == 0)) {
+    if (amount == null || (amount == 0 && !allowZero)) {
       return 'Please enter a valid amount';
     }
 

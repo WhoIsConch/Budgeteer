@@ -13,18 +13,6 @@ void main() {
         noZeroValidator = const AmountValidator(allowZero: false);
       });
 
-      test('amount validator rejects null amount', () {
-        final String? result = validator.validateAmount(null);
-
-        expect(result, 'Please enter an amount');
-      });
-
-      test('amount validator rejects empty string', () {
-        final String? result = validator.validateAmount('');
-
-        expect(result, 'Please enter a valid amount');
-      });
-
       test('amount validator rejects negative amounts', () {
         final String? result = validator.validateAmount('-1');
 
@@ -53,6 +41,30 @@ void main() {
         final String? result = validator.validateAmount('0');
 
         expect(result, isNull);
+      });
+
+      test('amount validator rejects null when allowZero is false', () {
+        final String? result = noZeroValidator.validateAmount(null);
+
+        expect(result, 'Please enter an amount');
+      });
+
+      test('amount validator accepts null when allowZero is true', () {
+        final String? result = validator.validateAmount(null);
+
+        expect(result, null);
+      });
+
+      test('amount validator rejects empty string when allowZero is false', () {
+        final String? result = noZeroValidator.validateAmount('');
+
+        expect(result, 'Please enter an amount');
+      });
+
+      test('amount validator accepts empty string when allowZero is true', () {
+        final String? result = validator.validateAmount('');
+
+        expect(result, null);
       });
     });
 
