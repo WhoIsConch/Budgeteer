@@ -164,9 +164,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                     ),
                 values: CategoryResetIncrement.values,
                 labels:
-                    CategoryResetIncrement.values
-                        .map((v) => v.capitalizedName())
-                        .toList(),
+                    CategoryResetIncrement.values.map((v) => v.text).toList(),
               ),
             ),
           ],

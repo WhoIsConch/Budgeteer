@@ -90,7 +90,7 @@ enum CategoryResetIncrement {
   // biweekly(3), // This is not currently usable
   monthly(4, 'Month'),
   yearly(5, 'Year'),
-  never(0, 'Never Reset');
+  never(0, 'Never');
 
   const CategoryResetIncrement(this.value, this.text);
   final num value;
@@ -98,12 +98,6 @@ enum CategoryResetIncrement {
 
   factory CategoryResetIncrement.fromValue(int value) {
     return values.firstWhere((e) => e.value == value);
-  }
-
-  String capitalizedName() {
-    if (value == 0) return 'Forever';
-
-    return '${name[0].toUpperCase()}${name.substring(1)}';
   }
 
   RelativeDateRange? get relativeDateRange => switch (value) {
