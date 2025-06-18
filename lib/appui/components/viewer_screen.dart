@@ -1,4 +1,5 @@
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:budget/utils/validators.dart';
 import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'package:flutter/material.dart';
 
@@ -13,6 +14,34 @@ class TextOverviewHeader extends StatelessWidget {
     required this.description,
     this.textColor,
   });
+
+  factory TextOverviewHeader.dollarTitle(
+    BuildContext context, {
+    required double amount,
+    required description,
+    bool? isNegative,
+  }) {
+    String prefix = '';
+
+    isNegative ??= amount.isNegative;
+
+    if (isNegative) {
+      prefix = '-';
+    }
+
+    final formattedAmount = formatAmount(amount.abs(), exact: true);
+
+    return TextOverviewHeader(
+      title: '$prefix\$$formattedAmount',
+      description: description,
+      textColor:
+          isNegative
+              ? Colors.red.harmonizeWith(Theme.of(context).colorScheme.primary)
+              : Colors.green.harmonizeWith(
+                Theme.of(context).colorScheme.primary,
+              ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

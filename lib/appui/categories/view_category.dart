@@ -45,26 +45,26 @@ class CategoryViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double progress = categoryPair.amount;
-    double remaining = categoryPair.remainingAmount ?? 0;
-    double total = category.balance ?? 0;
-    String remainingText;
-
-    final progressPrefix = progress < 0 ? '-' : '';
-
-    final formattedProgress = formatAmount(progress.abs(), round: true);
-    final formattedTotal = formatAmount(total, round: true);
-    final formattedRemaining = formatAmount(remaining.abs(), round: true);
-
-    if ((categoryPair.remainingAmount ?? 0) < 0) {
-      remainingText = '\$$formattedRemaining over budget';
-    } else {
-      remainingText = '\$$formattedRemaining remaining';
-    }
-
     final Widget header;
 
     if (category.balance != null) {
+      double progress = categoryPair.amount;
+      double remaining = categoryPair.remainingAmount ?? 0;
+      double total = category.balance ?? 0;
+      String remainingText;
+
+      final progressPrefix = progress < 0 ? '-' : '';
+
+      final formattedProgress = formatAmount(progress.abs(), round: true);
+      final formattedTotal = formatAmount(total, round: true);
+      final formattedRemaining = formatAmount(remaining.abs(), round: true);
+
+      if ((categoryPair.remainingAmount ?? 0) < 0) {
+        remainingText = '\$$formattedRemaining over budget';
+      } else {
+        remainingText = '\$$formattedRemaining remaining';
+      }
+
       header = ProgressOverviewHeader(
         title: category.name,
         description: remainingText,
@@ -74,9 +74,10 @@ class CategoryViewer extends StatelessWidget {
         progress: (categoryPair.amount.abs()) / (category.balance ?? 1),
       );
     } else {
-      header = TextOverviewHeader(
-        title: category.name,
-        description: 'Resets ${category.getTimeUntilNextReset()}',
+      header = TextOverviewHeader.dollarTitle(
+        context,
+        amount: categoryPair.amount,
+        description: category.name,
       );
     }
     return ViewerScreen(

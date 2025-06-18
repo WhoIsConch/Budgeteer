@@ -150,6 +150,7 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
               child: AmountEditField(
                 label: 'Amount',
                 controller: _controllers['amount'],
+                allowZero: true,
               ),
             ),
             Expanded(

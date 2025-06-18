@@ -96,7 +96,7 @@ class CategoryWithAmount {
   // so we subtract it from the category balance to get remaining amount.
   // This gives us how much budget is remaining in the category.
   double? get remainingAmount {
-    if (category.balance == 0) return null;
+    if (category.balance == 0 || category.balance == null) return null;
 
     return category.balance! - amount;
   }

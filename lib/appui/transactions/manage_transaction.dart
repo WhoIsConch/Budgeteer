@@ -166,20 +166,24 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   double? _getTotalCategoryBalance() {
     if (_selectedCategoryPair == null) return null;
 
-    final originalBalance =
-        _selectedCategoryPair!.amount +
-        _selectedCategoryPair!.category.balance!;
+    double adjustedBalance = 0;
 
-    double adjustedBalance = originalBalance;
+    if (_selectedCategoryPair!.category.balance != null) {
+      final originalBalance =
+          _selectedCategoryPair!.amount +
+          _selectedCategoryPair!.category.balance!;
 
-    if (isEditing &&
-        initialTransaction!.category == _selectedCategoryPair!.category.id) {
-      // This means we're editing the category and the transaction's amount still
-      // exists within the balance. Therefore, we negate it.
-      if (initialTransaction!.type == TransactionType.expense) {
-        adjustedBalance += initialTransaction!.amount;
-      } else {
-        adjustedBalance -= initialTransaction!.amount;
+      adjustedBalance = originalBalance;
+
+      if (isEditing &&
+          initialTransaction!.category == _selectedCategoryPair!.category.id) {
+        // This means we're editing the category and the transaction's amount still
+        // exists within the balance. Therefore, we negate it.
+        if (initialTransaction!.type == TransactionType.expense) {
+          adjustedBalance += initialTransaction!.amount;
+        } else {
+          adjustedBalance -= initialTransaction!.amount;
+        }
       }
     }
 
@@ -222,10 +226,18 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   String? _getCategorySubtext() {
     if (_selectedCategoryPair == null) return null;
 
-    final adjustedBalance = _getTotalCategoryBalance();
-    final formattedBalance = formatAmount(adjustedBalance ?? 0);
-
     String resetText;
+    String prefixText;
+
+    final adjustedBalance = _getTotalCategoryBalance() ?? 0;
+
+    String formattedBalance = formatAmount(adjustedBalance);
+
+    if (_selectedCategoryPair!.category.balance == null) {
+      prefixText = 'Balance';
+    } else {
+      prefixText = 'Remaining';
+    }
 
     if (_selectedCategoryPair!.category.resetIncrement ==
         CategoryResetIncrement.never) {
@@ -234,7 +246,17 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
       resetText = _selectedCategoryPair!.category.getTimeUntilNextReset();
     }
 
-    return 'Remaining: \$$formattedBalance | $resetText';
+    String prefixSymbol;
+
+    if (adjustedBalance.isNegative) {
+      // Ensure the minus sign is outside of the dollar sign
+      prefixSymbol = '-';
+      formattedBalance = formattedBalance.substring(1);
+    } else {
+      prefixSymbol = '';
+    }
+
+    return '$prefixText: $prefixSymbol\$$formattedBalance | $resetText';
   }
 
   @override

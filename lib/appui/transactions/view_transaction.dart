@@ -2,12 +2,10 @@ import 'package:budget/models/database_extensions.dart';
 import 'package:budget/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/enums.dart';
-import 'package:budget/utils/validators.dart';
 import 'package:budget/appui/components/viewer_screen.dart';
 import 'package:budget/appui/transactions/manage_transaction.dart';
 import 'package:budget/appui/categories/view_category.dart';
 import 'package:budget/appui/goals/view_goal.dart';
-import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -116,22 +114,6 @@ class ViewTransaction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color textColor;
-    String prefix;
-
-    final title = formatAmount(transaction.amount);
-    final description = transaction.title;
-
-    if (transaction.type == TransactionType.expense) {
-      textColor = Theme.of(context).colorScheme.error;
-      prefix = '-';
-    } else {
-      textColor = Colors.green.harmonizeWith(
-        Theme.of(context).colorScheme.primary,
-      );
-      prefix = '+';
-    }
-
     return ViewerScreen(
       onEdit:
           () => Navigator.of(context).pushReplacement(
@@ -158,10 +140,11 @@ class ViewTransaction extends StatelessWidget {
         Navigator.of(context).pop();
       },
       title: 'View transaction',
-      header: TextOverviewHeader(
-        title: '$prefix\$$title',
-        description: description,
-        textColor: textColor,
+      header: TextOverviewHeader.dollarTitle(
+        context,
+        amount: transaction.amount,
+        description: transaction.title,
+        isNegative: transaction.type == TransactionType.expense,
       ),
       properties: ObjectPropertiesList(properties: _getProperties(context)),
     );
