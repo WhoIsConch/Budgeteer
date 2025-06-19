@@ -47,10 +47,12 @@ class CategoryViewer extends StatelessWidget {
   Widget build(BuildContext context) {
     final Widget header;
 
-    if (category.balance != null) {
-      double progress = categoryPair.amount;
+    if (category.balance != null && category.balance != 0) {
+      // The progress gets negated since we want to show a positive number
+      // for expenses and negative number for income
+      double progress = categoryPair.amount * -1;
       double remaining = categoryPair.remainingAmount ?? 0;
-      double total = category.balance ?? 0;
+      double total = category.balance!;
       String remainingText;
 
       final progressPrefix = progress < 0 ? '-' : '';
@@ -65,13 +67,21 @@ class CategoryViewer extends StatelessWidget {
         remainingText = '\$$formattedRemaining remaining';
       }
 
+      double chartProgress;
+
+      if (progress.isNegative) {
+        chartProgress = 0;
+      } else {
+        chartProgress = (categoryPair.amount.abs()) / (category.balance ?? 1);
+      }
+
       header = ProgressOverviewHeader(
         title: category.name,
         description: remainingText,
         insidePrimary: '$progressPrefix\$$formattedProgress',
         insideSecondary:
             '$progressPrefix\$$formattedProgress/\$$formattedTotal',
-        progress: (categoryPair.amount.abs()) / (category.balance ?? 1),
+        progress: chartProgress,
       );
     } else {
       header = TextOverviewHeader.dollarTitle(

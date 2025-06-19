@@ -98,7 +98,9 @@ class CategoryWithAmount {
   double? get remainingAmount {
     if (category.balance == 0 || category.balance == null) return null;
 
-    return category.balance! - amount;
+    // Since the amount is signed, where negative is spent money, we add the
+    // balance to the total.
+    return category.balance! + amount;
   }
 
   @override
