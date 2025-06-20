@@ -139,7 +139,12 @@ Future<void> openDatabase() async {
 
   if (isLoggedIn()) {
     currentConnector = SupabaseConnector();
-    db.connect(connector: currentConnector);
+    db.connect(
+      connector: currentConnector,
+      options: const SyncOptions(
+        syncImplementation: SyncClientImplementation.rust,
+      ),
+    );
   }
 
   Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
