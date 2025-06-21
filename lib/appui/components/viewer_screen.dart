@@ -147,7 +147,7 @@ class ProgressOverviewHeader extends StatelessWidget {
               if (title != null)
                 Text(
                   title!,
-                  style: Theme.of(context).textTheme.displaySmall!.copyWith(
+                  style: Theme.of(context).textTheme.headlineSmall!.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -408,15 +408,17 @@ class ViewerScreen extends StatelessWidget {
       appBar: AppBar(title: Text(title), actions: actions),
       body: Padding(
         padding: const EdgeInsets.all(28.0),
-        child: Column(
-          spacing: 28.0,
-          children: [
-            SizedBox(height: 24),
-            header,
-            SizedBox(height: 20),
-            properties,
-            if (body != null) body!,
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            spacing: 28.0,
+            children: [
+              SizedBox(height: 24),
+              header,
+              SizedBox(height: 20),
+              properties,
+              if (body != null) body!,
+            ],
+          ),
         ),
       ),
     );

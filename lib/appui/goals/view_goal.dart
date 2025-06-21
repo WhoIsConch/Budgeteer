@@ -137,7 +137,8 @@ class _GoalViewerState extends State<GoalViewer> {
           properties: ObjectPropertiesList(
             properties: _getProperties(context, goalPair),
           ),
-          body: Expanded(
+          body: SizedBox(
+            height: 300,
             child: ObjectsList<TransactionTileableAdapter>(
               showBackground: false,
               filters: [
