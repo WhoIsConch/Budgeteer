@@ -41,8 +41,8 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   DateTime _selectedDate = DateTime.now();
   TransactionType _selectedType = TransactionType.expense;
   CategoryWithAmount? _selectedCategoryPair;
-  AccountWithTotal? _selectedAccount;
-  GoalWithAchievedAmount? _selectedGoal;
+  AccountWithAmount? _selectedAccount;
+  GoalWithAmount? _selectedGoal;
 
   HydratedTransaction? hydratedTransaction;
 
@@ -141,7 +141,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
   double? _getTotalAccountBalance() {
     if (_selectedAccount == null) return null;
 
-    double adjustedTotal = _selectedAccount!.total;
+    double adjustedTotal = _selectedAccount!.netAmount;
 
     if (isEditing &&
         initialTransaction!.accountId == _selectedAccount!.account.id) {
@@ -170,7 +170,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
 
     if (_selectedCategoryPair!.category.balance != null) {
       final originalBalance =
-          _selectedCategoryPair!.amount +
+          _selectedCategoryPair!.netAmount +
           _selectedCategoryPair!.category.balance!;
 
       adjustedBalance = originalBalance;
@@ -202,7 +202,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
     if (_selectedGoal == null) return null;
 
     double totalRemaining =
-        _selectedGoal!.goal.cost - (_selectedGoal!.achievedAmount);
+        _selectedGoal!.goal.cost - (_selectedGoal!.netAmount);
 
     if (isEditing && initialTransaction!.goalId == _selectedGoal!.goal.id) {
       if (initialTransaction!.type == TransactionType.expense) {
@@ -433,7 +433,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
             );
           },
         ),
-        FormField<GoalWithAchievedAmount?>(
+        FormField<GoalWithAmount?>(
           builder: (fieldState) {
             return EditFieldRow(
               spacing: 0,
@@ -442,7 +442,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                   child: StreamBuilder(
                     stream: context.read<AppDatabase>().goalDao.watchGoals(),
                     builder: (context, snapshot) {
-                      final List<GoalWithAchievedAmount?> goals =
+                      final List<GoalWithAmount?> goals =
                           snapshot.hasData ? [...snapshot.data!, null] : [];
                       final labels =
                           goals.map((e) => e?.goal.name ?? 'No goal').toList();
@@ -495,7 +495,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                       ),
                     );
 
-                    if (result is GoalWithAchievedAmount) {
+                    if (result is GoalWithAmount) {
                       fieldState.didChange(result);
                       setState(() {
                         _selectedGoal = result;
@@ -510,7 +510,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
             );
           },
         ),
-        FormField<AccountWithTotal?>(
+        FormField<AccountWithAmount?>(
           builder: (fieldState) {
             return EditFieldRow(
               spacing: 0,
@@ -520,7 +520,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                     stream:
                         context.read<AppDatabase>().accountDao.watchAccounts(),
                     builder: (context, snapshot) {
-                      final List<AccountWithTotal?> accounts =
+                      final List<AccountWithAmount?> accounts =
                           snapshot.hasData ? [...snapshot.data!, null] : [];
                       final labels =
                           accounts
@@ -581,7 +581,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                       ),
                     );
 
-                    if (result is AccountWithTotal) {
+                    if (result is AccountWithAmount) {
                       fieldState.didChange(result);
                       setState(() {
                         _selectedAccount = result;

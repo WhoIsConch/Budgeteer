@@ -22,50 +22,66 @@ class _TopContainersState extends State<TopContainers> {
     final db = context.read<AppDatabase>();
     final filters = context.watch<TransactionProvider>().filters;
 
+    // These streams are meant to return ContainerTiles, which have progress
+    // bars. The progress bars represent the total amount of money spent
+    // regarding the filtered information. The full progress bar represents the
+    // total amount of money that has passed through that type of container,
+    // while the progress represents how much money has passed through that
+    // specific container.
+
+    // TODO: Make this code reusable instead of copy and pasting the same
+    // thing to each stream
+
     return switch (_selectedContainer) {
-      ContainerType.category => db.categoryDao
-          .watchCategories(filters: filters, net: false)
-          .map((e) {
-            final categories = e.where((cp) => cp.amount != 0).toList();
+      ContainerType.category =>
+        db.categoryDao.watchCategories(filters: filters).map((e) {
+          // Get the containers that have actually had money pass through them
+          final categories = e.where((cp) => cp.cumulativeAmount != 0).toList();
 
-            if (categories.isEmpty) return [];
+          if (categories.isEmpty) return [];
 
-            categories.sort((a, b) => b.amount.compareTo(a.amount));
+          // Sort these categories from most cash flow to least cash flow
+          categories.sort(
+            (a, b) => b.cumulativeAmount.compareTo(a.cumulativeAmount),
+          );
 
-            final totalAmount = categories.fold(
-              0.0,
-              (amt, pair) => amt + pair.amount,
-            );
+          // Combine all the categories' amounts to get the total amount
+          final totalAmount = categories.fold(
+            0.0,
+            (amt, pair) => amt + pair.cumulativeAmount,
+          );
 
-            return categories
-                .map(
-                  (c) => ContainerTile(
-                    title: c.category.name,
-                    leadingIcon: Icons.category,
-                    progress: c.amount / totalAmount,
-                    amount: c.amount,
-                    onTap:
-                        () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => CategoryViewer(categoryPair: c),
-                          ),
+          return categories
+              .map(
+                (c) => ContainerTile(
+                  title: c.category.name,
+                  leadingIcon: Icons.category,
+                  progress: c.cumulativeAmount / totalAmount,
+                  amount: c.cumulativeAmount,
+                  onTap:
+                      () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => CategoryViewer(categoryPair: c),
                         ),
-                  ),
-                )
-                .toList();
-          }),
+                      ),
+                ),
+              )
+              .toList();
+        }),
       ContainerType.account => db.accountDao
-          .watchAccounts(filters: filters, net: false)
+          .watchAccounts(filters: filters)
           .map((e) {
-            final accounts = e.where((ap) => ap.total != 0).toList();
+            final accounts = e.where((ap) => ap.cumulativeAmount != 0).toList();
 
             if (accounts.isEmpty) return [];
 
-            accounts.sort((a, b) => b.total.compareTo(a.total));
+            accounts.sort(
+              (a, b) => b.cumulativeAmount.compareTo(a.cumulativeAmount),
+            );
 
             final totalAmount = accounts.fold(
               0.0,
-              (amt, pair) => amt + pair.total,
+              (amt, pair) => amt + pair.cumulativeAmount,
             );
 
             return accounts
@@ -73,43 +89,41 @@ class _TopContainersState extends State<TopContainers> {
                   (a) => ContainerTile(
                     title: a.account.name,
                     leadingIcon: Icons.account_balance,
-                    progress: a.total / totalAmount,
-                    amount: a.total,
+                    progress: a.cumulativeAmount / totalAmount,
+                    amount: a.cumulativeAmount,
                   ),
                 )
                 .toList();
           }),
-      ContainerType.goal => db.goalDao
-          .watchGoals(filters: filters, net: false)
-          .map((e) {
-            final goals = e.where((gp) => gp.achievedAmount != 0).toList();
+      ContainerType.goal => db.goalDao.watchGoals(filters: filters).map((e) {
+        final goals = e.where((gp) => gp.cumulativeAmount != 0).toList();
 
-            if (goals.isEmpty) return [];
+        if (goals.isEmpty) return [];
 
-            goals.sort((a, b) => b.achievedAmount.compareTo(a.achievedAmount));
+        goals.sort((a, b) => b.cumulativeAmount.compareTo(a.cumulativeAmount));
 
-            final totalAmount = goals.fold(
-              0.0,
-              (amt, pair) => amt + pair.achievedAmount,
-            );
+        final totalAmount = goals.fold(
+          0.0,
+          (amt, pair) => amt + pair.cumulativeAmount,
+        );
 
-            return goals
-                .map(
-                  (g) => ContainerTile(
-                    title: g.goal.name,
-                    leadingIcon: Icons.flag,
-                    progress: g.achievedAmount / totalAmount,
-                    amount: g.achievedAmount,
-                    onTap:
-                        () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => GoalViewer(initialGoalPair: g),
-                          ),
-                        ),
-                  ),
-                )
-                .toList();
-          }),
+        return goals
+            .map(
+              (g) => ContainerTile(
+                title: g.goal.name,
+                leadingIcon: Icons.flag,
+                progress: g.cumulativeAmount / totalAmount,
+                amount: g.cumulativeAmount,
+                onTap:
+                    () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => GoalViewer(initialGoalPair: g),
+                      ),
+                    ),
+              ),
+            )
+            .toList();
+      }),
     };
   }
 

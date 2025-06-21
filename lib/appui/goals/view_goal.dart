@@ -11,7 +11,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class GoalViewer extends StatefulWidget {
-  final GoalWithAchievedAmount initialGoalPair;
+  final GoalWithAmount initialGoalPair;
 
   const GoalViewer({super.key, required this.initialGoalPair});
 
@@ -22,7 +22,7 @@ class GoalViewer extends StatefulWidget {
 class _GoalViewerState extends State<GoalViewer> {
   List<ObjectPropertyData> _getProperties(
     BuildContext context,
-    GoalWithAchievedAmount goalPair,
+    GoalWithAmount goalPair,
   ) {
     final goal = goalPair.goal;
     final percentage = goalPair.calculatePercentage();
@@ -86,7 +86,7 @@ class _GoalViewerState extends State<GoalViewer> {
   Widget build(BuildContext context) {
     final db = context.read<AppDatabase>();
 
-    return StreamBuilder<GoalWithAchievedAmount>(
+    return StreamBuilder<GoalWithAmount>(
       initialData: widget.initialGoalPair,
       stream: db.goalDao.watchGoalById(widget.initialGoalPair.goal.id),
       builder: (context, snapshot) {
@@ -99,7 +99,7 @@ class _GoalViewerState extends State<GoalViewer> {
         final goalPair = snapshot.data!;
         final goal = goalPair.goal;
 
-        final achieved = goalPair.achievedAmount;
+        final achieved = goalPair.netAmount;
         final total = goal.cost;
 
         String prefix = '';

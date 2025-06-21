@@ -111,6 +111,18 @@ class Goals extends Table with SoftDeletableTable {
 class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
   AccountDao(super.db);
 
+  AccountWithAmount _buildAccountPair(TypedResult row, QueryWithSums query) {
+    final account = row.readTable(accounts);
+    final expenses = row.read<double>(query.expenses);
+    final income = row.read<double>(query.income);
+
+    return AccountWithAmount(
+      account: account,
+      income: income ?? 0,
+      expenses: expenses ?? 0,
+    );
+  }
+
   Future<bool> isPriorityTaken(int newPriority, {String? currentItemId}) async {
     /// Ensure that a priority field for an account isn't taken.
     final query = select(accounts)
@@ -125,16 +137,14 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     return existingItems.isNotEmpty;
   }
 
-  Stream<List<AccountWithTotal>> watchAccounts({
+  Stream<List<AccountWithAmount>> watchAccounts({
     List<Filter>? filters,
     includeArchived = false,
     sortDescending = true,
-    net = true,
   }) {
     final queryWithSum = db.getCombinedQuery(
       accounts,
       includeArchived: includeArchived,
-      net: net,
     );
 
     if (filters != null) {
@@ -142,13 +152,8 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     }
 
     return queryWithSum.query.watch().map((rows) {
-      final List<AccountWithTotal> accountsWithTotals =
-          rows.map((row) {
-            final account = row.readTable(accounts);
-            final total = row.read<double>(queryWithSum.sum);
-
-            return AccountWithTotal(account: account, total: total ?? 0);
-          }).toList();
+      final accountsWithTotals =
+          rows.map((row) => _buildAccountPair(row, queryWithSum)).toList();
 
       accountsWithTotals.sort((a, b) {
         if (a.account.priority != null && b.account.priority == null) {
@@ -170,7 +175,8 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     });
   }
 
-  Stream<AccountWithTotal> watchAccountById(
+  /// Watch an account
+  Stream<AccountWithAmount> watchAccountById(
     String id, {
     bool includeArchived = true,
   }) {
@@ -180,17 +186,16 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     );
     final filteredQuery = queryWithSum.query..where(accounts.id.equals(id));
 
-    final mappedSelectable = filteredQuery.map((row) {
-      final account = row.readTable(accounts);
-      final total = row.read<double>(queryWithSum.sum) ?? 0;
-
-      return AccountWithTotal(account: account, total: total);
-    });
+    final mappedSelectable = filteredQuery.map(
+      (row) => _buildAccountPair(row, queryWithSum),
+    );
 
     return mappedSelectable.watchSingle();
   }
 
-  Future<AccountWithTotal> getAccountById(
+  // TODO: Remove this and replace with watchAccountById().first
+  /// Get an account with its UUID
+  Future<AccountWithAmount> getAccountById(
     String id, {
     bool includeArchived = true,
   }) {
@@ -200,12 +205,9 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     );
     final filteredQuery = queryWithSum.query..where(accounts.id.equals(id));
 
-    final mappedSelectable = filteredQuery.map((row) {
-      final account = row.readTable(accounts);
-      final total = row.read<double>(queryWithSum.sum) ?? 0;
-
-      return AccountWithTotal(account: account, total: total);
-    });
+    final mappedSelectable = filteredQuery.map(
+      (row) => _buildAccountPair(row, queryWithSum),
+    );
 
     return mappedSelectable.getSingle();
   }
@@ -268,16 +270,26 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
 class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
   GoalDao(super.db);
 
-  Stream<List<GoalWithAchievedAmount>> watchGoals({
+  GoalWithAmount _buildGoalPair(TypedResult row, QueryWithSums query) {
+    final goal = row.readTable(goals);
+    final expenses = row.read<double>(query.expenses);
+    final income = row.read<double>(query.income);
+
+    return GoalWithAmount(
+      goal: goal,
+      income: income ?? 0,
+      expenses: expenses ?? 0,
+    );
+  }
+
+  Stream<List<GoalWithAmount>> watchGoals({
     List<Filter>? filters,
     bool includeFinished = true,
     bool sortDescending = true,
-    bool net = true,
   }) {
     final queryWithSum = db.getCombinedQuery(
       goals,
       includeArchived: includeFinished,
-      net: net,
       showGoals: true,
     );
 
@@ -287,16 +299,8 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
 
     // View all of the goals in the database
     return queryWithSum.query.watch().map((rows) {
-      final List<GoalWithAchievedAmount> goalsWithAmounts =
-          rows.map((row) {
-            final goal = row.readTable(goals);
-            final achievedAmount = row.read<double>(queryWithSum.sum) ?? 0.0;
-
-            return GoalWithAchievedAmount(
-              goal: goal,
-              achievedAmount: achievedAmount,
-            );
-          }).toList();
+      final List<GoalWithAmount> goalsWithAmounts =
+          rows.map((row) => _buildGoalPair(row, queryWithSum)).toList();
 
       goalsWithAmounts.sort((a, b) {
         final double percentageA = a.calculatePercentage();
@@ -321,11 +325,16 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
           t.isArchived.equals(true).not(),
     );
 
-    final signedSumQuery = db.getSignedTransactionSumQuery(showGoals: true);
+    // TODO: Maybe optimize with the only good use of getSignedTransactionsQuery
+    final signedSumQueries = db.getTransactionSumQueries(showGoals: true);
 
     return query
-        .addColumns([signedSumQuery])
-        .map((row) => row.read(signedSumQuery))
+        .addColumns([signedSumQueries.expenses, signedSumQueries.income])
+        .map(
+          (row) =>
+              (row.read(signedSumQueries.expenses) ?? 0) -
+              (row.read(signedSumQueries.income) ?? 0),
+        )
         .watchSingle();
   }
 
@@ -353,10 +362,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     return goal;
   }
 
-  Future<GoalWithAchievedAmount> getGoalById(
-    String id, {
-    bool includeFinished = true,
-  }) {
+  Future<GoalWithAmount> getGoalById(String id, {bool includeFinished = true}) {
     final queryWithSum = db.getCombinedQuery(
       goals,
       includeArchived: includeFinished,
@@ -365,17 +371,14 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
 
     final filteredQuery = queryWithSum.query..where(goals.id.equals(id));
 
-    final mappedSelectable = filteredQuery.map((row) {
-      final goal = row.readTable(goals);
-      final achievedAmount = row.read<double>(queryWithSum.sum) ?? 0;
-
-      return GoalWithAchievedAmount(goal: goal, achievedAmount: achievedAmount);
-    });
+    final mappedSelectable = filteredQuery.map(
+      (row) => _buildGoalPair(row, queryWithSum),
+    );
 
     return mappedSelectable.getSingle();
   }
 
-  Stream<GoalWithAchievedAmount> watchGoalById(
+  Stream<GoalWithAmount> watchGoalById(
     String id, {
     bool includeFinished = true,
   }) {
@@ -387,12 +390,9 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
 
     final filteredQuery = queryWithSum.query..where(goals.id.equals(id));
 
-    final mappedSelectable = filteredQuery.map((row) {
-      final goal = row.readTable(goals);
-      final achievedAmount = row.read<double>(queryWithSum.sum) ?? 0;
-
-      return GoalWithAchievedAmount(goal: goal, achievedAmount: achievedAmount);
-    });
+    final mappedSelectable = filteredQuery.map(
+      (row) => _buildGoalPair(row, queryWithSum),
+    );
 
     return mappedSelectable.watchSingle();
   }
@@ -507,9 +507,9 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     Transaction transaction,
   ) async {
     // TODO: Optimize this
-    GoalWithAchievedAmount? goal;
+    GoalWithAmount? goal;
     CategoryWithAmount? category;
-    AccountWithTotal? account;
+    AccountWithAmount? account;
 
     if (transaction.goalId != null) {
       goal = await db.goalDao.getGoalById(transaction.goalId!);
@@ -678,7 +678,7 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
-  QueryWithSum _getCategoriesWithAmountsQuery({bool net = false}) {
+  QueryWithSums _getCategoriesWithAmountsQuery() {
     // Get the start and end date to look for the values
     Expression<String> startDate = CaseWhenExpression<String>(
       cases:
@@ -701,13 +701,6 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
 
     // A filter to sign the amount, since we always want the total amount in
     // a category to be the net value
-    Expression<double> signedAmount;
-
-    if (net) {
-      signedAmount = db.getSignedTransactionSumQuery(summed: false);
-    } else {
-      signedAmount = db.transactions.amount;
-    }
 
     // The actual condition we're going to filter by. If the reset increment is
     // never, we can't filter by dates so we ensure the filter is always true,
@@ -722,12 +715,15 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
       orElse: dateInRangeCondition,
     );
 
+    final sums = db.getTransactionSumQueries(
+      additionalFilter: sumFilterCondition,
+    );
+
     // Construct the actual expression to put in the query, used in case the
     // signed amount's sum returns null for some reason (which it never should)
-    final conditionalSum = coalesce([
-      signedAmount.sum(filter: sumFilterCondition),
-      const Constant(0.0),
-    ]);
+    sums.expenses = coalesce([sums.expenses, const Constant(0.0)]);
+
+    sums.income = coalesce([sums.income, const Constant(0.0)]);
 
     var query = select(categories).join([
       leftOuterJoin(
@@ -743,26 +739,28 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
             categories.isDeleted.equals(false) &
                 categories.isArchived.equals(false),
           )
-          ..addColumns([conditionalSum])
+          ..addColumns([sums.expenses, sums.income])
           ..groupBy([categories.id]);
 
-    return QueryWithSum(queryWithSum, conditionalSum);
+    return QueryWithSums(
+      queryWithSum,
+      income: sums.income,
+      expenses: sums.expenses,
+    );
   }
 
-  QueryWithSum _getQueryWithSum({
+  QueryWithSums _getQueryWithSum({
     bool includeArchived = false,
-    bool net = true,
     bool sumByResetIncrement = true,
   }) {
-    QueryWithSum queryWithSum;
+    QueryWithSums queryWithSum;
 
     if (sumByResetIncrement) {
-      queryWithSum = _getCategoriesWithAmountsQuery(net: net);
+      queryWithSum = _getCategoriesWithAmountsQuery();
     } else {
       queryWithSum = db.getCombinedQuery(
         categories,
         includeArchived: includeArchived,
-        net: net,
       );
     }
 
@@ -772,12 +770,10 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
   Stream<List<CategoryWithAmount>> watchCategories({
     List<Filter>? filters,
     bool includeArchived = false,
-    bool net = true,
     bool sumByResetIncrement = true,
   }) {
     final queryWithSum = _getQueryWithSum(
       includeArchived: includeArchived,
-      net: net,
       sumByResetIncrement: sumByResetIncrement,
     );
 
@@ -791,7 +787,8 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
               .map(
                 (row) => CategoryWithAmount(
                   category: row.readTable(categories),
-                  amount: row.read<double>(queryWithSum.sum) ?? 0,
+                  expenses: row.read<double>(queryWithSum.expenses) ?? 0,
+                  income: row.read<double>(queryWithSum.income) ?? 0,
                 ),
               )
               .toList(),
@@ -801,12 +798,10 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
   Future<CategoryWithAmount?> getCategoryById(
     String id, {
     bool includeArchived = false,
-    bool net = true,
     bool sumByResetIncrement = true,
   }) async {
     final queryWithSum = _getQueryWithSum(
       includeArchived: includeArchived,
-      net: net,
       sumByResetIncrement: sumByResetIncrement,
     );
 
@@ -817,9 +812,14 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
 
     if (row != null) {
       final category = row.readTable(categories);
-      final amount = row.read<double>(queryWithSum.sum);
+      final expenses = row.read<double>(queryWithSum.expenses);
+      final income = row.read<double>(queryWithSum.income);
 
-      return CategoryWithAmount(category: category, amount: amount ?? 0);
+      return CategoryWithAmount(
+        category: category,
+        expenses: expenses ?? 0,
+        income: income ?? 0,
+      );
     } else {
       return null;
     }
@@ -871,10 +871,9 @@ class AppDatabase extends _$AppDatabase {
   @override
   int get schemaVersion => 1;
 
-  QueryWithSum getCombinedQuery<T extends SoftDeletableTable>(
+  QueryWithSums getCombinedQuery<T extends SoftDeletableTable>(
     TableInfo<T, dynamic> relatedTable, {
     bool includeArchived = false,
-    bool net = true,
     bool showGoals = false,
   }) {
     var query = select(
@@ -887,18 +886,15 @@ class AppDatabase extends _$AppDatabase {
       query.where(relatedTable.asDslTable.isArchived.not());
     }
 
-    Expression<double> sumExpression;
+    TransactionSumPair sums = getTransactionSumQueries(
+      includeArchived: includeArchived,
+      showGoals: showGoals,
+    );
 
-    if (net) {
-      sumExpression = getSignedTransactionSumQuery(showGoals: showGoals);
-    } else {
-      sumExpression = transactions.amount.sum();
-    }
-
-    query.addColumns([sumExpression]);
+    query.addColumns([sums.expenses, sums.income]);
     query.groupBy([relatedTable.asDslTable.id]);
 
-    return QueryWithSum(query, sumExpression);
+    return QueryWithSums(query, income: sums.income, expenses: sums.expenses);
   }
 
   Expression<bool> _getJoinCondition<T extends Table>(
@@ -916,6 +912,57 @@ class AppDatabase extends _$AppDatabase {
     }
   }
 
+  Expression<double> _getTypeExpr({
+    required TransactionType type,
+    bool includeArchived = false,
+    bool showGoals = false,
+    Expression<bool>? additionalFilter,
+  }) {
+    Expression<bool> sumCondition =
+        transactions.type.equalsValue(type) &
+        transactions.isDeleted.not() &
+        transactions.date.isSmallerOrEqualValue(
+          formatter.format(DateTime.now()),
+        );
+
+    if (!includeArchived) {
+      sumCondition = sumCondition & transactions.isArchived.not();
+    }
+
+    if (!showGoals) {
+      // TODO: Might need to flip this condition
+      sumCondition = sumCondition & transactions.goalId.isNull();
+    }
+
+    if (additionalFilter != null) {
+      sumCondition = sumCondition & additionalFilter;
+    }
+
+    return transactions.amount.sum(filter: sumCondition);
+  }
+
+  TransactionSumPair getTransactionSumQueries({
+    bool includeArchived = false,
+    bool showGoals = false,
+    Expression<bool>? additionalFilter,
+  }) {
+    return TransactionSumPair(
+      expenses: _getTypeExpr(
+        type: TransactionType.expense,
+        includeArchived: includeArchived,
+        showGoals: showGoals,
+        additionalFilter: additionalFilter,
+      ),
+      income: _getTypeExpr(
+        type: TransactionType.income,
+        includeArchived: includeArchived,
+        showGoals: showGoals,
+        additionalFilter: additionalFilter,
+      ),
+    );
+  }
+
+  /// Get the sum of all of the transactions' income minus its expenses
   Expression<double> getSignedTransactionSumQuery({
     bool includeArchived = false,
     bool summed = true,

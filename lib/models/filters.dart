@@ -154,7 +154,7 @@ final class CategoryFilter extends ContainerFilter {
 }
 
 final class AccountFilter extends ContainerFilter {
-  final List<AccountWithTotal> accounts;
+  final List<AccountWithAmount> accounts;
 
   AccountFilter(this.accounts, {super.includeNull});
 
@@ -166,7 +166,7 @@ final class AccountFilter extends ContainerFilter {
 }
 
 final class GoalFilter extends ContainerFilter {
-  final List<GoalWithAchievedAmount> goals;
+  final List<GoalWithAmount> goals;
 
   GoalFilter(this.goals, {super.includeNull});
 

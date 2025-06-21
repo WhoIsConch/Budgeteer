@@ -104,7 +104,8 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
 
           final CategoryWithAmount withAmount = CategoryWithAmount(
             category: newCategory,
-            amount: initialCategory?.amount ?? 0,
+            income: initialCategory?.income ?? 0,
+            expenses: initialCategory?.expenses ?? 0,
           );
 
           if (context.mounted) {

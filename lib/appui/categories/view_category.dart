@@ -48,9 +48,7 @@ class CategoryViewer extends StatelessWidget {
     final Widget header;
 
     if (category.balance != null && category.balance != 0) {
-      // The progress gets negated since we want to show a positive number
-      // for expenses and negative number for income
-      double progress = categoryPair.amount * -1;
+      double progress = categoryPair.netAmount;
       double remaining = categoryPair.remainingAmount ?? 0;
       double total = category.balance!;
       String remainingText;
@@ -72,7 +70,8 @@ class CategoryViewer extends StatelessWidget {
       if (progress.isNegative) {
         chartProgress = 0;
       } else {
-        chartProgress = (categoryPair.amount.abs()) / (category.balance ?? 1);
+        chartProgress =
+            (categoryPair.netAmount.abs()) / (category.balance ?? 1);
       }
 
       header = ProgressOverviewHeader(
@@ -86,7 +85,7 @@ class CategoryViewer extends StatelessWidget {
     } else {
       header = TextOverviewHeader.dollarTitle(
         context,
-        amount: categoryPair.amount,
+        amount: categoryPair.netAmount,
         description: category.name,
       );
     }

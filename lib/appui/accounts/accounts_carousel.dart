@@ -9,7 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class CarouselCardPair {
-  final AccountWithTotal? account;
+  final AccountWithAmount? account;
   final String title;
   final String content;
   final bool isNegative;
@@ -107,7 +107,7 @@ class _AccountsCarouselState extends State<AccountsCarousel> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<AccountWithTotal>>(
+    return StreamBuilder<List<AccountWithAmount>>(
       stream: context.read<AppDatabase>().accountDao.watchAccounts(),
       builder: (context, snapshot) {
         // Don't check for the status of the snapshot since we always want to
@@ -118,14 +118,17 @@ class _AccountsCarouselState extends State<AccountsCarousel> {
         List<CarouselCardPair?> items = [
           null,
           ...data.map((a) {
-            String formattedAmount = formatAmount(a.total.abs(), exact: true);
-            String? prefix = a.total.isNegative ? '-' : '';
+            String formattedAmount = formatAmount(
+              a.netAmount.abs(),
+              exact: true,
+            );
+            String? prefix = a.netAmount.isNegative ? '-' : '';
 
             return CarouselCardPair(
               a.account.name,
               '$prefix\$$formattedAmount',
               account: a,
-              isNegative: a.total.isNegative,
+              isNegative: a.netAmount.isNegative,
             );
           }),
         ];

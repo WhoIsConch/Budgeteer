@@ -10,11 +10,11 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 
 class GoalPreviewButton extends StatelessWidget {
-  final GoalWithAchievedAmount goalPair;
+  final GoalWithAmount goalPair;
 
   const GoalPreviewButton({super.key, required this.goalPair});
 
-  double get achievedAmount => goalPair.achievedAmount;
+  double get achievedAmount => goalPair.netAmount;
   double get goalCost => goalPair.goal.cost;
   String get title => goalPair.goal.name;
 
@@ -137,7 +137,7 @@ class _GoalPreviewCardState extends State<GoalPreviewCard> {
                 ),
               ),
             ),
-            StreamBuilder<List<GoalWithAchievedAmount>>(
+            StreamBuilder<List<GoalWithAmount>>(
               stream: db.goalDao.watchGoals(includeFinished: false),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {

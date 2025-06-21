@@ -62,26 +62,15 @@ class ViewTransaction extends StatelessWidget {
           icon: Icons.flag,
           title: 'Goal',
           description: goal!.name,
-          action: () async {
-            final fulfillmentAmount =
-                await context
-                    .read<AppDatabase>()
-                    .goalDao
-                    .getGoalFulfillmentAmount(goal!)
-                    .first;
-
-            if (fulfillmentAmount == null) return;
+          action: () {
+            if (transactionData.goalPair == null) return;
             if (!context.mounted) return;
 
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder:
-                    (_) => GoalViewer(
-                      initialGoalPair: GoalWithAchievedAmount(
-                        goal: goal!,
-                        achievedAmount: fulfillmentAmount,
-                      ),
-                    ),
+                    (_) =>
+                        GoalViewer(initialGoalPair: transactionData.goalPair!),
               ),
             );
           },

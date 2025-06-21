@@ -225,7 +225,7 @@ class _ObjectsListState<T extends Tileable<T>> extends State<ObjectsList<T>> {
 
         return mappedStream as Stream<List<T>>;
       case GoalTileableAdapter:
-        final Stream<List<GoalWithAchievedAmount>> sourceStream =
+        final Stream<List<GoalWithAmount>> sourceStream =
             db.goalDao.watchGoals();
 
         final Stream<List<GoalTileableAdapter>> mappedStream = sourceStream.map(

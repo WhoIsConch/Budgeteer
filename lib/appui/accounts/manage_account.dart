@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class ManageAccountForm extends StatefulWidget {
-  final AccountWithTotal? initialAccount;
+  final AccountWithAmount? initialAccount;
 
   const ManageAccountForm({super.key, this.initialAccount});
 
@@ -22,7 +22,7 @@ class _ManageAccountFormState extends State<ManageAccountForm> {
 
   Color? _selectedColor;
 
-  AccountWithTotal? get initialAccount => widget.initialAccount;
+  AccountWithAmount? get initialAccount => widget.initialAccount;
   bool get isEditing => initialAccount != null;
 
   AccountsCompanion? _buildAccount() {
@@ -103,9 +103,10 @@ class _ManageAccountFormState extends State<ManageAccountForm> {
           return;
         }
 
-        final AccountWithTotal withTotal = AccountWithTotal(
+        final AccountWithAmount withTotal = AccountWithAmount(
           account: account,
-          total: initialAccount?.total ?? 0,
+          income: initialAccount?.income ?? 0,
+          expenses: initialAccount?.expenses ?? 0,
         );
 
         if (context.mounted) {

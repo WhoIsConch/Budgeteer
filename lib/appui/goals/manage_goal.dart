@@ -12,7 +12,7 @@ import 'package:provider/provider.dart';
 
 class ManageGoalPage extends StatefulWidget {
   final bool returnResult;
-  final GoalWithAchievedAmount? initialGoal;
+  final GoalWithAmount? initialGoal;
 
   const ManageGoalPage({
     super.key,
@@ -33,7 +33,7 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
 
   late final Map<String, TextEditingController> _controllers;
 
-  GoalWithAchievedAmount? get initialGoal => widget.initialGoal;
+  GoalWithAmount? get initialGoal => widget.initialGoal;
   bool get isEditing => widget.initialGoal != null;
 
   GoalsCompanion _buildGoal() => GoalsCompanion(
@@ -106,9 +106,10 @@ class _ManageGoalPageState extends State<ManageGoalPage> {
             newGoal = await db.goalDao.createGoal(currentGoal);
           }
 
-          final GoalWithAchievedAmount goalPair = GoalWithAchievedAmount(
+          final GoalWithAmount goalPair = GoalWithAmount(
             goal: newGoal,
-            achievedAmount: initialGoal?.achievedAmount ?? 0,
+            expenses: initialGoal?.expenses ?? 0,
+            income: initialGoal?.income ?? 0,
           );
 
           if (context.mounted) {

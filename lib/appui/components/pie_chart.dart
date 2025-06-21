@@ -366,42 +366,42 @@ class _PieChartCardState extends State<PieChartCard> {
     // probably make this less repetitive
     switch (_selectedContainer.type) {
       case ContainerType.account:
-        return db.accountDao
-            .watchAccounts(filters: provider.filters, net: net)
-            .asyncMap((List<AccountWithTotal> accounts) async {
-              final noAccounts =
-                  await db.transactionDao
-                      .watchTotalAmount(
-                        filters: provider.filters,
-                        net: net,
-                        nullAccount: true,
-                      )
-                      .first;
+        return db.accountDao.watchAccounts(filters: provider.filters).asyncMap((
+          List<AccountWithAmount> accounts,
+        ) async {
+          final noAccounts =
+              await db.transactionDao
+                  .watchTotalAmount(
+                    filters: provider.filters,
+                    net: net,
+                    nullAccount: true,
+                  )
+                  .first;
 
-              final List<PieChartObject> objects =
-                  accounts
-                      .map(
-                        (account) => PieChartObject(
-                          name: account.account.name,
-                          color: account.account.color,
-                          amount: account.total,
-                        ),
-                      )
-                      .toList();
-              return [
-                ...objects,
-                PieChartObject(
-                  name: 'No account',
-                  color: Colors.grey,
-                  amount: noAccounts ?? 0,
-                ),
-              ];
-            });
+          final List<PieChartObject> objects =
+              accounts
+                  .map(
+                    (account) => PieChartObject(
+                      name: account.account.name,
+                      color: account.account.color,
+                      amount:
+                          net ? account.netAmount : account.cumulativeAmount,
+                    ),
+                  )
+                  .toList();
+          return [
+            ...objects,
+            PieChartObject(
+              name: 'No account',
+              color: Colors.grey,
+              amount: noAccounts ?? 0,
+            ),
+          ];
+        });
       case ContainerType.category:
         return db.categoryDao
             .watchCategories(
               filters: provider.filters,
-              net: net,
               sumByResetIncrement: false,
             )
             .asyncMap((List<CategoryWithAmount> categories) async {
@@ -421,7 +421,10 @@ class _PieChartCardState extends State<PieChartCard> {
                         (category) => PieChartObject(
                           name: category.category.name,
                           color: category.category.color,
-                          amount: category.amount,
+                          amount:
+                              net
+                                  ? category.netAmount
+                                  : category.cumulativeAmount,
                         ),
                       )
                       .toList();
@@ -436,37 +439,37 @@ class _PieChartCardState extends State<PieChartCard> {
               ];
             });
       case ContainerType.goal:
-        return db.goalDao
-            .watchGoals(filters: provider.filters, net: net)
-            .asyncMap((List<GoalWithAchievedAmount> goals) async {
-              final noGoals =
-                  await db.transactionDao
-                      .watchTotalAmount(
-                        filters: provider.filters,
-                        net: net,
-                        nullGoal: true,
-                      )
-                      .first;
+        return db.goalDao.watchGoals(filters: provider.filters).asyncMap((
+          List<GoalWithAmount> goals,
+        ) async {
+          final noGoals =
+              await db.transactionDao
+                  .watchTotalAmount(
+                    filters: provider.filters,
+                    net: net,
+                    nullGoal: true,
+                  )
+                  .first;
 
-              final List<PieChartObject> objects =
-                  goals
-                      .map(
-                        (goal) => PieChartObject(
-                          name: goal.goal.name,
-                          color: goal.goal.color,
-                          amount: goal.achievedAmount,
-                        ),
-                      )
-                      .toList();
-              return [
-                ...objects,
-                PieChartObject(
-                  name: 'No goal',
-                  color: Colors.grey,
-                  amount: noGoals ?? 0,
-                ),
-              ];
-            });
+          final List<PieChartObject> objects =
+              goals
+                  .map(
+                    (goal) => PieChartObject(
+                      name: goal.goal.name,
+                      color: goal.goal.color,
+                      amount: net ? goal.netAmount : goal.cumulativeAmount,
+                    ),
+                  )
+                  .toList();
+          return [
+            ...objects,
+            PieChartObject(
+              name: 'No goal',
+              color: Colors.grey,
+              amount: noGoals ?? 0,
+            ),
+          ];
+        });
     }
   }
 

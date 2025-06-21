@@ -26,14 +26,50 @@ abstract class Tileable<T extends Tileable<T>> {
   Widget getTile(BuildContext context, {bool isMultiselect, bool isSelected});
 }
 
-class GoalWithAchievedAmount {
-  final Goal goal;
-  final double achievedAmount;
+abstract class ContainerWithAmount<T extends DataClass> {
+  /// The object in question. Could be a Category, Account, or Goal
+  T get object;
 
-  GoalWithAchievedAmount({required this.goal, this.achievedAmount = 0});
+  /// The amount of money that has been deposited into this object as
+  /// an expense
+  double expenses;
+
+  /// The amount of money that has been deposited into this object as
+  /// an income
+  double income;
+
+  double get netAmount => income - expenses;
+  double get cumulativeAmount => income + expenses;
+
+  ContainerWithAmount({required this.income, required this.expenses});
+
+  @override
+  int get hashCode => object.hashCode ^ expenses.hashCode ^ income.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ContainerWithAmount &&
+          runtimeType == other.runtimeType &&
+          object == other.object &&
+          expenses == other.expenses &&
+          income == other.income;
+}
+
+class GoalWithAmount extends ContainerWithAmount {
+  final Goal goal;
+
+  @override
+  Goal get object => goal;
+
+  GoalWithAmount({
+    required this.goal,
+    required super.expenses,
+    required super.income,
+  });
 
   double calculatePercentage() {
-    final achieved = achievedAmount;
+    final achieved = netAmount;
     final cost = goal.cost;
 
     if (cost.isNegative) {
@@ -56,7 +92,7 @@ class GoalWithAchievedAmount {
   }
 
   String? getStatus({double? totalBalance}) {
-    final amountRemaining = totalBalance ?? (goal.cost - achievedAmount);
+    final amountRemaining = totalBalance ?? (goal.cost - netAmount);
     final formattedAmount = formatAmount(amountRemaining);
 
     String? helperText;
@@ -72,24 +108,22 @@ class GoalWithAchievedAmount {
 
     return helperText;
   }
-
-  @override
-  int get hashCode => goal.id.hashCode ^ achievedAmount.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is GoalWithAchievedAmount &&
-          runtimeType == other.runtimeType &&
-          goal.id == other.goal.id &&
-          achievedAmount == other.achievedAmount;
 }
 
-class CategoryWithAmount {
+/// The ideal way to retrieve a category from the database.
+/// Includes the net amount of money put into a category.
+class CategoryWithAmount extends ContainerWithAmount {
+  /// The database category.
   final Category category;
-  final double amount;
 
-  CategoryWithAmount({required this.category, required this.amount});
+  @override
+  Category get object => category;
+
+  CategoryWithAmount({
+    required this.category,
+    required super.expenses,
+    required super.income,
+  });
 
   // Get the remaining amount that can be used in a category over a certain time
   // The amount field was already grabbed with the relative date range in mind,
@@ -100,44 +134,28 @@ class CategoryWithAmount {
 
     // Since the amount is signed, where negative is spent money, we add the
     // balance to the total.
-    return category.balance! + amount;
+    return category.balance! + netAmount;
   }
-
-  @override
-  int get hashCode => category.id.hashCode ^ amount.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is CategoryWithAmount &&
-          runtimeType == other.runtimeType &&
-          category.id == other.category.id &&
-          amount == other.amount;
 }
 
-class AccountWithTotal {
+class AccountWithAmount extends ContainerWithAmount {
   final Account account;
-  final double total;
-
-  AccountWithTotal({required this.account, this.total = 0});
 
   @override
-  int get hashCode => account.id.hashCode ^ total.hashCode;
+  Account get object => account;
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is AccountWithTotal &&
-          runtimeType == other.runtimeType &&
-          account.id == other.account.id &&
-          total == other.total;
+  AccountWithAmount({
+    required this.account,
+    required super.expenses,
+    required super.income,
+  });
 }
 
 class HydratedTransaction {
   final Transaction transaction;
   final CategoryWithAmount? categoryPair;
-  final AccountWithTotal? accountPair;
-  final GoalWithAchievedAmount? goalPair;
+  final AccountWithAmount? accountPair;
+  final GoalWithAmount? goalPair;
 
   HydratedTransaction({
     required this.transaction,
@@ -163,11 +181,21 @@ class HydratedTransaction {
           goalPair == other.goalPair;
 }
 
-class QueryWithSum {
+class QueryWithSums {
   final JoinedSelectStatement query;
-  final Expression<double> sum;
+  final Expression<double> income;
+  final Expression<double> expenses;
 
-  QueryWithSum(this.query, this.sum);
+  QueryWithSums(this.query, {required this.income, required this.expenses});
+}
+
+/// Used to hold two expressions representing the expenses and income from
+/// the database
+class TransactionSumPair {
+  Expression<double> expenses;
+  Expression<double> income;
+
+  TransactionSumPair({required this.expenses, required this.income});
 }
 
 extension CategoriesExtension on Category {
@@ -350,12 +378,12 @@ class TransactionTileableAdapter extends Tileable<TransactionTileableAdapter> {
 }
 
 class GoalTileableAdapter extends Tileable<GoalTileableAdapter> {
-  final GoalWithAchievedAmount _goalPair;
+  final GoalWithAmount _goalPair;
 
   @override
   String get id => _goalPair.goal.id;
 
-  double get amount => _goalPair.achievedAmount;
+  double get amount => _goalPair.netAmount;
   Goal get goal => _goalPair.goal;
 
   GoalTileableAdapter(this._goalPair, {required super.onMultiselect});
