@@ -14,6 +14,7 @@ import 'package:collection/collection.dart';
 import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -373,14 +374,14 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
         x: x,
         barRods: [
           BarChartRodData(
-            width: 12,
+            width: 8,
             toY: point.income,
             color: Colors.green.harmonizeWith(
               Theme.of(context).colorScheme.primary,
             ),
           ),
           BarChartRodData(
-            width: 12,
+            width: 8,
             toY: point.spending,
             color: Colors.red.harmonizeWith(
               Theme.of(context).colorScheme.primary,
@@ -469,11 +470,12 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
         sideTitles: SideTitles(
           interval: calculateNiceInterval(data.minY, data.maxY, 5),
           showTitles: true,
-          reservedSize: 55,
+          reservedSize: 50,
           getTitlesWidget:
               (value, meta) => SideTitleWidget(
                 meta: meta,
                 child: Text('\$${formatYValue(value)}'),
+                fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
               ),
         ),
       ),
@@ -513,8 +515,8 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: AspectRatio(
-              aspectRatio: 1,
+            child: SizedBox(
+              height: 300,
               child: FutureBuilder<BarChartCalculationData>(
                 future: _calculateData(),
                 builder: (context, snapshot) {
@@ -527,29 +529,61 @@ class _SpendingBarChartState extends State<SpendingBarChart> {
                     snapshot.data!.maxY,
                     5,
                   );
+                  double chartWidth = max(
+                    MediaQuery.of(context).size.width - 32,
+                    snapshot.data!.groups.length * 24,
+                  );
 
-                  return BarChart(
-                    BarChartData(
-                      borderData: chartBorderData,
-                      minY: snapshot.data?.minY,
-                      maxY: adjustMaxYToNiceInterval(
-                        snapshot.data!.maxY,
-                        interval,
-                      ),
-                      gridData: FlGridData(
-                        drawHorizontalLine: true,
-                        drawVerticalLine: false,
-                        horizontalInterval:
-                            interval /
-                            2, // Make the lines show up 2x more often than the titles
-                        getDrawingHorizontalLine:
-                            (value) => FlLine(
-                              color:
-                                  Theme.of(context).colorScheme.outlineVariant,
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: chartWidth,
+                      child: BarChart(
+                        // transformationConfig: FlTransformationConfig(
+                        //   scaleAxis: FlScaleAxis.horizontal,
+                        // ),
+                        BarChartData(
+                          barTouchData: BarTouchData(
+                            touchTooltipData: BarTouchTooltipData(
+                              getTooltipItem:
+                                  (
+                                    group,
+                                    groupIndex,
+                                    rod,
+                                    rodIndex,
+                                  ) => BarTooltipItem(
+                                    '\$${formatAmount(rod.toY, exact: true)}',
+                                    TextStyle(
+                                      color: rod.color,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                             ),
+                          ),
+                          borderData: chartBorderData,
+                          minY: snapshot.data?.minY,
+                          maxY: adjustMaxYToNiceInterval(
+                            snapshot.data!.maxY,
+                            interval,
+                          ),
+                          gridData: FlGridData(
+                            drawHorizontalLine: true,
+                            drawVerticalLine: false,
+                            horizontalInterval:
+                                interval /
+                                2, // Make the lines show up 2x more often than the titles
+                            getDrawingHorizontalLine:
+                                (value) => FlLine(
+                                  color:
+                                      Theme.of(
+                                        context,
+                                      ).colorScheme.outlineVariant,
+                                ),
+                          ),
+                          barGroups: snapshot.data!.groups,
+                          titlesData: _parseTitlesData(snapshot.data!),
+                        ),
                       ),
-                      barGroups: snapshot.data!.groups,
-                      titlesData: _parseTitlesData(snapshot.data!),
                     ),
                   );
                 },
