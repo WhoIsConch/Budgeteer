@@ -48,7 +48,7 @@ class CategoryViewer extends StatelessWidget {
     final Widget header;
 
     if (category.balance != null && category.balance != 0) {
-      double progress = categoryPair.netAmount;
+      double progress = categoryPair.netAmount * -1;
       double remaining = categoryPair.remainingAmount ?? 0;
       double total = category.balance!;
       String remainingText;
