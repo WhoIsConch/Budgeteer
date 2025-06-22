@@ -131,11 +131,14 @@ class _TransactionSearchState extends State<TransactionSearch> {
     controller.addListener(() {
       final amount = double.tryParse(controller.text) ?? amountFilter?.amount;
 
-      if (amountFilter?.type == null || amount == null) {
+      if (amount == null) {
         return;
       }
 
-      amountFilter = AmountFilter(amountFilter!.type, amount);
+      amountFilter = AmountFilter(
+        amountFilter?.type ?? AmountFilterType.exactly,
+        amount,
+      );
     });
 
     return showDialog<AmountFilter>(
