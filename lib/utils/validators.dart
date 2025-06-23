@@ -40,38 +40,6 @@ class AmountValidator {
   }
 }
 
-/// A simple regex validator to ensure the email a user puts in to sign up
-/// or log in is valid. This regex is borrowed from
-/// https://www.regular-expressions.info/email.html
-String? validateEmail(String? value) {
-  final RegExp regex = RegExp(
-    r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b',
-    caseSensitive: false,
-  );
-
-  if (value == null || value.isEmpty) {
-    return 'Required';
-  }
-
-  if (regex.hasMatch(value)) {
-    return null;
-  }
-
-  return 'Invalid email address';
-}
-
-/// Ensures the title of an object input by a user is less than the maximum
-/// length, fifty characters. It also makes sure the title isn't empty,
-/// perfect for a form field validator
-String? validateTitle(String? value) {
-  if (value == null || value.isEmpty) {
-    return 'Please enter a title';
-  } else if (value.length > 50) {
-    return 'Title must be less than 50 characters';
-  }
-  return null;
-}
-
 /// Formats a form field to ensure it contains nothing but a valid, parsable
 /// number at all times.
 class DecimalTextInputFormatter extends TextInputFormatter {
@@ -156,6 +124,38 @@ String formatAmount(
   }
 
   return '${formatter.format(amountToFormat)}${character ?? ""}';
+}
+
+/// A simple regex validator to ensure the email a user puts in to sign up
+/// or log in is valid. This regex is borrowed from
+/// https://www.regular-expressions.info/email.html
+String? validateEmail(String? value) {
+  final RegExp regex = RegExp(
+    r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b',
+    caseSensitive: false,
+  );
+
+  if (value == null || value.isEmpty) {
+    return 'Required';
+  }
+
+  if (regex.hasMatch(value)) {
+    return null;
+  }
+
+  return 'Invalid email address';
+}
+
+/// Ensures the title of an object input by a user is less than the maximum
+/// length, fifty characters. It also makes sure the title isn't empty,
+/// perfect for a form field validator
+String? validateTitle(String? value) {
+  if (value == null || value.isEmpty) {
+    return 'Please enter a title';
+  } else if (value.length > 50) {
+    return 'Title must be less than 50 characters';
+  }
+  return null;
 }
 
 /// Formats the Y axis value in the statistic page's bar chart.
