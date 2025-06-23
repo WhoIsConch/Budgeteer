@@ -98,7 +98,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
         final filterProvider = TransactionProvider();
 
         filterProvider.updateFilter(
-          DateRangeFilter(RelativeDateRange.today.getRange()),
+          DateRangeFilter(RelativeDateRange.thisMonth.getRange()),
         );
 
         return filterProvider; // Ensure the buttons update
