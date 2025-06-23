@@ -189,6 +189,10 @@ class _TopContainersState extends State<TopContainers> {
                     );
                   }
 
+                  // Wrap with a Material widget to make the tiles clip
+                  // correctly. Without it, they don't clip outside of the
+                  // ListView's bounds and render underneath other widgets in
+                  // the Column
                   return Material(
                     color: Colors.transparent,
                     child: ListView.builder(
