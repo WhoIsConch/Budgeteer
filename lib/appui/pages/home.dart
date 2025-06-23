@@ -7,7 +7,7 @@ import 'package:budget/utils/tools.dart';
 import 'package:budget/appui/accounts/accounts_carousel.dart';
 import 'package:budget/appui/goals/goals_preview.dart';
 import 'package:budget/utils/ui.dart';
-import 'package:budget/utils/enums.dart';
+import 'package:budget/models/enums.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:budget/appui/transactions/view_transaction.dart';
 import 'package:budget/appui/pages/transaction_search.dart';

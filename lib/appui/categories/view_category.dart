@@ -1,6 +1,6 @@
 import 'package:budget/models/database_extensions.dart';
 import 'package:budget/services/app_database.dart';
-import 'package:budget/utils/enums.dart';
+import 'package:budget/models/enums.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:budget/appui/components/viewer_screen.dart';
 import 'package:budget/appui/categories/manage_category.dart';

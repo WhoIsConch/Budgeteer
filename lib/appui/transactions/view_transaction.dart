@@ -1,7 +1,7 @@
 import 'package:budget/models/database_extensions.dart';
 import 'package:budget/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
-import 'package:budget/utils/enums.dart';
+import 'package:budget/models/enums.dart';
 import 'package:budget/appui/components/viewer_screen.dart';
 import 'package:budget/appui/transactions/manage_transaction.dart';
 import 'package:budget/appui/categories/view_category.dart';

@@ -9,7 +9,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:budget/utils/enums.dart';
+import 'package:budget/models/enums.dart';
 
 class ManageCategoryDialog extends StatefulWidget {
   final bool returnResult;

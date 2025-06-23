@@ -1,9 +1,3 @@
-/*
-  I have all of these in a separate file because I thought I was going to 
-  end up using them in multiple places. It turns out, I wasn't. At least
-  not for now. At least it's good organization, right?
-*/
-
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
@@ -12,14 +6,11 @@ class AmountValidator {
 
   const AmountValidator({this.allowZero = false});
 
+  /// Used in a TextFormField, ValidateAmount ensures only positive numbers can
+  /// be input in a text field. [DecimalTextInputFormatter] is also typically
+  /// used with this validator which generally makes this validator useless,
+  /// but if the input formatter is bypassed, this is a reasonable failsafe.
   String? validateAmount(String? value) {
-    /*
-  Used in a TextFormField, validateAmount ensures only positive numbers can be
-  input in a text field. DecimalTextInputFormatter is also typically used with
-  this validator which generally makes this validator useless, but if someone
-  bypasses the input formatter somehow, this is a reasonable failsafe. 
-  */
-
     if (value == null || value.isEmpty) {
       if (!allowZero) {
         return 'Please enter an amount';
@@ -49,6 +40,9 @@ class AmountValidator {
   }
 }
 
+/// A simple regex validator to ensure the email a user puts in to sign up
+/// or log in is valid. This regex is borrowed from
+/// https://www.regular-expressions.info/email.html
 String? validateEmail(String? value) {
   final RegExp regex = RegExp(
     r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b',
@@ -66,11 +60,10 @@ String? validateEmail(String? value) {
   return 'Invalid email address';
 }
 
+/// Ensures the title of an object input by a user is less than the maximum
+/// length, fifty characters. It also makes sure the title isn't empty,
+/// perfect for a form field validator
 String? validateTitle(String? value) {
-  /* 
-  Ensure the transaction title input by a user is less than the maximum length.
-  Also makes sure the title isn't empty. 
-  */
   if (value == null || value.isEmpty) {
     return 'Please enter a title';
   } else if (value.length > 50) {
@@ -79,7 +72,11 @@ String? validateTitle(String? value) {
   return null;
 }
 
+/// Formats a form field to ensure it contains nothing but a valid, parsable
+/// number at all times.
 class DecimalTextInputFormatter extends TextInputFormatter {
+  // In retrospect, I probably could have just tried to parse the number
+  // at all times to ensure it's valid instead of all of this regex junk.
   @override
   TextEditingValue formatEditUpdate(
     TextEditingValue oldValue,
@@ -109,6 +106,14 @@ class DecimalTextInputFormatter extends TextInputFormatter {
   }
 }
 
+/// Format a number to a valid string that matches the constraints of where
+/// it's used. Can truncate large numbers and round decimal numbers.
+///
+/// [round] will round a decimal number to the nearest whole number.
+/// [exact] will ensure large numbers are not abbreviated.
+///
+/// [round] and [exact] can work together, in which the method will round a
+/// large number to the nearest whole number but will not abbreviate it.
 String formatAmount(num amount, {bool round = false, bool exact = false}) {
   NumberFormat formatter;
 
@@ -146,6 +151,7 @@ String formatAmount(num amount, {bool round = false, bool exact = false}) {
   return '${formatter.format(amountToFormat)}${character ?? ""}';
 }
 
+/// Formats the Y axis value in the statistic page's bar chart.
 String formatYValue(double value) {
   if (value.abs() >= 1_000_000) {
     // Use 'M' for millions

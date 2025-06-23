@@ -1,6 +1,6 @@
 import 'package:budget/models/database_extensions.dart';
 import 'package:budget/services/app_database.dart';
-import 'package:budget/utils/enums.dart';
+import 'package:budget/models/enums.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 

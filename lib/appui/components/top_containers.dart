@@ -3,7 +3,7 @@ import 'package:budget/appui/components/status.dart';
 import 'package:budget/appui/goals/view_goal.dart';
 import 'package:budget/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
-import 'package:budget/utils/enums.dart';
+import 'package:budget/models/enums.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -176,28 +176,31 @@ class _TopContainersState extends State<TopContainers> {
               ),
             ),
             SizedBox(height: 8.0),
-            StreamBuilder(
-              stream: _getStream(),
-              builder: (context, snapshot) {
-                // The snapshot is probably loading or waiting, or there is no data
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24.0),
-                    child: ErrorInset.noData,
-                  );
-                }
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: 250),
+              child: Expanded(
+                child: StreamBuilder(
+                  stream: _getStream(),
+                  builder: (context, snapshot) {
+                    // The snapshot is probably loading or waiting, or there is no data
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return Padding(
+                        padding: EdgeInsets.symmetric(vertical: 24.0),
+                        child: ErrorInset.noData,
+                      );
+                    }
 
-                return ListView.builder(
-                  physics: NeverScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  itemCount: snapshot.data!.length,
-                  itemBuilder:
-                      (context, index) => Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: snapshot.data![index],
-                      ),
-                );
-              },
+                    return ListView.builder(
+                      itemCount: snapshot.data!.length,
+                      itemBuilder:
+                          (context, index) => Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: snapshot.data![index],
+                          ),
+                    );
+                  },
+                ),
+              ),
             ),
           ],
         ),

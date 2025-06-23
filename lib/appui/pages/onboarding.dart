@@ -2,7 +2,7 @@ import 'package:budget/appui/components/edit_screen.dart';
 import 'package:budget/appui/components/nav_manager.dart';
 import 'package:budget/providers/settings.dart';
 import 'package:budget/services/app_database.dart';
-import 'package:budget/utils/enums.dart';
+import 'package:budget/models/enums.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';

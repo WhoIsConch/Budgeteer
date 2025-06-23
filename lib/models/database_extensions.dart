@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:budget/appui/goals/view_goal.dart';
 import 'package:budget/appui/transactions/view_transaction.dart';
 import 'package:budget/services/app_database.dart';
-import 'package:budget/utils/enums.dart';
+import 'package:budget/models/enums.dart';
 import 'package:budget/utils/ui.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:drift/drift.dart';
