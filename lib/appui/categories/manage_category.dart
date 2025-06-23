@@ -7,6 +7,7 @@ import 'package:budget/appui/components/edit_screen.dart';
 import 'package:budget/appui/categories/view_category.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/utils/enums.dart';
 
@@ -166,7 +167,9 @@ class _ManageCategoryDialogState extends State<ManageCategoryDialog> {
                     ),
                 values: CategoryResetIncrement.values,
                 labels:
-                    CategoryResetIncrement.values.map((v) => v.text).toList(),
+                    CategoryResetIncrement.values
+                        .map((v) => toBeginningOfSentenceCase(v.name))
+                        .toList(),
               ),
             ),
           ],

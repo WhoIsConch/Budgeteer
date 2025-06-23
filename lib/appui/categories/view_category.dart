@@ -19,7 +19,7 @@ class CategoryViewer extends StatelessWidget {
       ObjectPropertyData(
         icon: Icons.schedule,
         title: 'Reset increment',
-        description: category.resetIncrement.text,
+        description: toBeginningOfSentenceCase(category.resetIncrement.name),
       ),
     ];
 
