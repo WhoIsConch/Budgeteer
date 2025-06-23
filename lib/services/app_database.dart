@@ -145,6 +145,7 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     final queryWithSum = db.getCombinedQuery(
       accounts,
       includeArchived: includeArchived,
+      showGoals: true,
     );
 
     if (filters != null) {
@@ -761,6 +762,7 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
       queryWithSum = db.getCombinedQuery(
         categories,
         includeArchived: includeArchived,
+        showGoals: true,
       );
     }
 
