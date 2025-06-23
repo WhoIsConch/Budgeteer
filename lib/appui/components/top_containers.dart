@@ -176,36 +176,40 @@ class _TopContainersState extends State<TopContainers> {
               ),
             ),
             SizedBox(height: 8.0),
-            ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: 250),
-              child: StreamBuilder(
-                stream: _getStream(),
-                builder: (context, snapshot) {
-                  // The snapshot is probably loading or waiting, or there is no data
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return Padding(
+            StreamBuilder(
+              stream: _getStream(),
+              builder: (context, snapshot) {
+                // The snapshot is probably loading or waiting, or there is no data
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return SizedBox(
+                    height: 150,
+                    child: Padding(
                       padding: EdgeInsets.symmetric(vertical: 24.0),
                       child: ErrorInset.noData,
-                    );
-                  }
+                    ),
+                  );
+                }
 
-                  // Wrap with a Material widget to make the tiles clip
-                  // correctly. Without it, they don't clip outside of the
-                  // ListView's bounds and render underneath other widgets in
-                  // the Column
-                  return Material(
+                // Wrap with a Material widget to make the tiles clip
+                // correctly. Without it, they don't clip outside of the
+                // ListView's bounds and render underneath other widgets in
+                // the Column
+                return ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: 250),
+                  child: Material(
                     type: MaterialType.transparency,
                     child: ListView.builder(
                       itemCount: snapshot.data!.length,
+                      shrinkWrap: true,
                       itemBuilder:
                           (context, index) => Padding(
                             padding: const EdgeInsets.all(4.0),
                             child: snapshot.data![index],
                           ),
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
           ],
         ),
