@@ -11,7 +11,7 @@ import 'package:budget/appui/transactions/manage_transaction.dart';
 
 import 'package:flutter/material.dart';
 import 'package:budget/appui/pages/home.dart';
-import 'package:budget/appui/pages/account.dart';
+import 'package:budget/appui/pages/debug.dart';
 import 'package:budget/appui/pages/statistics.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -174,11 +174,11 @@ class _NavManagerState extends State<NavManager>
                   selectedIcon: Icon(Icons.bar_chart),
                   label: 'Stats',
                 ),
-                NavigationDestination(
-                  icon: Icon(Icons.code),
-                  selectedIcon: Icon(Icons.code),
-                  label: 'Debug',
-                ),
+                // NavigationDestination(
+                //   icon: Icon(Icons.code),
+                //   selectedIcon: Icon(Icons.code),
+                //   label: 'Debug',
+                // ),
               ],
             ),
           ),
