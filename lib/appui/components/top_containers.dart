@@ -178,28 +178,29 @@ class _TopContainersState extends State<TopContainers> {
             SizedBox(height: 8.0),
             ConstrainedBox(
               constraints: BoxConstraints(maxHeight: 250),
-              child: Expanded(
-                child: StreamBuilder(
-                  stream: _getStream(),
-                  builder: (context, snapshot) {
-                    // The snapshot is probably loading or waiting, or there is no data
-                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24.0),
-                        child: ErrorInset.noData,
-                      );
-                    }
+              child: StreamBuilder(
+                stream: _getStream(),
+                builder: (context, snapshot) {
+                  // The snapshot is probably loading or waiting, or there is no data
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24.0),
+                      child: ErrorInset.noData,
+                    );
+                  }
 
-                    return ListView.builder(
+                  return Material(
+                    color: Colors.transparent,
+                    child: ListView.builder(
                       itemCount: snapshot.data!.length,
                       itemBuilder:
                           (context, index) => Padding(
                             padding: const EdgeInsets.all(4.0),
                             child: snapshot.data![index],
                           ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
