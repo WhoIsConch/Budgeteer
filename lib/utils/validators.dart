@@ -111,13 +111,20 @@ class DecimalTextInputFormatter extends TextInputFormatter {
 ///
 /// [round] will round a decimal number to the nearest whole number.
 /// [exact] will ensure large numbers are not abbreviated.
+/// [truncateIfWhole] will truncate the decimal places on whole numbers.
 ///
 /// [round] and [exact] can work together, in which the method will round a
 /// large number to the nearest whole number but will not abbreviate it.
-String formatAmount(num amount, {bool round = false, bool exact = false}) {
+/// If [exact] is true, [truncateIfWhole] will have no effect.
+String formatAmount(
+  num amount, {
+  bool round = false,
+  bool exact = false,
+  bool truncateIfWhole = true,
+}) {
   NumberFormat formatter;
 
-  if (round) {
+  if (round || (truncateIfWhole && amount.round() == amount && !exact)) {
     formatter = NumberFormat('#,###');
     amount = amount.round();
   } else {

@@ -109,7 +109,7 @@ class _GoalViewerState extends State<GoalViewer> {
         }
 
         final formattedAchieved = formatAmount(achieved.abs(), round: true);
-        final formattedTotal = formatAmount(total, round: true);
+        String formattedTotal = formatAmount(total, exact: true);
 
         return ViewerScreen(
           title: 'View goal',
@@ -130,7 +130,7 @@ class _GoalViewerState extends State<GoalViewer> {
             title: goal.name,
             description: goalPair.getStatus(),
             insidePrimary: '$prefix\$$formattedAchieved',
-            insideSecondary: '$prefix\$$formattedAchieved/\$$formattedTotal',
+            insideSecondary: '\$$formattedTotal',
             progress: achieved / total,
             foregroundColor: goal.color,
           ),

@@ -78,8 +78,7 @@ class CategoryViewer extends StatelessWidget {
         title: category.name,
         description: remainingText,
         insidePrimary: '$progressPrefix\$$formattedProgress',
-        insideSecondary:
-            '$progressPrefix\$$formattedProgress/\$$formattedTotal',
+        insideSecondary: '\$$formattedTotal',
         progress: chartProgress,
       );
     } else {
