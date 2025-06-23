@@ -194,7 +194,7 @@ class _TopContainersState extends State<TopContainers> {
                   // ListView's bounds and render underneath other widgets in
                   // the Column
                   return Material(
-                    color: Colors.transparent,
+                    type: MaterialType.transparency,
                     child: ListView.builder(
                       itemCount: snapshot.data!.length,
                       itemBuilder:
