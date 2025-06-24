@@ -1,9 +1,11 @@
+import 'package:budget/providers/settings.dart';
 import 'package:budget/utils/tools.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum SignInType { signIn, signUp, google }
@@ -72,6 +74,14 @@ class _LoginPageState extends State<LoginPage> {
           data: {'full_name': 'user'},
         );
         canFinish = true;
+        // Since the user successfully signed up, we need to make sure the
+        // onboarding process runs. Therefore, always re-enable the
+        // '_showTour` option.
+        if (mounted) {
+          final settings = context.read<SettingsService>();
+
+          settings.setSetting('_showTour', true);
+        }
       } catch (e) {
         // if (e.code == 'weak-password') {
         //   setState(() => passwordError = "Too weak");
