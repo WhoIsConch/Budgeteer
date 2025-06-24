@@ -333,8 +333,8 @@ class TransactionTileableAdapter extends Tileable<TransactionTileableAdapter> {
         child: leadingWidget,
       ),
       title: Text(
-        // Formats as "$500: Title of the Budget"
-        "${"\$${formatAmount(_transaction.amount)}"}: \"${_transaction.title}\"",
+        // Formats as "$500.00: Title of the Budget"
+        "${"\$${formatAmount(_transaction.amount, truncateIfWhole: false)}"}: \"${_transaction.title}\"",
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
