@@ -92,14 +92,11 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         // TODO: Logging to ensure the bug is logged.
         // Usually this is a bug in the application
 
-        print('ERR IN UPLOADDATA: $e');
-
         await transaction.complete();
       } else {
         rethrow;
       }
     }
-    print('ANOTHER WIN FOR THE OGS');
   }
 }
 
@@ -137,26 +134,29 @@ Future<void> openDatabase() async {
 
   SupabaseConnector? currentConnector;
 
+  const syncOptions = SyncOptions(
+    syncImplementation: SyncClientImplementation.rust,
+  );
+
   if (isLoggedIn()) {
     currentConnector = SupabaseConnector();
-    db.connect(
-      connector: currentConnector,
-      options: const SyncOptions(
-        syncImplementation: SyncClientImplementation.rust,
-      ),
-    );
+    db.connect(connector: currentConnector, options: syncOptions);
   }
 
   Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
     final AuthChangeEvent event = data.event;
 
+    print('Event in pworesync: $event');
+
     if (event == AuthChangeEvent.signedIn) {
       currentConnector = SupabaseConnector();
 
-      db.connect(connector: currentConnector!);
+      db.connect(connector: currentConnector!, options: syncOptions);
+      print('Signed in');
     } else if (event == AuthChangeEvent.signedOut) {
       currentConnector = null;
-      await db.disconnect();
+      await db.disconnectAndClear();
+      print('PowerSync disconnected');
     } else if (event == AuthChangeEvent.tokenRefreshed) {
       currentConnector?.prefetchCredentials();
     }

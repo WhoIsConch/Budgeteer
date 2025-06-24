@@ -1,5 +1,4 @@
 import 'package:budget/appui/components/edit_screen.dart';
-import 'package:budget/appui/components/nav_manager.dart';
 import 'package:budget/providers/settings.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/models/enums.dart';
@@ -101,11 +100,8 @@ class _OnboardingManagerState extends State<OnboardingManager> {
 
     final settings = context.read<SettingsService>();
 
+    // Don't switch pages, since this should be handled by AuthWrapper
     settings.setSetting('_showTour', false);
-
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => NavManager(key: ValueKey('home'))),
-    );
   }
 
   @override

@@ -313,38 +313,47 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<AuthState>(
-      stream: Supabase.instance.client.auth.onAuthStateChange,
-      builder: (BuildContext context, AsyncSnapshot snapshot) {
-        Widget body;
+    // The consumer of SettingsService will inform the app of the _showTour
+    // when the user is finished with onboarding
+    return Consumer<SettingsService>(
+      builder:
+          (_, settings, _) => StreamBuilder<AuthState>(
+            stream: Supabase.instance.client.auth.onAuthStateChange,
+            builder: (BuildContext context, AsyncSnapshot<AuthState> snapshot) {
+              Widget body;
 
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          body = const Scaffold(
-            key: ValueKey('loading'),
-            body: Center(child: CircularProgressIndicator()),
-          );
-        } else if (Supabase.instance.client.auth.currentUser != null) {
-          var createdAt = DateTime.parse(
-            Supabase.instance.client.auth.currentUser!.createdAt,
-          );
-          final settings = context.read<SettingsService>();
+              final session = snapshot.data?.session;
 
-          if (settings.settings['_showTour'] &&
-              DateTime.now().difference(createdAt) < Duration(minutes: 5)) {
-            // If the account is less than five minutes old, it's probably new
-            body = const OnboardingManager();
-          } else {
-            body = const NavManager(key: ValueKey('home'));
-          }
-        } else {
-          body = const LoginPage(key: ValueKey('login'));
-        }
+              // Check if the user is signed in first to avoid showing them an
+              // unnecessary loading indicator.
+              // Keep the loading indicator in case there is a current user but
+              // Supabase doesn't know yet (I'm not sure if it works like that).
+              if (session != null) {
+                var createdAt = DateTime.parse(session.user.createdAt);
 
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 250),
-          child: body,
-        );
-      },
+                if (settings.settings['_showTour'] &&
+                    DateTime.now().difference(createdAt) <
+                        Duration(minutes: 5)) {
+                  // If the account is less than five minutes old, it's probably new
+                  body = const OnboardingManager(key: ValueKey('onboarding'));
+                } else {
+                  body = const NavManager(key: ValueKey('home'));
+                }
+              } else if (snapshot.connectionState == ConnectionState.waiting) {
+                body = const Scaffold(
+                  key: ValueKey('loading'),
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              } else {
+                body = const LoginPage(key: ValueKey('login'));
+              }
+
+              return AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                child: body,
+              );
+            },
+          ),
     );
   }
 }

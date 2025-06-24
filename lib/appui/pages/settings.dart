@@ -79,8 +79,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 color: Theme.of(context).colorScheme.errorContainer,
                 child: InkWell(
                   onTap: () async {
+                    // Navigating back to the main screen should be handled
+                    // by NavManager. Still get rid of the settings page though
                     await Supabase.instance.client.auth.signOut();
-                    if (context.mounted) Navigator.pop(context);
+
+                    if (context.mounted) Navigator.of(context).pop();
                   },
                   child: Padding(
                     padding: const EdgeInsets.all(12.0),
