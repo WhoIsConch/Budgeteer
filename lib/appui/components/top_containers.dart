@@ -1,4 +1,5 @@
 import 'package:budget/appui/categories/view_category.dart';
+import 'package:budget/appui/components/edit_screen.dart';
 import 'package:budget/appui/components/status.dart';
 import 'package:budget/appui/goals/view_goal.dart';
 import 'package:budget/providers/transaction_provider.dart';
@@ -171,6 +172,10 @@ class _TopContainersState extends State<TopContainers> {
                         }
                       },
                     ),
+                  ),
+                  IconButtonWithTooltip(
+                    tooltipText:
+                        'Applies your filters from the above pie chart',
                   ),
                 ],
               ),

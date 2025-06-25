@@ -30,7 +30,11 @@ class _IconButtonWithTooltipState extends State<IconButtonWithTooltip> {
   // TODO: Make this disappear on outside tap
   OverlayEntry? _overlayEntry;
   final LayerLink _layerLink = LayerLink();
-  bool _isTooltipVisible = false;
+
+  Alignment _followerAnchor = Alignment.bottomCenter;
+  Alignment _targetAnchor = Alignment.topCenter;
+
+  bool get _isTooltipVisible => _overlayEntry != null;
 
   @override
   void dispose() {
@@ -44,43 +48,94 @@ class _IconButtonWithTooltipState extends State<IconButtonWithTooltip> {
     } else {
       _showTooltip();
     }
-    setState(() {
-      _isTooltipVisible = !_isTooltipVisible;
-    });
   }
 
   void _removeTooltip() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
+    // Null check since isTooltipVisible already checks for null
+    if (_isTooltipVisible) {
+      _overlayEntry!.remove();
+      _overlayEntry = null;
+    }
+  }
+
+  void _updateTooltipAlignment() {
+    final renderBox = context.findRenderObject() as RenderBox;
+    final buttonSize = renderBox.size;
+
+    // localToGlobal gives the top-left corner of the button in screen coordinates
+    final buttonPosition = renderBox.localToGlobal(Offset.zero);
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Calculate the horizontal center of the button
+    final buttonCenter = buttonPosition.dx + buttonSize.width / 2;
+
+    // Check if aligning to the left would cause an overflow
+    // a little buffer (16.0) is added for padding
+    if (buttonCenter < screenWidth / 3) {
+      setState(() {
+        _targetAnchor = Alignment.bottomLeft;
+        _followerAnchor = Alignment.topLeft;
+      });
+    } else if (buttonCenter > screenWidth * 2 / 3) {
+      // Button is on the right side
+      setState(() {
+        _targetAnchor = Alignment.bottomRight;
+        _followerAnchor = Alignment.topRight;
+      });
+    } else {
+      // Button is somewhere in the center
+      setState(() {
+        _targetAnchor = Alignment.bottomCenter;
+        _followerAnchor = Alignment.topCenter;
+      });
+    }
   }
 
   void _showTooltip() {
+    _updateTooltipAlignment();
+
     _overlayEntry = _createOverlayEntry();
     Overlay.of(context).insert(_overlayEntry!);
   }
 
   OverlayEntry _createOverlayEntry() => OverlayEntry(
     builder:
-        (context) => Positioned(
-          top: 50,
-          left: 50,
-          width: 250,
-          child: CompositedTransformFollower(
-            link: _layerLink,
-            showWhenUnlinked: false,
-            // offset: Offset(0, 0),
-            followerAnchor: Alignment.topCenter, // Make top-center of tooltip
-            targetAnchor:
-                Alignment.bottomCenter, // align with bottom-center of icon
-            child: Material(
-              elevation: 4.0,
-              borderRadius: BorderRadius.circular(4),
-              child: Padding(
-                padding: EdgeInsets.all(4),
-                child: Text(widget.tooltipText, textAlign: TextAlign.center),
+        (context) => Stack(
+          children: [
+            Positioned.fill(
+              // In case outside of the tooltip is tapped
+              child: GestureDetector(
+                onTap: _removeTooltip,
+                child: Container(color: Colors.transparent),
               ),
             ),
-          ),
+            CompositedTransformFollower(
+              link: _layerLink,
+              showWhenUnlinked: false,
+              // offset: Offset(0, 0),
+              followerAnchor: _followerAnchor,
+              targetAnchor: _targetAnchor,
+              child: Material(
+                elevation: 4.0,
+                borderRadius: BorderRadius.circular(8),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.6,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12.0,
+                      vertical: 8.0,
+                    ),
+                    child: Text(
+                      widget.tooltipText,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
   );
 
