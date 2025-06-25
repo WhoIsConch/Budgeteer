@@ -250,9 +250,10 @@ class ContainerTile extends StatelessWidget {
       subtitle: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text('\$${formatAmount(amount)}'),
-          SizedBox(width: 8.0),
-          Expanded(
+          Text('\$${formatAmount(amount, truncateIfWhole: false)}'),
+          Spacer(),
+          SizedBox(
+            width: MediaQuery.of(context).size.width * 0.4,
             child: LinearProgressIndicator(
               value: progress,
               borderRadius: BorderRadius.circular(10),
