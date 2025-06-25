@@ -29,6 +29,7 @@ abstract class Tileable<T extends Tileable<T>> {
 abstract class ContainerWithAmount<T extends DataClass> {
   /// The object in question. Could be a Category, Account, or Goal
   T get object;
+  String get objectId;
 
   /// The amount of money that has been deposited into this object as
   /// an expense
@@ -61,6 +62,9 @@ class GoalWithAmount extends ContainerWithAmount {
 
   @override
   Goal get object => goal;
+
+  @override
+  String get objectId => goal.id;
 
   GoalWithAmount({
     required this.goal,
@@ -119,6 +123,9 @@ class CategoryWithAmount extends ContainerWithAmount {
   @override
   Category get object => category;
 
+  @override
+  String get objectId => category.id;
+
   CategoryWithAmount({
     required this.category,
     required super.expenses,
@@ -143,6 +150,9 @@ class AccountWithAmount extends ContainerWithAmount {
 
   @override
   Account get object => account;
+
+  @override
+  String get objectId => account.id;
 
   AccountWithAmount({
     required this.account,
@@ -181,6 +191,8 @@ class HydratedTransaction {
           goalPair == other.goalPair;
 }
 
+/// An object to easily transport a combination of Query object and two
+/// Expressions that represent an amount of income and expense.
 class QueryWithSums {
   final JoinedSelectStatement query;
   final Expression<double> income;

@@ -145,10 +145,12 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
 
     if (isEditing &&
         initialTransaction!.accountId == _selectedAccount!.account.id) {
+      // Since the amount is net, we want to add back any expense and
+      // subtract back any income
       if (initialTransaction!.type == TransactionType.expense) {
-        adjustedTotal -= initialTransaction!.amount;
-      } else {
         adjustedTotal += initialTransaction!.amount;
+      } else {
+        adjustedTotal -= initialTransaction!.amount;
       }
     }
 

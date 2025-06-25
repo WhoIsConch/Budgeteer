@@ -91,6 +91,9 @@ class Accounts extends Table with SoftDeletableTable {
 
   IntColumn get color =>
       integer().clientDefault(genColor).map(const ColorConverter())();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {id};
 }
 
 class Goals extends Table with SoftDeletableTable {
@@ -105,6 +108,9 @@ class Goals extends Table with SoftDeletableTable {
       integer().clientDefault(genColor).map(const ColorConverter())();
   TextColumn get dueDate =>
       text().nullable().named('due_date').map(const DateTextConverter())();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {id};
 }
 
 @DriftAccessor(tables: [Accounts])
@@ -142,10 +148,9 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     includeArchived = false,
     sortDescending = true,
   }) {
-    final queryWithSum = db.getCombinedQuery(
+    final queryWithSum = db._getCombinedQuery(
       accounts,
       includeArchived: includeArchived,
-      showGoals: true,
     );
 
     if (filters != null) {
@@ -181,7 +186,7 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     String id, {
     bool includeArchived = true,
   }) {
-    final queryWithSum = db.getCombinedQuery(
+    final queryWithSum = db._getCombinedQuery(
       accounts,
       includeArchived: includeArchived,
     );
@@ -200,7 +205,7 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     String id, {
     bool includeArchived = true,
   }) {
-    final queryWithSum = db.getCombinedQuery(
+    final queryWithSum = db._getCombinedQuery(
       accounts,
       includeArchived: includeArchived,
     );
@@ -288,7 +293,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     bool includeFinished = true,
     bool sortDescending = true,
   }) {
-    final queryWithSum = db.getCombinedQuery(
+    final queryWithSum = db._getCombinedQuery(
       goals,
       includeArchived: includeFinished,
       showGoals: true,
@@ -327,7 +332,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     );
 
     // TODO: Maybe optimize with the only good use of getSignedTransactionsQuery
-    final signedSumQueries = db.getTransactionSumQueries(showGoals: true);
+    final signedSumQueries = db._getTransactionSumQueries(showGoals: true);
 
     return query
         .addColumns([signedSumQueries.expenses, signedSumQueries.income])
@@ -364,7 +369,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
   }
 
   Future<GoalWithAmount> getGoalById(String id, {bool includeFinished = true}) {
-    final queryWithSum = db.getCombinedQuery(
+    final queryWithSum = db._getCombinedQuery(
       goals,
       includeArchived: includeFinished,
       showGoals: true,
@@ -383,7 +388,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     String id, {
     bool includeFinished = true,
   }) {
-    final queryWithSum = db.getCombinedQuery(
+    final queryWithSum = db._getCombinedQuery(
       goals,
       includeArchived: includeFinished,
       showGoals: true,
@@ -716,7 +721,7 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
       orElse: dateInRangeCondition,
     );
 
-    final sums = db.getTransactionSumQueries(
+    final sums = db._getTransactionSumQueries(
       additionalFilter: sumFilterCondition,
     );
 
@@ -759,7 +764,7 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     if (sumByResetIncrement) {
       queryWithSum = _getCategoriesWithAmountsQuery();
     } else {
-      queryWithSum = db.getCombinedQuery(
+      queryWithSum = db._getCombinedQuery(
         categories,
         includeArchived: includeArchived,
         showGoals: true,
@@ -873,7 +878,13 @@ class AppDatabase extends _$AppDatabase {
   @override
   int get schemaVersion => 1;
 
-  QueryWithSums getCombinedQuery<T extends SoftDeletableTable>(
+  /// Generates a [QueryWithSums] object that will include a select query on the
+  /// [relatedTable] that will not include deleted results, and two [Expression]
+  /// objects to represent expenses and income on [relatedTable]'s results.
+  ///
+  /// Will not show archived results or results associated with a goal, unless
+  /// [includeArchived] and [showGoals] are set to true, respectively.
+  QueryWithSums _getCombinedQuery<T extends SoftDeletableTable>(
     TableInfo<T, dynamic> relatedTable, {
     bool includeArchived = false,
     bool showGoals = false,
@@ -888,7 +899,7 @@ class AppDatabase extends _$AppDatabase {
       query.where(relatedTable.asDslTable.isArchived.not());
     }
 
-    TransactionSumPair sums = getTransactionSumQueries(
+    TransactionSumPair sums = _getTransactionSumQueries(
       includeArchived: includeArchived,
       showGoals: showGoals,
     );
@@ -932,7 +943,6 @@ class AppDatabase extends _$AppDatabase {
     }
 
     if (!showGoals) {
-      // TODO: Might need to flip this condition
       sumCondition = sumCondition & transactions.goalId.isNull();
     }
 
@@ -943,7 +953,7 @@ class AppDatabase extends _$AppDatabase {
     return transactions.amount.sum(filter: sumCondition);
   }
 
-  TransactionSumPair getTransactionSumQueries({
+  TransactionSumPair _getTransactionSumQueries({
     bool includeArchived = false,
     bool showGoals = false,
     Expression<bool>? additionalFilter,
