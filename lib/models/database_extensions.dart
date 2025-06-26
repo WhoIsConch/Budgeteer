@@ -26,6 +26,8 @@ abstract class Tileable<T extends Tileable<T>> {
   Widget getTile(BuildContext context, {bool isMultiselect, bool isSelected});
 }
 
+/// Represents a container object and the expenses and income associated with
+/// it.
 abstract class ContainerWithAmount<T extends DataClass> {
   /// The object in question. Could be a Category, Account, or Goal
   T get object;
@@ -85,8 +87,8 @@ class GoalWithAmount extends ContainerWithAmount {
       if (achieved == 0) {
         return 1; // Return one if achieved is also zero (100% completion)
       } else if (achieved > 0) {
-        return double
-            .infinity; // Let's assume anything toward a zero-cost goal is infinitely completed
+        // Let's assume anything toward a zero-cost goal is infinitely completed
+        return double.infinity;
       } else {
         return 0;
       }
@@ -132,10 +134,12 @@ class CategoryWithAmount extends ContainerWithAmount {
     required super.income,
   });
 
-  // Get the remaining amount that can be used in a category over a certain time
-  // The amount field was already grabbed with the relative date range in mind,
-  // so we subtract it from the category balance to get remaining amount.
-  // This gives us how much budget is remaining in the category.
+  /// Get the remaining amount that can be used in a category over a certain
+  /// time.
+  ///
+  /// The amount field was already retrieved based on the category's relative
+  /// date range, so it's subtracted from the category's balance to get the
+  /// remaining amount.
   double? get remainingAmount {
     if (category.balance == 0 || category.balance == null) return null;
 
