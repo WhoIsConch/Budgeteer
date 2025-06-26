@@ -3,7 +3,7 @@ import 'package:budget/appui/components/objects_list.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/models/enums.dart';
 import 'package:budget/models/filters.dart';
-import 'package:budget/providers/transaction_provider.dart';
+import 'package:budget/services/providers/transaction_provider.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';

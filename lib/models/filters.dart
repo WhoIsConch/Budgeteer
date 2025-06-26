@@ -65,10 +65,16 @@ class FilterTypeException implements Exception {
   }
 }
 
+/// Represents a database filter.
 sealed class Filter {
+  /// Build an [Expression] to be used in a Drift query.
   Expression<bool> buildCondition(Transactions table);
 }
 
+/// Filters Transactions based on their [amount] and a [type].
+///
+/// Will search for transactions that are greater than, less than, or equal to
+/// [amount].
 final class AmountFilter extends Filter {
   final AmountFilterType type;
   final double amount;
@@ -83,6 +89,10 @@ final class AmountFilter extends Filter {
   };
 }
 
+/// Filter transactions based on their title or notes text.
+///
+/// This is unfortunately a case-insensitive, exact match of the text in the
+/// database until an alternative text search can be implemented.
 final class TextFilter extends Filter {
   final String text;
 
@@ -94,6 +104,12 @@ final class TextFilter extends Filter {
       table.notes.lower().equals(text.toLowerCase());
 }
 
+/// Filter for any transactions that have a date set in the specified
+/// [dateRange].
+///
+/// Note how this does not filter transactions by their creation date, since
+/// that date should not be user-facing and is only relevant when there are
+/// multiple transactions set for the same day.
 final class DateRangeFilter extends Filter {
   final DateTimeRange dateRange;
 
@@ -107,6 +123,7 @@ final class DateRangeFilter extends Filter {
       );
 }
 
+/// Filter for any transaction of type [type].
 final class TypeFilter extends Filter {
   final TransactionType type;
 
@@ -117,12 +134,19 @@ final class TypeFilter extends Filter {
       table.type.equals(type.value);
 }
 
+/// Base filter for any transaction that is associated with the specified container.
+///
+/// Container objects include Categories, Accounts, and Goals.
 sealed class ContainerFilter extends Filter {
+  /// Whether to include transactions that have the specified container
+  /// set to null.
   final bool includeNull;
 
   ContainerFilter({this.includeNull = false});
 
   TextColumn getColumn(Transactions table);
+
+  /// A list of container object IDs.
   List<String> get itemIds;
 
   @override
@@ -141,6 +165,7 @@ sealed class ContainerFilter extends Filter {
   }
 }
 
+/// Filter for transactions associated with the specified [categories].
 final class CategoryFilter extends ContainerFilter {
   final List<CategoryWithAmount> categories;
 
@@ -153,6 +178,7 @@ final class CategoryFilter extends ContainerFilter {
   TextColumn getColumn(Transactions table) => table.category;
 }
 
+/// Filter for transactions associated with the specified [accounts].
 final class AccountFilter extends ContainerFilter {
   final List<AccountWithAmount> accounts;
 
@@ -165,6 +191,7 @@ final class AccountFilter extends ContainerFilter {
   TextColumn getColumn(Transactions table) => table.accountId;
 }
 
+/// Filter for transactions associated with the specified [goals].
 final class GoalFilter extends ContainerFilter {
   final List<GoalWithAmount> goals;
 
@@ -178,9 +205,11 @@ final class GoalFilter extends ContainerFilter {
 }
 
 extension FilterQueryBuilder on List<Filter> {
+  /// Compile a list of [Filter]s into one [Expression]
   Expression<bool> buildWhereClause(Transactions table) {
     // final validFilters = where((filter) => filter.isValid);
 
+    // If the list of filters is empty, all transactions should be shown.
     if (isEmpty) {
       return const Constant(true);
     }

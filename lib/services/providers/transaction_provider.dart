@@ -1,14 +1,14 @@
 import 'dart:async';
 
-import 'package:budget/providers/snackbar_provider.dart';
+import 'package:budget/services/providers/snackbar_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/models/filters.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+/// A ChangeNotifier provider that allows parts of the application to have
+/// access to database filters and be notified when they change.
 class TransactionProvider extends ChangeNotifier {
-  // Allows the rest of the app to know when transaction filters
-  // change
   List<Filter> _filters = [];
   Sort _sort = const Sort(SortType.date, SortOrder.descending);
 
@@ -26,6 +26,7 @@ class TransactionProvider extends ChangeNotifier {
     }
   }
 
+  /// Get a filter of the specified [T]
   T? getFilter<T extends Filter>() {
     final selectedFilters = filters.whereType<T>();
 
@@ -34,8 +35,7 @@ class TransactionProvider extends ChangeNotifier {
     } else {
       return selectedFilters.first;
     }
-    
-    }
+  }
 
   void updateFilter<T extends Filter>(T filter, {bool notify = true}) {
     removeFilter<T>(notify: false);
@@ -45,7 +45,9 @@ class TransactionProvider extends ChangeNotifier {
   }
 
   void removeFilter<T extends Filter>({Type? filterType, bool notify = true}) {
-    filters.removeWhere((e) => e.runtimeType == T || e.runtimeType == filterType);
+    filters.removeWhere(
+      (e) => e.runtimeType == T || e.runtimeType == filterType,
+    );
     if (notify) notifyListeners();
   }
 }

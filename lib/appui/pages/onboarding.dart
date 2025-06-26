@@ -1,5 +1,5 @@
 import 'package:budget/appui/components/edit_screen.dart';
-import 'package:budget/providers/settings.dart';
+import 'package:budget/services/providers/settings.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/models/enums.dart';
 import 'package:budget/utils/validators.dart';

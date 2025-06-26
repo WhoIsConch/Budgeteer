@@ -2,7 +2,7 @@ import 'package:budget/appui/categories/view_category.dart';
 import 'package:budget/appui/components/edit_screen.dart';
 import 'package:budget/appui/components/status.dart';
 import 'package:budget/appui/goals/view_goal.dart';
-import 'package:budget/providers/transaction_provider.dart';
+import 'package:budget/services/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/models/enums.dart';
 import 'package:budget/utils/validators.dart';

@@ -5,7 +5,7 @@ import 'package:budget/appui/components/status.dart';
 import 'package:budget/appui/components/top_containers.dart';
 import 'package:budget/models/data.dart';
 import 'package:budget/models/filters.dart';
-import 'package:budget/providers/transaction_provider.dart';
+import 'package:budget/services/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/models/enums.dart';
 import 'package:budget/utils/tools.dart';

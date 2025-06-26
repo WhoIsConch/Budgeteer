@@ -1,5 +1,5 @@
 import 'package:budget/models/database_extensions.dart';
-import 'package:budget/providers/snackbar_provider.dart';
+import 'package:budget/services/providers/snackbar_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:budget/appui/components/edit_screen.dart';

@@ -1,4 +1,4 @@
-import 'package:budget/providers/snackbar_provider.dart';
+import 'package:budget/services/providers/snackbar_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/tools.dart';
 import 'package:budget/appui/components/nav_manager.dart';
@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'package:provider/provider.dart';
-import 'package:budget/providers/settings.dart';
+import 'package:budget/services/providers/settings.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {

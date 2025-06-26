@@ -1,6 +1,6 @@
 import 'package:budget/appui/components/edit_screen.dart';
 import 'package:budget/appui/pages/onboarding.dart';
-import 'package:budget/providers/settings.dart';
+import 'package:budget/services/providers/settings.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';

@@ -2,7 +2,7 @@ import 'package:budget/appui/components/status.dart';
 import 'package:budget/models/database_extensions.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/models/filters.dart';
-import 'package:budget/providers/transaction_provider.dart';
+import 'package:budget/services/providers/transaction_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/appui/transactions/manage_transaction.dart';

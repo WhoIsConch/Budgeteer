@@ -1,8 +1,8 @@
 import 'package:budget/appui/pages/onboarding.dart';
-import 'package:budget/providers/snackbar_provider.dart';
+import 'package:budget/services/providers/snackbar_provider.dart';
 import 'package:budget/appui/pages/history.dart';
 import 'package:budget/appui/pages/login.dart';
-import 'package:budget/providers/settings.dart';
+import 'package:budget/services/providers/settings.dart';
 import 'package:budget/models/enums.dart';
 import 'package:budget/appui/accounts/manage_account.dart';
 import 'package:budget/appui/categories/manage_category.dart';

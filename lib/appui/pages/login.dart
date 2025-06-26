@@ -1,4 +1,4 @@
-import 'package:budget/providers/settings.dart';
+import 'package:budget/services/providers/settings.dart';
 import 'package:budget/utils/tools.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:dynamic_system_colors/dynamic_system_colors.dart';

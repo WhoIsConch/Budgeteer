@@ -1,4 +1,4 @@
-import 'package:budget/providers/transaction_provider.dart';
+import 'package:budget/services/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/appui/transactions/manage_transaction.dart';
 import 'package:flutter/material.dart';
@@ -32,15 +32,19 @@ void showOptionsDialog(BuildContext context, Transaction transaction) {
             leading: const Icon(Icons.archive),
             title: const Text('Archive'),
             onTap: () {
-              deletionManager.stageObjectsForArchival<Transaction>([transaction.id]);
+              deletionManager.stageObjectsForArchival<Transaction>([
+                transaction.id,
+              ]);
               Navigator.pop(context);
-            }
+            },
           ),
           ListTile(
             leading: const Icon(Icons.delete),
             title: const Text('Delete'),
             onTap: () {
-              deletionManager.stageObjectsForDeletion<Transaction>([transaction.id]);
+              deletionManager.stageObjectsForDeletion<Transaction>([
+                transaction.id,
+              ]);
               Navigator.pop(context);
             },
           ),
