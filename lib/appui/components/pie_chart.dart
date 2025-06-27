@@ -366,38 +366,42 @@ class _PieChartCardState extends State<PieChartCard> {
     // probably make this less repetitive
     switch (_selectedContainer.type) {
       case ContainerType.account:
-        return db.accountDao.watchAccounts(filters: provider.filters).asyncMap((
-          List<AccountWithAmount> accounts,
-        ) async {
-          final noAccounts =
-              await db.transactionDao
-                  .watchTotalAmount(
-                    filters: provider.filters,
-                    net: net,
-                    nullAccount: true,
-                  )
-                  .first;
+        return db.accountDao
+            // Show goals since we want to see all of the money that goes through
+            // an account
+            .watchAccounts(filters: provider.filters, showGoals: true)
+            .asyncMap((List<AccountWithAmount> accounts) async {
+              final noAccounts =
+                  await db.transactionDao
+                      .watchTotalAmount(
+                        filters: provider.filters,
+                        net: net,
+                        nullAccount: true,
+                      )
+                      .first;
 
-          final List<PieChartObject> objects =
-              accounts
-                  .map(
-                    (account) => PieChartObject(
-                      name: account.account.name,
-                      color: account.account.color,
-                      amount:
-                          net ? account.netAmount : account.cumulativeAmount,
-                    ),
-                  )
-                  .toList();
-          return [
-            ...objects,
-            PieChartObject(
-              name: 'No account',
-              color: Colors.grey,
-              amount: noAccounts ?? 0,
-            ),
-          ];
-        });
+              final List<PieChartObject> objects =
+                  accounts
+                      .map(
+                        (account) => PieChartObject(
+                          name: account.account.name,
+                          color: account.account.color,
+                          amount:
+                              net
+                                  ? account.netAmount
+                                  : account.cumulativeAmount,
+                        ),
+                      )
+                      .toList();
+              return [
+                ...objects,
+                PieChartObject(
+                  name: 'No account',
+                  color: Colors.grey,
+                  amount: noAccounts ?? 0,
+                ),
+              ];
+            });
       case ContainerType.category:
         return db.categoryDao
             .watchCategories(

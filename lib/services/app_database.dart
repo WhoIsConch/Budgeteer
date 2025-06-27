@@ -145,12 +145,18 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
 
   Stream<List<AccountWithAmount>> watchAccounts({
     List<Filter>? filters,
-    includeArchived = false,
-    sortDescending = true,
+    bool includeArchived = false,
+    bool sortDescending = true,
+
+    /// Show goals is optional since it may be useful in analytics, but for
+    /// viewing balances you don't want to see the amount of money you put
+    /// towards a goal. Any money put towards a goal can be considered spent.
+    bool showGoals = false,
   }) {
     final queryWithSum = db._getCombinedQuery(
       accounts,
       includeArchived: includeArchived,
+      showGoals: showGoals,
     );
 
     if (filters != null) {
@@ -185,10 +191,12 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
   Stream<AccountWithAmount> watchAccountById(
     String id, {
     bool includeArchived = true,
+    bool showGoals = false,
   }) {
     final queryWithSum = db._getCombinedQuery(
       accounts,
       includeArchived: includeArchived,
+      showGoals: showGoals,
     );
     final filteredQuery = queryWithSum.query..where(accounts.id.equals(id));
 
@@ -204,10 +212,12 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
   Future<AccountWithAmount> getAccountById(
     String id, {
     bool includeArchived = true,
+    bool showGoals = false,
   }) {
     final queryWithSum = db._getCombinedQuery(
       accounts,
       includeArchived: includeArchived,
+      showGoals: showGoals,
     );
     final filteredQuery = queryWithSum.query..where(accounts.id.equals(id));
 
