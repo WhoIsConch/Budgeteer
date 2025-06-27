@@ -34,41 +34,46 @@ class _TopContainersState extends State<TopContainers> {
     // thing to each stream
 
     return switch (_selectedContainer) {
-      ContainerType.category =>
-        db.categoryDao.watchCategories(filters: filters).map((e) {
-          // Get the containers that have actually had money pass through them
-          final categories = e.where((cp) => cp.cumulativeAmount != 0).toList();
+      ContainerType.category => db.categoryDao
+          // Don't sum by reset increment since we want to see the total amount
+          // of money the user has used in these categories throughout the date
+          // range
+          .watchCategories(filters: filters, sumByResetIncrement: false)
+          .map((e) {
+            // Get the containers that have actually had money pass through them
+            final categories =
+                e.where((cp) => cp.cumulativeAmount != 0).toList();
 
-          if (categories.isEmpty) return [];
+            if (categories.isEmpty) return [];
 
-          // Sort these categories from most cash flow to least cash flow
-          categories.sort(
-            (a, b) => b.cumulativeAmount.compareTo(a.cumulativeAmount),
-          );
+            // Sort these categories from most cash flow to least cash flow
+            categories.sort(
+              (a, b) => b.cumulativeAmount.compareTo(a.cumulativeAmount),
+            );
 
-          // Combine all the categories' amounts to get the total amount
-          final totalAmount = categories.fold(
-            0.0,
-            (amt, pair) => amt + pair.cumulativeAmount,
-          );
+            // Combine all the categories' amounts to get the total amount
+            final totalAmount = categories.fold(
+              0.0,
+              (amt, pair) => amt + pair.cumulativeAmount,
+            );
 
-          return categories
-              .map(
-                (c) => ContainerTile(
-                  title: c.category.name,
-                  leadingIcon: Icons.category,
-                  progress: c.cumulativeAmount / totalAmount,
-                  amount: c.cumulativeAmount,
-                  onTap:
-                      () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => CategoryViewer(categoryPair: c),
+            return categories
+                .map(
+                  (c) => ContainerTile(
+                    title: c.category.name,
+                    leadingIcon: Icons.category,
+                    progress: c.cumulativeAmount / totalAmount,
+                    amount: c.cumulativeAmount,
+                    onTap:
+                        () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => CategoryViewer(categoryPair: c),
+                          ),
                         ),
-                      ),
-                ),
-              )
-              .toList();
-        }),
+                  ),
+                )
+                .toList();
+          }),
       ContainerType.account => db.accountDao
           .watchAccounts(filters: filters)
           .map((e) {
