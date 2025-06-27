@@ -70,7 +70,7 @@ class _TopContainersState extends State<TopContainers> {
               .toList();
         }),
       ContainerType.account => db.accountDao
-          .watchAccounts(filters: filters)
+          .watchAccounts(filters: filters, showGoals: true)
           .map((e) {
             final accounts = e.where((ap) => ap.cumulativeAmount != 0).toList();
 
