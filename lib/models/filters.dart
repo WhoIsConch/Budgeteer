@@ -18,6 +18,7 @@ enum AmountFilterType {
   final String symbol;
 }
 
+/// Defines a way Transactions queries can be sorted.
 class Sort {
   final SortType sortType;
   final SortOrder sortOrder;
@@ -26,32 +27,6 @@ class Sort {
 
   static Sort get defaultSort =>
       const Sort(SortType.date, SortOrder.descending);
-}
-
-class TransactionsRequest {
-  final List<Filter>? filters;
-  final Sort? sort;
-  final int? pageKey;
-  final int? pageSize;
-
-  const TransactionsRequest({
-    this.filters,
-    this.sort,
-    this.pageKey,
-    this.pageSize,
-  });
-
-  @override
-  bool operator ==(other) {
-    return other is TransactionsRequest &&
-        filters == other.filters &&
-        sort == other.sort &&
-        pageKey == other.pageKey &&
-        pageSize == other.pageSize;
-  }
-
-  @override
-  int get hashCode => Object.hash(filters, sort, pageKey, pageSize);
 }
 
 class FilterTypeException implements Exception {

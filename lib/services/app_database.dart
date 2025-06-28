@@ -428,6 +428,8 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     with _$TransactionDaoMixin {
   TransactionDao(super.db);
 
+  /// Get a stream that watches a page of transaction objects, useful for
+  /// paginated feeds.
   Stream<List<Transaction>> watchTransactionsPage({
     List<Filter>? filters,
     Sort? sort,
@@ -478,6 +480,8 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     return query.watch();
   }
 
+  /// Get a stream that watches the total amount of money available in the
+  /// database.
   Stream<double?> watchTotalAmount({
     List<Filter>? filters,
     bool nullCategory = false, // TODO: Integrate these with filters
@@ -519,6 +523,8 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
         .watchSingle();
   }
 
+  /// Convert a [Transaction] object to a [HydratedTransaction], which includes
+  /// amounted variants of its category, account, and goal.
   Future<HydratedTransaction> hydrateTransaction(
     Transaction transaction,
   ) async {
@@ -548,6 +554,8 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  /// Get a [FinancialDataPoint] object using the income and expenses from a
+  /// given date range.
   Future<FinancialDataPoint> getPointFromRange(DateTimeRange range) async {
     final totalSpent =
         await watchTotalAmount(
@@ -568,6 +576,12 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  /// Retrieve a list of [FinancialDataPoint] objects based on a date range
+  /// and how much they should be aggregated.
+  ///
+  /// [aggregationLevel] describes how much the data should be aggregated. For
+  /// example, an [AggregationLevel.weekly] will convert a week's worth of
+  /// transactions into one [FinancialDataPoint].
   Future<List<FinancialDataPoint>> getAggregatedRangeData(
     DateTimeRange range,
     AggregationLevel aggregationLevel,
@@ -637,24 +651,25 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     return points;
   }
 
+  /// Archive a list of transactions.
   Future<int> setTransactionsArchived(List<String> ids, bool status) =>
       (update(transactions)..where(
         (t) => t.id.isIn(ids),
       )).write(TransactionsCompanion(isArchived: Value(status)));
 
+  /// Mark a list of transactions as deleted in the database.
   Future<int> setTransactionsDeleted(List<String> ids, bool status) =>
       (update(transactions)..where(
         (t) => t.id.isIn(ids),
       )).write(TransactionsCompanion(isDeleted: Value(status)));
 
+  /// Permanently delete a list of transactions.
   Future<int> permanentlyDeleteTransactions(List<String> ids) =>
       (delete(transactions)..where((t) => t.id.isIn(ids))).go();
 
-  // Transaction methods
+  /// Create a transaction from a [TransactionsCompanion] object.
   Future<Transaction> createTransaction(TransactionsCompanion entry) async {
-    // Generate the SQL with Drift, then write the SQL to the database.
     final id = entry.id.present ? entry.id.value : uuid.v4();
-    // 2. Create a companion that definitely includes the ID
     final entryWithId = entry.copyWith(id: Value(id));
 
     final transaction = await into(transactions).insertReturning(entryWithId);
@@ -662,6 +677,7 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     return transaction;
   }
 
+  /// Update a transaction using a [TransactionsCompanion] object.
   Future<Transaction> updateTransaction(TransactionsCompanion entry) async {
     final query = update(transactions)
       ..where((t) => t.id.equals(entry.id.value));
@@ -669,6 +685,7 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     return (await query.writeReturning(entry)).single;
   }
 
+  /// Load a transaction from the database by its ID.
   Future<Transaction> getTransactionById(String id) =>
       (select(transactions)..where((tbl) => tbl.id.equals(id))).getSingle();
 }
