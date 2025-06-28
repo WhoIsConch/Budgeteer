@@ -38,12 +38,13 @@ class ViewTransaction extends StatelessWidget {
           title: 'Category',
           description: category!.name,
           action: () async {
-            final categoryPair = await context
-                .read<AppDatabase>()
-                .categoryDao
-                .getCategoryById(category!.id);
+            final categoryPair =
+                await context
+                    .read<AppDatabase>()
+                    .categoryDao
+                    .watchCategoryById(category!.id)
+                    .first;
 
-            if (categoryPair == null) return;
             if (!context.mounted) return;
 
             Navigator.of(context).push(

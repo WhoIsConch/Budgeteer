@@ -214,27 +214,6 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     return mappedSelectable.watchSingle();
   }
 
-  // TODO: Remove this and replace with watchAccountById().first
-  /// Get an account with its UUID
-  Future<AccountWithAmount> getAccountById(
-    String id, {
-    bool includeArchived = true,
-    bool showGoals = false,
-  }) {
-    final queryWithSum = db._getCombinedQuery(
-      accounts,
-      includeArchived: includeArchived,
-      showGoals: showGoals,
-    );
-    final filteredQuery = queryWithSum.query..where(accounts.id.equals(id));
-
-    final mappedSelectable = filteredQuery.map(
-      (row) => _buildAccountPair(row, queryWithSum),
-    );
-
-    return mappedSelectable.getSingle();
-  }
-
   /// Create an account using an [AccountsCompanion].
   Future<Account> createAccount(AccountsCompanion entry) async {
     if (entry.priority.value != null) {
@@ -395,22 +374,6 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     return goal;
   }
 
-  Future<GoalWithAmount> getGoalById(String id, {bool includeFinished = true}) {
-    final queryWithSum = db._getCombinedQuery(
-      goals,
-      includeArchived: includeFinished,
-      showGoals: true,
-    );
-
-    final filteredQuery = queryWithSum.query..where(goals.id.equals(id));
-
-    final mappedSelectable = filteredQuery.map(
-      (row) => _buildGoalPair(row, queryWithSum),
-    );
-
-    return mappedSelectable.getSingle();
-  }
-
   /// Watch a goal by its ID.
   Stream<GoalWithAmount> watchGoalById(
     String id, {
@@ -553,11 +516,12 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     AccountWithAmount? account;
 
     if (transaction.goalId != null) {
-      goal = await db.goalDao.getGoalById(transaction.goalId!);
+      goal = await db.goalDao.watchGoalById(transaction.goalId!).first;
     }
 
     if (transaction.category != null) {
-      category = await db.categoryDao.getCategoryById(transaction.category!);
+      category =
+          await db.categoryDao.watchCategoryById(transaction.category!).first;
     }
 
     if (transaction.accountId != null) {
@@ -714,6 +678,15 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     with _$CategoryDaoMixin {
   CategoryDao(super.db);
 
+  /// Get a [CategoryWithAmount] from a [TypedResult] that contains the
+  /// categories table and the expenses and income from a [QueryWithSums].
+  CategoryWithAmount _buildCategoryPair(TypedResult row, QueryWithSums query) =>
+      CategoryWithAmount(
+        category: row.readTable(categories),
+        expenses: row.read<double>(query.expenses) ?? 0,
+        income: row.read<double>(query.income) ?? 0,
+      );
+
   /// Get a [CaseWhen] to use in a [CaseWhenExpression] for category dates.
   ///
   /// Used to get the resulting transaction amounts from the database based
@@ -847,24 +820,16 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
 
     return queryWithSum.query.watch().map(
       (rows) =>
-          rows
-              .map(
-                (row) => CategoryWithAmount(
-                  category: row.readTable(categories),
-                  expenses: row.read<double>(queryWithSum.expenses) ?? 0,
-                  income: row.read<double>(queryWithSum.income) ?? 0,
-                ),
-              )
-              .toList(),
+          rows.map((row) => _buildCategoryPair(row, queryWithSum)).toList(),
     );
   }
 
-  /// Get a category by its ID.
-  Future<CategoryWithAmount?> getCategoryById(
+  /// Watch a category by its ID.
+  Stream<CategoryWithAmount> watchCategoryById(
     String id, {
     bool includeArchived = false,
     bool sumByResetIncrement = true,
-  }) async {
+  }) {
     final queryWithSum = _getQueryWithSum(
       includeArchived: includeArchived,
       sumByResetIncrement: sumByResetIncrement,
@@ -873,21 +838,9 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     final singleCategoryQuery =
         queryWithSum.query..where(categories.id.equals(id));
 
-    final row = await singleCategoryQuery.getSingleOrNull();
-
-    if (row != null) {
-      final category = row.readTable(categories);
-      final expenses = row.read<double>(queryWithSum.expenses);
-      final income = row.read<double>(queryWithSum.income);
-
-      return CategoryWithAmount(
-        category: category,
-        expenses: expenses ?? 0,
-        income: income ?? 0,
-      );
-    } else {
-      return null;
-    }
+    return singleCategoryQuery.watchSingle().map(
+      (row) => _buildCategoryPair(row, queryWithSum),
+    );
   }
 
   /// Create a category using a [CategoriesCompanion] object.
