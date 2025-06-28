@@ -300,14 +300,19 @@ class TransactionTileableAdapter extends Tileable<TransactionTileableAdapter> {
 
     Widget leadingWidget;
 
+    // Use an alternate color scheme if the transaction is either in the
+    // future or archived to tell the user that the transaction is
+    // ephemeral
     final isInFuture = _transaction.date.isAfter(DateTime.now());
+    final isAlternateColorScheme = _transaction.isArchived || isInFuture;
+
     final containerColor =
-        isInFuture
+        isAlternateColorScheme
             ? theme.colorScheme.surfaceContainerHigh
             : theme.colorScheme.secondaryContainer;
 
     final onColor =
-        isInFuture
+        isAlternateColorScheme
             ? theme.colorScheme.onSurface
             : theme.colorScheme.onSecondaryContainer;
 
@@ -330,12 +335,14 @@ class TransactionTileableAdapter extends Tileable<TransactionTileableAdapter> {
       );
     }
 
-    String subtitle;
+    String subtitle = _transaction.formatDate();
 
     if (isInFuture) {
-      subtitle = '${_transaction.formatDate()} (Future)';
-    } else {
-      subtitle = _transaction.formatDate();
+      subtitle += ' (Future)';
+    }
+
+    if (_transaction.isArchived) {
+      subtitle += ' (Archived)';
     }
 
     return ListTile(

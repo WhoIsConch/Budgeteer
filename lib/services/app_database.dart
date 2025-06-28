@@ -117,6 +117,8 @@ class Goals extends Table with SoftDeletableTable {
 class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
   AccountDao(super.db);
 
+  /// Get an [AccountWithAmount] from a [TypedResult] that contains the
+  /// accounts table, expenses, and income queries.
   AccountWithAmount _buildAccountPair(TypedResult row, QueryWithSums query) {
     final account = row.readTable(accounts);
     final expenses = row.read<double>(query.expenses);
@@ -129,6 +131,10 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     );
   }
 
+  /// Check whether the priority of an account is already used by another
+  /// account.
+  ///
+  /// It isn't recommended to use this method often since it is an API call.
   Future<bool> isPriorityTaken(int newPriority, {String? currentItemId}) async {
     /// Ensure that a priority field for an account isn't taken.
     final query = select(accounts)
@@ -143,6 +149,7 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     return existingItems.isNotEmpty;
   }
 
+  /// Watch a list of accounts.
   Stream<List<AccountWithAmount>> watchAccounts({
     List<Filter>? filters,
     bool includeArchived = false,
@@ -187,7 +194,7 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     });
   }
 
-  /// Watch an account
+  /// Watch a single account with its ID.
   Stream<AccountWithAmount> watchAccountById(
     String id, {
     bool includeArchived = true,
@@ -228,6 +235,7 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     return mappedSelectable.getSingle();
   }
 
+  /// Create an account using an [AccountsCompanion].
   Future<Account> createAccount(AccountsCompanion entry) async {
     if (entry.priority.value != null) {
       bool isTaken = await isPriorityTaken(entry.priority.value!);
@@ -246,6 +254,7 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     return account;
   }
 
+  /// Update an account using an [AccountsCompanion].
   Future<Account> updateAccount(AccountsCompanion entry) async {
     assert(entry.id.present, '`id` must be supplied when updating an Account');
 
@@ -268,16 +277,19 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
     return account.single;
   }
 
+  /// Mark a list of accounts as deleted.
   Future<int> setAccountsDeleted(List<String> ids, bool status) =>
       (update(accounts)..where(
         (a) => a.id.isIn(ids),
       )).write(AccountsCompanion(isDeleted: Value(status)));
 
+  /// Mark a list of accounts as archived.
   Future<int> setAccountsArchived(List<String> ids, bool status) =>
       (update(accounts)..where(
         (a) => a.id.isIn(ids),
       )).write(AccountsCompanion(isArchived: Value(status)));
 
+  /// Permanently delete a list of accounts from the database.
   Future<int> permanentlyDeleteAccounts(List<String> ids) =>
       (delete(accounts)..where((a) => a.id.isIn(ids))).go();
 }
@@ -286,6 +298,8 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
 class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
   GoalDao(super.db);
 
+  /// Build a [GoalWithAmount] from a [TypedResult] that contains the goals
+  /// table and the income and expenses queries from [query].
   GoalWithAmount _buildGoalPair(TypedResult row, QueryWithSums query) {
     final goal = row.readTable(goals);
     final expenses = row.read<double>(query.expenses);
@@ -298,6 +312,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     );
   }
 
+  /// Watch a list of goals, filtered by the [filters].
   Stream<List<GoalWithAmount>> watchGoals({
     List<Filter>? filters,
     bool includeFinished = true,
@@ -354,23 +369,25 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
         .watchSingle();
   }
 
+  /// Mark a list of goals as deleted.
   Future<void> setGoalsDeleted(List<String> ids, bool status) => (update(goals)
     ..where(
       (g) => g.id.isIn(ids),
     )).write(GoalsCompanion(isDeleted: Value(status)));
 
+  /// Mark a list of goals as finished, or archived.
   Future<void> setGoalsFinished(List<String> ids, bool status) => (update(goals)
     ..where(
       (g) => g.id.isIn(ids),
     )).write(GoalsCompanion(isArchived: Value(status)));
 
+  /// Permanently delete a list of goals from the database.
   Future<int> permanentlyDeleteGoals(List<String> ids) =>
       (delete(goals)..where((g) => g.id.isIn(ids))).go();
 
+  /// Create a goal using a [GoalsCompanion] object.
   Future<Goal> createGoal(GoalsCompanion entry) async {
-    // Generate the SQL with Drift, then write the SQL to the database.
     final id = entry.id.present ? entry.id.value : uuid.v4();
-    // 2. Create a companion that definitely includes the ID
     final entryWithId = entry.copyWith(id: Value(id));
 
     final goal = into(goals).insertReturning(entryWithId);
@@ -394,6 +411,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     return mappedSelectable.getSingle();
   }
 
+  /// Watch a goal by its ID.
   Stream<GoalWithAmount> watchGoalById(
     String id, {
     bool includeFinished = true,
@@ -413,6 +431,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     return mappedSelectable.watchSingle();
   }
 
+  /// Update a goal using a [GoalsCompanion] object.
   Future<Goal> updateGoal(GoalsCompanion entry) async {
     assert(entry.id.present, '`id` must be supplied when updating a Goal');
 
@@ -695,6 +714,10 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     with _$CategoryDaoMixin {
   CategoryDao(super.db);
 
+  /// Get a [CaseWhen] to use in a [CaseWhenExpression] for category dates.
+  ///
+  /// Used to get the resulting transaction amounts from the database based
+  /// on a category's reset increment.
   CaseWhen<bool, String> _getCaseWhen(
     CategoryResetIncrement increment,
     bool isStart,
@@ -703,6 +726,8 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
         increment.relativeDateRange?.getRange() ??
         RelativeDateRange.today.getRange();
 
+    // When the category's resetIncrement is equal to the increment,
+    // then evaluate to the time range date.
     return CaseWhen(
       categories.resetIncrement.equalsValue(increment),
       then: Constant<String>(
@@ -711,6 +736,8 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  /// Get the [QueryWithSums] that gets each category's expenses and income
+  /// in relation to the category's [CategoryResetIncrement].
   QueryWithSums _getCategoriesWithAmountsQuery() {
     // Get the start and end date to look for the values
     Expression<String> startDate = CaseWhenExpression<String>(
@@ -782,6 +809,8 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  /// Get a [QueryWithSums] that includes categories and their respective
+  /// expenses and income amounts.
   QueryWithSums _getQueryWithSum({
     bool includeArchived = false,
     bool sumByResetIncrement = true,
@@ -801,6 +830,7 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     return queryWithSum;
   }
 
+  /// Watch a list of categories, filtered by the [filters].
   Stream<List<CategoryWithAmount>> watchCategories({
     List<Filter>? filters,
     bool includeArchived = false,
@@ -829,6 +859,7 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  /// Get a category by its ID.
   Future<CategoryWithAmount?> getCategoryById(
     String id, {
     bool includeArchived = false,
@@ -859,6 +890,7 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     }
   }
 
+  /// Create a category using a [CategoriesCompanion] object.
   Future<Category> createCategory(CategoriesCompanion entry) async {
     final id = entry.id.present ? entry.id.value : uuid.v4();
     // 2. Create a companion that definitely includes the ID
@@ -869,25 +901,33 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     return category;
   }
 
+  /// Update a category using a [CategoriesCompanion] object.
+  ///
+  /// The companion must have the ID of the object it wishes to update. This
+  /// method will not automatically create a new category.
   Future<Category> updateCategory(CategoriesCompanion entry) async {
     final query = update(categories)..where((t) => t.id.equals(entry.id.value));
 
     return (await query.writeReturning(entry)).single;
   }
 
+  /// Mark a list of categories as archived.
   Future<int> setCategoriesArchived(List<String> ids, bool status) =>
       (update(categories)..where(
         (t) => t.id.isIn(ids),
       )).write(CategoriesCompanion(isArchived: Value(status)));
 
+  /// Mark a list of categories as deleted.
   Future<int> setCategoriesDeleted(List<String> ids, bool status) =>
       (update(categories)..where(
         (c) => c.id.isIn(ids),
       )).write(CategoriesCompanion(isDeleted: Value(status)));
 
+  /// Permanently delete a list of categories from the database.
   Future<int> permanentlyDeleteCategories(List<String> ids) =>
       (delete(categories)..where((c) => c.id.isIn(ids))).go();
 
+  /// Watch the total amount of categories owned by the user.
   Stream<int> watchCategoryCount() {
     return categories.count().watchSingle();
   }
@@ -937,6 +977,10 @@ class AppDatabase extends _$AppDatabase {
     return QueryWithSums(query, income: sums.income, expenses: sums.expenses);
   }
 
+  /// Get a condition used for table joins depending on which table is being
+  /// used.
+  ///
+  /// Useful to keep code dry.
   Expression<bool> _getJoinCondition<T extends Table>(
     TableInfo<T, dynamic> table,
   ) {
@@ -952,6 +996,10 @@ class AppDatabase extends _$AppDatabase {
     }
   }
 
+  /// Get an [Expression] that matches the transactions of type [type].
+  ///
+  /// Used to ensure all reads of transactions don't include archived or
+  /// deleted records. Can also be filtered by an [additionalFilter].
   Expression<double> _getTypeExpr({
     required TransactionType type,
     bool includeArchived = false,
@@ -980,6 +1028,8 @@ class AppDatabase extends _$AppDatabase {
     return transactions.amount.sum(filter: sumCondition);
   }
 
+  /// Get a [TransactionSumPair] to represent expenses and income from the
+  /// database.
   TransactionSumPair _getTransactionSumQueries({
     bool includeArchived = false,
     bool showGoals = false,
