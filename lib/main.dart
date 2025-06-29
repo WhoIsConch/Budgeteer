@@ -1,3 +1,4 @@
+import 'package:budget/services/providers/auth_provider.dart';
 import 'package:budget/services/providers/snackbar_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/tools.dart';
@@ -33,9 +34,11 @@ void main() async {
 
   final settingsProvider = ChangeNotifierProvider.value(value: settingsService);
 
+  final authProvider = ChangeNotifierProvider.value(value: AuthProvider());
+
   runApp(
     MultiProvider(
-      providers: [dbProvider, snackBarProvider, settingsProvider],
+      providers: [dbProvider, snackBarProvider, settingsProvider, authProvider],
       child: const BudgetApp(),
     ),
   );
