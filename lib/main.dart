@@ -4,12 +4,14 @@ import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/tools.dart';
 import 'package:budget/appui/components/nav_manager.dart';
 import 'package:budget/services/powersync.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/services/providers/settings.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +22,20 @@ void main() async {
 
   final settingsService = SettingsService();
   await settingsService.loadSettings();
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    // If the user is offline, Supabase will try to raise an AuthError because
+    // the remote can't be reached.
+    if (error is AuthException &&
+        error.message.contains('Failed host lookup')) {
+      AppLogger().logger.i(
+        'Caught expected offline authentication error: ${error.message}',
+      );
+      return true;
+    } else {
+      return false;
+    }
+  };
 
   // Define the providers
   // I have a lot of providers
