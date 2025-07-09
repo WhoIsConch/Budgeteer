@@ -669,8 +669,8 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Load a transaction from the database by its ID.
-  Future<Transaction> getTransactionById(String id) =>
-      (select(transactions)..where((tbl) => tbl.id.equals(id))).getSingle();
+  Stream<Transaction> watchTransactionById(String id) =>
+      (select(transactions)..where((tbl) => tbl.id.equals(id))).watchSingle();
 }
 
 @DriftAccessor(tables: [Categories])
