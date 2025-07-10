@@ -5,6 +5,9 @@
 *.swp
 *.env
 *.dll
+*.db
+*.db-shm
+*.db-wal
 .DS_Store
 .atom/
 .buildlog/
