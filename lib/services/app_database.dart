@@ -195,7 +195,7 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
   }
 
   /// Watch a single account with its ID.
-  Stream<AccountWithAmount> watchAccountById(
+  Stream<AccountWithAmount?> watchAccountById(
     String id, {
     bool includeArchived = true,
     bool showGoals = false,
@@ -211,7 +211,7 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
       (row) => _buildAccountPair(row, queryWithSum),
     );
 
-    return mappedSelectable.watchSingle();
+    return mappedSelectable.watchSingleOrNull();
   }
 
   /// Create an account using an [AccountsCompanion].
@@ -375,7 +375,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
   }
 
   /// Watch a goal by its ID.
-  Stream<GoalWithAmount> watchGoalById(
+  Stream<GoalWithAmount?> watchGoalById(
     String id, {
     bool includeFinished = true,
   }) {
@@ -391,7 +391,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
       (row) => _buildGoalPair(row, queryWithSum),
     );
 
-    return mappedSelectable.watchSingle();
+    return mappedSelectable.watchSingleOrNull();
   }
 
   /// Update a goal using a [GoalsCompanion] object.
@@ -669,8 +669,9 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Load a transaction from the database by its ID.
-  Stream<Transaction> watchTransactionById(String id) =>
-      (select(transactions)..where((tbl) => tbl.id.equals(id))).watchSingle();
+  Stream<Transaction?> watchTransactionById(String id) =>
+      (select(transactions)
+        ..where((tbl) => tbl.id.equals(id))).watchSingleOrNull();
 }
 
 @DriftAccessor(tables: [Categories])
@@ -825,7 +826,7 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Watch a category by its ID.
-  Stream<CategoryWithAmount> watchCategoryById(
+  Stream<CategoryWithAmount?> watchCategoryById(
     String id, {
     bool includeArchived = false,
     bool sumByResetIncrement = true,
@@ -838,8 +839,8 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     final singleCategoryQuery =
         queryWithSum.query..where(categories.id.equals(id));
 
-    return singleCategoryQuery.watchSingle().map(
-      (row) => _buildCategoryPair(row, queryWithSum),
+    return singleCategoryQuery.watchSingleOrNull().map(
+      (row) => row == null ? null : _buildCategoryPair(row, queryWithSum),
     );
   }
 

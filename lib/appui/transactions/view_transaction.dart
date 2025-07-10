@@ -46,6 +46,7 @@ class ViewTransaction extends StatelessWidget {
                     .first;
 
             if (!context.mounted) return;
+            if (categoryPair == null) return;
 
             Navigator.of(context).push(
               MaterialPageRoute(

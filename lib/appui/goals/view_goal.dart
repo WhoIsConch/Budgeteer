@@ -86,7 +86,7 @@ class _GoalViewerState extends State<GoalViewer> {
   Widget build(BuildContext context) {
     final db = context.read<AppDatabase>();
 
-    return StreamBuilder<GoalWithAmount>(
+    return StreamBuilder<GoalWithAmount?>(
       initialData: widget.initialGoalPair,
       stream: db.goalDao.watchGoalById(widget.initialGoalPair.goal.id),
       builder: (context, snapshot) {
