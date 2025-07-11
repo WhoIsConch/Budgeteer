@@ -2,8 +2,11 @@ import 'dart:io';
 
 import 'package:budget/models/enums.dart';
 import 'package:async/async.dart';
+import 'package:budget/models/filters.dart';
 import 'package:budget/services/powersync_schema.dart';
+import 'package:collection/collection.dart';
 import 'package:drift/drift.dart' hide isNull;
+import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:powersync/powersync.dart';
 import 'package:test/test.dart';
@@ -197,6 +200,174 @@ void main() {
         await dao.setTransactionsDeleted([transaction.id], true);
 
         await expectedTotals;
+      });
+    });
+
+    group('transaction searching', () {
+      setUp(() async {
+        // Create a group of transactions to be filtered and sorted
+        final companions = [
+          TransactionsCompanion.insert(
+            title: 'A tran',
+            amount: 50,
+            type: TransactionType.income,
+            date: DateTime.now().subtract(Duration(days: 7)),
+            notes: Value('Note'),
+          ),
+          TransactionsCompanion.insert(
+            title: 'B tran',
+            amount: 20,
+            type: TransactionType.expense,
+            date: DateTime.now().subtract(Duration(days: 2)),
+          ),
+          TransactionsCompanion.insert(
+            title: 'C tran',
+            amount: 10,
+            type: TransactionType.expense,
+            date: DateTime.now().subtract(Duration(days: 4)),
+          ),
+        ];
+
+        for (var companion in companions) {
+          await dao.createTransaction(companion);
+        }
+      });
+
+      test('transactions are sorted by date descending by default', () async {
+        final transactions = await dao.watchTransactionsPage().first;
+        final List<Transaction> sorted = List.from(transactions);
+
+        // Create a new list that is re-sorted to expected values
+        // comparing b with a ensures a descending sort
+        sorted.sort((a, b) => b.date.compareTo(a.date));
+
+        expect(transactions, sorted);
+      });
+
+      test('transactions can be sorted by title in descending order', () async {
+        final transactions =
+            await dao
+                .watchTransactionsPage(
+                  sort: Sort(SortType.title, SortOrder.descending),
+                )
+                .first;
+        final List<Transaction> sorted = List.from(transactions);
+
+        sorted.sort((a, b) => b.title.compareTo(a.title));
+
+        expect(transactions, sorted);
+      });
+
+      test('transactions can be sorted by title in ascending order', () async {
+        final transactions =
+            await dao
+                .watchTransactionsPage(
+                  sort: Sort(SortType.title, SortOrder.ascending),
+                )
+                .first;
+        final List<Transaction> sorted = List.from(transactions);
+
+        sorted.sort((a, b) => a.title.compareTo(b.title));
+
+        expect(transactions, sorted);
+      });
+
+      test('transactions can be sorted by date in descending order', () async {
+        final transactions =
+            await dao
+                .watchTransactionsPage(
+                  sort: Sort(SortType.date, SortOrder.descending),
+                )
+                .first;
+        final List<Transaction> sorted = List.from(transactions);
+
+        sorted.sort((a, b) => b.date.compareTo(a.date));
+
+        expect(transactions, sorted);
+      });
+
+      test('transactions can be sorted by date in ascending order', () async {
+        final transactions =
+            await dao
+                .watchTransactionsPage(
+                  sort: Sort(SortType.date, SortOrder.ascending),
+                )
+                .first;
+        final List<Transaction> sorted = List.from(transactions);
+
+        sorted.sort((a, b) => a.date.compareTo(b.date));
+
+        expect(transactions, sorted);
+      });
+
+      test(
+        'transactions can be sorted by amount in descending order',
+        () async {
+          final transactions =
+              await dao
+                  .watchTransactionsPage(
+                    sort: Sort(SortType.amount, SortOrder.descending),
+                  )
+                  .first;
+          final List<Transaction> sorted = List.from(transactions);
+
+          sorted.sort((a, b) => b.amount.compareTo(a.amount));
+
+          expect(transactions, sorted);
+        },
+      );
+
+      test('transactions can be sorted by amount in ascending order', () async {
+        final transactions =
+            await dao
+                .watchTransactionsPage(
+                  sort: Sort(SortType.amount, SortOrder.ascending),
+                )
+                .first;
+        final List<Transaction> sorted = List.from(transactions);
+
+        sorted.sort((a, b) => a.amount.compareTo(b.amount));
+
+        expect(transactions, sorted);
+      });
+
+      test('transactions can be searched by title text', () async {
+        // TODO: Make text search non-exact
+        final transactions =
+            await dao
+                .watchTransactionsPage(filters: [TextFilter('A tran')])
+                .first;
+
+        expect(transactions.length, 1);
+        expect(transactions.first.title, 'A tran');
+      });
+
+      test('transactions can be searched by note text', () async {
+        final transactions =
+            await dao
+                .watchTransactionsPage(filters: [TextFilter('Note')])
+                .first;
+
+        expect(transactions.length, 1);
+        expect(transactions.first.title, 'A tran');
+      });
+
+      test('transactions can be searched by date range', () async {
+        final transactions =
+            await dao
+                .watchTransactionsPage(
+                  filters: [
+                    DateRangeFilter(
+                      DateTimeRange(
+                        start: DateTime.now().subtract(Duration(days: 4)),
+                        end: DateTime.now(),
+                      ),
+                    ),
+                  ],
+                )
+                .first;
+
+        expect(transactions.length, 2);
       });
     });
   });
