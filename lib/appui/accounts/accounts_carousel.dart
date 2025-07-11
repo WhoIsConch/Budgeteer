@@ -5,6 +5,7 @@ import 'package:budget/utils/validators.dart';
 import 'package:budget/appui/accounts/manage_account.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
@@ -61,7 +62,7 @@ class _AccountsCarouselState extends State<AccountsCarousel> {
         Align(
           alignment: Alignment.topRight,
           child: IconButton(
-            icon: Icon(Icons.settings),
+            icon: Icon(Symbols.settings),
             color: Theme.of(context).colorScheme.onSecondaryContainer,
             onPressed: () {
               Navigator.of(context).push(

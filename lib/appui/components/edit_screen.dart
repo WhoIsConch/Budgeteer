@@ -1,6 +1,7 @@
 import 'package:budget/utils/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:material_symbols_icons/material_symbols_icons.dart';
 
 class PickerFieldResponse<T> {
   // Used so we can differentiate between when a field purposely returns a null
@@ -145,7 +146,9 @@ class _IconButtonWithTooltipState extends State<IconButtonWithTooltip> {
       link: _layerLink,
       child: IconButton(
         icon: Icon(
-          Icons.help,
+          Symbols.help,
+          fill: 1,
+          grade: 200,
           color:
               widget.isFocused ? Theme.of(context).colorScheme.primary : null,
         ),
@@ -281,7 +284,7 @@ class _DatePickerEditFieldState extends State<DatePickerEditField> {
               Padding(
                 padding: const EdgeInsets.only(right: 4.0),
                 child: IconButton(
-                  icon: Icon(Icons.close),
+                  icon: Icon(Symbols.close),
                   onPressed: () => widget.onChanged(PickerFieldResponse(null)),
                 ),
               ),
@@ -289,7 +292,7 @@ class _DatePickerEditFieldState extends State<DatePickerEditField> {
               Padding(
                 padding: const EdgeInsets.only(right: 16.0),
                 child: Icon(
-                  Icons.calendar_today,
+                  Symbols.calendar_today,
                   color: Theme.of(context).colorScheme.primary,
                 ),
               ),
@@ -321,7 +324,7 @@ class AmountEditField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(
-          Icons.attach_money,
+          Symbols.attach_money,
           color: Theme.of(context).colorScheme.primary,
         ),
         border: const OutlineInputBorder(),
@@ -391,7 +394,7 @@ class ColorPickerEditField extends StatelessWidget {
               ),
               IconButton(
                 onPressed: () => _pickColor(context),
-                icon: Icon(Icons.arrow_drop_down),
+                icon: Icon(Symbols.arrow_drop_down),
               ),
             ],
           ),
@@ -560,7 +563,7 @@ class _EditFormScreenState extends State<EditFormScreen> {
         title: Text(widget.title),
         actions: [
           IconButton(
-            icon: const Icon(Icons.check),
+            icon: const Icon(Symbols.check),
             onPressed: () {
               if (_formKey.currentState!.validate()) widget.onConfirm();
             },

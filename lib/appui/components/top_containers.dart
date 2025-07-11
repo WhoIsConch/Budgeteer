@@ -7,6 +7,7 @@ import 'package:budget/services/app_database.dart';
 import 'package:budget/models/enums.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
 class TopContainers extends StatefulWidget {
@@ -61,7 +62,7 @@ class _TopContainersState extends State<TopContainers> {
                 .map(
                   (c) => ContainerTile(
                     title: c.category.name,
-                    leadingIcon: Icons.category,
+                    leadingIcon: Symbols.account_balance_wallet_rounded,
                     progress: c.cumulativeAmount / totalAmount,
                     amount: c.cumulativeAmount,
                     onTap:
@@ -94,7 +95,7 @@ class _TopContainersState extends State<TopContainers> {
                 .map(
                   (a) => ContainerTile(
                     title: a.account.name,
-                    leadingIcon: Icons.account_balance,
+                    leadingIcon: Symbols.wallet,
                     progress: a.cumulativeAmount / totalAmount,
                     amount: a.cumulativeAmount,
                   ),
@@ -117,7 +118,7 @@ class _TopContainersState extends State<TopContainers> {
             .map(
               (g) => ContainerTile(
                 title: g.goal.name,
-                leadingIcon: Icons.flag,
+                leadingIcon: Symbols.flag,
                 progress: g.cumulativeAmount / totalAmount,
                 amount: g.cumulativeAmount,
                 onTap:
@@ -250,7 +251,7 @@ class ContainerTile extends StatelessWidget {
       onTap: onTap,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
       tileColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-      leading: Icon(leadingIcon),
+      leading: Icon(leadingIcon, grade: 200),
       title: Text(title),
       subtitle: Row(
         crossAxisAlignment: CrossAxisAlignment.center,

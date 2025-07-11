@@ -4,6 +4,7 @@ import 'package:budget/services/app_database.dart';
 import 'package:budget/models/filters.dart';
 import 'package:budget/services/providers/transaction_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:budget/appui/transactions/manage_transaction.dart';
 
@@ -128,7 +129,7 @@ class _ObjectsListState<T extends Tileable<T>> extends State<ObjectsList<T>> {
         backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
         foregroundColor: Theme.of(context).colorScheme.onSurface,
         onPressed: _onDelete,
-        child: const Icon(size: 28, Icons.delete),
+        child: const Icon(size: 28, Symbols.delete, fill: 1, grade: 200),
       );
     } else if (widget.showActionButton) {
       actionButton = FloatingActionButton(
@@ -136,7 +137,7 @@ class _ObjectsListState<T extends Tileable<T>> extends State<ObjectsList<T>> {
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
         onPressed: _onCreate,
-        child: const Icon(size: 28, Icons.add),
+        child: const Icon(size: 28, Symbols.add, grade: 200),
       );
     } else {
       actionButton = null;

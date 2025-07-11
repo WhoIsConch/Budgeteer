@@ -6,6 +6,7 @@ import 'package:budget/appui/components/viewer_screen.dart';
 import 'package:budget/appui/categories/manage_category.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_symbols_icons/material_symbols_icons.dart';
 
 class CategoryViewer extends StatelessWidget {
   final CategoryWithAmount categoryPair;
@@ -17,7 +18,7 @@ class CategoryViewer extends StatelessWidget {
   List<ObjectPropertyData> _getProperties() {
     final List<ObjectPropertyData> properties = [
       ObjectPropertyData(
-        icon: Icons.schedule,
+        icon: Symbols.schedule,
         title: 'Reset increment',
         description: toBeginningOfSentenceCase(category.resetIncrement.name),
       ),
@@ -31,7 +32,7 @@ class CategoryViewer extends StatelessWidget {
         ).format(nextReset);
         properties.add(
           ObjectPropertyData(
-            icon: Icons.autorenew,
+            icon: Symbols.autorenew,
             title: 'Next reset',
             description:
                 '${category.getTimeUntilNextReset()} | $nextResetString',

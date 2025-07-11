@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/material_symbols_icons.dart';
 
 class ErrorInset extends StatelessWidget {
   final String text;
@@ -15,7 +16,9 @@ class ErrorInset extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
-          Icons.warning_rounded,
+          Symbols.warning_rounded,
+          grade: 200,
+          fill: 1,
           size: 48,
           color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
         ),

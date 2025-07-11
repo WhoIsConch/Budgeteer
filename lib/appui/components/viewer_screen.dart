@@ -2,6 +2,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/material_symbols_icons.dart';
 
 class TextOverviewHeader extends StatelessWidget {
   final String? title;
@@ -241,7 +242,11 @@ class ObjectPropertiesList extends StatelessWidget {
               if (property.action != null)
                 Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: Icon(Icons.chevron_right),
+                  child: Icon(
+                    Symbols.chevron_right,
+                    grade: 200,
+                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                  ),
                 ),
             ],
           ),
@@ -319,7 +324,12 @@ class ViewerScreen extends StatelessWidget {
     final List<Widget> actions = [];
 
     if (onEdit != null) {
-      actions.add(IconButton(icon: Icon(Icons.edit), onPressed: onEdit!));
+      actions.add(
+        IconButton(
+          icon: Icon(Symbols.edit, fill: 1, grade: 200),
+          onPressed: onEdit!,
+        ),
+      );
     }
 
     if (onDelete != null || onArchive != null) {
@@ -391,7 +401,7 @@ class ViewerScreen extends StatelessWidget {
           builder:
               (BuildContext context, MenuController controller, _) =>
                   IconButton(
-                    icon: Icon(Icons.more_vert),
+                    icon: Icon(Symbols.more_vert, grade: 200),
                     onPressed: () {
                       if (controller.isOpen) {
                         controller.close();

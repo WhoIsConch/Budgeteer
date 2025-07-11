@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:budget/appui/pages/home.dart';
 import 'package:budget/appui/pages/debug.dart';
 import 'package:budget/appui/pages/statistics.dart';
+import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 
 class NavManager extends StatefulWidget {
@@ -90,7 +91,7 @@ class _NavManagerState extends State<NavManager>
     _expandedButtonsData = [
       ExpandedButtonData(
         text: 'Category',
-        icon: const Icon(Icons.account_balance_wallet_outlined),
+        icon: Icon(Symbols.account_balance_wallet_rounded, grade: 200),
         onPressed: () {
           Navigator.of(context).push(
             DialogRoute(
@@ -103,7 +104,7 @@ class _NavManagerState extends State<NavManager>
       ),
       ExpandedButtonData(
         text: 'Account',
-        icon: const Icon(Icons.wallet),
+        icon: const Icon(Symbols.wallet),
         onPressed: () {
           Navigator.of(
             context,
@@ -113,7 +114,7 @@ class _NavManagerState extends State<NavManager>
       ),
       ExpandedButtonData(
         text: 'Goal',
-        icon: const Icon(Icons.flag),
+        icon: const Icon(Symbols.flag, fill: 1),
         onPressed: () {
           Navigator.of(
             context,
@@ -123,7 +124,7 @@ class _NavManagerState extends State<NavManager>
       ),
       ExpandedButtonData(
         text: 'Transaction',
-        icon: const Icon(Icons.attach_money),
+        icon: const Icon(Symbols.attach_money, grade: 200),
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const ManageTransactionPage()),
@@ -160,23 +161,23 @@ class _NavManagerState extends State<NavManager>
               },
               destinations: const [
                 NavigationDestination(
-                  icon: Icon(Icons.home_outlined),
+                  icon: Icon(Symbols.home, grade: 200),
                   label: 'Home',
-                  selectedIcon: Icon(Icons.home),
+                  selectedIcon: Icon(Symbols.home, grade: 200, fill: 1),
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.history_outlined),
-                  selectedIcon: Icon(Icons.history),
+                  icon: Icon(Symbols.history, grade: 200),
+                  selectedIcon: Icon(Symbols.history, grade: 200),
                   label: 'Activity',
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.bar_chart_outlined),
-                  selectedIcon: Icon(Icons.bar_chart),
+                  icon: Icon(Symbols.bar_chart, grade: 200),
+                  selectedIcon: Icon(Symbols.bar_chart, grade: 200),
                   label: 'Stats',
                 ),
                 // NavigationDestination(
-                //   icon: Icon(Icons.code),
-                //   selectedIcon: Icon(Icons.code),
+                //   icon: Icon(Symbols.code),
+                //   selectedIcon: Icon(Symbols.code),
                 //   label: 'Debug',
                 // ),
               ],
@@ -250,7 +251,7 @@ class _NavManagerState extends State<NavManager>
                 onPressed: _toggleFabMenu,
                 child: RotationTransition(
                   turns: _rotateAnimation,
-                  child: const Icon(size: 28, Icons.add),
+                  child: const Icon(size: 28, Symbols.add, grade: 200),
                 ),
               ),
             ],
