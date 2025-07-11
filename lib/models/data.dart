@@ -15,21 +15,6 @@ class FinancialDataPoint {
       FinancialDataPoint(dateRange, 0, 0);
 }
 
-class LineChartCalculationData {
-  // Y titles are not necessary since they are in interval on the table
-  final List<FlSpot> expenseSpots;
-  final List<FlSpot> incomeSpots;
-  final List<String> xTitles;
-  final bool isEmpty;
-
-  LineChartCalculationData(
-    this.expenseSpots,
-    this.incomeSpots,
-    this.xTitles,
-    this.isEmpty,
-  );
-}
-
 class BarChartCalculationData {
   final List<BarChartGroupData> groups;
   final List<String> xTitles;
@@ -48,3 +33,11 @@ class BarChartCalculationData {
   factory BarChartCalculationData.empty() =>
       BarChartCalculationData([], [], 0, 0, true);
 }
+
+typedef LineChartCalculationData =
+    ({
+      List<FlSpot> expenseSpots,
+      List<FlSpot> incomeSpots,
+      List<String> xTitles,
+      bool isEmpty,
+    });

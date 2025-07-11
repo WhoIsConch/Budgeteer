@@ -197,22 +197,17 @@ class HydratedTransaction {
 
 /// An object to easily transport a combination of Query object and two
 /// Expressions that represent an amount of income and expense.
-class QueryWithSums {
-  final JoinedSelectStatement query;
-  final Expression<double> income;
-  final Expression<double> expenses;
-
-  QueryWithSums(this.query, {required this.income, required this.expenses});
-}
+typedef QueryWithSums =
+    ({
+      JoinedSelectStatement query,
+      Expression<double> income,
+      Expression<double> expenses,
+    });
 
 /// Used to hold two expressions representing the expenses and income from
 /// the database
-class TransactionSumPair {
-  Expression<double> expenses;
-  Expression<double> income;
-
-  TransactionSumPair({required this.expenses, required this.income});
-}
+typedef TransactionSumPair =
+    ({Expression<double> expenses, Expression<double> income});
 
 extension CategoriesExtension on Category {
   DateTime? getNextResetDate({DateTime? fromDate}) {

@@ -213,11 +213,11 @@ class _LineChartCardState extends State<LineChartCard> {
       }
     }
 
-    return LineChartCalculationData(
-      expenseSpots,
-      incomeSpots,
-      xTitles,
-      xTitles.isEmpty,
+    return (
+      expenseSpots: expenseSpots,
+      incomeSpots: incomeSpots,
+      xTitles: xTitles,
+      isEmpty: xTitles.isEmpty,
     );
   }
 

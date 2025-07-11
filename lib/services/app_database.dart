@@ -755,9 +755,9 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
 
     // Construct the actual expression to put in the query, used in case the
     // signed amount's sum returns null for some reason (which it never should)
-    sums.expenses = coalesce([sums.expenses, const Constant(0.0)]);
+    final expenses = coalesce([sums.expenses, const Constant(0.0)]);
 
-    sums.income = coalesce([sums.income, const Constant(0.0)]);
+    final income = coalesce([sums.income, const Constant(0.0)]);
 
     var query = select(categories).join([
       leftOuterJoin(
@@ -773,14 +773,10 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
             categories.isDeleted.equals(false) &
                 categories.isArchived.equals(false),
           )
-          ..addColumns([sums.expenses, sums.income])
+          ..addColumns([expenses, income])
           ..groupBy([categories.id]);
 
-    return QueryWithSums(
-      queryWithSum,
-      income: sums.income,
-      expenses: sums.expenses,
-    );
+    return (query: queryWithSum, income: income, expenses: expenses);
   }
 
   /// Get a [QueryWithSums] that includes categories and their respective
@@ -928,7 +924,7 @@ class AppDatabase extends _$AppDatabase {
     query.addColumns([sums.expenses, sums.income]);
     query.groupBy([relatedTable.asDslTable.id]);
 
-    return QueryWithSums(query, income: sums.income, expenses: sums.expenses);
+    return (query: query, income: sums.income, expenses: sums.expenses);
   }
 
   /// Get a condition used for table joins depending on which table is being
@@ -989,7 +985,7 @@ class AppDatabase extends _$AppDatabase {
     bool showGoals = false,
     Expression<bool>? additionalFilter,
   }) {
-    return TransactionSumPair(
+    return (
       expenses: _getTypeExpr(
         type: TransactionType.expense,
         includeArchived: includeArchived,
