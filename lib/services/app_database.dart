@@ -417,13 +417,8 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     Sort? sort,
     int? limit,
     int? offset,
-    bool showArchived = false,
   }) {
     var query = db.select(db.transactions)..where((t) => t.isDeleted.not());
-
-    if (!showArchived) {
-      query = query..where((t) => t.isArchived.not());
-    }
 
     if (filters != null) query.where((t) => filters.buildWhereClause(t));
 

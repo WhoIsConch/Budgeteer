@@ -15,6 +15,12 @@ class TransactionProvider extends ChangeNotifier {
   List<Filter> get filters => _filters;
   Sort get sort => _sort;
 
+  TransactionProvider() {
+    _filters = [ArchivedFilter(false), FutureFilter(false)];
+  }
+
+  TransactionProvider.empty();
+
   void update({List<Filter>? filters, Sort? sort, bool notify = true}) {
     bool hasFiltersChanged = filters != null && filters != _filters;
     bool hasSortChanged = sort != null && sort != _sort;

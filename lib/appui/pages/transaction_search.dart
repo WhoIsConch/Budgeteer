@@ -63,7 +63,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
     final provider = context.watch<TransactionProvider>();
 
     for (Filter filter in provider.filters) {
-      String label = switch (filter) {
+      String? label = switch (filter) {
         TextFilter t => '"${t.text}"', // "Value"
         AmountFilter t =>
           '${t.type.symbol} \$${formatAmount(t.amount, exact: true)}', // > $Value
@@ -83,7 +83,10 @@ class _TransactionSearchState extends State<TransactionSearch> {
           '${dateFormat.format(t.dateRange.start)}–${dateFormat.format(t.dateRange.end)}',
         TypeFilter t =>
           t.type == TransactionType.expense ? 'Expense' : 'Income',
+        _ => null,
       };
+
+      if (label == null) continue;
 
       chips.add(
         GestureDetector(
@@ -398,6 +401,27 @@ class _TransactionSearchState extends State<TransactionSearch> {
         .toList();
   }
 
+  List<Widget> _getIncludeMenuButtons(BuildContext context) {
+    final provider = context.read<TransactionProvider>();
+
+    final showArchived = provider.getFilter<ArchivedFilter>()?.isArchived;
+    final showFuture = provider.getFilter<FutureFilter>()?.includeFuture;
+
+    return [
+      MenuItemButton(
+        trailingIcon:
+            showArchived == null || showArchived ? Icon(Icons.check) : null,
+        onPressed: () => _activateFilter<ArchivedFilter>(context),
+        child: Text('Archived'),
+      ),
+      MenuItemButton(
+        trailingIcon: showFuture == true ? Icon(Icons.check) : null,
+        onPressed: () => _activateFilter<FutureFilter>(context),
+        child: Text('Future'),
+      ),
+    ];
+  }
+
   List<Widget> _getMainMenuButtons(BuildContext context) => [
     SubmenuButton(
       menuChildren: _getFilterMenuButtons(context),
@@ -406,6 +430,10 @@ class _TransactionSearchState extends State<TransactionSearch> {
     SubmenuButton(
       menuChildren: _getSortMenuButtons(context),
       child: const Text('Sort by'),
+    ),
+    SubmenuButton(
+      menuChildren: _getIncludeMenuButtons(context),
+      child: const Text('Include...'),
     ),
   ];
 
@@ -458,6 +486,24 @@ class _TransactionSearchState extends State<TransactionSearch> {
               provider.updateFilter(CategoryFilter(value));
             }
           }),
+      ArchivedFilter: () {
+        final filter = provider.getFilter<ArchivedFilter>();
+
+        if (filter?.isArchived == false) {
+          provider.removeFilter<ArchivedFilter>();
+        } else {
+          provider.updateFilter(ArchivedFilter(false));
+        }
+      },
+      FutureFilter: () {
+        final filter = provider.getFilter<FutureFilter>();
+
+        if (filter?.includeFuture == true) {
+          provider.updateFilter(FutureFilter(false));
+        } else {
+          provider.updateFilter(FutureFilter(true));
+        }
+      },
     };
   }
 

@@ -118,6 +118,7 @@ class TransactionPreviewer extends StatelessWidget {
                 end: DateTime.now(),
               ).makeInclusive(),
             ),
+            ArchivedFilter(false),
           ],
         ),
         builder: (context, snapshot) {

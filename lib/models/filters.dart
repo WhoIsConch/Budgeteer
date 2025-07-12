@@ -109,6 +109,35 @@ final class TypeFilter extends Filter {
       table.type.equals(type.value);
 }
 
+/// Filter whether a transaction is archived.
+final class ArchivedFilter extends Filter {
+  final bool isArchived;
+
+  ArchivedFilter(this.isArchived);
+
+  @override
+  Expression<bool> buildCondition(Transactions table) =>
+      table.isArchived.equals(isArchived);
+}
+
+/// Filter out transactions that are in the future
+final class FutureFilter extends Filter {
+  final bool includeFuture;
+
+  FutureFilter(this.includeFuture);
+
+  @override
+  Expression<bool> buildCondition(Transactions table) {
+    // If we shouldn't include future transactions, always compile this to true
+    if (includeFuture) return Constant(true);
+
+    final now = DateTime.now();
+    final date = DateTime(now.year, now.month, now.day);
+
+    return table.date.isSmallerOrEqualValue(formatter.format(date));
+  }
+}
+
 /// Base filter for any transaction that is associated with the specified container.
 ///
 /// Container objects include Categories, Accounts, and Goals.

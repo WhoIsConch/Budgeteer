@@ -205,11 +205,7 @@ class _ObjectsListState<T extends Tileable<T>> extends State<ObjectsList<T>> {
     switch (T) {
       case TransactionTileableAdapter:
         final Stream<List<Transaction>> sourceStream = db.transactionDao
-            .watchTransactionsPage(
-              filters: widget.filters,
-              sort: widget.sort,
-              showArchived: true,
-            );
+            .watchTransactionsPage(filters: widget.filters, sort: widget.sort);
         final Stream<List<TransactionTileableAdapter>> mappedStream =
             sourceStream.map(
               (e) =>
