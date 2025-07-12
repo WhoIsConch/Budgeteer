@@ -325,7 +325,6 @@ void main() {
 
       group('transaction filtering', () {
         test('transactions can be searched by title text', () async {
-          // TODO: Make text search non-exact
           final transactions =
               await dao
                   .watchTransactionsPage(filters: [TextFilter('A tran')])

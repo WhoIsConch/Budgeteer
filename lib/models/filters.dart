@@ -75,8 +75,8 @@ final class TextFilter extends Filter {
 
   @override
   Expression<bool> buildCondition(Transactions table) =>
-      table.title.lower().equals(text.toLowerCase()) |
-      table.notes.lower().equals(text.toLowerCase());
+      table.title.contains(text) | table.notes.contains(text);
+  // `contains` is case-insensitive
 }
 
 /// Filter for any transactions that have a date set in the specified
