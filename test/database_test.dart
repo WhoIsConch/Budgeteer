@@ -1,26 +1,12 @@
-import 'dart:io';
-
 import 'package:budget/models/enums.dart';
 import 'package:async/async.dart';
 import 'package:budget/models/filters.dart';
-import 'package:budget/services/powersync_schema.dart';
 import 'package:drift/drift.dart' hide isNull;
 import 'package:flutter/material.dart';
-import 'package:path/path.dart';
-import 'package:powersync/powersync.dart';
 import 'package:test/test.dart';
 import 'package:budget/services/app_database.dart';
-import 'package:uuid/uuid.dart';
 
-String getTestDatabasePath() {
-  const dbFilename = 'powersync-test.db';
-  final dir = Directory.current.absolute.path;
-
-  return join(dir, dbFilename);
-}
-
-Directory getTempDir() =>
-    Directory(join(Directory.systemTemp.path, 'budgeteer_tests'));
+import 'db.dart';
 
 TransactionsCompanion getExampleCompanion() => TransactionsCompanion(
   title: Value('Test Transaction'),
@@ -31,29 +17,22 @@ TransactionsCompanion getExampleCompanion() => TransactionsCompanion(
 
 void main() {
   late AppDatabase database;
-  late PowerSyncDatabase powerSync;
   final List<String> pathsToDelete = [];
 
   setUp(() async {
-    final uuid = Uuid();
-    final tempDir = getTempDir();
-    final testDbPath = join(tempDir.path, 'powersync-test-${uuid.v4()}.db');
-
     // Create the temporary test directory
-    await tempDir.create();
+    await getTempDir().create();
 
-    powerSync = PowerSyncDatabase(schema: powersyncAppSchema, path: testDbPath);
+    final dbPath = getTestDatabasePath();
 
-    await powerSync.initialize();
+    database = await getTestDatabase(dbPath);
 
-    database = AppDatabase(powerSync);
-
-    pathsToDelete.add(testDbPath);
+    pathsToDelete.add(dbPath);
   });
 
   tearDown(() async {
     await database.close();
-    await powerSync.close();
+    await database.db.close();
   });
 
   tearDownAll(() async {
