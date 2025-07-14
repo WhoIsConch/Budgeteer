@@ -60,6 +60,7 @@ class Transactions extends Table {
   Set<Column<Object>>? get primaryKey => {id};
 }
 
+@UseRowClass(Category)
 class Categories extends Table with SoftDeletableTable {
   @override
   String get tableName => 'categories';
@@ -81,6 +82,7 @@ class Categories extends Table with SoftDeletableTable {
   Set<Column<Object>>? get primaryKey => {id};
 }
 
+@UseRowClass(Account)
 class Accounts extends Table with SoftDeletableTable {
   @override
   get tableName => 'accounts';
@@ -96,6 +98,7 @@ class Accounts extends Table with SoftDeletableTable {
   Set<Column<Object>>? get primaryKey => {id};
 }
 
+@UseRowClass(Goal)
 class Goals extends Table with SoftDeletableTable {
   @override
   get tableName => 'goals';
@@ -111,6 +114,74 @@ class Goals extends Table with SoftDeletableTable {
 
   @override
   Set<Column<Object>>? get primaryKey => {id};
+}
+
+abstract class SecondaryObject {
+  final String id;
+  final bool isDeleted;
+  final bool isArchived;
+  final String name;
+  final String? notes;
+  final Color color;
+
+  // Stream<List<ContainerWithAmount>> getObjectStream(List<Filter> filters);
+
+  SecondaryObject({
+    required this.id,
+    required this.isDeleted,
+    required this.isArchived,
+    required this.name,
+    required this.color,
+    this.notes,
+  });
+}
+
+class Goal extends SecondaryObject {
+  final double cost;
+  final DateTime? dueDate;
+
+  Goal({
+    required super.id,
+    required super.isDeleted,
+    required super.isArchived,
+    required super.name,
+    required super.color,
+    required this.cost,
+    super.notes,
+    this.dueDate,
+  });
+}
+
+class Account extends SecondaryObject {
+  final int? priority;
+
+  Account({
+    required super.id,
+    required super.isDeleted,
+    required super.isArchived,
+    required super.name,
+    required super.color,
+    super.notes,
+    this.priority,
+  });
+}
+
+class Category extends SecondaryObject {
+  final CategoryResetIncrement resetIncrement;
+  final bool allowNegatives;
+  final double? balance;
+
+  Category({
+    required super.id,
+    required super.isDeleted,
+    required super.isArchived,
+    required super.name,
+    required super.color,
+    super.notes,
+    required this.resetIncrement,
+    required this.allowNegatives,
+    required this.balance,
+  });
 }
 
 @DriftAccessor(tables: [Accounts])

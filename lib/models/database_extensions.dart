@@ -28,7 +28,7 @@ abstract class Tileable<T extends Tileable<T>> {
 
 /// Represents a container object and the expenses and income associated with
 /// it.
-abstract class ContainerWithAmount<T extends DataClass> {
+abstract class ContainerWithAmount<T extends SecondaryObject> {
   /// The object in question. Could be a Category, Account, or Goal
   T get object;
   String get objectId;

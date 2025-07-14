@@ -228,6 +228,12 @@ class $CategoriesTable extends Categories
             DriftSqlType.string,
             data['${effectivePrefix}name'],
           )!,
+      color: $CategoriesTable.$convertercolor.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}color'],
+        )!,
+      ),
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
@@ -243,12 +249,6 @@ class $CategoriesTable extends Categories
             DriftSqlType.bool,
             data['${effectivePrefix}allow_negatives'],
           )!,
-      color: $CategoriesTable.$convertercolor.fromSql(
-        attachedDatabase.typeMapping.read(
-          DriftSqlType.int,
-          data['${effectivePrefix}color'],
-        )!,
-      ),
       balance: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}balance'],
@@ -266,194 +266,6 @@ class $CategoriesTable extends Categories
     CategoryResetIncrement.values,
   );
   static TypeConverter<Color, int> $convertercolor = const ColorConverter();
-}
-
-class Category extends DataClass implements Insertable<Category> {
-  final String id;
-  final bool isDeleted;
-  final bool isArchived;
-  final String name;
-  final String? notes;
-  final CategoryResetIncrement resetIncrement;
-  final bool allowNegatives;
-  final Color color;
-  final double? balance;
-  const Category({
-    required this.id,
-    required this.isDeleted,
-    required this.isArchived,
-    required this.name,
-    this.notes,
-    required this.resetIncrement,
-    required this.allowNegatives,
-    required this.color,
-    this.balance,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['is_deleted'] = Variable<bool>(isDeleted);
-    map['is_archived'] = Variable<bool>(isArchived);
-    map['name'] = Variable<String>(name);
-    if (!nullToAbsent || notes != null) {
-      map['notes'] = Variable<String>(notes);
-    }
-    {
-      map['reset_increment'] = Variable<int>(
-        $CategoriesTable.$converterresetIncrement.toSql(resetIncrement),
-      );
-    }
-    map['allow_negatives'] = Variable<bool>(allowNegatives);
-    {
-      map['color'] = Variable<int>(
-        $CategoriesTable.$convertercolor.toSql(color),
-      );
-    }
-    if (!nullToAbsent || balance != null) {
-      map['balance'] = Variable<double>(balance);
-    }
-    return map;
-  }
-
-  CategoriesCompanion toCompanion(bool nullToAbsent) {
-    return CategoriesCompanion(
-      id: Value(id),
-      isDeleted: Value(isDeleted),
-      isArchived: Value(isArchived),
-      name: Value(name),
-      notes:
-          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
-      resetIncrement: Value(resetIncrement),
-      allowNegatives: Value(allowNegatives),
-      color: Value(color),
-      balance:
-          balance == null && nullToAbsent
-              ? const Value.absent()
-              : Value(balance),
-    );
-  }
-
-  factory Category.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Category(
-      id: serializer.fromJson<String>(json['id']),
-      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
-      isArchived: serializer.fromJson<bool>(json['isArchived']),
-      name: serializer.fromJson<String>(json['name']),
-      notes: serializer.fromJson<String?>(json['notes']),
-      resetIncrement: $CategoriesTable.$converterresetIncrement.fromJson(
-        serializer.fromJson<int>(json['resetIncrement']),
-      ),
-      allowNegatives: serializer.fromJson<bool>(json['allowNegatives']),
-      color: serializer.fromJson<Color>(json['color']),
-      balance: serializer.fromJson<double?>(json['balance']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'isDeleted': serializer.toJson<bool>(isDeleted),
-      'isArchived': serializer.toJson<bool>(isArchived),
-      'name': serializer.toJson<String>(name),
-      'notes': serializer.toJson<String?>(notes),
-      'resetIncrement': serializer.toJson<int>(
-        $CategoriesTable.$converterresetIncrement.toJson(resetIncrement),
-      ),
-      'allowNegatives': serializer.toJson<bool>(allowNegatives),
-      'color': serializer.toJson<Color>(color),
-      'balance': serializer.toJson<double?>(balance),
-    };
-  }
-
-  Category copyWith({
-    String? id,
-    bool? isDeleted,
-    bool? isArchived,
-    String? name,
-    Value<String?> notes = const Value.absent(),
-    CategoryResetIncrement? resetIncrement,
-    bool? allowNegatives,
-    Color? color,
-    Value<double?> balance = const Value.absent(),
-  }) => Category(
-    id: id ?? this.id,
-    isDeleted: isDeleted ?? this.isDeleted,
-    isArchived: isArchived ?? this.isArchived,
-    name: name ?? this.name,
-    notes: notes.present ? notes.value : this.notes,
-    resetIncrement: resetIncrement ?? this.resetIncrement,
-    allowNegatives: allowNegatives ?? this.allowNegatives,
-    color: color ?? this.color,
-    balance: balance.present ? balance.value : this.balance,
-  );
-  Category copyWithCompanion(CategoriesCompanion data) {
-    return Category(
-      id: data.id.present ? data.id.value : this.id,
-      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
-      isArchived:
-          data.isArchived.present ? data.isArchived.value : this.isArchived,
-      name: data.name.present ? data.name.value : this.name,
-      notes: data.notes.present ? data.notes.value : this.notes,
-      resetIncrement:
-          data.resetIncrement.present
-              ? data.resetIncrement.value
-              : this.resetIncrement,
-      allowNegatives:
-          data.allowNegatives.present
-              ? data.allowNegatives.value
-              : this.allowNegatives,
-      color: data.color.present ? data.color.value : this.color,
-      balance: data.balance.present ? data.balance.value : this.balance,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('Category(')
-          ..write('id: $id, ')
-          ..write('isDeleted: $isDeleted, ')
-          ..write('isArchived: $isArchived, ')
-          ..write('name: $name, ')
-          ..write('notes: $notes, ')
-          ..write('resetIncrement: $resetIncrement, ')
-          ..write('allowNegatives: $allowNegatives, ')
-          ..write('color: $color, ')
-          ..write('balance: $balance')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    id,
-    isDeleted,
-    isArchived,
-    name,
-    notes,
-    resetIncrement,
-    allowNegatives,
-    color,
-    balance,
-  );
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is Category &&
-          other.id == this.id &&
-          other.isDeleted == this.isDeleted &&
-          other.isArchived == this.isArchived &&
-          other.name == this.name &&
-          other.notes == this.notes &&
-          other.resetIncrement == this.resetIncrement &&
-          other.allowNegatives == this.allowNegatives &&
-          other.color == this.color &&
-          other.balance == this.balance);
 }
 
 class CategoriesCompanion extends UpdateCompanion<Category> {
@@ -772,6 +584,12 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
             DriftSqlType.string,
             data['${effectivePrefix}name'],
           )!,
+      color: $AccountsTable.$convertercolor.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}color'],
+        )!,
+      ),
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
@@ -779,12 +597,6 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
       priority: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}priority'],
-      ),
-      color: $AccountsTable.$convertercolor.fromSql(
-        attachedDatabase.typeMapping.read(
-          DriftSqlType.int,
-          data['${effectivePrefix}color'],
-        )!,
       ),
     );
   }
@@ -795,147 +607,6 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
   }
 
   static TypeConverter<Color, int> $convertercolor = const ColorConverter();
-}
-
-class Account extends DataClass implements Insertable<Account> {
-  final String id;
-  final bool isDeleted;
-  final bool isArchived;
-  final String name;
-  final String? notes;
-  final int? priority;
-  final Color color;
-  const Account({
-    required this.id,
-    required this.isDeleted,
-    required this.isArchived,
-    required this.name,
-    this.notes,
-    this.priority,
-    required this.color,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['is_deleted'] = Variable<bool>(isDeleted);
-    map['is_archived'] = Variable<bool>(isArchived);
-    map['name'] = Variable<String>(name);
-    if (!nullToAbsent || notes != null) {
-      map['notes'] = Variable<String>(notes);
-    }
-    if (!nullToAbsent || priority != null) {
-      map['priority'] = Variable<int>(priority);
-    }
-    {
-      map['color'] = Variable<int>($AccountsTable.$convertercolor.toSql(color));
-    }
-    return map;
-  }
-
-  AccountsCompanion toCompanion(bool nullToAbsent) {
-    return AccountsCompanion(
-      id: Value(id),
-      isDeleted: Value(isDeleted),
-      isArchived: Value(isArchived),
-      name: Value(name),
-      notes:
-          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
-      priority:
-          priority == null && nullToAbsent
-              ? const Value.absent()
-              : Value(priority),
-      color: Value(color),
-    );
-  }
-
-  factory Account.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Account(
-      id: serializer.fromJson<String>(json['id']),
-      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
-      isArchived: serializer.fromJson<bool>(json['isArchived']),
-      name: serializer.fromJson<String>(json['name']),
-      notes: serializer.fromJson<String?>(json['notes']),
-      priority: serializer.fromJson<int?>(json['priority']),
-      color: serializer.fromJson<Color>(json['color']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'isDeleted': serializer.toJson<bool>(isDeleted),
-      'isArchived': serializer.toJson<bool>(isArchived),
-      'name': serializer.toJson<String>(name),
-      'notes': serializer.toJson<String?>(notes),
-      'priority': serializer.toJson<int?>(priority),
-      'color': serializer.toJson<Color>(color),
-    };
-  }
-
-  Account copyWith({
-    String? id,
-    bool? isDeleted,
-    bool? isArchived,
-    String? name,
-    Value<String?> notes = const Value.absent(),
-    Value<int?> priority = const Value.absent(),
-    Color? color,
-  }) => Account(
-    id: id ?? this.id,
-    isDeleted: isDeleted ?? this.isDeleted,
-    isArchived: isArchived ?? this.isArchived,
-    name: name ?? this.name,
-    notes: notes.present ? notes.value : this.notes,
-    priority: priority.present ? priority.value : this.priority,
-    color: color ?? this.color,
-  );
-  Account copyWithCompanion(AccountsCompanion data) {
-    return Account(
-      id: data.id.present ? data.id.value : this.id,
-      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
-      isArchived:
-          data.isArchived.present ? data.isArchived.value : this.isArchived,
-      name: data.name.present ? data.name.value : this.name,
-      notes: data.notes.present ? data.notes.value : this.notes,
-      priority: data.priority.present ? data.priority.value : this.priority,
-      color: data.color.present ? data.color.value : this.color,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('Account(')
-          ..write('id: $id, ')
-          ..write('isDeleted: $isDeleted, ')
-          ..write('isArchived: $isArchived, ')
-          ..write('name: $name, ')
-          ..write('notes: $notes, ')
-          ..write('priority: $priority, ')
-          ..write('color: $color')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode =>
-      Object.hash(id, isDeleted, isArchived, name, notes, priority, color);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is Account &&
-          other.id == this.id &&
-          other.isDeleted == this.isDeleted &&
-          other.isArchived == this.isArchived &&
-          other.name == this.name &&
-          other.notes == this.notes &&
-          other.priority == this.priority &&
-          other.color == this.color);
 }
 
 class AccountsCompanion extends UpdateCompanion<Account> {
@@ -1239,20 +910,20 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
             DriftSqlType.string,
             data['${effectivePrefix}name'],
           )!,
-      notes: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}notes'],
+      color: $GoalsTable.$convertercolor.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}color'],
+        )!,
       ),
       cost:
           attachedDatabase.typeMapping.read(
             DriftSqlType.double,
             data['${effectivePrefix}cost'],
           )!,
-      color: $GoalsTable.$convertercolor.fromSql(
-        attachedDatabase.typeMapping.read(
-          DriftSqlType.int,
-          data['${effectivePrefix}color'],
-        )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
       ),
       dueDate: $GoalsTable.$converterdueDaten.fromSql(
         attachedDatabase.typeMapping.read(
@@ -1273,160 +944,6 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
       const DateTextConverter();
   static TypeConverter<DateTime?, String?> $converterdueDaten =
       NullAwareTypeConverter.wrap($converterdueDate);
-}
-
-class Goal extends DataClass implements Insertable<Goal> {
-  final String id;
-  final bool isDeleted;
-  final bool isArchived;
-  final String name;
-  final String? notes;
-  final double cost;
-  final Color color;
-  final DateTime? dueDate;
-  const Goal({
-    required this.id,
-    required this.isDeleted,
-    required this.isArchived,
-    required this.name,
-    this.notes,
-    required this.cost,
-    required this.color,
-    this.dueDate,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['is_deleted'] = Variable<bool>(isDeleted);
-    map['is_archived'] = Variable<bool>(isArchived);
-    map['name'] = Variable<String>(name);
-    if (!nullToAbsent || notes != null) {
-      map['notes'] = Variable<String>(notes);
-    }
-    map['cost'] = Variable<double>(cost);
-    {
-      map['color'] = Variable<int>($GoalsTable.$convertercolor.toSql(color));
-    }
-    if (!nullToAbsent || dueDate != null) {
-      map['due_date'] = Variable<String>(
-        $GoalsTable.$converterdueDaten.toSql(dueDate),
-      );
-    }
-    return map;
-  }
-
-  GoalsCompanion toCompanion(bool nullToAbsent) {
-    return GoalsCompanion(
-      id: Value(id),
-      isDeleted: Value(isDeleted),
-      isArchived: Value(isArchived),
-      name: Value(name),
-      notes:
-          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
-      cost: Value(cost),
-      color: Value(color),
-      dueDate:
-          dueDate == null && nullToAbsent
-              ? const Value.absent()
-              : Value(dueDate),
-    );
-  }
-
-  factory Goal.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Goal(
-      id: serializer.fromJson<String>(json['id']),
-      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
-      isArchived: serializer.fromJson<bool>(json['isArchived']),
-      name: serializer.fromJson<String>(json['name']),
-      notes: serializer.fromJson<String?>(json['notes']),
-      cost: serializer.fromJson<double>(json['cost']),
-      color: serializer.fromJson<Color>(json['color']),
-      dueDate: serializer.fromJson<DateTime?>(json['dueDate']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'isDeleted': serializer.toJson<bool>(isDeleted),
-      'isArchived': serializer.toJson<bool>(isArchived),
-      'name': serializer.toJson<String>(name),
-      'notes': serializer.toJson<String?>(notes),
-      'cost': serializer.toJson<double>(cost),
-      'color': serializer.toJson<Color>(color),
-      'dueDate': serializer.toJson<DateTime?>(dueDate),
-    };
-  }
-
-  Goal copyWith({
-    String? id,
-    bool? isDeleted,
-    bool? isArchived,
-    String? name,
-    Value<String?> notes = const Value.absent(),
-    double? cost,
-    Color? color,
-    Value<DateTime?> dueDate = const Value.absent(),
-  }) => Goal(
-    id: id ?? this.id,
-    isDeleted: isDeleted ?? this.isDeleted,
-    isArchived: isArchived ?? this.isArchived,
-    name: name ?? this.name,
-    notes: notes.present ? notes.value : this.notes,
-    cost: cost ?? this.cost,
-    color: color ?? this.color,
-    dueDate: dueDate.present ? dueDate.value : this.dueDate,
-  );
-  Goal copyWithCompanion(GoalsCompanion data) {
-    return Goal(
-      id: data.id.present ? data.id.value : this.id,
-      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
-      isArchived:
-          data.isArchived.present ? data.isArchived.value : this.isArchived,
-      name: data.name.present ? data.name.value : this.name,
-      notes: data.notes.present ? data.notes.value : this.notes,
-      cost: data.cost.present ? data.cost.value : this.cost,
-      color: data.color.present ? data.color.value : this.color,
-      dueDate: data.dueDate.present ? data.dueDate.value : this.dueDate,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('Goal(')
-          ..write('id: $id, ')
-          ..write('isDeleted: $isDeleted, ')
-          ..write('isArchived: $isArchived, ')
-          ..write('name: $name, ')
-          ..write('notes: $notes, ')
-          ..write('cost: $cost, ')
-          ..write('color: $color, ')
-          ..write('dueDate: $dueDate')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode =>
-      Object.hash(id, isDeleted, isArchived, name, notes, cost, color, dueDate);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is Goal &&
-          other.id == this.id &&
-          other.isDeleted == this.isDeleted &&
-          other.isArchived == this.isArchived &&
-          other.name == this.name &&
-          other.notes == this.notes &&
-          other.cost == this.cost &&
-          other.color == this.color &&
-          other.dueDate == this.dueDate);
 }
 
 class GoalsCompanion extends UpdateCompanion<Goal> {
