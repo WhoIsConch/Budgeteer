@@ -4,7 +4,8 @@ import 'package:budget/models/enums.dart';
 import 'package:budget/models/filters.dart';
 import 'package:budget/utils/tools.dart';
 import 'package:drift/drift.dart';
-import 'package:flutter/material.dart' show Color, DateTimeRange;
+import 'package:flutter/material.dart'
+    show Color, DateTimeRange, IconData, Icons;
 import 'package:powersync/powersync.dart' show PowerSyncDatabase, uuid;
 import 'package:drift_sqlite_async/drift_sqlite_async.dart';
 
@@ -116,7 +117,17 @@ class Goals extends Table with SoftDeletableTable {
   Set<Column<Object>>? get primaryKey => {id};
 }
 
-enum SecondaryObjectType { category, account, goal }
+enum SecondaryObjectType {
+  category,
+  account,
+  goal;
+
+  IconData get icon => switch (this) {
+    SecondaryObjectType.category => Icons.category,
+    SecondaryObjectType.account => Icons.account_balance,
+    SecondaryObjectType.goal => Icons.flag,
+  };
+}
 
 sealed class SecondaryObject {
   final String id;
