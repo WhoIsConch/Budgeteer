@@ -360,7 +360,6 @@ class _PieChartCardState extends State<PieChartCard> {
     final provider = context.watch<TransactionProvider>();
 
     final db = context.read<AppDatabase>();
-    final bool net = _selectedType.type != null;
 
     // TODO: Fix the way the total amount and container streams are joined...
     // probably make this less repetitive
@@ -375,21 +374,22 @@ class _PieChartCardState extends State<PieChartCard> {
                   await db.transactionDao
                       .watchTotalAmount(
                         filters: provider.filters,
-                        net: net,
+                        net: false, // Never use net, only cumulative amounts
                         nullAccount: true,
                       )
                       .first;
 
+              // Use only cumulative amounts since the provider is responsible
+              // for filtering expense or income transactions. If cash flow
+              // is selected, we want the total of the absolute value of all
+              // amounts anyway.
               final List<PieChartObject> objects =
                   accounts
                       .map(
                         (account) => PieChartObject(
                           name: account.account.name,
                           color: account.account.color,
-                          amount:
-                              net
-                                  ? account.netAmount
-                                  : account.cumulativeAmount,
+                          amount: account.cumulativeAmount,
                         ),
                       )
                       .toList();
@@ -414,7 +414,7 @@ class _PieChartCardState extends State<PieChartCard> {
                   await db.transactionDao
                       .watchTotalAmount(
                         filters: provider.filters,
-                        net: net,
+                        net: false,
                         nullCategory: true,
                       )
                       .first;
@@ -425,10 +425,7 @@ class _PieChartCardState extends State<PieChartCard> {
                         (category) => PieChartObject(
                           name: category.category.name,
                           color: category.category.color,
-                          amount:
-                              net
-                                  ? category.netAmount
-                                  : category.cumulativeAmount,
+                          amount: category.cumulativeAmount,
                         ),
                       )
                       .toList();
@@ -450,7 +447,7 @@ class _PieChartCardState extends State<PieChartCard> {
               await db.transactionDao
                   .watchTotalAmount(
                     filters: provider.filters,
-                    net: net,
+                    net: false,
                     nullGoal: true,
                   )
                   .first;
@@ -461,7 +458,7 @@ class _PieChartCardState extends State<PieChartCard> {
                     (goal) => PieChartObject(
                       name: goal.goal.name,
                       color: goal.goal.color,
-                      amount: net ? goal.netAmount : goal.cumulativeAmount,
+                      amount: goal.cumulativeAmount,
                     ),
                   )
                   .toList();
