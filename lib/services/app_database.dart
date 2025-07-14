@@ -116,7 +116,9 @@ class Goals extends Table with SoftDeletableTable {
   Set<Column<Object>>? get primaryKey => {id};
 }
 
-abstract class SecondaryObject {
+enum SecondaryObjectType { category, account, goal }
+
+sealed class SecondaryObject {
   final String id;
   final bool isDeleted;
   final bool isArchived;
@@ -124,7 +126,7 @@ abstract class SecondaryObject {
   final String? notes;
   final Color color;
 
-  // Stream<List<ContainerWithAmount>> getObjectStream(List<Filter> filters);
+  SecondaryObjectType get type;
 
   SecondaryObject({
     required this.id,
@@ -139,6 +141,9 @@ abstract class SecondaryObject {
 class Goal extends SecondaryObject {
   final double cost;
   final DateTime? dueDate;
+
+  @override
+  SecondaryObjectType get type => SecondaryObjectType.goal;
 
   Goal({
     required super.id,
@@ -155,6 +160,9 @@ class Goal extends SecondaryObject {
 class Account extends SecondaryObject {
   final int? priority;
 
+  @override
+  SecondaryObjectType get type => SecondaryObjectType.account;
+
   Account({
     required super.id,
     required super.isDeleted,
@@ -170,6 +178,9 @@ class Category extends SecondaryObject {
   final CategoryResetIncrement resetIncrement;
   final bool allowNegatives;
   final double? balance;
+
+  @override
+  SecondaryObjectType get type => SecondaryObjectType.category;
 
   Category({
     required super.id,
@@ -1133,5 +1144,19 @@ class AppDatabase extends _$AppDatabase {
       return expression.sum();
     }
     return expression;
+  }
+
+  Stream<List<ContainerWithAmount>> getObjectStream({
+    required List<Filter> filters,
+    required SecondaryObjectType objectType,
+  }) {
+    switch (objectType) {
+      case SecondaryObjectType.goal:
+        return goalDao.watchGoals(filters: filters);
+      case SecondaryObjectType.account:
+        return accountDao.watchAccounts(filters: filters);
+      case SecondaryObjectType.category:
+        return categoryDao.watchCategories(filters: filters);
+    }
   }
 }

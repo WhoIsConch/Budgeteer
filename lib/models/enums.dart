@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 
 enum ObjectManageMode { add, edit } // Normal enum
 
-enum ContainerType { category, account, goal }
-
 enum AggregationLevel { daily, weekly, monthly, yearly }
 
 // Enums with values, in case I need to store them in a database

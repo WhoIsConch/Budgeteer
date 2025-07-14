@@ -17,7 +17,7 @@ class TopContainers extends StatefulWidget {
 }
 
 class _TopContainersState extends State<TopContainers> {
-  ContainerType _selectedContainer = ContainerType.category;
+  SecondaryObjectType _selectedContainer = SecondaryObjectType.category;
 
   Stream<List<ContainerTile>> _getStream() {
     final db = context.read<AppDatabase>();
@@ -34,7 +34,7 @@ class _TopContainersState extends State<TopContainers> {
     // thing to each stream
 
     return switch (_selectedContainer) {
-      ContainerType.category => db.categoryDao
+      SecondaryObjectType.category => db.categoryDao
           // Don't sum by reset increment since we want to see the total amount
           // of money the user has used in these categories throughout the date
           // range
@@ -74,7 +74,7 @@ class _TopContainersState extends State<TopContainers> {
                 )
                 .toList();
           }),
-      ContainerType.account => db.accountDao
+      SecondaryObjectType.account => db.accountDao
           .watchAccounts(filters: filters, showGoals: true)
           .map((e) {
             final accounts = e.where((ap) => ap.cumulativeAmount != 0).toList();
@@ -101,7 +101,9 @@ class _TopContainersState extends State<TopContainers> {
                 )
                 .toList();
           }),
-      ContainerType.goal => db.goalDao.watchGoals(filters: filters).map((e) {
+      SecondaryObjectType.goal => db.goalDao.watchGoals(filters: filters).map((
+        e,
+      ) {
         final goals = e.where((gp) => gp.cumulativeAmount != 0).toList();
 
         if (goals.isEmpty) return [];
@@ -155,20 +157,20 @@ class _TopContainersState extends State<TopContainers> {
                         contentPadding: EdgeInsets.zero,
                         // border: InputBorder.none,
                       ),
-                      initialSelection: ContainerType.category,
+                      initialSelection: SecondaryObjectType.category,
                       textStyle: Theme.of(context).textTheme.headlineSmall,
                       dropdownMenuEntries: [
                         DropdownMenuEntry(
                           label: 'Categories',
-                          value: ContainerType.category,
+                          value: SecondaryObjectType.category,
                         ),
                         DropdownMenuEntry(
                           label: 'Accounts',
-                          value: ContainerType.account,
+                          value: SecondaryObjectType.account,
                         ),
                         DropdownMenuEntry(
                           label: 'Goals',
-                          value: ContainerType.goal,
+                          value: SecondaryObjectType.goal,
                         ),
                       ],
                       onSelected: (value) {
