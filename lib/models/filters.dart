@@ -141,6 +141,13 @@ final class FutureFilter extends Filter {
 /// Base filter for any transaction that is associated with the specified container.
 ///
 /// Container objects include Categories, Accounts, and Goals.
+///
+/// [includeNull] specifies whether to include transactions that have null
+/// containers. If [includeNull] is true and [itemIds] is empty,
+/// the filter will show only transactions with an explicitly null container.
+/// If [itemIds] is null, the filter will show transactions with any container
+/// association, and if [itemIds] is null and [includeNull] is true, the filter
+/// will show all transactions.
 sealed class ContainerFilter extends Filter {
   /// Whether to include transactions that have the specified container
   /// set to null.
@@ -151,18 +158,32 @@ sealed class ContainerFilter extends Filter {
   TextColumn getColumn(Transactions table);
 
   /// A list of container object IDs.
-  List<String> get itemIds;
+  ///
+  /// If [itemIds] is null, this filter will include all containers. If
+  /// [itemIds] is empty, this filter will include all containers except for null
+  /// ones, unless [includeNull] is true.
+  List<String>? get itemIds;
 
   @override
   Expression<bool> buildCondition(Transactions table) {
     final column = getColumn(table);
 
-    if (itemIds.isEmpty && includeNull) {
+    if (itemIds == null) {
+      if (!includeNull) {
+        // If no item IDs are specified and we aren't to include null categories,
+        // we give the user all categories except for null ones
+        return column.isNotNull();
+      } else {
+        // If item IDs is null and we are to include null categories, they get
+        // everything.
+        return const Constant(true);
+      }
+    } else if (itemIds!.isEmpty && includeNull) {
       return column.isNull();
-    } else if (itemIds.isNotEmpty && includeNull) {
-      return column.isIn(itemIds) | column.isNull();
-    } else if (itemIds.isNotEmpty) {
-      return column.isIn(itemIds);
+    } else if (itemIds!.isNotEmpty && includeNull) {
+      return column.isIn(itemIds!) | column.isNull();
+    } else if (itemIds!.isNotEmpty) {
+      return column.isIn(itemIds!);
     } else {
       return const Constant(false);
     }
@@ -171,12 +192,12 @@ sealed class ContainerFilter extends Filter {
 
 /// Filter for transactions associated with the specified [categories].
 final class CategoryFilter extends ContainerFilter {
-  final List<CategoryWithAmount> categories;
+  final List<CategoryWithAmount>? categories;
 
   CategoryFilter(this.categories, {super.includeNull});
 
   @override
-  List<String> get itemIds => categories.map((e) => e.category.id).toList();
+  List<String>? get itemIds => categories?.map((e) => e.category.id).toList();
 
   @override
   TextColumn getColumn(Transactions table) => table.category;
@@ -184,12 +205,12 @@ final class CategoryFilter extends ContainerFilter {
 
 /// Filter for transactions associated with the specified [accounts].
 final class AccountFilter extends ContainerFilter {
-  final List<AccountWithAmount> accounts;
+  final List<AccountWithAmount>? accounts;
 
   AccountFilter(this.accounts, {super.includeNull});
 
   @override
-  List<String> get itemIds => accounts.map((e) => e.account.id).toList();
+  List<String>? get itemIds => accounts?.map((e) => e.account.id).toList();
 
   @override
   TextColumn getColumn(Transactions table) => table.accountId;
@@ -197,12 +218,12 @@ final class AccountFilter extends ContainerFilter {
 
 /// Filter for transactions associated with the specified [goals].
 final class GoalFilter extends ContainerFilter {
-  final List<GoalWithAmount> goals;
+  final List<GoalWithAmount>? goals;
 
   GoalFilter(this.goals, {super.includeNull});
 
   @override
-  List<String> get itemIds => goals.map((e) => e.goal.id).toList();
+  List<String>? get itemIds => goals?.map((e) => e.goal.id).toList();
 
   @override
   TextColumn getColumn(Transactions table) => table.goalId;

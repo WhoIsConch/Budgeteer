@@ -541,29 +541,12 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
 
   /// Get a stream that watches the total amount of money available in the
   /// database.
-  Stream<double?> watchTotalAmount({
-    List<Filter>? filters,
-    bool nullCategory = false, // TODO: Integrate these with filters
-    bool nullAccount = false,
-    bool nullGoal = false,
-    bool net = true,
-  }) {
+  Stream<double?> watchTotalAmount({List<Filter>? filters, bool net = true}) {
     var query = select(transactions)
       ..where((t) => t.isDeleted.not() & t.isArchived.not());
 
     if (filters != null) query.where((t) => filters.buildWhereClause(t));
 
-    if (nullCategory) {
-      query.where((t) => t.category.isNull());
-    }
-
-    if (nullGoal) {
-      query.where((t) => t.goalId.isNull());
-    }
-
-    if (nullAccount) {
-      query.where((t) => t.accountId.isNull());
-    }
     final sumQuery = db.getSignedTransactionSumQuery();
 
     final type = filters?.whereType<TypeFilter>();

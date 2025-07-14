@@ -361,15 +361,35 @@ class _PieChartCardState extends State<PieChartCard> {
     final provider = context.watch<TransactionProvider>();
     final db = context.read<AppDatabase>();
 
+    // Ensure there's only one ContainerFilter active in the filters
+    // at a time.
+    provider.removeFilter<ContainerFilter>(notify: false);
+
     return db
         .getObjectStream(
           filters: provider.filters,
           objectType: _selectedContainer.type,
         )
         .asyncMap((List<ContainerWithAmount> objects) async {
+          // Filters are not added via provider.addFilter since the filter would
+          // persist to the next tap, even though we specify to remove the
+          // filter beforehand, when db.getObjectStream is prompted to update
+          // it takes into account the container filter, skewing results.
+          final containerFilter = switch (_selectedContainer.type) {
+            SecondaryObjectType.category => CategoryFilter(
+              [],
+              includeNull: true,
+            ),
+            SecondaryObjectType.account => AccountFilter([], includeNull: true),
+            SecondaryObjectType.goal => GoalFilter([], includeNull: true),
+          };
+
           final loose =
               await db.transactionDao
-                  .watchTotalAmount(filters: provider.filters, net: false)
+                  .watchTotalAmount(
+                    filters: [...provider.filters, containerFilter],
+                    net: false,
+                  )
                   .first;
 
           // Use only cumulative amounts since the provider is responsible

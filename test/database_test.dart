@@ -388,7 +388,7 @@ void main() {
           final transactions =
               await dao
                   .watchTransactionsPage(
-                    filters: [AmountFilter(AmountFilterType.greaterThan, 3)],
+                    filters: [AmountFilter(AmountFilterType.greaterThan, 30)],
                   )
                   .first;
 
