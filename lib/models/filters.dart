@@ -2,9 +2,9 @@ import 'package:budget/models/database_extensions.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/models/enums.dart';
 import 'package:drift/drift.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show DateTimeRange;
 
-enum SortType { title, date, amount }
+enum SortType { title, date, amount, noType }
 
 enum SortOrder { ascending, descending }
 
@@ -40,9 +40,20 @@ class FilterTypeException implements Exception {
   }
 }
 
-/// Represents a database filter.
-sealed class Filter {
+sealed class Filter<T extends Table> {
+  Expression<bool> buildCondition(T table);
+}
+
+/// Represents a database filter that can work with any [SoftDeletableTable].
+sealed class GenericFilter extends Filter<SoftDeletableTable> {
   /// Build an [Expression] to be used in a Drift query.
+  @override
+  Expression<bool> buildCondition(SoftDeletableTable table);
+}
+
+/// Represents a database filter that can only filter [Transaction] objects.
+sealed class TransactionFilter extends Filter<Transactions> {
+  @override
   Expression<bool> buildCondition(Transactions table);
 }
 
@@ -50,7 +61,7 @@ sealed class Filter {
 ///
 /// Will search for transactions that are greater than, less than, or equal to
 /// [amount].
-final class AmountFilter extends Filter {
+final class AmountFilter extends TransactionFilter {
   final AmountFilterType type;
   final double amount;
 
@@ -68,7 +79,7 @@ final class AmountFilter extends Filter {
 ///
 /// This is unfortunately a case-insensitive, exact match of the text in the
 /// database until an alternative text search can be implemented.
-final class TextFilter extends Filter {
+final class TextFilter extends TransactionFilter {
   final String text;
 
   TextFilter(this.text);
@@ -85,7 +96,7 @@ final class TextFilter extends Filter {
 /// Note how this does not filter transactions by their creation date, since
 /// that date should not be user-facing and is only relevant when there are
 /// multiple transactions set for the same day.
-final class DateRangeFilter extends Filter {
+final class DateRangeFilter extends TransactionFilter {
   final DateTimeRange dateRange;
 
   DateRangeFilter(this.dateRange);
@@ -99,7 +110,7 @@ final class DateRangeFilter extends Filter {
 }
 
 /// Filter for any transaction of type [type].
-final class TypeFilter extends Filter {
+final class TypeFilter extends TransactionFilter {
   final TransactionType type;
 
   TypeFilter(this.type);
@@ -110,18 +121,18 @@ final class TypeFilter extends Filter {
 }
 
 /// Filter whether a transaction is archived.
-final class ArchivedFilter extends Filter {
+final class ArchivedFilter extends GenericFilter {
   final bool isArchived;
 
   ArchivedFilter(this.isArchived);
 
   @override
-  Expression<bool> buildCondition(Transactions table) =>
+  Expression<bool> buildCondition(SoftDeletableTable table) =>
       table.isArchived.equals(isArchived);
 }
 
 /// Filter out transactions that are in the future
-final class FutureFilter extends Filter {
+final class FutureFilter extends TransactionFilter {
   final bool includeFuture;
 
   FutureFilter(this.includeFuture);
@@ -148,7 +159,7 @@ final class FutureFilter extends Filter {
 /// If [itemIds] is null, the filter will show transactions with any container
 /// association, and if [itemIds] is null and [includeNull] is true, the filter
 /// will show all transactions.
-sealed class ContainerFilter extends Filter {
+sealed class ContainerFilter extends TransactionFilter {
   /// Whether to include transactions that have the specified container
   /// set to null.
   final bool includeNull;
@@ -229,9 +240,9 @@ final class GoalFilter extends ContainerFilter {
   TextColumn getColumn(Transactions table) => table.goalId;
 }
 
-extension FilterQueryBuilder on List<Filter> {
+extension FilterQueryBuilder<T extends Table> on List<Filter<T>> {
   /// Compile a list of [Filter]s into one [Expression]
-  Expression<bool> buildWhereClause(Transactions table) {
+  Expression<bool> buildWhereClause(T table) {
     // final validFilters = where((filter) => filter.isValid);
 
     // If the list of filters is empty, all transactions should be shown.

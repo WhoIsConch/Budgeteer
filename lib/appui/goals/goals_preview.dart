@@ -1,5 +1,6 @@
 import 'package:budget/appui/components/status.dart';
 import 'package:budget/models/database_extensions.dart';
+import 'package:budget/models/filters.dart';
 import 'package:budget/services/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/tools.dart';
@@ -138,7 +139,9 @@ class _GoalPreviewCardState extends State<GoalPreviewCard> {
               ),
             ),
             StreamBuilder<List<GoalWithAmount>>(
-              stream: db.goalDao.watchGoals(includeFinished: false),
+              stream: db.goalDao.watchGoals(
+                goalFilters: [ArchivedFilter(false)],
+              ),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   AppLogger().logger.e(snapshot.error.toString());

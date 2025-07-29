@@ -367,7 +367,8 @@ class _PieChartCardState extends State<PieChartCard> {
 
     return db
         .getObjectStream(
-          filters: provider.filters,
+          transactionFilters: provider.filters,
+          objectFilters: [ArchivedFilter(false)],
           objectType: _selectedContainer.type,
         )
         .asyncMap((List<ContainerWithAmount> objects) async {

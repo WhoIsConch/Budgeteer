@@ -1097,6 +1097,36 @@ class $TransactionsTable extends Transactions
     requiredDuringInsert: false,
     clientDefault: () => uuid.v4(),
   );
+  static const VerificationMeta _isDeletedMeta = const VerificationMeta(
+    'isDeleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+    'is_deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_deleted" IN (0, 1))',
+    ),
+    clientDefault: () => false,
+  );
+  static const VerificationMeta _isArchivedMeta = const VerificationMeta(
+    'isArchived',
+  );
+  @override
+  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
+    'is_archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_archived" IN (0, 1))',
+    ),
+    clientDefault: () => false,
+  );
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
@@ -1143,36 +1173,6 @@ class $TransactionsTable extends Transactions
         type: DriftSqlType.int,
         requiredDuringInsert: true,
       ).withConverter<TransactionType>($TransactionsTable.$convertertype);
-  static const VerificationMeta _isDeletedMeta = const VerificationMeta(
-    'isDeleted',
-  );
-  @override
-  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
-    'is_deleted',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("is_deleted" IN (0, 1))',
-    ),
-    clientDefault: () => false,
-  );
-  static const VerificationMeta _isArchivedMeta = const VerificationMeta(
-    'isArchived',
-  );
-  @override
-  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
-    'is_archived',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("is_archived" IN (0, 1))',
-    ),
-    clientDefault: () => false,
-  );
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -1225,13 +1225,13 @@ class $TransactionsTable extends Transactions
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    isDeleted,
+    isArchived,
     title,
     amount,
     date,
     createdAt,
     type,
-    isDeleted,
-    isArchived,
     notes,
     category,
     accountId,
@@ -1252,6 +1252,18 @@ class $TransactionsTable extends Transactions
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
+    if (data.containsKey('is_deleted')) {
+      context.handle(
+        _isDeletedMeta,
+        isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta),
+      );
+    }
+    if (data.containsKey('is_archived')) {
+      context.handle(
+        _isArchivedMeta,
+        isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
+      );
+    }
     if (data.containsKey('title')) {
       context.handle(
         _titleMeta,
@@ -1267,18 +1279,6 @@ class $TransactionsTable extends Transactions
       );
     } else if (isInserting) {
       context.missing(_amountMeta);
-    }
-    if (data.containsKey('is_deleted')) {
-      context.handle(
-        _isDeletedMeta,
-        isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta),
-      );
-    }
-    if (data.containsKey('is_archived')) {
-      context.handle(
-        _isArchivedMeta,
-        isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
-      );
     }
     if (data.containsKey('notes')) {
       context.handle(
@@ -1318,6 +1318,16 @@ class $TransactionsTable extends Transactions
             DriftSqlType.string,
             data['${effectivePrefix}id'],
           )!,
+      isDeleted:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}is_deleted'],
+          )!,
+      isArchived:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}is_archived'],
+          )!,
       title:
           attachedDatabase.typeMapping.read(
             DriftSqlType.string,
@@ -1346,16 +1356,6 @@ class $TransactionsTable extends Transactions
           data['${effectivePrefix}type'],
         )!,
       ),
-      isDeleted:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.bool,
-            data['${effectivePrefix}is_deleted'],
-          )!,
-      isArchived:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.bool,
-            data['${effectivePrefix}is_archived'],
-          )!,
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
@@ -1390,26 +1390,26 @@ class $TransactionsTable extends Transactions
 
 class Transaction extends DataClass implements Insertable<Transaction> {
   final String id;
+  final bool isDeleted;
+  final bool isArchived;
   final String title;
   final double amount;
   final DateTime date;
   final DateTime createdAt;
   final TransactionType type;
-  final bool isDeleted;
-  final bool isArchived;
   final String? notes;
   final String? category;
   final String? accountId;
   final String? goalId;
   const Transaction({
     required this.id,
+    required this.isDeleted,
+    required this.isArchived,
     required this.title,
     required this.amount,
     required this.date,
     required this.createdAt,
     required this.type,
-    required this.isDeleted,
-    required this.isArchived,
     this.notes,
     this.category,
     this.accountId,
@@ -1419,6 +1419,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    map['is_archived'] = Variable<bool>(isArchived);
     map['title'] = Variable<String>(title);
     map['amount'] = Variable<double>(amount);
     {
@@ -1436,8 +1438,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
         $TransactionsTable.$convertertype.toSql(type),
       );
     }
-    map['is_deleted'] = Variable<bool>(isDeleted);
-    map['is_archived'] = Variable<bool>(isArchived);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
@@ -1456,13 +1456,13 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   TransactionsCompanion toCompanion(bool nullToAbsent) {
     return TransactionsCompanion(
       id: Value(id),
+      isDeleted: Value(isDeleted),
+      isArchived: Value(isArchived),
       title: Value(title),
       amount: Value(amount),
       date: Value(date),
       createdAt: Value(createdAt),
       type: Value(type),
-      isDeleted: Value(isDeleted),
-      isArchived: Value(isArchived),
       notes:
           notes == null && nullToAbsent ? const Value.absent() : Value(notes),
       category:
@@ -1485,6 +1485,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Transaction(
       id: serializer.fromJson<String>(json['id']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
       title: serializer.fromJson<String>(json['title']),
       amount: serializer.fromJson<double>(json['amount']),
       date: serializer.fromJson<DateTime>(json['date']),
@@ -1492,8 +1494,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       type: $TransactionsTable.$convertertype.fromJson(
         serializer.fromJson<int>(json['type']),
       ),
-      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
-      isArchived: serializer.fromJson<bool>(json['isArchived']),
       notes: serializer.fromJson<String?>(json['notes']),
       category: serializer.fromJson<String?>(json['category']),
       accountId: serializer.fromJson<String?>(json['accountId']),
@@ -1505,6 +1505,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'isArchived': serializer.toJson<bool>(isArchived),
       'title': serializer.toJson<String>(title),
       'amount': serializer.toJson<double>(amount),
       'date': serializer.toJson<DateTime>(date),
@@ -1512,8 +1514,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       'type': serializer.toJson<int>(
         $TransactionsTable.$convertertype.toJson(type),
       ),
-      'isDeleted': serializer.toJson<bool>(isDeleted),
-      'isArchived': serializer.toJson<bool>(isArchived),
       'notes': serializer.toJson<String?>(notes),
       'category': serializer.toJson<String?>(category),
       'accountId': serializer.toJson<String?>(accountId),
@@ -1523,26 +1523,26 @@ class Transaction extends DataClass implements Insertable<Transaction> {
 
   Transaction copyWith({
     String? id,
+    bool? isDeleted,
+    bool? isArchived,
     String? title,
     double? amount,
     DateTime? date,
     DateTime? createdAt,
     TransactionType? type,
-    bool? isDeleted,
-    bool? isArchived,
     Value<String?> notes = const Value.absent(),
     Value<String?> category = const Value.absent(),
     Value<String?> accountId = const Value.absent(),
     Value<String?> goalId = const Value.absent(),
   }) => Transaction(
     id: id ?? this.id,
+    isDeleted: isDeleted ?? this.isDeleted,
+    isArchived: isArchived ?? this.isArchived,
     title: title ?? this.title,
     amount: amount ?? this.amount,
     date: date ?? this.date,
     createdAt: createdAt ?? this.createdAt,
     type: type ?? this.type,
-    isDeleted: isDeleted ?? this.isDeleted,
-    isArchived: isArchived ?? this.isArchived,
     notes: notes.present ? notes.value : this.notes,
     category: category.present ? category.value : this.category,
     accountId: accountId.present ? accountId.value : this.accountId,
@@ -1551,14 +1551,14 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   Transaction copyWithCompanion(TransactionsCompanion data) {
     return Transaction(
       id: data.id.present ? data.id.value : this.id,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      isArchived:
+          data.isArchived.present ? data.isArchived.value : this.isArchived,
       title: data.title.present ? data.title.value : this.title,
       amount: data.amount.present ? data.amount.value : this.amount,
       date: data.date.present ? data.date.value : this.date,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       type: data.type.present ? data.type.value : this.type,
-      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
-      isArchived:
-          data.isArchived.present ? data.isArchived.value : this.isArchived,
       notes: data.notes.present ? data.notes.value : this.notes,
       category: data.category.present ? data.category.value : this.category,
       accountId: data.accountId.present ? data.accountId.value : this.accountId,
@@ -1570,13 +1570,13 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   String toString() {
     return (StringBuffer('Transaction(')
           ..write('id: $id, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('isArchived: $isArchived, ')
           ..write('title: $title, ')
           ..write('amount: $amount, ')
           ..write('date: $date, ')
           ..write('createdAt: $createdAt, ')
           ..write('type: $type, ')
-          ..write('isDeleted: $isDeleted, ')
-          ..write('isArchived: $isArchived, ')
           ..write('notes: $notes, ')
           ..write('category: $category, ')
           ..write('accountId: $accountId, ')
@@ -1588,13 +1588,13 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   @override
   int get hashCode => Object.hash(
     id,
+    isDeleted,
+    isArchived,
     title,
     amount,
     date,
     createdAt,
     type,
-    isDeleted,
-    isArchived,
     notes,
     category,
     accountId,
@@ -1605,13 +1605,13 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       identical(this, other) ||
       (other is Transaction &&
           other.id == this.id &&
+          other.isDeleted == this.isDeleted &&
+          other.isArchived == this.isArchived &&
           other.title == this.title &&
           other.amount == this.amount &&
           other.date == this.date &&
           other.createdAt == this.createdAt &&
           other.type == this.type &&
-          other.isDeleted == this.isDeleted &&
-          other.isArchived == this.isArchived &&
           other.notes == this.notes &&
           other.category == this.category &&
           other.accountId == this.accountId &&
@@ -1620,13 +1620,13 @@ class Transaction extends DataClass implements Insertable<Transaction> {
 
 class TransactionsCompanion extends UpdateCompanion<Transaction> {
   final Value<String> id;
+  final Value<bool> isDeleted;
+  final Value<bool> isArchived;
   final Value<String> title;
   final Value<double> amount;
   final Value<DateTime> date;
   final Value<DateTime> createdAt;
   final Value<TransactionType> type;
-  final Value<bool> isDeleted;
-  final Value<bool> isArchived;
   final Value<String?> notes;
   final Value<String?> category;
   final Value<String?> accountId;
@@ -1634,13 +1634,13 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   final Value<int> rowid;
   const TransactionsCompanion({
     this.id = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.isArchived = const Value.absent(),
     this.title = const Value.absent(),
     this.amount = const Value.absent(),
     this.date = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.type = const Value.absent(),
-    this.isDeleted = const Value.absent(),
-    this.isArchived = const Value.absent(),
     this.notes = const Value.absent(),
     this.category = const Value.absent(),
     this.accountId = const Value.absent(),
@@ -1649,13 +1649,13 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   });
   TransactionsCompanion.insert({
     this.id = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.isArchived = const Value.absent(),
     required String title,
     required double amount,
     required DateTime date,
     this.createdAt = const Value.absent(),
     required TransactionType type,
-    this.isDeleted = const Value.absent(),
-    this.isArchived = const Value.absent(),
     this.notes = const Value.absent(),
     this.category = const Value.absent(),
     this.accountId = const Value.absent(),
@@ -1667,13 +1667,13 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
        type = Value(type);
   static Insertable<Transaction> custom({
     Expression<String>? id,
+    Expression<bool>? isDeleted,
+    Expression<bool>? isArchived,
     Expression<String>? title,
     Expression<double>? amount,
     Expression<String>? date,
     Expression<String>? createdAt,
     Expression<int>? type,
-    Expression<bool>? isDeleted,
-    Expression<bool>? isArchived,
     Expression<String>? notes,
     Expression<String>? category,
     Expression<String>? accountId,
@@ -1682,13 +1682,13 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (isArchived != null) 'is_archived': isArchived,
       if (title != null) 'title': title,
       if (amount != null) 'amount': amount,
       if (date != null) 'date': date,
       if (createdAt != null) 'created_at': createdAt,
       if (type != null) 'type': type,
-      if (isDeleted != null) 'is_deleted': isDeleted,
-      if (isArchived != null) 'is_archived': isArchived,
       if (notes != null) 'notes': notes,
       if (category != null) 'category_id': category,
       if (accountId != null) 'account_id': accountId,
@@ -1699,13 +1699,13 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
 
   TransactionsCompanion copyWith({
     Value<String>? id,
+    Value<bool>? isDeleted,
+    Value<bool>? isArchived,
     Value<String>? title,
     Value<double>? amount,
     Value<DateTime>? date,
     Value<DateTime>? createdAt,
     Value<TransactionType>? type,
-    Value<bool>? isDeleted,
-    Value<bool>? isArchived,
     Value<String?>? notes,
     Value<String?>? category,
     Value<String?>? accountId,
@@ -1714,13 +1714,13 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   }) {
     return TransactionsCompanion(
       id: id ?? this.id,
+      isDeleted: isDeleted ?? this.isDeleted,
+      isArchived: isArchived ?? this.isArchived,
       title: title ?? this.title,
       amount: amount ?? this.amount,
       date: date ?? this.date,
       createdAt: createdAt ?? this.createdAt,
       type: type ?? this.type,
-      isDeleted: isDeleted ?? this.isDeleted,
-      isArchived: isArchived ?? this.isArchived,
       notes: notes ?? this.notes,
       category: category ?? this.category,
       accountId: accountId ?? this.accountId,
@@ -1734,6 +1734,12 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<String>(id.value);
+    }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (isArchived.present) {
+      map['is_archived'] = Variable<bool>(isArchived.value);
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
@@ -1755,12 +1761,6 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       map['type'] = Variable<int>(
         $TransactionsTable.$convertertype.toSql(type.value),
       );
-    }
-    if (isDeleted.present) {
-      map['is_deleted'] = Variable<bool>(isDeleted.value);
-    }
-    if (isArchived.present) {
-      map['is_archived'] = Variable<bool>(isArchived.value);
     }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
@@ -1784,13 +1784,13 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   String toString() {
     return (StringBuffer('TransactionsCompanion(')
           ..write('id: $id, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('isArchived: $isArchived, ')
           ..write('title: $title, ')
           ..write('amount: $amount, ')
           ..write('date: $date, ')
           ..write('createdAt: $createdAt, ')
           ..write('type: $type, ')
-          ..write('isDeleted: $isDeleted, ')
-          ..write('isArchived: $isArchived, ')
           ..write('notes: $notes, ')
           ..write('category: $category, ')
           ..write('accountId: $accountId, ')
@@ -2958,13 +2958,13 @@ typedef $$GoalsTableProcessedTableManager =
 typedef $$TransactionsTableCreateCompanionBuilder =
     TransactionsCompanion Function({
       Value<String> id,
+      Value<bool> isDeleted,
+      Value<bool> isArchived,
       required String title,
       required double amount,
       required DateTime date,
       Value<DateTime> createdAt,
       required TransactionType type,
-      Value<bool> isDeleted,
-      Value<bool> isArchived,
       Value<String?> notes,
       Value<String?> category,
       Value<String?> accountId,
@@ -2974,13 +2974,13 @@ typedef $$TransactionsTableCreateCompanionBuilder =
 typedef $$TransactionsTableUpdateCompanionBuilder =
     TransactionsCompanion Function({
       Value<String> id,
+      Value<bool> isDeleted,
+      Value<bool> isArchived,
       Value<String> title,
       Value<double> amount,
       Value<DateTime> date,
       Value<DateTime> createdAt,
       Value<TransactionType> type,
-      Value<bool> isDeleted,
-      Value<bool> isArchived,
       Value<String?> notes,
       Value<String?> category,
       Value<String?> accountId,
@@ -3063,6 +3063,16 @@ class $$TransactionsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get title => $composableBuilder(
     column: $table.title,
     builder: (column) => ColumnFilters(column),
@@ -3089,16 +3099,6 @@ class $$TransactionsTableFilterComposer
   get type => $composableBuilder(
     column: $table.type,
     builder: (column) => ColumnWithTypeConverterFilters(column),
-  );
-
-  ColumnFilters<bool> get isDeleted => $composableBuilder(
-    column: $table.isDeleted,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get isArchived => $composableBuilder(
-    column: $table.isArchived,
-    builder: (column) => ColumnFilters(column),
   );
 
   ColumnFilters<String> get notes => $composableBuilder(
@@ -3190,6 +3190,16 @@ class $$TransactionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get title => $composableBuilder(
     column: $table.title,
     builder: (column) => ColumnOrderings(column),
@@ -3212,16 +3222,6 @@ class $$TransactionsTableOrderingComposer
 
   ColumnOrderings<int> get type => $composableBuilder(
     column: $table.type,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get isDeleted => $composableBuilder(
-    column: $table.isDeleted,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get isArchived => $composableBuilder(
-    column: $table.isArchived,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3312,6 +3312,14 @@ class $$TransactionsTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+
+  GeneratedColumn<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
 
@@ -3326,14 +3334,6 @@ class $$TransactionsTableAnnotationComposer
 
   GeneratedColumnWithTypeConverter<TransactionType, int> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
-
-  GeneratedColumn<bool> get isDeleted =>
-      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
-
-  GeneratedColumn<bool> get isArchived => $composableBuilder(
-    column: $table.isArchived,
-    builder: (column) => column,
-  );
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
@@ -3438,13 +3438,13 @@ class $$TransactionsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
                 Value<String> title = const Value.absent(),
                 Value<double> amount = const Value.absent(),
                 Value<DateTime> date = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<TransactionType> type = const Value.absent(),
-                Value<bool> isDeleted = const Value.absent(),
-                Value<bool> isArchived = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> category = const Value.absent(),
                 Value<String?> accountId = const Value.absent(),
@@ -3452,13 +3452,13 @@ class $$TransactionsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => TransactionsCompanion(
                 id: id,
+                isDeleted: isDeleted,
+                isArchived: isArchived,
                 title: title,
                 amount: amount,
                 date: date,
                 createdAt: createdAt,
                 type: type,
-                isDeleted: isDeleted,
-                isArchived: isArchived,
                 notes: notes,
                 category: category,
                 accountId: accountId,
@@ -3468,13 +3468,13 @@ class $$TransactionsTableTableManager
           createCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
                 required String title,
                 required double amount,
                 required DateTime date,
                 Value<DateTime> createdAt = const Value.absent(),
                 required TransactionType type,
-                Value<bool> isDeleted = const Value.absent(),
-                Value<bool> isArchived = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> category = const Value.absent(),
                 Value<String?> accountId = const Value.absent(),
@@ -3482,13 +3482,13 @@ class $$TransactionsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => TransactionsCompanion.insert(
                 id: id,
+                isDeleted: isDeleted,
+                isArchived: isArchived,
                 title: title,
                 amount: amount,
                 date: date,
                 createdAt: createdAt,
                 type: type,
-                isDeleted: isDeleted,
-                isArchived: isArchived,
                 notes: notes,
                 category: category,
                 accountId: accountId,

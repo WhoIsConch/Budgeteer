@@ -3,6 +3,7 @@ import 'package:budget/appui/components/edit_screen.dart';
 import 'package:budget/appui/components/status.dart';
 import 'package:budget/appui/goals/view_goal.dart';
 import 'package:budget/models/database_extensions.dart';
+import 'package:budget/models/filters.dart';
 import 'package:budget/services/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/validators.dart';
@@ -31,7 +32,8 @@ class _TopContainersState extends State<TopContainers> {
     // specific container.
 
     final stream = db.getObjectStream(
-      filters: filters,
+      transactionFilters: filters,
+      objectFilters: [ArchivedFilter(false)],
       objectType: _selectedContainer,
     );
 
