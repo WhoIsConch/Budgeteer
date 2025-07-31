@@ -56,9 +56,9 @@ class _TransactionSearchState extends State<TransactionSearch> {
   // a multiple of a filter in there
   bool isSearching = false; // Is the title bar a search field?
   TextEditingController searchController = TextEditingController();
+  List<FilterChip> activeChips = [];
 
   List<Widget> getFilterChips() {
-    List<Widget> chips = [];
     DateFormat dateFormat = DateFormat('MM/dd');
     final provider = context.watch<TransactionProvider>();
 
@@ -88,22 +88,30 @@ class _TransactionSearchState extends State<TransactionSearch> {
 
       if (label == null) continue;
 
-      chips.add(
-        GestureDetector(
-          onTap: () => _activateFilter(context, filter: filter),
-          child: Chip(
-            label: Text(label),
-            deleteIcon: const Icon(Icons.close),
-            onDeleted: () {
-              searchController.clear();
-              provider.removeFilter(filterType: filter.runtimeType);
-            },
-          ),
-        ),
+      final index = activeChips.indexWhere((chip) => chip.filter == filter);
+      final chip = FilterChip(
+        key: ObjectKey(filter),
+        filter: filter,
+        label: label,
+        onImmediateDeleted: (FilterChip chip) {
+          searchController.clear();
+          provider.removeFilter(filterType: filter.runtimeType);
+        },
+        onDeleted: (FilterChip chip) {
+          activeChips.remove(chip);
+        },
+        activateFilter: () => _activateFilter(context, filter: filter),
       );
+
+      if (index == -1) {
+        activeChips.add(chip);
+      } else {
+        activeChips.removeAt(index);
+        activeChips.insert(index, chip);
+      }
     }
 
-    return chips;
+    return activeChips;
   }
 
   Widget getTitle() {
@@ -612,6 +620,80 @@ class _TransactionSearchState extends State<TransactionSearch> {
           body: body,
         );
       },
+    );
+  }
+}
+
+class FilterChip extends StatefulWidget {
+  final String label;
+  final Filter filter;
+  final Function() activateFilter;
+  final Function(FilterChip chip) onDeleted;
+  final Function(FilterChip chip) onImmediateDeleted;
+
+  const FilterChip({
+    super.key,
+    required this.filter,
+    required this.label,
+    required this.onDeleted,
+    required this.onImmediateDeleted,
+    required this.activateFilter,
+  });
+
+  @override
+  State<FilterChip> createState() => _FilterChipState();
+}
+
+class _FilterChipState extends State<FilterChip>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+    _animation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleDelete() {
+    widget.onImmediateDeleted(widget);
+    _controller.forward().whenComplete(() => widget.onDeleted(widget));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizeTransition(
+      sizeFactor: _animation,
+      axis: Axis.horizontal,
+      axisAlignment: -1.0, // Starts shrinking at the start of the chip
+      child: FadeTransition(
+        opacity: _animation,
+        child: GestureDetector(
+          onTap: () {
+            if (_animation.isAnimating) return;
+            widget.activateFilter();
+          },
+          child: Chip(
+            label: Text(widget.label),
+            deleteIcon: const Icon(Icons.close),
+            onDeleted: _handleDelete,
+          ),
+        ),
+      ),
     );
   }
 }
