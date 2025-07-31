@@ -98,7 +98,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
           provider.removeFilter(filterType: filter.runtimeType);
         },
         onDeleted: (FilterChip chip) {
-          activeChips.remove(chip);
+          setState(() => activeChips.remove(chip));
         },
         activateFilter: () => _activateFilter(context, filter: filter),
       );
