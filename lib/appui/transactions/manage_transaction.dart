@@ -382,6 +382,10 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                         helperText = null;
                       }
 
+                      if (_selectedCategoryPair == null) {
+                        controllers['category']?.text = '';
+                      }
+
                       return DropdownEditField<CategoryWithAmount>(
                         fieldState: state,
                         label: dropdownLabel,
@@ -462,6 +466,10 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                       String? helperText = _selectedGoal?.getStatus(
                         totalBalance: _getTotalGoalBalance(),
                       );
+
+                      if (_selectedGoal == null) {
+                        controllers['goal']?.text = '';
+                      }
 
                       return DropdownEditField(
                         enabled: _selectedAccount == null,
@@ -557,6 +565,10 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                         String prefix = total.isNegative ? '-' : '';
                         formattedAmount =
                             '$prefix\$${formatAmount(total.abs(), exact: true)}';
+                      }
+
+                      if (_selectedAccount == null) {
+                        controllers['account']?.text = '';
                       }
 
                       return DropdownEditField(
