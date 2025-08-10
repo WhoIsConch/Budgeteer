@@ -464,6 +464,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                       );
 
                       return DropdownEditField(
+                        enabled: _selectedAccount == null,
                         fieldState: fieldState,
                         label: dropdownLabel,
                         initialSelection: _selectedGoal,
@@ -478,36 +479,45 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                     },
                   ),
                 ),
-                HybridManagerButton(
-                  icon: Icon(
-                    _selectedGoal == null
-                        ? Icons.add_circle_outline
-                        : Icons.edit,
-                    color: Theme.of(context).colorScheme.primary,
+                if (_selectedAccount == null)
+                  HybridManagerButton(
+                    icon: Icon(
+                      _selectedGoal == null
+                          ? Icons.add_circle_outline
+                          : Icons.edit,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    tooltip: _selectedGoal == null ? 'New goal' : 'Edit goal',
+                    onPressed: () async {
+                      final result = await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder:
+                              (_) => ManageGoalPage(
+                                initialGoal: _selectedGoal,
+                                returnResult: true,
+                              ),
+                        ),
+                      );
+
+                      if (result is GoalWithAmount) {
+                        fieldState.didChange(result);
+                        setState(() {
+                          _selectedGoal = result;
+                          controllers['goal']!.text = result.goal.name;
+                        });
+                      }
+
+                      return result;
+                    },
                   ),
-                  tooltip: _selectedGoal == null ? 'New goal' : 'Edit goal',
-                  onPressed: () async {
-                    final result = await Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder:
-                            (_) => ManageGoalPage(
-                              initialGoal: _selectedGoal,
-                              returnResult: true,
-                            ),
-                      ),
-                    );
-
-                    if (result is GoalWithAmount) {
-                      fieldState.didChange(result);
-                      setState(() {
-                        _selectedGoal = result;
-                        controllers['goal']!.text = result.goal.name;
-                      });
-                    }
-
-                    return result;
-                  },
-                ),
+                if (_selectedAccount != null)
+                  Padding(
+                    padding: EdgeInsets.all(4.0),
+                    child: IconButtonWithTooltip(
+                      color: Theme.of(context).colorScheme.primary,
+                      tooltipText: 'An account is already selected',
+                    ),
+                  ),
               ],
             );
           },
@@ -554,6 +564,7 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                         label: dropdownLabel,
                         initialSelection: _selectedAccount,
                         controller: controllers['account'],
+                        enabled: _selectedGoal == null,
                         onChanged:
                             (newAccount) =>
                                 setState(() => _selectedAccount = newAccount),
@@ -564,34 +575,45 @@ class _ManageTransactionPageState extends State<ManageTransactionPage> {
                     },
                   ),
                 ),
-                HybridManagerButton(
-                  icon: Icon(
-                    _selectedAccount == null
-                        ? Icons.add_circle_outline
-                        : Icons.edit,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  tooltip:
-                      _selectedAccount == null ? 'New account' : 'Edit account',
-                  onPressed: () async {
-                    final result = await Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder:
-                            (_) => ManageAccountForm(
-                              initialAccount: _selectedAccount,
-                            ),
-                      ),
-                    );
+                if (_selectedGoal == null)
+                  HybridManagerButton(
+                    icon: Icon(
+                      _selectedAccount == null
+                          ? Icons.add_circle_outline
+                          : Icons.edit,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    tooltip:
+                        _selectedAccount == null
+                            ? 'New account'
+                            : 'Edit account',
+                    onPressed: () async {
+                      final result = await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder:
+                              (_) => ManageAccountForm(
+                                initialAccount: _selectedAccount,
+                              ),
+                        ),
+                      );
 
-                    if (result is AccountWithAmount) {
-                      fieldState.didChange(result);
-                      setState(() {
-                        _selectedAccount = result;
-                        controllers['account']!.text = result.account.name;
-                      });
-                    }
-                  },
-                ),
+                      if (result is AccountWithAmount) {
+                        fieldState.didChange(result);
+                        setState(() {
+                          _selectedAccount = result;
+                          controllers['account']!.text = result.account.name;
+                        });
+                      }
+                    },
+                  ),
+                if (_selectedGoal != null)
+                  Padding(
+                    padding: EdgeInsets.all(4.0),
+                    child: IconButtonWithTooltip(
+                      color: Theme.of(context).colorScheme.primary,
+                      tooltipText: 'A goal is already selected',
+                    ),
+                  ),
               ],
             );
           },

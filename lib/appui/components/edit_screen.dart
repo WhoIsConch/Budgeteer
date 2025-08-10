@@ -15,11 +15,13 @@ class PickerFieldResponse<T> {
 class IconButtonWithTooltip extends StatefulWidget {
   final String tooltipText;
   final bool isFocused;
+  final Color? color;
 
   const IconButtonWithTooltip({
     super.key,
     required this.tooltipText,
     this.isFocused = false,
+    this.color,
   });
 
   @override
@@ -116,6 +118,7 @@ class _IconButtonWithTooltipState extends State<IconButtonWithTooltip> {
               followerAnchor: _followerAnchor,
               targetAnchor: _targetAnchor,
               child: Material(
+                color: Theme.of(context).colorScheme.surfaceContainerHigh,
                 elevation: 4.0,
                 borderRadius: BorderRadius.circular(8),
                 child: ConstrainedBox(
@@ -144,11 +147,7 @@ class _IconButtonWithTooltipState extends State<IconButtonWithTooltip> {
     return CompositedTransformTarget(
       link: _layerLink,
       child: IconButton(
-        icon: Icon(
-          Icons.help,
-          color:
-              widget.isFocused ? Theme.of(context).colorScheme.primary : null,
-        ),
+        icon: Icon(Icons.help, color: widget.color),
         tooltip: _isTooltipVisible ? '' : 'Tap for info',
         onPressed: _toggleTooltip,
       ),
@@ -407,6 +406,7 @@ class DropdownEditField<T> extends StatelessWidget {
   final TextEditingController? controller;
   final T? initialSelection;
   final FormFieldState? fieldState;
+  final bool enabled;
 
   final List<T?> values;
   final List<String> labels;
@@ -424,11 +424,13 @@ class DropdownEditField<T> extends StatelessWidget {
     this.errorText,
     this.helperText,
     this.fieldState,
+    this.enabled = true,
   });
 
   @override
   Widget build(BuildContext context) {
     return DropdownMenu<T?>(
+      enabled: enabled,
       errorText: errorText,
       helperText: helperText,
       controller: controller,
