@@ -51,10 +51,10 @@ class TransactionProvider extends ChangeNotifier {
   }
 
   void removeFilter<T extends Filter>({Type? filterType, bool notify = true}) {
-    filters.removeWhere(
-      (e) => e.runtimeType == T || e.runtimeType == filterType,
-    );
-    if (notify) notifyListeners();
+    final initialLength = filters.length;
+
+    filters.removeWhere((e) => e is T || e.runtimeType == filterType);
+    if (filters.length != initialLength && notify) notifyListeners();
   }
 }
 

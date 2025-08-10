@@ -67,18 +67,28 @@ class _TransactionSearchState extends State<TransactionSearch> {
         TextFilter t => '"${t.text}"', // "Value"
         AmountFilter t =>
           '${t.type.symbol} \$${formatAmount(t.amount, exact: true)}', // > $Value
-        CategoryFilter t =>
-          t.categories.length > 3
-              ? '${t.categories.length} categories'
-              : t.categories.map((e) => e.category.name).join(', '),
-        AccountFilter t =>
-          t.accounts.length > 3
-              ? '${t.accounts.length} accounts'
-              : t.accounts.map((e) => e.account.name).join(', '),
-        GoalFilter t =>
-          t.goals.length > 3
-              ? '${t.goals.length} goals'
-              : t.goals.map((e) => e.goal.name).join(', '),
+        ContainerFilter t =>
+          (() {
+            if (t.itemIds == null) return null;
+
+            if (t.itemIds!.length > 3) {
+              return switch (t) {
+                CategoryFilter f => '${f.categories!.length} categories',
+                AccountFilter f => '${f.accounts!.length} accounts',
+                GoalFilter f => '${f.goals!.length} goals',
+              };
+            }
+
+            return switch (t) {
+              CategoryFilter f => f.categories!
+                  .map((e) => e.category.name)
+                  .join(', '),
+              AccountFilter f => f.accounts!
+                  .map((e) => e.account.name)
+                  .join(', '),
+              GoalFilter f => f.goals!.map((e) => e.goal.name).join(', '),
+            };
+          })(),
         DateRangeFilter t =>
           '${dateFormat.format(t.dateRange.start)}–${dateFormat.format(t.dateRange.end)}',
         TypeFilter t =>

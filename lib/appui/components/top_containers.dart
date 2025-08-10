@@ -2,9 +2,10 @@ import 'package:budget/appui/categories/view_category.dart';
 import 'package:budget/appui/components/edit_screen.dart';
 import 'package:budget/appui/components/status.dart';
 import 'package:budget/appui/goals/view_goal.dart';
+import 'package:budget/models/database_extensions.dart';
+import 'package:budget/models/filters.dart';
 import 'package:budget/services/providers/transaction_provider.dart';
 import 'package:budget/services/app_database.dart';
-import 'package:budget/models/enums.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -17,7 +18,7 @@ class TopContainers extends StatefulWidget {
 }
 
 class _TopContainersState extends State<TopContainers> {
-  ContainerType _selectedContainer = ContainerType.category;
+  SecondaryObjectType _selectedContainer = SecondaryObjectType.category;
 
   Stream<List<ContainerTile>> _getStream() {
     final db = context.read<AppDatabase>();
@@ -30,107 +31,57 @@ class _TopContainersState extends State<TopContainers> {
     // while the progress represents how much money has passed through that
     // specific container.
 
-    // TODO: Make this code reusable instead of copy and pasting the same
-    // thing to each stream
+    final stream = db.getObjectStream(
+      transactionFilters: filters,
+      objectFilters: [ArchivedFilter(false)],
+      objectType: _selectedContainer,
+    );
 
-    return switch (_selectedContainer) {
-      ContainerType.category => db.categoryDao
-          // Don't sum by reset increment since we want to see the total amount
-          // of money the user has used in these categories throughout the date
-          // range
-          .watchCategories(filters: filters, sumByResetIncrement: false)
-          .map((e) {
-            // Get the containers that have actually had money pass through them
-            final categories =
-                e.where((cp) => cp.cumulativeAmount != 0).toList();
+    return stream.map((e) {
+      // Weed out any objects that don't have any data
+      final objs = e.where((obj) => obj.cumulativeAmount != 0).toList();
 
-            if (categories.isEmpty) return [];
+      if (objs.isEmpty) return [];
 
-            // Sort these categories from most cash flow to least cash flow
-            categories.sort(
-              (a, b) => b.cumulativeAmount.compareTo(a.cumulativeAmount),
-            );
+      // Sort in descending order
+      objs.sort((a, b) => b.cumulativeAmount.compareTo(a.cumulativeAmount));
 
-            // Combine all the categories' amounts to get the total amount
-            final totalAmount = categories.fold(
-              0.0,
-              (amt, pair) => amt + pair.cumulativeAmount,
-            );
+      final totalAmount = objs.fold(
+        0.0,
+        (amt, pair) => amt + pair.cumulativeAmount,
+      );
 
-            return categories
-                .map(
-                  (c) => ContainerTile(
-                    title: c.category.name,
-                    leadingIcon: Icons.category,
-                    progress: c.cumulativeAmount / totalAmount,
-                    amount: c.cumulativeAmount,
-                    onTap:
-                        () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => CategoryViewer(categoryPair: c),
+      return objs
+          .map(
+            (o) => ContainerTile(
+              title: o.object.name,
+              leadingIcon: _selectedContainer.icon,
+              progress: o.cumulativeAmount / totalAmount,
+              amount: o.cumulativeAmount,
+              onTap: switch (_selectedContainer) {
+                SecondaryObjectType.category =>
+                  () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder:
+                          (_) => CategoryViewer(
+                            categoryPair: o as CategoryWithAmount,
                           ),
-                        ),
-                  ),
-                )
-                .toList();
-          }),
-      ContainerType.account => db.accountDao
-          .watchAccounts(filters: filters, showGoals: true)
-          .map((e) {
-            final accounts = e.where((ap) => ap.cumulativeAmount != 0).toList();
-
-            if (accounts.isEmpty) return [];
-
-            accounts.sort(
-              (a, b) => b.cumulativeAmount.compareTo(a.cumulativeAmount),
-            );
-
-            final totalAmount = accounts.fold(
-              0.0,
-              (amt, pair) => amt + pair.cumulativeAmount,
-            );
-
-            return accounts
-                .map(
-                  (a) => ContainerTile(
-                    title: a.account.name,
-                    leadingIcon: Icons.account_balance,
-                    progress: a.cumulativeAmount / totalAmount,
-                    amount: a.cumulativeAmount,
-                  ),
-                )
-                .toList();
-          }),
-      ContainerType.goal => db.goalDao.watchGoals(filters: filters).map((e) {
-        final goals = e.where((gp) => gp.cumulativeAmount != 0).toList();
-
-        if (goals.isEmpty) return [];
-
-        goals.sort((a, b) => b.cumulativeAmount.compareTo(a.cumulativeAmount));
-
-        final totalAmount = goals.fold(
-          0.0,
-          (amt, pair) => amt + pair.cumulativeAmount,
-        );
-
-        return goals
-            .map(
-              (g) => ContainerTile(
-                title: g.goal.name,
-                leadingIcon: Icons.flag,
-                progress: g.cumulativeAmount / totalAmount,
-                amount: g.cumulativeAmount,
-                onTap:
-                    () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => GoalViewer(initialGoalPair: g),
-                      ),
                     ),
-              ),
-            )
-            .toList();
-      }),
-    };
+                  ),
+                SecondaryObjectType.account => null,
+                SecondaryObjectType.goal =>
+                  () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder:
+                          (_) =>
+                              GoalViewer(initialGoalPair: o as GoalWithAmount),
+                    ),
+                  ),
+              },
+            ),
+          )
+          .toList();
+    });
   }
 
   @override
@@ -155,20 +106,20 @@ class _TopContainersState extends State<TopContainers> {
                         contentPadding: EdgeInsets.zero,
                         // border: InputBorder.none,
                       ),
-                      initialSelection: ContainerType.category,
+                      initialSelection: SecondaryObjectType.category,
                       textStyle: Theme.of(context).textTheme.headlineSmall,
                       dropdownMenuEntries: [
                         DropdownMenuEntry(
                           label: 'Categories',
-                          value: ContainerType.category,
+                          value: SecondaryObjectType.category,
                         ),
                         DropdownMenuEntry(
                           label: 'Accounts',
-                          value: ContainerType.account,
+                          value: SecondaryObjectType.account,
                         ),
                         DropdownMenuEntry(
                           label: 'Goals',
-                          value: ContainerType.goal,
+                          value: SecondaryObjectType.goal,
                         ),
                       ],
                       onSelected: (value) {

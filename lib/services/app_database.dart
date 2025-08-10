@@ -4,7 +4,8 @@ import 'package:budget/models/enums.dart';
 import 'package:budget/models/filters.dart';
 import 'package:budget/utils/tools.dart';
 import 'package:drift/drift.dart';
-import 'package:flutter/material.dart' show Color, DateTimeRange;
+import 'package:flutter/material.dart'
+    show Color, DateTimeRange, IconData, Icons;
 import 'package:powersync/powersync.dart' show PowerSyncDatabase, uuid;
 import 'package:drift_sqlite_async/drift_sqlite_async.dart';
 
@@ -18,11 +19,10 @@ mixin SoftDeletableTable on Table {
       boolean().clientDefault(() => false).named('is_archived')();
 }
 
-class Transactions extends Table {
+class Transactions extends Table with SoftDeletableTable {
   @override
   String get tableName => 'transactions';
 
-  TextColumn get id => text().clientDefault(() => uuid.v4())();
   TextColumn get title => text()();
   RealColumn get amount => real()();
   TextColumn get date => text().map(const DateTextConverter())();
@@ -32,10 +32,6 @@ class Transactions extends Table {
           .clientDefault(() => DateTime.now().toIso8601String())
           .named('created_at')();
   IntColumn get type => intEnum<TransactionType>()();
-  BoolColumn get isDeleted =>
-      boolean().clientDefault(() => false).named('is_deleted')();
-  BoolColumn get isArchived =>
-      boolean().clientDefault(() => false).named('is_archived')();
   TextColumn get notes => text().nullable()();
 
   TextColumn get category =>
@@ -60,6 +56,7 @@ class Transactions extends Table {
   Set<Column<Object>>? get primaryKey => {id};
 }
 
+@UseRowClass(Category)
 class Categories extends Table with SoftDeletableTable {
   @override
   String get tableName => 'categories';
@@ -81,6 +78,7 @@ class Categories extends Table with SoftDeletableTable {
   Set<Column<Object>>? get primaryKey => {id};
 }
 
+@UseRowClass(Account)
 class Accounts extends Table with SoftDeletableTable {
   @override
   get tableName => 'accounts';
@@ -96,6 +94,7 @@ class Accounts extends Table with SoftDeletableTable {
   Set<Column<Object>>? get primaryKey => {id};
 }
 
+@UseRowClass(Goal)
 class Goals extends Table with SoftDeletableTable {
   @override
   get tableName => 'goals';
@@ -111,6 +110,95 @@ class Goals extends Table with SoftDeletableTable {
 
   @override
   Set<Column<Object>>? get primaryKey => {id};
+}
+
+enum SecondaryObjectType {
+  category,
+  account,
+  goal;
+
+  IconData get icon => switch (this) {
+    SecondaryObjectType.category => Icons.category,
+    SecondaryObjectType.account => Icons.account_balance,
+    SecondaryObjectType.goal => Icons.flag,
+  };
+}
+
+sealed class SecondaryObject {
+  final String id;
+  final bool isDeleted;
+  final bool isArchived;
+  final String name;
+  final String? notes;
+  final Color color;
+
+  SecondaryObjectType get type;
+
+  SecondaryObject({
+    required this.id,
+    required this.isDeleted,
+    required this.isArchived,
+    required this.name,
+    required this.color,
+    this.notes,
+  });
+}
+
+class Goal extends SecondaryObject {
+  final double cost;
+  final DateTime? dueDate;
+
+  @override
+  SecondaryObjectType get type => SecondaryObjectType.goal;
+
+  Goal({
+    required super.id,
+    required super.isDeleted,
+    required super.isArchived,
+    required super.name,
+    required super.color,
+    required this.cost,
+    super.notes,
+    this.dueDate,
+  });
+}
+
+class Account extends SecondaryObject {
+  final int? priority;
+
+  @override
+  SecondaryObjectType get type => SecondaryObjectType.account;
+
+  Account({
+    required super.id,
+    required super.isDeleted,
+    required super.isArchived,
+    required super.name,
+    required super.color,
+    super.notes,
+    this.priority,
+  });
+}
+
+class Category extends SecondaryObject {
+  final CategoryResetIncrement resetIncrement;
+  final bool allowNegatives;
+  final double? balance;
+
+  @override
+  SecondaryObjectType get type => SecondaryObjectType.category;
+
+  Category({
+    required super.id,
+    required super.isDeleted,
+    required super.isArchived,
+    required super.name,
+    required super.color,
+    super.notes,
+    required this.resetIncrement,
+    required this.allowNegatives,
+    required this.balance,
+  });
 }
 
 @DriftAccessor(tables: [Accounts])
@@ -151,23 +239,25 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
 
   /// Watch a list of accounts.
   Stream<List<AccountWithAmount>> watchAccounts({
-    List<Filter>? filters,
-    bool includeArchived = false,
-    bool sortDescending = true,
+    List<Filter>? transactionFilters,
+    List<GenericFilter>? accountFilters,
+    Sort? sort,
 
     /// Show goals is optional since it may be useful in analytics, but for
     /// viewing balances you don't want to see the amount of money you put
     /// towards a goal. Any money put towards a goal can be considered spent.
     bool showGoals = false,
   }) {
-    final queryWithSum = db._getCombinedQuery(
-      accounts,
-      includeArchived: includeArchived,
-      showGoals: showGoals,
-    );
+    final queryWithSum = db._getCombinedQuery(accounts);
 
-    if (filters != null) {
-      queryWithSum.query.where(filters.buildWhereClause(db.transactions));
+    if (transactionFilters != null) {
+      queryWithSum.query.where(
+        transactionFilters.buildWhereClause(db.transactions),
+      );
+    }
+
+    if (accountFilters != null) {
+      queryWithSum.query.where(accountFilters.buildWhereClause(db.accounts));
     }
 
     return queryWithSum.query.watch().map((rows) {
@@ -183,7 +273,7 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
           return 0;
         }
 
-        if (sortDescending) {
+        if (sort?.sortOrder == SortOrder.descending) {
           return b.account.priority!.compareTo(a.account.priority!);
         } else {
           return a.account.priority!.compareTo(b.account.priority!);
@@ -197,14 +287,9 @@ class AccountDao extends DatabaseAccessor<AppDatabase> with _$AccountDaoMixin {
   /// Watch a single account with its ID.
   Stream<AccountWithAmount?> watchAccountById(
     String id, {
-    bool includeArchived = true,
     bool showGoals = false,
   }) {
-    final queryWithSum = db._getCombinedQuery(
-      accounts,
-      includeArchived: includeArchived,
-      showGoals: showGoals,
-    );
+    final queryWithSum = db._getCombinedQuery(accounts);
     final filteredQuery = queryWithSum.query..where(accounts.id.equals(id));
 
     final mappedSelectable = filteredQuery.map(
@@ -293,18 +378,20 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
 
   /// Watch a list of goals, filtered by the [filters].
   Stream<List<GoalWithAmount>> watchGoals({
-    List<Filter>? filters,
-    bool includeFinished = true,
-    bool sortDescending = true,
+    List<Filter>? transactionFilters,
+    List<GenericFilter>? goalFilters,
+    Sort? sort,
   }) {
-    final queryWithSum = db._getCombinedQuery(
-      goals,
-      includeArchived: includeFinished,
-      showGoals: true,
-    );
+    final queryWithSum = db._getCombinedQuery(goals);
 
-    if (filters != null) {
-      queryWithSum.query.where(filters.buildWhereClause(db.transactions));
+    if (transactionFilters != null) {
+      queryWithSum.query.where(
+        transactionFilters.buildWhereClause(db.transactions),
+      );
+    }
+
+    if (goalFilters != null) {
+      queryWithSum.query.where(goalFilters.buildWhereClause(db.goals));
     }
 
     // View all of the goals in the database
@@ -316,7 +403,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
         final double percentageA = a.calculatePercentage();
         final double percentageB = b.calculatePercentage();
 
-        if (sortDescending) {
+        if (sort?.sortOrder == SortOrder.descending) {
           return percentageB.compareTo(percentageA);
         } else {
           return percentageA.compareTo(percentageB);
@@ -336,7 +423,7 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
     );
 
     // TODO: Maybe optimize with the only good use of getSignedTransactionsQuery
-    final signedSumQueries = db._getTransactionSumQueries(showGoals: true);
+    final signedSumQueries = db._getTransactionSumQueries();
 
     return query
         .addColumns([signedSumQueries.expenses, signedSumQueries.income])
@@ -375,15 +462,8 @@ class GoalDao extends DatabaseAccessor<AppDatabase> with _$GoalDaoMixin {
   }
 
   /// Watch a goal by its ID.
-  Stream<GoalWithAmount?> watchGoalById(
-    String id, {
-    bool includeFinished = true,
-  }) {
-    final queryWithSum = db._getCombinedQuery(
-      goals,
-      includeArchived: includeFinished,
-      showGoals: true,
-    );
+  Stream<GoalWithAmount?> watchGoalById(String id) {
+    final queryWithSum = db._getCombinedQuery(goals);
 
     final filteredQuery = queryWithSum.query..where(goals.id.equals(id));
 
@@ -437,6 +517,8 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
                         SortType.amount => t.amount,
                         SortType.date => t.date,
                         SortType.title => t.title,
+                        SortType.noType =>
+                          throw 'Cannot use SortType.noType with transaction sort',
                       }
                       as Expression<Object>,
             ),
@@ -459,29 +541,12 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
 
   /// Get a stream that watches the total amount of money available in the
   /// database.
-  Stream<double?> watchTotalAmount({
-    List<Filter>? filters,
-    bool nullCategory = false, // TODO: Integrate these with filters
-    bool nullAccount = false,
-    bool nullGoal = false,
-    bool net = true,
-  }) {
+  Stream<double?> watchTotalAmount({List<Filter>? filters, bool net = true}) {
     var query = select(transactions)
       ..where((t) => t.isDeleted.not() & t.isArchived.not());
 
     if (filters != null) query.where((t) => filters.buildWhereClause(t));
 
-    if (nullCategory) {
-      query.where((t) => t.category.isNull());
-    }
-
-    if (nullGoal) {
-      query.where((t) => t.goalId.isNull());
-    }
-
-    if (nullAccount) {
-      query.where((t) => t.accountId.isNull());
-    }
     final sumQuery = db.getSignedTransactionSumQuery();
 
     final type = filters?.whereType<TypeFilter>();
@@ -776,20 +841,15 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
 
   /// Get a [QueryWithSums] that includes categories and their respective
   /// expenses and income amounts.
-  QueryWithSums _getQueryWithSum({
-    bool includeArchived = false,
-    bool sumByResetIncrement = true,
-  }) {
+  QueryWithSums _getQueryWithSum({bool sumByResetIncrement = true}) {
+    // TODO: Make these and similar methods use Filters to filter archived
+    // and other transactions
     QueryWithSums queryWithSum;
 
     if (sumByResetIncrement) {
       queryWithSum = _getCategoriesWithAmountsQuery();
     } else {
-      queryWithSum = db._getCombinedQuery(
-        categories,
-        includeArchived: includeArchived,
-        showGoals: true,
-      );
+      queryWithSum = db._getCombinedQuery(categories);
     }
 
     return queryWithSum;
@@ -797,17 +857,22 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
 
   /// Watch a list of categories, filtered by the [filters].
   Stream<List<CategoryWithAmount>> watchCategories({
-    List<Filter>? filters,
-    bool includeArchived = false,
+    List<Filter>? transactionFilters,
+    List<GenericFilter>? categoryFilters,
     bool sumByResetIncrement = true,
   }) {
     final queryWithSum = _getQueryWithSum(
-      includeArchived: includeArchived,
       sumByResetIncrement: sumByResetIncrement,
     );
 
-    if (filters != null) {
-      queryWithSum.query.where(filters.buildWhereClause(db.transactions));
+    if (transactionFilters != null) {
+      queryWithSum.query.where(
+        transactionFilters.buildWhereClause(db.transactions),
+      );
+    }
+
+    if (categoryFilters != null) {
+      queryWithSum.query.where(categoryFilters.buildWhereClause(db.categories));
     }
 
     return queryWithSum.query.watch().map(
@@ -819,11 +884,9 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
   /// Watch a category by its ID.
   Stream<CategoryWithAmount?> watchCategoryById(
     String id, {
-    bool includeArchived = false,
     bool sumByResetIncrement = true,
   }) {
     final queryWithSum = _getQueryWithSum(
-      includeArchived: includeArchived,
       sumByResetIncrement: sumByResetIncrement,
     );
 
@@ -898,23 +961,26 @@ class AppDatabase extends _$AppDatabase {
   /// [includeArchived] and [showGoals] are set to true, respectively.
   QueryWithSums _getCombinedQuery<T extends SoftDeletableTable>(
     TableInfo<T, dynamic> relatedTable, {
-    bool includeArchived = false,
-    bool showGoals = false,
+    // bool showGoals = false,
+    List<GenericFilter>? filters,
   }) {
+    if (relatedTable is Transactions) {
+      throw 'Cannot use _getCombinedQuery with Transactions table';
+    }
+
+    Expression<bool> condition = _getJoinCondition(relatedTable);
+
+    if (filters != null) {
+      condition = condition & filters.buildWhereClause(relatedTable.asDslTable);
+    }
+
     var query = select(
       relatedTable,
-    ).join([leftOuterJoin(transactions, _getJoinCondition(relatedTable))]);
+    ).join([leftOuterJoin(transactions, condition)]);
 
     query.where(relatedTable.asDslTable.isDeleted.not());
 
-    if (!includeArchived) {
-      query.where(relatedTable.asDslTable.isArchived.not());
-    }
-
-    TransactionSumPair sums = _getTransactionSumQueries(
-      includeArchived: includeArchived,
-      showGoals: showGoals,
-    );
+    TransactionSumPair sums = _getTransactionSumQueries();
 
     query.addColumns([sums.expenses, sums.income]);
     query.groupBy([relatedTable.asDslTable.id]);
@@ -929,16 +995,20 @@ class AppDatabase extends _$AppDatabase {
   Expression<bool> _getJoinCondition<T extends Table>(
     TableInfo<T, dynamic> table,
   ) {
+    Expression<bool> baseCondition;
+
     switch (table.actualTableName) {
       case 'categories':
-        return transactions.category.equalsExp(categories.id);
+        baseCondition = transactions.category.equalsExp(categories.id);
       case 'accounts':
-        return transactions.accountId.equalsExp(accounts.id);
+        baseCondition = transactions.accountId.equalsExp(accounts.id);
       case 'goals':
-        return transactions.goalId.equalsExp(goals.id);
+        baseCondition = transactions.goalId.equalsExp(goals.id);
       default:
         throw ArgumentError('Unsupported table: ${table.actualTableName}');
     }
+
+    return baseCondition;
   }
 
   /// Get an [Expression] that matches the transactions of type [type].
@@ -947,8 +1017,7 @@ class AppDatabase extends _$AppDatabase {
   /// deleted records. Can also be filtered by an [additionalFilter].
   Expression<double> _getTypeExpr({
     required TransactionType type,
-    bool includeArchived = false,
-    bool showGoals = false,
+    // bool showGoals = false,
     Expression<bool>? additionalFilter,
   }) {
     Expression<bool> sumCondition =
@@ -958,13 +1027,9 @@ class AppDatabase extends _$AppDatabase {
           formatter.format(DateTime.now()),
         );
 
-    if (!includeArchived) {
-      sumCondition = sumCondition & transactions.isArchived.not();
-    }
-
-    if (!showGoals) {
-      sumCondition = sumCondition & transactions.goalId.isNull();
-    }
+    // if (!showGoals) {
+    //   sumCondition = sumCondition & transactions.goalId.isNull();
+    // }
 
     if (additionalFilter != null) {
       sumCondition = sumCondition & additionalFilter;
@@ -976,21 +1041,16 @@ class AppDatabase extends _$AppDatabase {
   /// Get a [TransactionSumPair] to represent expenses and income from the
   /// database.
   TransactionSumPair _getTransactionSumQueries({
-    bool includeArchived = false,
-    bool showGoals = false,
+    // bool showGoals = false,
     Expression<bool>? additionalFilter,
   }) {
     return (
       expenses: _getTypeExpr(
         type: TransactionType.expense,
-        includeArchived: includeArchived,
-        showGoals: showGoals,
         additionalFilter: additionalFilter,
       ),
       income: _getTypeExpr(
         type: TransactionType.income,
-        includeArchived: includeArchived,
-        showGoals: showGoals,
         additionalFilter: additionalFilter,
       ),
     );
@@ -1062,5 +1122,29 @@ class AppDatabase extends _$AppDatabase {
       return expression.sum();
     }
     return expression;
+  }
+
+  Stream<List<ContainerWithAmount>> getObjectStream({
+    required List<Filter> transactionFilters,
+    required List<GenericFilter> objectFilters,
+    required SecondaryObjectType objectType,
+  }) {
+    switch (objectType) {
+      case SecondaryObjectType.goal:
+        return goalDao.watchGoals(
+          transactionFilters: transactionFilters,
+          goalFilters: objectFilters,
+        );
+      case SecondaryObjectType.account:
+        return accountDao.watchAccounts(
+          transactionFilters: transactionFilters,
+          accountFilters: objectFilters,
+        );
+      case SecondaryObjectType.category:
+        return categoryDao.watchCategories(
+          transactionFilters: transactionFilters,
+          categoryFilters: objectFilters,
+        );
+    }
   }
 }

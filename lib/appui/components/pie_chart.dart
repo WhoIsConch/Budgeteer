@@ -40,17 +40,17 @@ class PieChartSelectionData<T> {
   );
 
   static const categoryType = PieChartSelectionData(
-    type: ContainerType.category,
+    type: SecondaryObjectType.category,
     index: 0,
     label: 'Category',
   );
   static const accountType = PieChartSelectionData(
-    type: ContainerType.account,
+    type: SecondaryObjectType.account,
     index: 1,
     label: 'Account',
   );
   static const goalType = PieChartSelectionData(
-    type: ContainerType.goal,
+    type: SecondaryObjectType.goal,
     index: 2,
     label: 'Goal',
   );
@@ -202,7 +202,7 @@ class _PieChartCardState extends State<PieChartCard> {
   // In this case, goals, categories, and accounts are containers
   PieChartSelectionData<TransactionType?> _selectedType =
       PieChartSelectionData.netType;
-  PieChartSelectionData<ContainerType> _selectedContainer =
+  PieChartSelectionData<SecondaryObjectType> _selectedContainer =
       PieChartSelectionData.categoryType;
 
   final chartCenterRadius = 60.0; // Don't let the text go beyond that radius
@@ -356,122 +356,67 @@ class _PieChartCardState extends State<PieChartCard> {
     );
   }
 
+  /// Get a stream of pie chart data for the pie chart's selected container
   Stream<List<PieChartObject?>> _getContainerStream() {
     final provider = context.watch<TransactionProvider>();
-
     final db = context.read<AppDatabase>();
 
-    // TODO: Fix the way the total amount and container streams are joined...
-    // probably make this less repetitive
-    switch (_selectedContainer.type) {
-      case ContainerType.account:
-        return db.accountDao
-            // Show goals since we want to see all of the money that goes through
-            // an account
-            .watchAccounts(filters: provider.filters, showGoals: true)
-            .asyncMap((List<AccountWithAmount> accounts) async {
-              final noAccounts =
-                  await db.transactionDao
-                      .watchTotalAmount(
-                        filters: provider.filters,
-                        net: false, // Never use net, only cumulative amounts
-                        nullAccount: true,
-                      )
-                      .first;
+    // Ensure there's only one ContainerFilter active in the filters
+    // at a time.
+    provider.removeFilter<ContainerFilter>(notify: false);
 
-              // Use only cumulative amounts since the provider is responsible
-              // for filtering expense or income transactions. If cash flow
-              // is selected, we want the total of the absolute value of all
-              // amounts anyway.
-              final List<PieChartObject> objects =
-                  accounts
-                      .map(
-                        (account) => PieChartObject(
-                          name: account.account.name,
-                          color: account.account.color,
-                          amount: account.cumulativeAmount,
-                        ),
-                      )
-                      .toList();
-              return [
-                ...objects,
-                PieChartObject(
-                  name: 'No account',
-                  color: Colors.grey,
-                  amount: noAccounts ?? 0,
-                ),
-              ];
-            });
-      case ContainerType.category:
-        return db.categoryDao
-            .watchCategories(
-              filters: provider.filters,
-              sumByResetIncrement: false,
-            )
-            .asyncMap((List<CategoryWithAmount> categories) async {
-              // Despite not being watched, the number seems to update anyway
-              final uncatAmount =
-                  await db.transactionDao
-                      .watchTotalAmount(
-                        filters: provider.filters,
-                        net: false,
-                        nullCategory: true,
-                      )
-                      .first;
+    return db
+        .getObjectStream(
+          transactionFilters: provider.filters,
+          objectFilters: [ArchivedFilter(false)],
+          objectType: _selectedContainer.type,
+        )
+        .asyncMap((List<ContainerWithAmount> objects) async {
+          // Filters are not added via provider.addFilter since the filter would
+          // persist to the next tap, even though we specify to remove the
+          // filter beforehand, when db.getObjectStream is prompted to update
+          // it takes into account the container filter, skewing results.
+          final containerFilter = switch (_selectedContainer.type) {
+            SecondaryObjectType.category => CategoryFilter(
+              [],
+              includeNull: true,
+            ),
+            SecondaryObjectType.account => AccountFilter([], includeNull: true),
+            SecondaryObjectType.goal => GoalFilter([], includeNull: true),
+          };
 
-              final List<PieChartObject> objects =
-                  categories
-                      .map(
-                        (category) => PieChartObject(
-                          name: category.category.name,
-                          color: category.category.color,
-                          amount: category.cumulativeAmount,
-                        ),
-                      )
-                      .toList();
-
-              return [
-                ...objects,
-                PieChartObject(
-                  name: 'Uncategorized',
-                  color: Colors.grey,
-                  amount: uncatAmount ?? 0,
-                ),
-              ];
-            });
-      case ContainerType.goal:
-        return db.goalDao.watchGoals(filters: provider.filters).asyncMap((
-          List<GoalWithAmount> goals,
-        ) async {
-          final noGoals =
+          final loose =
               await db.transactionDao
                   .watchTotalAmount(
-                    filters: provider.filters,
+                    filters: [...provider.filters, containerFilter],
                     net: false,
-                    nullGoal: true,
                   )
                   .first;
 
-          final List<PieChartObject> objects =
-              goals
+          // Use only cumulative amounts since the provider is responsible
+          // for filtering expense or income transactions. If cash flow
+          // is selected, we want the total of the absolute value of all
+          // amounts anyway.
+          final List<PieChartObject> data =
+              objects
                   .map(
-                    (goal) => PieChartObject(
-                      name: goal.goal.name,
-                      color: goal.goal.color,
-                      amount: goal.cumulativeAmount,
+                    (object) => PieChartObject(
+                      name: object.object.name,
+                      color: object.object.color,
+                      amount: object.cumulativeAmount,
                     ),
                   )
                   .toList();
+
           return [
-            ...objects,
+            ...data,
             PieChartObject(
-              name: 'No goal',
+              name: 'Loose',
               color: Colors.grey,
-              amount: noGoals ?? 0,
+              amount: loose ?? 0,
             ),
           ];
         });
-    }
   }
 
   @override
@@ -582,7 +527,7 @@ class _PieChartCardState extends State<PieChartCard> {
                       },
                     ),
                     const Divider(),
-                    ..._buildVerticalTabs<ContainerType>(
+                    ..._buildVerticalTabs<SecondaryObjectType>(
                       PieChartSelectionData.containerList,
                       _selectedContainer,
                       (newContainer) =>

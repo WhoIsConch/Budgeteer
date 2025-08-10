@@ -2,9 +2,9 @@ import 'package:budget/models/database_extensions.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/models/enums.dart';
 import 'package:drift/drift.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show DateTimeRange;
 
-enum SortType { title, date, amount }
+enum SortType { title, date, amount, noType }
 
 enum SortOrder { ascending, descending }
 
@@ -40,9 +40,20 @@ class FilterTypeException implements Exception {
   }
 }
 
-/// Represents a database filter.
-sealed class Filter {
+sealed class Filter<T extends Table> {
+  Expression<bool> buildCondition(T table);
+}
+
+/// Represents a database filter that can work with any [SoftDeletableTable].
+sealed class GenericFilter extends Filter<SoftDeletableTable> {
   /// Build an [Expression] to be used in a Drift query.
+  @override
+  Expression<bool> buildCondition(SoftDeletableTable table);
+}
+
+/// Represents a database filter that can only filter [Transaction] objects.
+sealed class TransactionFilter extends Filter<Transactions> {
+  @override
   Expression<bool> buildCondition(Transactions table);
 }
 
@@ -50,7 +61,7 @@ sealed class Filter {
 ///
 /// Will search for transactions that are greater than, less than, or equal to
 /// [amount].
-final class AmountFilter extends Filter {
+final class AmountFilter extends TransactionFilter {
   final AmountFilterType type;
   final double amount;
 
@@ -68,7 +79,7 @@ final class AmountFilter extends Filter {
 ///
 /// This is unfortunately a case-insensitive, exact match of the text in the
 /// database until an alternative text search can be implemented.
-final class TextFilter extends Filter {
+final class TextFilter extends TransactionFilter {
   final String text;
 
   TextFilter(this.text);
@@ -85,7 +96,7 @@ final class TextFilter extends Filter {
 /// Note how this does not filter transactions by their creation date, since
 /// that date should not be user-facing and is only relevant when there are
 /// multiple transactions set for the same day.
-final class DateRangeFilter extends Filter {
+final class DateRangeFilter extends TransactionFilter {
   final DateTimeRange dateRange;
 
   DateRangeFilter(this.dateRange);
@@ -99,7 +110,7 @@ final class DateRangeFilter extends Filter {
 }
 
 /// Filter for any transaction of type [type].
-final class TypeFilter extends Filter {
+final class TypeFilter extends TransactionFilter {
   final TransactionType type;
 
   TypeFilter(this.type);
@@ -110,18 +121,18 @@ final class TypeFilter extends Filter {
 }
 
 /// Filter whether a transaction is archived.
-final class ArchivedFilter extends Filter {
+final class ArchivedFilter extends GenericFilter {
   final bool isArchived;
 
   ArchivedFilter(this.isArchived);
 
   @override
-  Expression<bool> buildCondition(Transactions table) =>
+  Expression<bool> buildCondition(SoftDeletableTable table) =>
       table.isArchived.equals(isArchived);
 }
 
 /// Filter out transactions that are in the future
-final class FutureFilter extends Filter {
+final class FutureFilter extends TransactionFilter {
   final bool includeFuture;
 
   FutureFilter(this.includeFuture);
@@ -141,7 +152,14 @@ final class FutureFilter extends Filter {
 /// Base filter for any transaction that is associated with the specified container.
 ///
 /// Container objects include Categories, Accounts, and Goals.
-sealed class ContainerFilter extends Filter {
+///
+/// [includeNull] specifies whether to include transactions that have null
+/// containers. If [includeNull] is true and [itemIds] is empty,
+/// the filter will show only transactions with an explicitly null container.
+/// If [itemIds] is null, the filter will show transactions with any container
+/// association, and if [itemIds] is null and [includeNull] is true, the filter
+/// will show all transactions.
+sealed class ContainerFilter extends TransactionFilter {
   /// Whether to include transactions that have the specified container
   /// set to null.
   final bool includeNull;
@@ -151,18 +169,32 @@ sealed class ContainerFilter extends Filter {
   TextColumn getColumn(Transactions table);
 
   /// A list of container object IDs.
-  List<String> get itemIds;
+  ///
+  /// If [itemIds] is null, this filter will include all containers. If
+  /// [itemIds] is empty, this filter will include all containers except for null
+  /// ones, unless [includeNull] is true.
+  List<String>? get itemIds;
 
   @override
   Expression<bool> buildCondition(Transactions table) {
     final column = getColumn(table);
 
-    if (itemIds.isEmpty && includeNull) {
+    if (itemIds == null) {
+      if (!includeNull) {
+        // If no item IDs are specified and we aren't to include null categories,
+        // we give the user all categories except for null ones
+        return column.isNotNull();
+      } else {
+        // If item IDs is null and we are to include null categories, they get
+        // everything.
+        return const Constant(true);
+      }
+    } else if (itemIds!.isEmpty && includeNull) {
       return column.isNull();
-    } else if (itemIds.isNotEmpty && includeNull) {
-      return column.isIn(itemIds) | column.isNull();
-    } else if (itemIds.isNotEmpty) {
-      return column.isIn(itemIds);
+    } else if (itemIds!.isNotEmpty && includeNull) {
+      return column.isIn(itemIds!) | column.isNull();
+    } else if (itemIds!.isNotEmpty) {
+      return column.isIn(itemIds!);
     } else {
       return const Constant(false);
     }
@@ -171,12 +203,12 @@ sealed class ContainerFilter extends Filter {
 
 /// Filter for transactions associated with the specified [categories].
 final class CategoryFilter extends ContainerFilter {
-  final List<CategoryWithAmount> categories;
+  final List<CategoryWithAmount>? categories;
 
   CategoryFilter(this.categories, {super.includeNull});
 
   @override
-  List<String> get itemIds => categories.map((e) => e.category.id).toList();
+  List<String>? get itemIds => categories?.map((e) => e.category.id).toList();
 
   @override
   TextColumn getColumn(Transactions table) => table.category;
@@ -184,12 +216,12 @@ final class CategoryFilter extends ContainerFilter {
 
 /// Filter for transactions associated with the specified [accounts].
 final class AccountFilter extends ContainerFilter {
-  final List<AccountWithAmount> accounts;
+  final List<AccountWithAmount>? accounts;
 
   AccountFilter(this.accounts, {super.includeNull});
 
   @override
-  List<String> get itemIds => accounts.map((e) => e.account.id).toList();
+  List<String>? get itemIds => accounts?.map((e) => e.account.id).toList();
 
   @override
   TextColumn getColumn(Transactions table) => table.accountId;
@@ -197,20 +229,20 @@ final class AccountFilter extends ContainerFilter {
 
 /// Filter for transactions associated with the specified [goals].
 final class GoalFilter extends ContainerFilter {
-  final List<GoalWithAmount> goals;
+  final List<GoalWithAmount>? goals;
 
   GoalFilter(this.goals, {super.includeNull});
 
   @override
-  List<String> get itemIds => goals.map((e) => e.goal.id).toList();
+  List<String>? get itemIds => goals?.map((e) => e.goal.id).toList();
 
   @override
   TextColumn getColumn(Transactions table) => table.goalId;
 }
 
-extension FilterQueryBuilder on List<Filter> {
+extension FilterQueryBuilder<T extends Table> on List<Filter<T>> {
   /// Compile a list of [Filter]s into one [Expression]
-  Expression<bool> buildWhereClause(Transactions table) {
+  Expression<bool> buildWhereClause(T table) {
     // final validFilters = where((filter) => filter.isValid);
 
     // If the list of filters is empty, all transactions should be shown.
