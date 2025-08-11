@@ -487,7 +487,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
       ),
       MenuItemButton(
         trailingIcon: showFuture == true ? Icon(Icons.check) : null,
-        onPressed: () => _performFutureFilter,
+        onPressed: _performFutureFilter,
         child: Text('Future'),
       ),
     ];
