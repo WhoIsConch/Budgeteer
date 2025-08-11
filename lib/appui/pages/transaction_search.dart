@@ -112,6 +112,8 @@ class _TransactionSearchState extends State<TransactionSearch> {
           setState(() => activeChips.remove(chip));
         },
         activateFilter: () => _performFilterAction(filter),
+        animationAxis:
+            activeChips.length == 1 ? Axis.vertical : Axis.horizontal,
       );
 
       if (index == -1) {
@@ -655,6 +657,7 @@ class FilterChip extends StatefulWidget {
   final Function() activateFilter;
   final Function(FilterChip chip) onDeleted;
   final Function(FilterChip chip) onImmediateDeleted;
+  final Axis animationAxis;
 
   const FilterChip({
     super.key,
@@ -663,6 +666,7 @@ class FilterChip extends StatefulWidget {
     required this.onDeleted,
     required this.onImmediateDeleted,
     required this.activateFilter,
+    this.animationAxis = Axis.horizontal,
   });
 
   @override
@@ -699,6 +703,7 @@ class _FilterChipState extends State<FilterChip>
   void _handleDelete() {
     // Ensure the chip can't be interacted with while it's being deleted
     if (_isDeleting) return;
+
     setState(() => _isDeleting = true);
 
     widget.onImmediateDeleted(widget);
@@ -709,7 +714,7 @@ class _FilterChipState extends State<FilterChip>
   Widget build(BuildContext context) {
     return SizeTransition(
       sizeFactor: _animation,
-      axis: Axis.horizontal,
+      axis: widget.animationAxis,
       axisAlignment: -1.0, // Starts shrinking at the start of the chip
       child: FadeTransition(
         opacity: _animation,
