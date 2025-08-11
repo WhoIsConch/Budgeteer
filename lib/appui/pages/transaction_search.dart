@@ -110,7 +110,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
         onDeleted: (FilterChip chip) {
           setState(() => activeChips.remove(chip));
         },
-        activateFilter: () => _activateFilter(context, filter: filter),
+        activateFilter: () => _performFilterAction(filter),
       );
 
       if (index == -1) {
@@ -137,15 +137,16 @@ class _TransactionSearchState extends State<TransactionSearch> {
     return const Text('Transactions');
   }
 
-  Future<AmountFilter?> _showAmountFilterDialog() async {
+  Future<void> _performAmountFilter({AmountFilter? existing}) async {
     final provider = context.read<TransactionProvider>();
     // Shows a dialog inline with a dropdown showing the filter type first,
     // then the amount as an input.
     TextEditingController controller = TextEditingController();
-    // Either get the current amountFilter or create a new one
-    AmountFilter? amountFilter = provider.getFilter<AmountFilter>();
+
+    AmountFilter? amountFilter = existing ?? provider.getFilter<AmountFilter>();
+
     // Update the text to match
-    controller.text = amountFilter?.amount.toStringAsFixed(2) ?? '';
+    controller.text = existing?.amount.toStringAsFixed(2) ?? '';
 
     // Listen for changes on the controller since it's easier and better-looking
     // than redoing it in the end, though probably less performant
@@ -162,7 +163,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
       );
     });
 
-    return showDialog<AmountFilter>(
+    final newFilter = await showDialog<AmountFilter>(
       context: context,
       builder: (context) {
         return StatefulBuilder(
@@ -232,9 +233,13 @@ class _TransactionSearchState extends State<TransactionSearch> {
         );
       },
     );
+
+    if (newFilter != null) {
+      provider.updateFilter<AmountFilter>(newFilter);
+    }
   }
 
-  Future<List<CategoryWithAmount>?> _showCategoryInputDialog() async {
+  Future<void> _performCategoryFilter({CategoryFilter? existing}) async {
     // Shows a dropdown of all available categories.
     // Returns a list of selected categories.
     // This shows an AlertDialog with nothing in it other than a dropdown
@@ -243,13 +248,15 @@ class _TransactionSearchState extends State<TransactionSearch> {
     final provider = context.read<TransactionProvider>();
 
     List<CategoryWithAmount> selectedCategories =
-        provider.getFilter<CategoryFilter>()?.categories ?? [];
+        existing?.categories ??
+        provider.getFilter<CategoryFilter>()?.categories ??
+        [];
 
     if (!context.mounted) {
-      return [];
+      return;
     }
 
-    return showDialog<List<CategoryWithAmount>>(
+    final categories = await showDialog<List<CategoryWithAmount>>(
       context: context,
       builder: (context) {
         return StatefulBuilder(
@@ -322,6 +329,56 @@ class _TransactionSearchState extends State<TransactionSearch> {
         );
       },
     );
+
+    if (categories == null) return;
+
+    if (categories.isEmpty) {
+      provider.removeFilter<CategoryFilter>();
+    } else {
+      provider.updateFilter<CategoryFilter>(CategoryFilter(categories));
+    }
+  }
+
+  Future<void> _performDateRangeFilter({DateRangeFilter? existing}) async {
+    final provider = context.read<TransactionProvider>();
+
+    final initial =
+        existing?.dateRange ?? provider.getFilter<DateRangeFilter>()?.dateRange;
+
+    final picked = await showDateRangePicker(
+      context: context,
+      initialDateRange: initial,
+      firstDate: DateTime.now().subtract(const Duration(days: 365 * 10)),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
+    );
+
+    if (picked != null) {
+      provider.updateFilter<DateRangeFilter>(DateRangeFilter(picked));
+    }
+  }
+
+  Future<void> _performFutureFilter({FutureFilter? existing}) async {
+    final provider = context.read<TransactionProvider>();
+
+    final initial = existing ?? provider.getFilter<FutureFilter>();
+
+    if (initial?.includeFuture == true) {
+      provider.updateFilter(FutureFilter(false));
+    } else {
+      provider.updateFilter(FutureFilter(true));
+    }
+  }
+
+  Future<void> _performArchivedFilter({ArchivedFilter? existing}) async {
+    final provider = context.read<TransactionProvider>();
+
+    final initial = existing ?? provider.getFilter<ArchivedFilter>();
+
+    if (initial?.isArchived == false) {
+      provider.removeFilter<ArchivedFilter>();
+    } else {
+      provider.updateFilter(ArchivedFilter(false));
+    }
   }
 
   void toggleTransactionType(BuildContext context) {
@@ -344,20 +401,18 @@ class _TransactionSearchState extends State<TransactionSearch> {
   }
 
   List<Widget> _getFilterMenuButtons(BuildContext context) {
-    final widgetContext = context;
-
     return [
       MenuItemButton(
+        onPressed: _performDateRangeFilter, // Currently, there's no .empty
         child: const Text('Date'),
-        onPressed: () => _activateFilter<DateRangeFilter>(widgetContext),
       ),
       MenuItemButton(
+        onPressed: _performAmountFilter,
         child: const Text('Amount'),
-        onPressed: () => _activateFilter<AmountFilter>(widgetContext),
       ),
       MenuItemButton(
+        onPressed: () => toggleTransactionType(context),
         child: const Text('Type'),
-        onPressed: () => _activateFilter<TypeFilter>(widgetContext),
       ),
       StreamBuilder(
         stream: context.read<AppDatabase>().categoryDao.watchCategoryCount(),
@@ -365,10 +420,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
           final hasCategories = snapshot.hasData && snapshot.data! > 0;
 
           return MenuItemButton(
-            onPressed:
-                hasCategories
-                    ? () => _activateFilter<CategoryFilter>(widgetContext)
-                    : null,
+            onPressed: hasCategories ? _performCategoryFilter : null,
 
             child: Text(
               'Category',
@@ -429,12 +481,12 @@ class _TransactionSearchState extends State<TransactionSearch> {
       MenuItemButton(
         trailingIcon:
             showArchived == null || showArchived ? Icon(Icons.check) : null,
-        onPressed: () => _activateFilter<ArchivedFilter>(context),
+        onPressed: _performArchivedFilter,
         child: Text('Archived'),
       ),
       MenuItemButton(
         trailingIcon: showFuture == true ? Icon(Icons.check) : null,
-        onPressed: () => _activateFilter<FutureFilter>(context),
+        onPressed: () => _performFutureFilter,
         child: Text('Future'),
       ),
     ];
@@ -472,73 +524,32 @@ class _TransactionSearchState extends State<TransactionSearch> {
             ),
   );
 
-  Map<Type, Function> _getFilterActions(TransactionProvider provider) {
-    return {
-      DateRangeFilter:
-          () => showDateRangePicker(
-            context: context,
-            initialDateRange: provider.getFilter<DateRangeFilter>()?.dateRange,
-            firstDate: DateTime.now().subtract(const Duration(days: 365 * 10)),
-            lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
-          ).then((DateTimeRange? value) {
-            if (value == null) return;
+  void _performFilterAction(Filter filter) {
+    switch (filter) {
+      case DateRangeFilter f:
+        _performDateRangeFilter(existing: f);
+        break;
+      case TextFilter _:
+        setState(() => isSearching = true);
+        break;
+      case AmountFilter f:
+        _performAmountFilter(existing: f);
+        break;
+      case TypeFilter _:
+        toggleTransactionType(context);
+        break;
+      case CategoryFilter f:
+        _performCategoryFilter(existing: f);
+        break;
+      case ArchivedFilter f:
+        _performArchivedFilter(existing: f);
+        break;
+      case FutureFilter f:
+        _performFutureFilter(existing: f);
+        break;
 
-            provider.updateFilter(DateRangeFilter(value));
-          }),
-      TextFilter: () => setState(() => isSearching = true),
-      AmountFilter:
-          () => _showAmountFilterDialog().then((value) {
-            if (value == null) {
-              return;
-            }
-            provider.updateFilter<AmountFilter>(value);
-          }),
-      TypeFilter: () => toggleTransactionType(context),
-      CategoryFilter:
-          () => _showCategoryInputDialog().then((value) {
-            if (value == null) {
-              return;
-            } else if (value.isEmpty) {
-              provider.removeFilter<CategoryFilter>();
-            } else {
-              provider.updateFilter(CategoryFilter(value));
-            }
-          }),
-      ArchivedFilter: () {
-        final filter = provider.getFilter<ArchivedFilter>();
-
-        if (filter?.isArchived == false) {
-          provider.removeFilter<ArchivedFilter>();
-        } else {
-          provider.updateFilter(ArchivedFilter(false));
-        }
-      },
-      FutureFilter: () {
-        final filter = provider.getFilter<FutureFilter>();
-
-        if (filter?.includeFuture == true) {
-          provider.updateFilter(FutureFilter(false));
-        } else {
-          provider.updateFilter(FutureFilter(true));
-        }
-      },
-    };
-  }
-
-  void _activateFilter<F extends Filter>(BuildContext context, {F? filter}) {
-    Function? filterAction;
-    final provider = context.read<TransactionProvider>();
-
-    if (filter != null) {
-      filterAction = _getFilterActions(provider)[filter.runtimeType];
-    } else {
-      filterAction = _getFilterActions(provider)[F];
-    }
-
-    if (filterAction != null) {
-      filterAction();
-    } else {
-      throw FilterTypeException(F);
+      default:
+        break;
     }
   }
 
