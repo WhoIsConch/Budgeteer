@@ -58,9 +58,8 @@ class _TransactionSearchState extends State<TransactionSearch> {
   TextEditingController searchController = TextEditingController();
   List<FilterChip> activeChips = [];
 
-  List<Widget> getFilterChips() {
+  List<Widget> getFilterChips(TransactionProvider provider) {
     DateFormat dateFormat = DateFormat('MM/dd');
-    final provider = context.watch<TransactionProvider>();
 
     for (Filter filter in provider.filters) {
       String? label = switch (filter) {
@@ -98,7 +97,9 @@ class _TransactionSearchState extends State<TransactionSearch> {
 
       if (label == null) continue;
 
-      final index = activeChips.indexWhere((chip) => chip.filter == filter);
+      final index = activeChips.indexWhere(
+        (chip) => chip.filter.runtimeType == filter.runtimeType,
+      );
       final chip = FilterChip(
         key: ObjectKey(filter),
         filter: filter,
@@ -609,14 +610,17 @@ class _TransactionSearchState extends State<TransactionSearch> {
           );
         }
 
+        final chips = getFilterChips(provider);
+
+        final chipsWrap = Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Wrap(spacing: 4, children: getFilterChips(provider)),
+        );
+
         body = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (provider.filters.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Wrap(spacing: 4, children: getFilterChips()),
-              ),
+            if (chips.isNotEmpty) chipsWrap,
             Expanded(
               child: Padding(
                 padding: EdgeInsets.all(8.0),
