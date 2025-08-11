@@ -674,6 +674,8 @@ class _FilterChipState extends State<FilterChip>
   late AnimationController _controller;
   late Animation<double> _animation;
 
+  bool _isDeleting = false;
+
   @override
   void initState() {
     super.initState();
@@ -695,6 +697,10 @@ class _FilterChipState extends State<FilterChip>
   }
 
   void _handleDelete() {
+    // Ensure the chip can't be interacted with while it's being deleted
+    if (_isDeleting) return;
+    setState(() => _isDeleting = true);
+
     widget.onImmediateDeleted(widget);
     _controller.forward().whenComplete(() => widget.onDeleted(widget));
   }
@@ -709,7 +715,7 @@ class _FilterChipState extends State<FilterChip>
         opacity: _animation,
         child: GestureDetector(
           onTap: () {
-            if (_animation.isAnimating) return;
+            if (_isDeleting) return;
             widget.activateFilter();
           },
           child: Chip(
