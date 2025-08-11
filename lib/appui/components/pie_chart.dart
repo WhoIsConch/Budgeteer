@@ -363,7 +363,7 @@ class _PieChartCardState extends State<PieChartCard> {
 
     // Ensure there's only one ContainerFilter active in the filters
     // at a time.
-    provider.removeFilter<ContainerFilter>(notify: false);
+    provider.removeFilterOf<ContainerFilter>(notify: false);
 
     return db
         .getObjectStream(
@@ -520,9 +520,9 @@ class _PieChartCardState extends State<PieChartCard> {
                         final provider = context.read<TransactionProvider>();
 
                         if (newType.type == null) {
-                          provider.removeFilter<TypeFilter>();
+                          provider.removeFilterOf<TypeFilter>();
                         } else {
-                          provider.updateFilter(TypeFilter(newType.type!));
+                          provider.setFilter(TypeFilter(newType.type!));
                         }
                       },
                     ),

@@ -43,7 +43,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
     if (newRange == null) return;
 
-    provider.updateFilter(DateRangeFilter(newRange));
+    provider.setFilter(DateRangeFilter(newRange));
   }
 
   DropdownMenu getDateRangeDropdown(BuildContext context) {
@@ -82,9 +82,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
         if (range == null) {
           pickDateRange(context, initialRange: dateFilter?.dateRange);
         } else {
-          context.read<TransactionProvider>().updateFilter(
-            DateRangeFilter(range),
-          );
+          context.read<TransactionProvider>().setFilter(DateRangeFilter(range));
         }
       },
       dropdownMenuEntries: entries,
@@ -97,7 +95,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
       create: (context) {
         final filterProvider = TransactionProvider();
 
-        filterProvider.updateFilter(
+        filterProvider.setFilter(
           DateRangeFilter(RelativeDateRange.thisMonth.getRange()),
         );
 

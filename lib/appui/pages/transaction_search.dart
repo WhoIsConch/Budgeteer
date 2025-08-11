@@ -106,7 +106,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
         label: label,
         onImmediateDeleted: (FilterChip chip) {
           searchController.clear();
-          provider.removeFilter(filterType: filter.runtimeType);
+          provider.removeFilterByType(filter.runtimeType);
         },
         onDeleted: (FilterChip chip) {
           setState(() => activeChips.remove(chip));
@@ -236,7 +236,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
     );
 
     if (newFilter != null) {
-      provider.updateFilter<AmountFilter>(newFilter);
+      provider.setFilter(newFilter);
     }
   }
 
@@ -334,9 +334,9 @@ class _TransactionSearchState extends State<TransactionSearch> {
     if (categories == null) return;
 
     if (categories.isEmpty) {
-      provider.removeFilter<CategoryFilter>();
+      provider.removeFilterOf<CategoryFilter>();
     } else {
-      provider.updateFilter<CategoryFilter>(CategoryFilter(categories));
+      provider.setFilter(CategoryFilter(categories));
     }
   }
 
@@ -354,7 +354,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
     );
 
     if (picked != null) {
-      provider.updateFilter<DateRangeFilter>(DateRangeFilter(picked));
+      provider.setFilter(DateRangeFilter(picked));
     }
   }
 
@@ -364,9 +364,9 @@ class _TransactionSearchState extends State<TransactionSearch> {
     final initial = existing ?? provider.getFilter<FutureFilter>();
 
     if (initial?.includeFuture == true) {
-      provider.updateFilter(FutureFilter(false));
+      provider.setFilter(FutureFilter(false));
     } else {
-      provider.updateFilter(FutureFilter(true));
+      provider.setFilter(FutureFilter(true));
     }
   }
 
@@ -376,9 +376,9 @@ class _TransactionSearchState extends State<TransactionSearch> {
     final initial = existing ?? provider.getFilter<ArchivedFilter>();
 
     if (initial?.isArchived == false) {
-      provider.removeFilter<ArchivedFilter>();
+      provider.removeFilterOf<ArchivedFilter>();
     } else {
-      provider.updateFilter(ArchivedFilter(false));
+      provider.setFilter(ArchivedFilter(false));
     }
   }
 
@@ -395,9 +395,9 @@ class _TransactionSearchState extends State<TransactionSearch> {
     }
 
     if (filter == null) {
-      provider.removeFilter<TypeFilter>();
+      provider.removeFilterOf<TypeFilter>();
     } else {
-      provider.updateFilter<TypeFilter>(filter);
+      provider.setFilter(filter);
     }
   }
 
@@ -599,7 +599,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
                 }
 
                 isSearching = false;
-                provider.updateFilter(filter);
+                provider.setFilter(filter);
               },
             ),
           ];

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:budget/services/providers/snackbar_provider.dart';
 import 'package:budget/services/app_database.dart';
@@ -9,52 +10,86 @@ import 'package:provider/provider.dart';
 /// A ChangeNotifier provider that allows parts of the application to have
 /// access to database filters and be notified when they change.
 class TransactionProvider extends ChangeNotifier {
-  List<Filter> _filters = [];
+  // ignore: prefer_collection_literals
+  final _filtersByType = LinkedHashMap<Type, Filter>();
   Sort _sort = const Sort(SortType.date, SortOrder.descending);
 
-  List<Filter> get filters => _filters;
+  UnmodifiableListView<Filter> get filters =>
+      UnmodifiableListView(_filtersByType.values);
   Sort get sort => _sort;
 
   TransactionProvider() {
-    _filters = [ArchivedFilter(false), FutureFilter(false)];
+    setFilter(FutureFilter(false), notify: false);
+    setFilter(ArchivedFilter(false), notify: false);
   }
 
   TransactionProvider.empty();
 
-  void update({List<Filter>? filters, Sort? sort, bool notify = true}) {
-    bool hasFiltersChanged = filters != null && filters != _filters;
-    bool hasSortChanged = sort != null && sort != _sort;
-
-    if (hasFiltersChanged || hasSortChanged) {
-      if (hasFiltersChanged) _filters = filters;
-      if (hasSortChanged) _sort = sort;
-      if (notify) notifyListeners();
-    }
-  }
-
   /// Get a filter of the specified [T]
-  T? getFilter<T extends Filter>() {
-    final selectedFilters = filters.whereType<T>();
+  T? getFilter<T extends Filter>() => _filtersByType[T] as T?;
 
-    if (selectedFilters.isEmpty) {
-      return null;
-    } else {
-      return selectedFilters.first;
+  void setFilter<T extends Filter>(T filter, {bool notify = true}) {
+    final before = _filtersByType[T];
+    _filtersByType[T] = filter;
+
+    // Only notify the listeners if something actually changed
+    if (!identical(before, filter) && notify) notifyListeners();
+  }
+
+  void removeFilterOf<T extends Filter>({bool notify = true}) {
+    final removed = _filtersByType.remove(T) != null;
+
+    if (removed && notify) notifyListeners();
+  }
+
+  void removeFilterByType(Type type, {bool notify = true}) {
+    final removed = _filtersByType.remove(type) != null;
+
+    if (removed && notify) notifyListeners();
+  }
+
+  void update({List<Filter>? filters, Sort? sort, bool notify = true}) {
+    bool changed = false;
+
+    if (filters != null) {
+      // ignore: prefer_collection_literals
+      final next = LinkedHashMap<Type, Filter>();
+
+      for (final f in filters) {
+        next[f.runtimeType] = f;
+      }
+
+      if (!_mapsEqual(_filtersByType, next)) {
+        _filtersByType
+          ..clear()
+          ..addAll(next);
+        changed = true;
+      }
     }
+
+    if (sort != null && sort != _sort) {
+      _sort = sort;
+      changed = true;
+    }
+
+    if (changed && notify) notifyListeners();
   }
 
-  void updateFilter<T extends Filter>(T filter, {bool notify = true}) {
-    removeFilter<T>(notify: false);
+  bool _mapsEqual(
+    LinkedHashMap<Type, Filter> a,
+    LinkedHashMap<Type, Filter> b,
+  ) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
 
-    filters.add(filter);
-    if (notify) notifyListeners();
-  }
+    final aKeys = a.keys.toList(growable: false);
+    final bKeys = b.keys.toList(growable: false);
 
-  void removeFilter<T extends Filter>({Type? filterType, bool notify = true}) {
-    final initialLength = filters.length;
-
-    filters.removeWhere((e) => e is T || e.runtimeType == filterType);
-    if (filters.length != initialLength && notify) notifyListeners();
+    for (var i = 0; i < aKeys.length; i++) {
+      if (aKeys[i] != bKeys[i]) return false;
+      if (!identical(a[aKeys[i]], b[bKeys[i]])) return false;
+    }
+    return true;
   }
 }
 
