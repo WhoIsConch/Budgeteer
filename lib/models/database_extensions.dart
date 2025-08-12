@@ -1,30 +1,16 @@
 import 'dart:math';
 
-import 'package:budget/appui/goals/view_goal.dart';
-import 'package:budget/appui/transactions/view_transaction.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/models/enums.dart';
-import 'package:budget/utils/ui.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 
 final formatter = DateFormat('yyyy-MM-dd');
 
 int genColor() =>
     Color((Random().nextDouble() * 0xFFFFFF).toInt()).withAlpha(255).toARGB32();
-
-abstract class Tileable<T extends Tileable<T>> {
-  String get id;
-
-  final void Function(bool? isSelected, T adapterInstance) onMultiselect;
-
-  Tileable({required this.onMultiselect});
-
-  Widget getTile(BuildContext context, {bool isMultiselect, bool isSelected});
-}
 
 /// Represents a container object and the expenses and income associated with
 /// it.
@@ -275,203 +261,6 @@ extension TransactionExtensions on Transaction {
   String formatDate() {
     return DateFormat('MM/dd/yyyy').format(date);
   }
-}
-
-class TransactionTileableAdapter extends Tileable<TransactionTileableAdapter> {
-  final Transaction _transaction;
-
-  @override
-  String get id => _transaction.id;
-
-  TransactionTileableAdapter(this._transaction, {required super.onMultiselect});
-
-  @override
-  Widget getTile(
-    BuildContext context, {
-    bool isMultiselect = false,
-    bool isSelected = false,
-  }) {
-    final theme = Theme.of(context);
-
-    Widget leadingWidget;
-
-    // Use an alternate color scheme if the transaction is either in the
-    // future or archived to tell the user that the transaction is
-    // ephemeral
-    final isInFuture = _transaction.date.isAfter(DateTime.now());
-    final isAlternateColorScheme = _transaction.isArchived || isInFuture;
-
-    final containerColor =
-        isAlternateColorScheme
-            ? theme.colorScheme.surfaceContainerHigh
-            : theme.colorScheme.secondaryContainer;
-
-    final onColor =
-        isAlternateColorScheme
-            ? theme.colorScheme.onSurface
-            : theme.colorScheme.onSecondaryContainer;
-
-    if (isMultiselect) {
-      leadingWidget = SizedBox(
-        height: 48,
-        width: 48,
-        child: Checkbox(
-          value: isSelected,
-          onChanged: (value) => onMultiselect(value, this),
-        ),
-      );
-    } else {
-      leadingWidget = IconButton(
-        icon:
-            (_transaction.type == TransactionType.expense)
-                ? Icon(Icons.remove_circle, color: onColor)
-                : Icon(Icons.add_circle, color: onColor),
-        onPressed: () => onMultiselect(true, this),
-      );
-    }
-
-    String subtitle = _transaction.formatDate();
-
-    if (isInFuture) {
-      subtitle += ' (Future)';
-    }
-
-    if (_transaction.isArchived) {
-      subtitle += ' (Archived)';
-    }
-
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
-      horizontalTitleGap: 4,
-      leading: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 125),
-        transitionBuilder: (Widget child, Animation<double> animation) {
-          return ScaleTransition(scale: animation, child: child);
-        },
-        child: leadingWidget,
-      ),
-      title: Text(
-        // Formats as "$500.00: Title of the Budget"
-        "${"\$${formatAmount(_transaction.amount, truncateIfWhole: false)}"}: \"${_transaction.title}\"",
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Text(subtitle),
-      onTap: () async {
-        var hydratedTransaction = await context
-            .read<AppDatabase>()
-            .transactionDao
-            .hydrateTransaction(_transaction);
-
-        if (!context.mounted) return;
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (context) =>
-                    ViewTransaction(transactionData: hydratedTransaction),
-          ),
-        );
-      },
-      onLongPress: () => showOptionsDialog(context, _transaction),
-      trailing: IconButton(
-        icon: Icon(Icons.more_vert, color: onColor),
-        onPressed: () => showOptionsDialog(context, _transaction),
-      ),
-      tileColor: containerColor,
-      textColor: onColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-    );
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        other is TransactionTileableAdapter && id == other.id;
-  }
-
-  @override
-  int get hashCode => id.hashCode;
-}
-
-class GoalTileableAdapter extends Tileable<GoalTileableAdapter> {
-  final GoalWithAmount _goalPair;
-
-  @override
-  String get id => _goalPair.goal.id;
-
-  double get amount => _goalPair.netAmount;
-  Goal get goal => _goalPair.goal;
-
-  GoalTileableAdapter(this._goalPair, {required super.onMultiselect});
-
-  @override
-  Widget getTile(
-    BuildContext context, {
-    bool isMultiselect = false,
-    bool isSelected = false,
-  }) {
-    final theme = Theme.of(context);
-
-    final percentage = _goalPair.calculatePercentage();
-    final isFinished = percentage >= 1 || goal.isArchived;
-
-    final containerColor =
-        isFinished
-            ? theme.colorScheme.surfaceContainerHigh
-            : theme.colorScheme.secondaryContainer;
-
-    final onColor =
-        isFinished
-            ? theme.colorScheme.onSurface
-            : theme.colorScheme.onSecondaryContainer;
-
-    // Decide whether to show the checkmark with the leading progress indicator
-    final progressIndicator = CircularProgressIndicator(
-      value: _goalPair.calculatePercentage(),
-      backgroundColor: theme.colorScheme.onSecondaryContainer.withAlpha(68),
-      strokeCap: StrokeCap.round,
-    );
-
-    Widget leadingWidget;
-
-    if (isFinished) {
-      leadingWidget = Stack(
-        alignment: Alignment.center,
-        children: [
-          progressIndicator,
-          Icon(Icons.check, color: theme.colorScheme.primary),
-        ],
-      );
-    } else {
-      leadingWidget = progressIndicator;
-    }
-
-    return ListTile(
-      title: Text(goal.name),
-      leading: leadingWidget,
-      subtitle: Text('\$${formatAmount(amount)}/\$${formatAmount(goal.cost)}'),
-      tileColor: containerColor,
-      textColor: onColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-      onTap:
-          () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => GoalViewer(initialGoalPair: _goalPair),
-            ),
-          ),
-    );
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        other is GoalTileableAdapter && id == other.id;
-  }
-
-  @override
-  int get hashCode => id.hashCode;
 }
 
 class ColorConverter extends TypeConverter<Color, int> {

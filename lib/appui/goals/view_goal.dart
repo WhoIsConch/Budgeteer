@@ -139,7 +139,7 @@ class _GoalViewerState extends State<GoalViewer> {
           ),
           body: SizedBox(
             height: 300,
-            child: ObjectsList<TransactionTileableAdapter>(
+            child: TransactionsList(
               showBackground: false,
               filters: [
                 GoalFilter([goalPair]),

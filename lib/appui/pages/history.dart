@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
 
-import 'package:budget/models/database_extensions.dart';
 import 'package:budget/models/filters.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/appui/components/objects_list.dart';
@@ -189,18 +188,7 @@ class _HistoryState extends State<History> {
         Expanded(
           child: ValueListenableBuilder<List<Transaction>>(
             valueListenable: _selectedEvents,
-            builder:
-                (context, value, _) => ObjectsList(
-                  objects:
-                      value
-                          .map(
-                            (t) => TransactionTileableAdapter(
-                              t,
-                              onMultiselect: (_, _) {},
-                            ),
-                          )
-                          .toList(),
-                ),
+            builder: (context, value, _) => TransactionsList(objects: value),
           ),
         ),
       ],

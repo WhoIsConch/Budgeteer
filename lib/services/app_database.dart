@@ -19,6 +19,7 @@ mixin SoftDeletableTable on Table {
       boolean().clientDefault(() => false).named('is_archived')();
 }
 
+@UseRowClass(Transaction)
 class Transactions extends Table with SoftDeletableTable {
   @override
   String get tableName => 'transactions';
@@ -51,6 +52,12 @@ class Transactions extends Table with SoftDeletableTable {
           .nullable()
           .named('goal_id')
           .references(Goals, #id, onDelete: KeyAction.setNull)();
+
+  TextColumn get transferWith =>
+      text()
+          .nullable()
+          .named('transfer_with')
+          .references(Transactions, #id, onDelete: KeyAction.cascade)();
 
   @override
   Set<Column<Object>>? get primaryKey => {id};
@@ -124,23 +131,62 @@ enum SecondaryObjectType {
   };
 }
 
-sealed class SecondaryObject {
+sealed class DatabaseObject {
   final String id;
   final bool isDeleted;
   final bool isArchived;
-  final String name;
   final String? notes;
+
+  DatabaseObject({
+    required this.id,
+    required this.isDeleted,
+    required this.isArchived,
+    this.notes,
+  });
+}
+
+sealed class SecondaryObject extends DatabaseObject {
+  final String name;
   final Color color;
 
   SecondaryObjectType get type;
 
   SecondaryObject({
-    required this.id,
-    required this.isDeleted,
-    required this.isArchived,
+    required super.id,
+    required super.isDeleted,
+    required super.isArchived,
     required this.name,
     required this.color,
-    this.notes,
+    super.notes,
+  });
+}
+
+class Transaction extends DatabaseObject {
+  final String title;
+  final double amount;
+  final DateTime date;
+  final DateTime createdAt;
+  final TransactionType type;
+
+  final String? category;
+  final String? accountId;
+  final String? goalId;
+  final String? transferWith;
+
+  Transaction({
+    required super.id,
+    required super.isArchived,
+    required super.isDeleted,
+    super.notes,
+    required this.title,
+    required this.amount,
+    required this.date,
+    required this.createdAt,
+    required this.type,
+    this.category,
+    this.accountId,
+    this.goalId,
+    this.transferWith,
   });
 }
 

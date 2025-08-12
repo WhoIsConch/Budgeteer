@@ -56,7 +56,7 @@ void main() {
           providers: [Provider.value(value: database), snackBarProvider],
           child: Directionality(
             textDirection: TextDirection.ltr,
-            child: ObjectsList<TransactionTileableAdapter>(),
+            child: TransactionsList<TransactionTileableAdapter>(),
           ),
         ),
       );
