@@ -11,6 +11,7 @@ import 'package:budget/models/enums.dart';
 import 'package:budget/utils/validators.dart';
 import 'package:budget/appui/transactions/view_transaction.dart';
 import 'package:budget/appui/pages/transaction_search.dart';
+import 'package:collection/collection.dart';
 import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -134,13 +135,17 @@ class TransactionPreviewer extends StatelessWidget {
             }
           }
 
+          // Filter out transactions that are part of a transfer
+          final usableData =
+              snapshot.data!.whereNot((t) => t.transferWith != null).toList();
+
           return ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: snapshot.data!.length,
+            itemCount: usableData.length,
             clipBehavior: Clip.none,
             itemBuilder:
                 (context, index) =>
-                    TransactionPreviewCard(transaction: snapshot.data![index]),
+                    TransactionPreviewCard(transaction: usableData[index]),
           );
         },
       ),
