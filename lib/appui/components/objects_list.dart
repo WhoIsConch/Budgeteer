@@ -42,18 +42,29 @@ class _ObjectsListState<T extends Tileable<T>> extends State<ObjectsList<T>> {
     ),
   );
 
-  Widget _getListview(List<T> objects) => ListView.separated(
-    separatorBuilder: (_, _) => SizedBox(height: 8.0),
-    itemCount: objects.length,
-    itemBuilder:
-        (context, index) => Card(
-          margin: EdgeInsets.zero,
-          child: objects[index].getTile(
-            context,
-            isMultiselect: isMultiselect,
-            isSelected: selectedObjects.contains(objects[index]),
+  // TODO: Find a way to make this more performant. The keying can be slow if
+  // there are too many objects in the list.
+  Widget _getListview(List<T> objects) => AnimatedSwitcher(
+    duration: Duration(milliseconds: 150),
+    switchInCurve: Curves.easeIn,
+    switchOutCurve: Curves.easeOut,
+    child: ListView.separated(
+      // Use a key that ensures the AnimatedSwitcher only animates when the
+      // objects actually change. If the objects list is the same, the switcher
+      // shouldn't animate
+      key: ValueKey(objects.map((o) => o.id).join(',')),
+      separatorBuilder: (_, _) => SizedBox(height: 8.0),
+      itemCount: objects.length,
+      itemBuilder:
+          (context, index) => Card(
+            margin: EdgeInsets.zero,
+            child: objects[index].getTile(
+              context,
+              isMultiselect: isMultiselect,
+              isSelected: selectedObjects.contains(objects[index]),
+            ),
           ),
-        ),
+    ),
   );
 
   Widget getList() {
