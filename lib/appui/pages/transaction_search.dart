@@ -442,6 +442,10 @@ class _TransactionSearchState extends State<TransactionSearch> {
     final provider = context.read<TransactionProvider>();
 
     return SortType.values
+        .sublist(
+          0,
+          SortType.values.length - 1,
+        ) // Ensure "no type" isn't present
         .map(
           (type) => MenuItemButton(
             closeOnActivate: false,
