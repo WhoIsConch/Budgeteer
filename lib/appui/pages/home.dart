@@ -135,17 +135,33 @@ class TransactionPreviewer extends StatelessWidget {
             }
           }
 
-          // Filter out transactions that are part of a transfer
-          final usableData =
-              snapshot.data!.whereNot((t) => t.transferWith != null).toList();
+          final List<Transaction> heldForTransfer = [];
 
           return ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: usableData.length,
+            itemCount: snapshot.data!.length,
             clipBehavior: Clip.none,
-            itemBuilder:
-                (context, index) =>
-                    TransactionPreviewCard(transaction: usableData[index]),
+            itemBuilder: (context, index) {
+              final object = snapshot.data![index];
+
+              if (object.transferWith != null) {
+                final other = heldForTransfer.singleWhereOrNull(
+                  (t) => t.transferWith == object.id,
+                );
+
+                if (other == null) {
+                  heldForTransfer.add(object);
+                  return SizedBox.shrink();
+                }
+
+                return TransactionPreviewCard(
+                  transaction: object,
+                  other: other,
+                );
+              }
+
+              return TransactionPreviewCard(transaction: object);
+            },
           );
         },
       ),
@@ -155,8 +171,13 @@ class TransactionPreviewer extends StatelessWidget {
 
 class TransactionPreviewCard extends StatelessWidget {
   final Transaction transaction;
+  final Transaction? other;
 
-  const TransactionPreviewCard({super.key, required this.transaction});
+  const TransactionPreviewCard({
+    super.key,
+    required this.transaction,
+    this.other,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -174,6 +195,29 @@ class TransactionPreviewCard extends StatelessWidget {
 
     bool isExpense = reactiveTextColor == null;
 
+    IconData icon;
+    String title;
+    String description;
+
+    if (other != null) {
+      icon = Icons.compare_arrows;
+      title = '\$${formatAmount(transaction.amount)}';
+      description = 'Transfer';
+    } else {
+      String amount = formatAmount(
+        transaction.amount,
+        round: transaction.amount >= 1000,
+      );
+      description = transaction.title;
+      if (isExpense) {
+        icon = Icons.remove_circle;
+        title = '-\$$amount';
+      } else {
+        icon = Icons.add_circle;
+        title = '\$$amount';
+      }
+    }
+
     return SizedBox(
       width: 135,
       height: 200,
@@ -181,21 +225,28 @@ class TransactionPreviewCard extends StatelessWidget {
         color: Theme.of(context).colorScheme.surfaceContainerLow,
         child: InkWell(
           borderRadius: BorderRadius.circular(12), // To match the card's radius
-          onTap: () async {
-            final db = context.read<AppDatabase>();
-            final hydrated = await db.transactionDao.hydrateTransaction(
-              transaction,
-            );
+          onTap:
+              other == null
+                  ? () async {
+                    final db = context.read<AppDatabase>();
+                    final hydrated = await db.transactionDao.hydrateTransaction(
+                      transaction,
+                    );
 
-            if (!context.mounted) return;
+                    if (!context.mounted) return;
 
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => ViewTransaction(transactionData: hydrated),
-              ),
-            );
-          },
-          onLongPress: () => showOptionsDialog(context, transaction),
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder:
+                            (_) => ViewTransaction(transactionData: hydrated),
+                      ),
+                    );
+                  }
+                  : null,
+          onLongPress:
+              other == null
+                  ? () => showOptionsDialog(context, transaction)
+                  : null,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -204,14 +255,14 @@ class TransactionPreviewCard extends StatelessWidget {
               children: [
                 // TODO : Category Icons
                 Icon(
-                  isExpense ? Icons.remove_circle : Icons.add_circle,
+                  icon,
                   color: reactiveTextColor ?? backgroundColor,
                   size: 32,
                 ),
                 SizedBox(
                   height: 36,
                   child: AutoSizeText(
-                    "${isExpense ? '-' : '+'}\$${formatAmount(transaction.amount, round: transaction.amount >= 1000)}",
+                    title,
                     style: Theme.of(context).textTheme.headlineSmall!.copyWith(
                       color: reactiveTextColor ?? defaultTextColor,
                     ),
@@ -219,7 +270,7 @@ class TransactionPreviewCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  transaction.title,
+                  description,
                   style: TextStyle(color: defaultTextColor, fontSize: 18),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 2,
