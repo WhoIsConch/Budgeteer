@@ -1,6 +1,7 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:budget/appui/components/status.dart';
 import 'package:budget/appui/pages/settings.dart';
+import 'package:budget/appui/transactions/manage_transfer.dart';
 import 'package:budget/models/filters.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/tools.dart';
@@ -242,7 +243,9 @@ class TransactionPreviewCard extends StatelessWidget {
                       ),
                     );
                   }
-                  : null,
+                  : () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => ManageTransferPage()),
+                  ),
           onLongPress:
               other == null
                   ? () => showOptionsDialog(context, transaction)
