@@ -244,7 +244,12 @@ class TransactionPreviewCard extends StatelessWidget {
                     );
                   }
                   : () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => ManageTransferPage()),
+                    MaterialPageRoute(
+                      builder:
+                          (_) => ManageTransferPage(
+                            initialTransfer: (transaction, other!),
+                          ),
+                    ),
                   ),
           onLongPress:
               other == null
