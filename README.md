@@ -57,3 +57,36 @@ Once Flutter's packages are installed, it can be run by using Flutter's common b
 ```
 flutter run
 ```
+
+### Devcontainer Information
+
+This project utilizes Dev Containers. 
+
+The Dev Container configuration for this project is modified from [wtfzambo's flutter-devcontainer-template](https://github.com/wtfzambo/flutter-devcontainer-template). To accomodate the support of physical devices, the Dev Container uses the network of its host by passing `--network host` into `runArgs` of `devcontainer.json`. If WSL is being used, WSL should be in mirrored networking mode. This will allow the container's ADB instance to connect to the Windows ADB server instead of spinning up its own. 
+
+#### 1. Make Host ADB Server Listen on All Network Interfaces
+
+On the host device (e.g. Windows when using WSL), kill the ADB server instance:
+
+```
+adb kill-server
+```
+
+Then, start a new instance, ensuring you pass the -a flag to make the ADB server listen on all network interfaces:
+
+```
+adb -a start-server
+```
+
+#### 2. (WSL) Ensure WSL is in Mirrored Networking Mode
+
+Mirrored Networking Mode makes the WSL instance share the same networking information as the host machine. WSL's networking mode can be changed in WSL Settings by selecting Networking > Networking Mode > Mirrored. Also ensure Hyper-V Firewall allows inbound connections so the adb client in WSL can connect to the host's ADB server. 
+
+For more information, visit [Microsoft's WSL Networking docs](https://learn.microsoft.com/en-us/windows/wsl/networking#mirrored-mode-networking).
+
+#### 3. Build the Container
+
+With these couple of settings in place, the container's ADB client should be able to connect to the host's ADB server. If you are running the container manually, ensure `--network=host` is passed into docker's arguments so the container uses the network of the host device. This setting is included in `devcontainer.json`.
+
+
+

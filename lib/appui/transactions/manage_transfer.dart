@@ -7,7 +7,6 @@ import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:uuid/uuid.dart';
 
 typedef Transfer = (Transaction, Transaction);
 typedef HydratedTransfer = (HydratedTransaction, HydratedTransaction);
@@ -45,8 +44,6 @@ class ManageTransferPageState extends State<ManageTransferPage> {
     null,
     growable: false,
   );
-
-  HydratedTransfer? _hydratedTransfer;
 
   bool _canSubmit() =>
       _selectedPair.any((i) => i != null) &&
@@ -112,6 +109,8 @@ class ManageTransferPageState extends State<ManageTransferPage> {
     Navigator.of(context).pop();
   }
 
+  void _loadPreselected() async {}
+
   @override
   void initState() {
     super.initState();
@@ -123,6 +122,16 @@ class ManageTransferPageState extends State<ManageTransferPage> {
     }
 
     _controllers = controllers;
+
+    if (widget.initialTransfer != null) {
+      final from = widget.initialTransfer!.$1;
+
+      _selectedDate = from.date;
+      _controllers['title']!.text = from.title;
+      _controllers['amount']!.text = from.amount.toStringAsFixed(2);
+
+      _loadPreselected();
+    }
 
     _controllers['date']!.text = DateFormat('MM/dd/yyyy').format(_selectedDate);
   }

@@ -20,7 +20,9 @@
         "--platform",
         "linux/amd64",
         "--name",
-        "${localWorkspaceFolderBasename}_budgeteer_devcontainer"
+        "${localWorkspaceFolderBasename}_budgeteer_devcontainer",
+        "--network",
+        "host"
     ],
 
     // "initializeCommand": "",

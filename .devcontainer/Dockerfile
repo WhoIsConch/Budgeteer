@@ -9,8 +9,9 @@ ARG DEBIAN_FRONTEND=noninteractive
 ENV ANDROID_SDK_ROOT=/android-sdk
 ENV FLUTTER_SDK_ROOT=/flutter
 
-RUN apt-get update \
-    && apt-get -y install --no-install-recommends \
+RUN apt-get update
+
+RUN apt-get -y install --no-install-recommends \
     wget \
     unzip \
     xz-utils \
@@ -50,9 +51,10 @@ ENV PATH=$PATH:${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin
 ENV PATH=$PATH:${ANDROID_SDK_ROOT}/platform-tools
 ENV PATH=$PATH:${FLUTTER_SDK_ROOT}/bin
 
-RUN dpkg --add-architecture amd64 \
-    && apt-get update \
-    && apt-get -y install --no-install-recommends \
+RUN dpkg --add-architecture amd64
+RUN apt-get update
+
+RUN apt-get -y install --no-install-recommends \
     curl \
     git \
     unzip \
@@ -61,6 +63,7 @@ RUN dpkg --add-architecture amd64 \
     openjdk-17-jdk \
     libglu1-mesa \
     libc6:amd64 \
+    # iproute2 \
     sudo \
     && apt-get autoremove -y \
     && apt-get clean -y \
