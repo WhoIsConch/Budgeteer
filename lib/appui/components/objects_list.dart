@@ -1,5 +1,6 @@
 import 'package:budget/appui/components/status.dart';
 import 'package:budget/appui/goals/view_goal.dart';
+import 'package:budget/appui/transactions/manage_transfer.dart';
 import 'package:budget/appui/transactions/view_transaction.dart';
 import 'package:budget/models/database_extensions.dart';
 import 'package:budget/models/enums.dart';
@@ -470,6 +471,15 @@ class TransferTile extends StatelessWidget {
           'Transfer of \$${formatAmount(transferFrom.amount, exact: true)}: ${transferFrom.title}',
         ),
         subtitle: Text(transferFrom.formatDate()),
+        onTap:
+            () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder:
+                    (_) => ManageTransferPage(
+                      initialTransfer: (transferFrom, transferTo),
+                    ),
+              ),
+            ),
       ),
     );
   }
