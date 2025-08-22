@@ -1,10 +1,13 @@
 import 'package:budget/appui/components/edit_screen.dart';
 import 'package:budget/models/database_extensions.dart';
+import 'package:budget/models/enums.dart';
 import 'package:budget/services/app_database.dart';
 import 'package:budget/utils/validators.dart';
+import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 
 typedef Transfer = (Transaction, Transaction);
 typedef HydratedTransfer = (HydratedTransaction, HydratedTransaction);
@@ -45,6 +48,70 @@ class ManageTransferPageState extends State<ManageTransferPage> {
 
   HydratedTransfer? _hydratedTransfer;
 
+  bool _canSubmit() =>
+      _selectedPair.any((i) => i != null) &&
+      validateTitle(_controllers['title']!.text) == null &&
+      AmountValidator(
+            allowZero: false,
+          ).validateAmount(_controllers['amount']!.text) ==
+          null;
+
+  void _onFinish() async {
+    if (!_canSubmit()) return;
+
+    final dao = context.read<AppDatabase>().transactionDao;
+
+    var transaction1 = TransactionsCompanion(
+      title: Value(_controllers['title']!.text),
+      date: Value(_selectedDate),
+      amount: Value(double.parse(_controllers['amount']!.text)),
+      type: Value(TransactionType.expense),
+    );
+
+    if (_selectedPair[0] is AccountWithAmount) {
+      transaction1 = transaction1.copyWith(
+        accountId: Value(_selectedPair[0]!.objectId),
+      );
+    } else {
+      transaction1 = transaction1.copyWith(
+        goalId: Value(_selectedPair[0]!.objectId),
+      );
+    }
+
+    final transaction1complete = await dao.createTransaction(transaction1);
+
+    var transaction2 = TransactionsCompanion(
+      title: Value(_controllers['title']!.text),
+      date: Value(_selectedDate),
+      amount: Value(double.parse(_controllers['amount']!.text)),
+      transferWith: Value(transaction1complete.id),
+      type: Value(TransactionType.income),
+    );
+
+    if (_selectedPair[1] is AccountWithAmount) {
+      transaction2 = transaction2.copyWith(
+        accountId: Value(_selectedPair[1]!.objectId),
+      );
+    } else {
+      transaction2 = transaction2.copyWith(
+        goalId: Value(_selectedPair[1]!.objectId),
+      );
+    }
+
+    final transaction2complete = await dao.createTransaction(transaction2);
+
+    await dao.updateTransaction(
+      TransactionsCompanion(
+        id: Value(transaction1complete.id),
+        transferWith: Value(transaction2complete.id),
+      ),
+    );
+
+    if (!mounted) return;
+
+    Navigator.of(context).pop();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -56,6 +123,8 @@ class ManageTransferPageState extends State<ManageTransferPage> {
     }
 
     _controllers = controllers;
+
+    _controllers['date']!.text = DateFormat('MM/dd/yyyy').format(_selectedDate);
   }
 
   @override
@@ -72,7 +141,7 @@ class ManageTransferPageState extends State<ManageTransferPage> {
     return EditFormScreen(
       title:
           widget.initialTransfer == null ? 'Create Transfer' : 'Edit Transfer',
-      onConfirm: () {},
+      onConfirm: _onFinish,
       formFields: [
         TextInputEditField(
           label: 'Title',

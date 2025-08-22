@@ -538,7 +538,7 @@ class EditFieldRow extends StatelessWidget {
 
 class EditFormScreen extends StatefulWidget {
   final String title;
-  final Function() onConfirm;
+  final Function()? onConfirm;
   final List<Widget> formFields;
 
   const EditFormScreen({
@@ -563,9 +563,13 @@ class _EditFormScreenState extends State<EditFormScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.check),
-            onPressed: () {
-              if (_formKey.currentState!.validate()) widget.onConfirm();
-            },
+            onPressed:
+                (widget.onConfirm != null)
+                    ? () {
+                      if (_formKey.currentState!.validate())
+                        widget.onConfirm!();
+                    }
+                    : null,
           ),
         ],
       ),
