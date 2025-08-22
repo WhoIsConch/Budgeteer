@@ -1,4 +1,5 @@
 import 'package:budget/appui/pages/onboarding.dart';
+import 'package:budget/appui/transactions/manage_transfer.dart';
 import 'package:budget/services/providers/auth_provider.dart';
 import 'package:budget/services/providers/snackbar_provider.dart';
 import 'package:budget/appui/pages/history.dart';
@@ -89,6 +90,16 @@ class _NavManagerState extends State<NavManager>
     // constant
     _expandedButtonsData = [
       ExpandedButtonData(
+        text: 'Goal',
+        icon: const Icon(Icons.flag),
+        onPressed: () {
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const ManageGoalPage()));
+          _toggleFabMenu();
+        },
+      ),
+      ExpandedButtonData(
         text: 'Category',
         icon: const Icon(Icons.account_balance_wallet_outlined),
         onPressed: () {
@@ -112,12 +123,12 @@ class _NavManagerState extends State<NavManager>
         },
       ),
       ExpandedButtonData(
-        text: 'Goal',
-        icon: const Icon(Icons.flag),
+        text: 'Transfer',
+        icon: const Icon(Icons.compare_arrows),
         onPressed: () {
           Navigator.of(
             context,
-          ).push(MaterialPageRoute(builder: (_) => const ManageGoalPage()));
+          ).push(MaterialPageRoute(builder: (_) => const ManageTransferPage()));
           _toggleFabMenu();
         },
       ),
