@@ -203,7 +203,7 @@ class TransactionPreviewCard extends StatelessWidget {
     if (other != null) {
       icon = Icons.compare_arrows;
       title = '\$${formatAmount(transaction.amount)}';
-      description = 'Transfer';
+      description = other!.title;
     } else {
       String amount = formatAmount(
         transaction.amount,

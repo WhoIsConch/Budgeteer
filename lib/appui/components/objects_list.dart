@@ -467,7 +467,7 @@ class TransferTile extends StatelessWidget {
           child: Icon(Icons.compare_arrows, size: 36),
         ),
         title: Text(
-          'Transfer of \$${formatAmount(transferFrom.amount, exact: true)}',
+          'Transfer of \$${formatAmount(transferFrom.amount, exact: true)}: ${transferFrom.title}',
         ),
         subtitle: Text(transferFrom.formatDate()),
       ),
