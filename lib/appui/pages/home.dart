@@ -254,7 +254,7 @@ class TransactionPreviewCard extends StatelessWidget {
           onLongPress:
               other == null
                   ? () => showOptionsDialog(context, transaction)
-                  : null,
+                  : () => showTransferOptions(context, (transaction, other!)),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(

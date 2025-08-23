@@ -480,6 +480,8 @@ class TransferTile extends StatelessWidget {
                     ),
               ),
             ),
+        onLongPress:
+            () => showTransferOptions(context, (transferFrom, transferTo)),
       ),
     );
   }
