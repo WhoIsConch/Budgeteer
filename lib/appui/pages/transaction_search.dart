@@ -384,6 +384,21 @@ class _TransactionSearchState extends State<TransactionSearch> {
     }
   }
 
+  Future<void> _performTransferFilter({TransferFilter? existing}) async {
+    final provider = context.read<TransactionProvider>();
+
+    final initial = existing ?? provider.getFilter<TransferFilter>();
+
+    // if isTransfer is false, that means we are explicitly filtering for
+    // transactions that are not transfers. If it doesn't exist,
+    // transfers are included by default.
+    if (initial?.isTransfer == false) {
+      provider.removeFilterOf<TransferFilter>();
+    } else {
+      provider.setFilter(TransferFilter(false));
+    }
+  }
+
   void toggleTransactionType(BuildContext context) {
     final provider = context.read<TransactionProvider>();
 
@@ -483,6 +498,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
 
     final showArchived = provider.getFilter<ArchivedFilter>()?.isArchived;
     final showFuture = provider.getFilter<FutureFilter>()?.includeFuture;
+    final showTransfers = provider.getFilter<TransferFilter>()?.isTransfer;
 
     return [
       MenuItemButton(
@@ -495,6 +511,11 @@ class _TransactionSearchState extends State<TransactionSearch> {
         trailingIcon: showFuture == true ? Icon(Icons.check) : null,
         onPressed: _performFutureFilter,
         child: Text('Future'),
+      ),
+      MenuItemButton(
+        trailingIcon: showTransfers == null ? Icon(Icons.check) : null,
+        onPressed: _performTransferFilter,
+        child: Text('Transfers'),
       ),
     ];
   }

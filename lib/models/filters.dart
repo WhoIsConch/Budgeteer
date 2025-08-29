@@ -139,13 +139,30 @@ final class FutureFilter extends TransactionFilter {
 
   @override
   Expression<bool> buildCondition(Transactions table) {
-    // If we shouldn't include future transactions, always compile this to true
+    // If we should include future transactions, always compile this to true
     if (includeFuture) return Constant(true);
 
     final now = DateTime.now();
     final date = DateTime(now.year, now.month, now.day);
 
     return table.date.isSmallerOrEqualValue(formatter.format(date));
+  }
+}
+
+/// Whether the transactions are transfers
+final class TransferFilter extends TransactionFilter {
+  final bool isTransfer;
+
+  TransferFilter(this.isTransfer);
+
+  @override
+  Expression<bool> buildCondition(Transactions table) {
+    if (isTransfer) {
+      return table.transferWith.isNotNull();
+    } else {
+      // If a transaction is not a transfer, it will have null as its transferWith
+      return table.transferWith.isNull();
+    }
   }
 }
 
