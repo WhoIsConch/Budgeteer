@@ -365,10 +365,10 @@ class _TransactionSearchState extends State<TransactionSearch> {
 
     final initial = existing ?? provider.getFilter<FutureFilter>();
 
-    if (initial?.includeFuture == true) {
-      provider.setFilter(FutureFilter(false));
+    if (initial?.isFuture == false) {
+      provider.removeFilterOf<FutureFilter>();
     } else {
-      provider.setFilter(FutureFilter(true));
+      provider.setFilter(FutureFilter(false));
     }
   }
 
@@ -497,7 +497,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
     final provider = context.read<TransactionProvider>();
 
     final showArchived = provider.getFilter<ArchivedFilter>()?.isArchived;
-    final showFuture = provider.getFilter<FutureFilter>()?.includeFuture;
+    final showFuture = provider.getFilter<FutureFilter>()?.isFuture;
     final showTransfers = provider.getFilter<TransferFilter>()?.isTransfer;
 
     return [
@@ -508,7 +508,7 @@ class _TransactionSearchState extends State<TransactionSearch> {
         child: Text('Archived'),
       ),
       MenuItemButton(
-        trailingIcon: showFuture == true ? Icon(Icons.check) : null,
+        trailingIcon: showFuture == null ? Icon(Icons.check) : null,
         onPressed: _performFutureFilter,
         child: Text('Future'),
       ),

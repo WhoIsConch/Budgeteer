@@ -131,21 +131,22 @@ final class ArchivedFilter extends GenericFilter {
       table.isArchived.equals(isArchived);
 }
 
-/// Filter out transactions that are in the future
+/// Whether a transaction occurs in the future
 final class FutureFilter extends TransactionFilter {
-  final bool includeFuture;
+  final bool isFuture;
 
-  FutureFilter(this.includeFuture);
+  FutureFilter(this.isFuture);
 
   @override
   Expression<bool> buildCondition(Transactions table) {
-    // If we should include future transactions, always compile this to true
-    if (includeFuture) return Constant(true);
-
     final now = DateTime.now();
     final date = DateTime(now.year, now.month, now.day);
 
-    return table.date.isSmallerOrEqualValue(formatter.format(date));
+    if (isFuture) {
+      return table.date.isBiggerOrEqualValue(formatter.format(date));
+    } else {
+      return table.date.isSmallerOrEqualValue(formatter.format(date));
+    }
   }
 }
 
