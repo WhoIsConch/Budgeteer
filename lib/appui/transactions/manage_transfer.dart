@@ -126,6 +126,18 @@ class ManageTransferPageState extends State<ManageTransferPage> {
     Navigator.of(context).pop();
   }
 
+  void _onObjectSelected(ContainerWithAmount object, int index) {
+    setState(() {
+      if (object is AccountWithAmount) {
+        _controllers['goal${index + 1}']!.text = '';
+      } else {
+        _controllers['account${index + 1}']!.text = '';
+      }
+
+      _selectedPair[index] = object;
+    });
+  }
+
   void _loadPreselected() async {
     final db = context.read<AppDatabase>();
     bool hasError = false;
@@ -258,14 +270,14 @@ class ManageTransferPageState extends State<ManageTransferPage> {
         ),
         ObjectSelectTile(
           title: 'From...',
-          onSelected: (object) => setState(() => _selectedPair[0] = object),
+          onSelected: (object) => _onObjectSelected(object, 0),
           initialObject: _selectedPair[0],
           accountController: _controllers['account1'],
           goalController: _controllers['goal1'],
         ),
         ObjectSelectTile(
           title: 'To...',
-          onSelected: (object) => setState(() => _selectedPair[1] = object),
+          onSelected: (object) => _onObjectSelected(object, 1),
           initialObject: _selectedPair[1],
           accountController: _controllers['account2'],
           goalController: _controllers['goal2'],
@@ -296,20 +308,14 @@ class ObjectSelectTile extends StatefulWidget {
 }
 
 class _ObjectSelectTileState extends State<ObjectSelectTile> {
-  ContainerWithAmount? _selected;
-
   void _onChanged(ContainerWithAmount? value) {
     if (value == null) return;
-
-    setState(() => _selected = value);
 
     if (widget.onSelected != null) widget.onSelected!(value);
   }
 
   @override
   Widget build(BuildContext context) {
-    bool isAccountSelected = _selected is AccountWithAmount;
-
     return Card(
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
@@ -335,9 +341,6 @@ class _ObjectSelectTileState extends State<ObjectSelectTile> {
                           widget.initialObject is AccountWithAmount
                               ? widget.initialObject as AccountWithAmount
                               : null,
-                      enabled:
-                          snapshot.hasData &&
-                          (_selected == null || isAccountSelected),
                       label: 'Account',
                       values: data,
                       onChanged: _onChanged,
@@ -362,7 +365,6 @@ class _ObjectSelectTileState extends State<ObjectSelectTile> {
 
                     return DropdownEditField<GoalWithAmount>(
                       fieldState: state,
-                      enabled: _selected == null || !isAccountSelected,
                       initialSelection:
                           widget.initialObject is GoalWithAmount
                               ? widget.initialObject as GoalWithAmount
