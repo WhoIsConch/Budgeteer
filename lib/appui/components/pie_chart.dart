@@ -221,9 +221,9 @@ class _PieChartCardState extends State<PieChartCard> {
     );
   });
 
-  Future<ChartCalculationResult> _calculateChartData({
+  ChartCalculationResult _calculateChartData({
     required List<PieChartObject?> objects,
-  }) async {
+  }) {
     double absTotal = 0;
     List<PieChartSectionData> sectionData = [];
     List<ChartKeyItem> keyItems = [];
@@ -454,51 +454,37 @@ class _PieChartCardState extends State<PieChartCard> {
                       return ErrorInset.noData;
                     }
 
-                    final data = categorySnapshot.data!;
+                    final data = _calculateChartData(
+                      objects: categorySnapshot.data!,
+                    );
 
-                    return FutureBuilder<ChartCalculationResult>(
-                      future: _calculateChartData(objects: data),
-                      builder: (context, dataSnapshot) {
-                        // These error widgets should be centered in the row vertically.
-                        if (dataSnapshot.hasError) {
-                          return ErrorInset(
-                            'Something went wrong. Try again later',
-                          );
-                        } else if (!dataSnapshot.hasData ||
-                            dataSnapshot.data!.isEmpty) {
-                          return ErrorInset.noData;
-                        }
-
-                        return SingleChildScrollView(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Your ${_selectedType.label.toLowerCase()}',
-                                textAlign: TextAlign.left,
-                                style:
-                                    Theme.of(context).textTheme.headlineSmall,
-                              ),
-                              const SizedBox(height: 8.0),
-                              _getPieChart(dataSnapshot.data!),
-                              const SizedBox(height: 12.0),
-                              ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  maxHeight:
-                                      (PieChartCard.estKeyItemHeight *
-                                              PieChartCard.maxItems)
-                                          .toDouble(),
-                                ),
-                                child: ListView(
-                                  physics: NeverScrollableScrollPhysics(),
-                                  shrinkWrap: true,
-                                  children: dataSnapshot.data!.keyItems,
-                                ),
-                              ),
-                            ],
+                    return SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Your ${_selectedType.label.toLowerCase()}',
+                            textAlign: TextAlign.left,
+                            style: Theme.of(context).textTheme.headlineSmall,
                           ),
-                        );
-                      },
+                          const SizedBox(height: 8.0),
+                          _getPieChart(data),
+                          const SizedBox(height: 12.0),
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxHeight:
+                                  (PieChartCard.estKeyItemHeight *
+                                          PieChartCard.maxItems)
+                                      .toDouble(),
+                            ),
+                            child: ListView(
+                              physics: NeverScrollableScrollPhysics(),
+                              shrinkWrap: true,
+                              children: data.keyItems,
+                            ),
+                          ),
+                        ],
+                      ),
                     );
                   },
                 ),
