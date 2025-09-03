@@ -646,16 +646,20 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
   /// Get a [FinancialDataPoint] object using the income and expenses from a
   /// given date range.
   Future<FinancialDataPoint> getPointFromRange(DateTimeRange range) async {
+    final common = <Filter>[
+      DateRangeFilter(range),
+      ArchivedFilter(false),
+      FutureFilter(false),
+      TransferFilter(false),
+    ];
+
     final totalSpent =
         await watchTotalAmount(
-          filters: [
-            DateRangeFilter(range),
-            TypeFilter(TransactionType.expense),
-          ],
+          filters: [TypeFilter(TransactionType.expense), ...common],
         ).first;
     final totalEarned =
         await watchTotalAmount(
-          filters: [DateRangeFilter(range), TypeFilter(TransactionType.income)],
+          filters: [TypeFilter(TransactionType.income), ...common],
         ).first;
 
     return FinancialDataPoint(

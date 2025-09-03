@@ -32,7 +32,7 @@ class _TopContainersState extends State<TopContainers> {
     // specific container.
 
     final stream = db.getObjectStream(
-      transactionFilters: filters,
+      transactionFilters: [TransferFilter(false), ...filters],
       objectFilters: [ArchivedFilter(false)],
       objectType: _selectedContainer,
     );

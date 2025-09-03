@@ -365,9 +365,11 @@ class _PieChartCardState extends State<PieChartCard> {
     // at a time.
     provider.removeFilterOf<ContainerFilter>(notify: false);
 
+    // Transfers are removed from pie chart data since they don't represent
+    // any meaningful change in data.
     return db
         .getObjectStream(
-          transactionFilters: provider.filters,
+          transactionFilters: [...provider.filters, TransferFilter(false)],
           objectFilters: [ArchivedFilter(false)],
           objectType: _selectedContainer.type,
         )
@@ -388,7 +390,11 @@ class _PieChartCardState extends State<PieChartCard> {
           final loose =
               await db.transactionDao
                   .watchTotalAmount(
-                    filters: [...provider.filters, containerFilter],
+                    filters: [
+                      TransferFilter(false),
+                      ...provider.filters,
+                      containerFilter,
+                    ],
                     net: false,
                   )
                   .first;
